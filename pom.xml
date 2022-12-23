@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>bka</groupId>
+    <artifactId>BKA</artifactId>
+    <version>0</version>
+    <packaging>pom</packaging>
+    <modules>
+        <module>text</module>
+        <module>AWT</module>
+        <module>Chart</module>
+        <module>Demo</module>
+        <module>Clock</module>
+        <module>../../../Library/Mobile Documents/com~apple~CloudDocs/Maven Projects/BKA/Clock/Clock</module>
+    </modules>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>                                                            
+                    <groupId>org.apache.maven.plugins</groupId>                     
+                    <artifactId>maven-scompiler-plugin</artifactId>                  
+                    <version>3.8.1</version>        
+                    <configuration>
+                        <release>15</release>
+                        <jvmArguments>--enable-preview</jvmArguments>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>

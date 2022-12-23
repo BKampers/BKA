@@ -32,7 +32,7 @@ public abstract class Needle {
     }
     
     public void paint(Graphics2D graphics) {
-        double angle = scale.angle(value);
+        double angle = scale.radians(value);
         graphics.rotate(angle, turningPoint.x, turningPoint.y);
         paintNeedle(graphics);
         graphics.rotate(-angle, turningPoint.x, turningPoint.y);

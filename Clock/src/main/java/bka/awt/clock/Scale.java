@@ -9,8 +9,8 @@ public final class Scale {
     public Scale(double minValue, double maxValue, double minAngle, double maxAngle) {
         this.minValue = minValue;
         this.maxValue = maxValue;
-        this.minAngle = minAngle * 2.0 * Math.PI;
-        this.maxAngle = maxAngle * 2.0 * Math.PI;
+        this.minAngle = minAngle;
+        this.maxAngle = maxAngle;
     }
 
     public double getMinValue() {
@@ -21,7 +21,15 @@ public final class Scale {
         return maxValue;
     }
 
-    public double angle(double value) {
+    public double radians(double value) {
+        return angleRatio(value) * 2d * Math.PI;
+    }
+
+    public double degrees(double value) {
+        return angleRatio(value) * 360d;
+    }
+
+    private double angleRatio(double value) {
         return minAngle + (maxAngle - minAngle) * (value - minValue) / (maxValue - minValue);
     }
 

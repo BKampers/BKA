@@ -47,7 +47,7 @@ public abstract class IntervalRing extends Ring {
     }
 
     private void paintRotatedMarker(Graphics2D graphics, Point center, Scale scale, double value) {
-        double angle = scale.angle(value);
+        double angle = scale.radians(value);
         graphics.rotate(angle, center.x, center.y);
         graphics.translate(center.x, center.y - getRadius());
         paintMarker(graphics, value);
@@ -65,7 +65,7 @@ public abstract class IntervalRing extends Ring {
     protected abstract void paintMarker(Graphics2D graphics, double value);
 
     private Point.Double markerPoint(double value) {
-        double angle = getScale().angle(value);
+        double angle = getScale().radians(value);
         return new Point.Double(
             getCenter().x + Math.sin(angle) * getRadius(),
             getCenter().y - Math.cos(angle) * getRadius());

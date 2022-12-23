@@ -54,12 +54,12 @@ public class ArcRing extends Ring {
         Scale scale = getScale();
         double x = getCenter().x - getRadius();
         double y = getCenter().y - getRadius();
-        double diameter = getRadius() * 2;
+        double diameter = getRadius() * 2d;
         for (Arc arc : arcs) {
             graphics.setPaint(arc.paint);
             graphics.setStroke(arc.stroke);
-            double start = Math.toDegrees(scale.angle(arc.start));
-            double end = Math.toDegrees(scale.angle(arc.end));
+            double start = scale.degrees(arc.start);
+            double end = scale.degrees(arc.end);
             graphics.draw(new Arc2D.Double(x, y, diameter, diameter, angleStart(start), angleExtent(start, end), Arc2D.OPEN));
         }
         graphics.setStroke(restoreStroke);

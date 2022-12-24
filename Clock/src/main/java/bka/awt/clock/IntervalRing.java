@@ -5,6 +5,7 @@
 package bka.awt.clock;
 
 import java.awt.*;
+import java.awt.geom.*;
 
 
 public abstract class IntervalRing extends Ring {
@@ -33,7 +34,7 @@ public abstract class IntervalRing extends Ring {
             return;
         }
         Scale scale = getScale();
-        Point center = getCenter();
+        Point2D center = getCenter();
         double minValue = Math.min(scale.getMinValue(), scale.getMaxValue());
         double maxValue = Math.max(scale.getMinValue(), scale.getMaxValue());
         for (double value = minValue; value <= maxValue; value += interval) {
@@ -46,20 +47,20 @@ public abstract class IntervalRing extends Ring {
         }
     }
 
-    private void paintRotatedMarker(Graphics2D graphics, Point center, Scale scale, double value) {
+    private void paintRotatedMarker(Graphics2D graphics, Point2D center, Scale scale, double value) {
         double angle = scale.radians(value);
-        graphics.rotate(angle, center.x, center.y);
-        graphics.translate(center.x, center.y - getRadius());
+        graphics.rotate(angle, center.getX(), center.getY());
+        graphics.translate(center.getX(), center.getY() - getRadius());
         paintMarker(graphics, value);
-        graphics.translate(-center.x, -(center.y - getRadius()));
-        graphics.rotate(-angle, center.x, center.y);
+        graphics.translate(-center.getX(), -(center.getY() - getRadius()));
+        graphics.rotate(-angle, center.getX(), center.getY());
     }
 
     private void paintUprightMarker(Graphics2D graphics, double value) {
         Point.Double translation = markerPoint(value);
-        graphics.translate(translation.x, translation.y);
+        graphics.translate(translation.getX(), translation.getY());
         paintMarker(graphics, value);
-        graphics.translate(-translation.x, -translation.y);
+        graphics.translate(-translation.getX(), -translation.getY());
     }
 
     protected abstract void paintMarker(Graphics2D graphics, double value);
@@ -67,8 +68,8 @@ public abstract class IntervalRing extends Ring {
     private Point.Double markerPoint(double value) {
         double angle = getScale().radians(value);
         return new Point.Double(
-            getCenter().x + Math.sin(angle) * getRadius(),
-            getCenter().y - Math.cos(angle) * getRadius());
+            getCenter().getX() + Math.sin(angle) * getRadius(),
+            getCenter().getY() - Math.cos(angle) * getRadius());
     }
 
     private double interval;

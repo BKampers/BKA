@@ -52,8 +52,8 @@ public class ArcRing extends Ring {
     public void paint(Graphics2D graphics) {
         Stroke restoreStroke = graphics.getStroke();
         Scale scale = getScale();
-        double x = getCenter().x - getRadius();
-        double y = getCenter().y - getRadius();
+        double x = getCenter().getX() - getRadius();
+        double y = getCenter().getY() - getRadius();
         double diameter = getRadius() * 2d;
         for (Arc arc : arcs) {
             graphics.setPaint(arc.paint);

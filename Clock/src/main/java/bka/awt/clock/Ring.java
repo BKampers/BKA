@@ -1,6 +1,7 @@
 package bka.awt.clock;
 
 import java.awt.*;
+import java.awt.geom.*;
 import java.util.*;
 
 public abstract class Ring {
@@ -13,11 +14,11 @@ public abstract class Ring {
 
     public abstract void paint(Graphics2D graphics);
 
-    public final void setCenter(Point center) {
-        this.center = Objects.requireNonNull(center);
+    public final void setCenter(Point2D center) {
+        this.center = new Point2D.Double(center.getX(), center.getY());
     }
 
-    public final void setRadius(int radius) {
+    public final void setRadius(double radius) {
         this.radius = radius;
     }
 
@@ -25,7 +26,7 @@ public abstract class Ring {
         this.scale = Objects.requireNonNull(scale);
     }
     
-    protected Point getCenter() {
+    protected Point2D getCenter() {
         return center;
     }
 
@@ -33,12 +34,12 @@ public abstract class Ring {
         return scale;
     }
 
-    protected int getRadius() {
+    protected double getRadius() {
         return radius;
     }
 
-    private int radius;
+    private double radius;
     private Scale scale;
-    private Point center;
+    private Point2D.Double center;
     
 }

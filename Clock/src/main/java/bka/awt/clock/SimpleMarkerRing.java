@@ -41,5 +41,5 @@ public class SimpleMarkerRing extends MarkerRing {
     
     private int majorMarkerLength = 4;
     private int minorMarkerLength = 2;
-    
+
 }

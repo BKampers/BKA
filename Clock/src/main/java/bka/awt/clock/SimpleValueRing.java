@@ -5,7 +5,7 @@ import java.util.*;
 
 
 public class SimpleValueRing extends ValueRing {
-    
+
     public SimpleValueRing(Point center, int radius, Scale scale) {
         this(center, radius, scale, 1.0);
     }
@@ -35,7 +35,7 @@ public class SimpleValueRing extends ValueRing {
     public final void setFont(Font font) {
         this.font = Objects.requireNonNull(font);
     }
-    
+
     public final void setPaint(Paint paint) {
         this.paint = Objects.requireNonNull(paint);
     }
@@ -50,9 +50,9 @@ public class SimpleValueRing extends ValueRing {
         int height = fontMetrics.getHeight();
         int descent = fontMetrics.getDescent();
         graphics.drawString(value, width / -2, height / 2 - descent);
-    }    
+    }
 
     private Font font;
     private Paint paint;
-    
+
 }

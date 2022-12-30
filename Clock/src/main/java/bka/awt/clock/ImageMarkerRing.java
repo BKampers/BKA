@@ -68,5 +68,5 @@ public class ImageMarkerRing extends MarkerRing {
     private Image majorImage;
     private Dimension minorDimension;
     private Dimension majorDimension;
-    
+
 }

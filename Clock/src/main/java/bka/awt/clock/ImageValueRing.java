@@ -61,8 +61,8 @@ public class ImageValueRing extends ValueRing {
             width += dimensions[i].width;
         }
     }
-    
-    private Image[] images; 
+
+    private Image[] images;
     private Dimension[] dimensions; 
     
 }

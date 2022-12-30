@@ -6,7 +6,7 @@ import java.util.*;
 
 public abstract class Ring {
 
-    public Ring(Point center, int radius, Scale scale) {
+    public Ring(Point2D center, int radius, Scale scale) {
         setCenter(center);
         setRadius(radius);
         setScale(scale);
@@ -38,8 +38,12 @@ public abstract class Ring {
         return radius;
     }
 
+    protected double getDiameter() {
+        return radius * 2.0;
+    }
+
+    private Point2D.Double center;
     private double radius;
     private Scale scale;
-    private Point2D.Double center;
-    
+
 }

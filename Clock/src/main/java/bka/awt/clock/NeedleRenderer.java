@@ -16,7 +16,7 @@ public class NeedleRenderer extends Needle {
         this.renderer = Objects.requireNonNull(renderer);
     }
 
-    public static NeedleRenderer ofLenght(Point rotationPoint, Scale scale, int length) {
+    public static NeedleRenderer of(Point rotationPoint, Scale scale, int length) {
         return new NeedleRenderer(rotationPoint, scale, new ShapeRenderer(new Polygon(new int[]{ 0, 0 }, new int[]{ 0, -length }, 2)));
     }
 

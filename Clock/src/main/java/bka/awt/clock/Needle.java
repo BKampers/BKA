@@ -33,14 +33,15 @@ public abstract class Needle {
     }
     
     public void paint(Graphics2D graphics) {
-        graphics.translate(rotationPoint.getX(), rotationPoint.getY());
-        graphics.drawLine(0, -5, 0, 5);
-        graphics.drawLine(-5, 0, 5, 0);
-        graphics.translate(-rotationPoint.getX(), -rotationPoint.getY());
         double angle = scale.radians(value);
         graphics.rotate(angle, rotationPoint.getX(), rotationPoint.getY());
         paintNeedle(graphics);
         graphics.rotate(-angle, rotationPoint.getX(), rotationPoint.getY());
+        graphics.translate(rotationPoint.getX(), rotationPoint.getY());
+        graphics.setStroke(new BasicStroke(1));
+        graphics.drawLine(0, -5, 0, 5);
+        graphics.drawLine(-5, 0, 5, 0);
+        graphics.translate(-rotationPoint.getX(), -rotationPoint.getY());
     }
 
     protected abstract void paintNeedle(Graphics2D graphics);

@@ -5,7 +5,7 @@ import java.awt.geom.*;
 import java.util.*;
 
 
-public abstract class Needle {
+public abstract class Needle implements Renderer {
 
     protected Needle(Point2D rotationPoint, Scale scale) {
         setRotationPoint(rotationPoint);
@@ -31,16 +31,14 @@ public abstract class Needle {
     protected final Point2D getRotationPoint() {
         return rotationPoint;
     }
-    
+
+    @Override
     public void paint(Graphics2D graphics) {
         double angle = scale.radians(value);
         graphics.rotate(angle, rotationPoint.getX(), rotationPoint.getY());
         paintNeedle(graphics);
         graphics.rotate(-angle, rotationPoint.getX(), rotationPoint.getY());
         graphics.translate(rotationPoint.getX(), rotationPoint.getY());
-        graphics.setStroke(new BasicStroke(1));
-        graphics.drawLine(0, -5, 0, 5);
-        graphics.drawLine(-5, 0, 5, 0);
         graphics.translate(-rotationPoint.getX(), -rotationPoint.getY());
     }
 

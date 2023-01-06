@@ -4,29 +4,29 @@ import java.awt.*;
 import java.util.*;
 
 
-public class SimpleValueRing extends ValueRing {
+public class ValueRingRenderer extends ValueRing {
 
-    public SimpleValueRing(Point center, int radius, Scale scale) {
+    public ValueRingRenderer(Point center, int radius, Scale scale) {
         this(center, radius, scale, 1.0);
     }
 
-    public SimpleValueRing(Point center, int radius, Scale scale, double interval) {
+    public ValueRingRenderer(Point center, int radius, Scale scale, double interval) {
         this(center, radius, scale, interval, false);
     }
 
-    public SimpleValueRing(Point center, int radius, Scale scale, double interval, boolean itemsRotated) {
+    public ValueRingRenderer(Point center, int radius, Scale scale, double interval, boolean itemsRotated) {
         this(center, radius, scale, interval, itemsRotated, new Font(Font.SANS_SERIF, Font.BOLD, 50), Color.BLACK);
     }
 
-    public SimpleValueRing(Point center, int radius, Scale scale, Font font, Paint paint) {
+    public ValueRingRenderer(Point center, int radius, Scale scale, Font font, Paint paint) {
         this(center, radius, scale, 1.0, font, paint);
     }
 
-    public SimpleValueRing(Point center, int radius, Scale scale, double interval, Font font, Paint paint) {
+    public ValueRingRenderer(Point center, int radius, Scale scale, double interval, Font font, Paint paint) {
         this(center, radius, scale, interval, false, font, paint);
     }
 
-    public SimpleValueRing(Point center, int radius, Scale scale, double interval, boolean itemsRotated, Font font, Paint paint) {
+    public ValueRingRenderer(Point center, int radius, Scale scale, double interval, boolean itemsRotated, Font font, Paint paint) {
         super(center, radius, scale, interval, itemsRotated);
         setFont(font);
         setPaint(paint);

@@ -1,18 +1,15 @@
 package bka.awt.clock;
 
-import java.awt.*;
 import java.awt.geom.*;
 import java.util.*;
 
-public abstract class Ring {
+public abstract class Ring implements Renderer {
 
     public Ring(Point2D center, int radius, Scale scale) {
         setCenter(center);
         setRadius(radius);
         setScale(scale);
     }
-
-    public abstract void paint(Graphics2D graphics);
 
     public final void setCenter(Point2D center) {
         this.center = new Point2D.Double(center.getX(), center.getY());

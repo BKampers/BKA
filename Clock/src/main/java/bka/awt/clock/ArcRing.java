@@ -43,7 +43,7 @@ public class ArcRing extends Ring {
 
     }
 
-    public ArcRing(Point center, int radius, Scale scale, Collection<Arc> arcs) {
+    public ArcRing(Point center, double radius, Scale scale, Collection<Arc> arcs) {
         super(center, radius, scale);
         this.arcs = arcs;
     }

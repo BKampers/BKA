@@ -5,7 +5,7 @@ import java.util.*;
 
 public abstract class Ring implements Renderer {
 
-    public Ring(Point2D center, int radius, Scale scale) {
+    public Ring(Point2D center, double radius, Scale scale) {
         setCenter(center);
         setRadius(radius);
         setScale(scale);

@@ -1,15 +1,16 @@
 package bka.awt.clock;
 
 import java.awt.*;
+import java.awt.geom.*;
 import java.util.*;
 
 public class MarkerRingRenderer extends IntervalRing {
 
-    public MarkerRingRenderer(Point center, int radius, Scale scale, double interval, boolean itemsRotated, Renderer renderer) {
+    public MarkerRingRenderer(Point2D center, double radius, Scale scale, double interval, boolean itemsRotated, Renderer renderer) {
         this(center, radius, scale, interval, itemsRotated, (graphics, value) -> renderer.paint(graphics));
     }
 
-    public MarkerRingRenderer(Point center, int radius, Scale scale, double interval, boolean itemsRotated, ValueRenderer valueRenderer) {
+    public MarkerRingRenderer(Point2D center, double radius, Scale scale, double interval, boolean itemsRotated, MarkerRenderer valueRenderer) {
         super(center, radius, scale, interval, itemsRotated);
         this.valueRenderer = Objects.requireNonNull(valueRenderer);
     }
@@ -19,6 +20,6 @@ public class MarkerRingRenderer extends IntervalRing {
         valueRenderer.paint(graphics, value);
     }
 
-    private final ValueRenderer valueRenderer;
+    private final MarkerRenderer valueRenderer;
 
 }

@@ -10,7 +10,7 @@ import java.awt.geom.*;
 
 public abstract class IntervalRing extends Ring {
 
-    protected IntervalRing(Point center, int radius, Scale scale, double interval, boolean markersRotated) {
+    protected IntervalRing(Point2D center, double radius, Scale scale, double interval, boolean markersRotated) {
         super(center, radius, scale);
         this.interval = interval;
         this.markersRotated = markersRotated;

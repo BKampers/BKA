@@ -9,7 +9,7 @@ import java.text.*;
 import java.util.*;
 
 
-public class FormattedValueRenderer implements ValueRenderer {
+public class FormattedValueRenderer implements MarkerRenderer {
 
     public FormattedValueRenderer(Paint paint, Font font) {
         this(paint, font, defaultFormat());

@@ -1,6 +1,7 @@
 package bka.awt.clock;
 
 
+import bka.awt.*;
 import java.awt.*;
 
 public class Text implements Renderer {

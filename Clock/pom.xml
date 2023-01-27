@@ -6,10 +6,20 @@
         <artifactId>BKA</artifactId>
         <version>0</version>
     </parent>
-    <artifactId>Clock</artifactId>
+    <artifactId>clock</artifactId>
+    <version>0</version>
     <packaging>jar</packaging>
+    <dependencies>
+        <dependency>
+          <groupId>bka</groupId>
+          <artifactId>awt</artifactId>
+          <version>${project.version}</version>
+        </dependency>
+    </dependencies>
     <properties>
         <maven.compiler.source>15</maven.compiler.source>
         <maven.compiler.target>15</maven.compiler.target>
     </properties>
+    <groupId>bka.awt</groupId>
+    <name>Clock</name>
 </project>

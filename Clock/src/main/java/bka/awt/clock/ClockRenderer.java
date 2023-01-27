@@ -1,10 +1,11 @@
 package bka.awt.clock;
 
+import bka.awt.*;
 import java.awt.*;
 import java.util.*;
 import java.util.function.*;
 
-public class ClockRenderer {
+public class ClockRenderer extends CompositeRenderer {
 
     public ClockRenderer(Point center, Scale scale) {
         this.center = Objects.requireNonNull(center);
@@ -13,10 +14,6 @@ public class ClockRenderer {
 
     public Scale getScale() {
         return scale;
-    }
-
-    public void add(Renderer renderer) {
-        components.add(renderer);
     }
 
     public void addClockFace(int radius, Paint paint, Paint borderPaint, float borderWidth) {
@@ -100,13 +97,7 @@ public class ClockRenderer {
         return needleRenderer;
     }
 
-    public void paint(Graphics2D graphics) {
-        components.forEach(renderer -> renderer.paint(graphics));
-    }
-
     private final Point center;
     private final Scale scale;
-
-    private final ArrayList<Renderer> components = new ArrayList<>();
     
 }

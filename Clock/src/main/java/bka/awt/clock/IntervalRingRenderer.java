@@ -8,9 +8,9 @@ import java.awt.*;
 import java.awt.geom.*;
 
 
-public abstract class IntervalRing extends Ring {
+public abstract class IntervalRingRenderer extends RingRenderer {
 
-    protected IntervalRing(Point2D center, double radius, Scale scale, double interval, boolean markersRotated) {
+    protected IntervalRingRenderer(Point2D center, double radius, Scale scale, double interval, boolean markersRotated) {
         super(center, radius, scale);
         this.interval = interval;
         this.markersRotated = markersRotated;

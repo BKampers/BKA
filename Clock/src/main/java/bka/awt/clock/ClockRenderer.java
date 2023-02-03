@@ -2,6 +2,7 @@ package bka.awt.clock;
 
 import bka.awt.*;
 import java.awt.*;
+import java.awt.geom.*;
 import java.util.*;
 import java.util.function.*;
 
@@ -71,8 +72,25 @@ public class ClockRenderer extends CompositeRenderer {
         return markerRingRenderer;
     }
 
-    public void addArcRingRenderer(int radius, Collection<ArcRing.Arc> arcs) {
-        add(new ArcRing(center, radius, scale, arcs));
+    public void addArc(double radius, double start, double end, Paint paint, float width) {
+        addArc(radius, start, end, paint, new BasicStroke(width, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER));
+    }
+
+    public void addArc(double radius, double start, double end, Paint paint, Stroke stroke) {
+        double diameter = radius * 2d;
+        double startDegrees = scale.degrees(start);
+        double endDegrees = scale.degrees(end);
+        Arc2D arc = new Arc2D.Double(center.getX() - radius, center.getY() - radius, diameter, diameter, angleStart(startDegrees), angleExtent(startDegrees, endDegrees), Arc2D.OPEN);
+        add(new ShapeRenderer(arc, paint, stroke));
+    }
+
+    private static double angleStart(double start) {
+        return 90d - start;
+    }
+
+    private static double angleExtent(double start, double end) {
+        double arc = start - end;
+        return (arc <= 0.0) ? arc : -360d + arc;
     }
 
     public NeedleRenderer addNeedleRenderer(int length, Paint paint, float width) {

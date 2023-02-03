@@ -5,7 +5,7 @@ import java.awt.*;
 import java.awt.geom.*;
 import java.util.*;
 
-public class MarkerRingRenderer extends IntervalRing {
+public class MarkerRingRenderer extends IntervalRingRenderer {
 
     public MarkerRingRenderer(Point2D center, double radius, Scale scale, double interval, boolean itemsRotated, Renderer renderer) {
         this(center, radius, scale, interval, itemsRotated, (graphics, value) -> renderer.paint(graphics));

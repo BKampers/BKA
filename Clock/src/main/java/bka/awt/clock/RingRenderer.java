@@ -4,16 +4,16 @@ import bka.awt.*;
 import java.awt.geom.*;
 import java.util.*;
 
-public abstract class Ring implements Renderer {
+public abstract class RingRenderer implements Renderer {
 
-    public Ring(Point2D center, double radius, Scale scale) {
+    public RingRenderer(Point2D center, double radius, Scale scale) {
         setCenter(center);
         setRadius(radius);
         setScale(scale);
     }
 
     public final void setCenter(Point2D center) {
-        this.center = new Point2D.Double(center.getX(), center.getY());
+        this.center = Objects.requireNonNull(center);
     }
 
     public final void setRadius(double radius) {
@@ -40,7 +40,7 @@ public abstract class Ring implements Renderer {
         return radius * 2.0;
     }
 
-    private Point2D.Double center;
+    private Point2D center;
     private double radius;
     private Scale scale;
 

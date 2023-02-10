@@ -66,6 +66,10 @@ public class ClockRenderer extends CompositeRenderer {
         return markerRingRenderer;
     }
 
+    public MarkerRingRenderer addNumberRingRenderer(double radius, double interval, Paint paint) {
+        return addNonTiltedMarkerRingRenderer(radius, interval, new FormattedValueRenderer(paint));
+    }
+
     public MarkerRingRenderer addNonTiltedMarkerRingRenderer(double radius, double interval, MarkerRenderer markerRenderer) {
         MarkerRingRenderer markerRingRenderer = new MarkerRingRenderer(center, radius, scale, interval, false, markerRenderer);
         add(markerRingRenderer);

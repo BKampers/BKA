@@ -13,10 +13,6 @@ public class ClockRenderer extends CompositeRenderer {
         this.scale = Objects.requireNonNull(scale);
     }
 
-    public Scale getScale() {
-        return scale;
-    }
-
     public void addClockFace(int radius, Paint paint, Paint borderPaint, float borderWidth) {
         addClockFace(radius, paint);
         addClockFace(radius, borderPaint, borderWidth);
@@ -39,20 +35,32 @@ public class ClockRenderer extends CompositeRenderer {
         });
     }
 
-    public MarkerRingRenderer addMarkerRingRenderer(double radius, double interval, int length) {
-        return addMarkerRingRenderer(radius, interval, graphics -> graphics.drawLine(0, 0, 0, length));
+    public MarkerRingRenderer addMarkerRingRenderer(double radius, double interval, int length, Paint paint, float width) {
+        return addMarkerRingRenderer(radius, interval, graphics -> {
+            graphics.setPaint(paint);
+            graphics.setStroke(roundedStroke(width));
+            graphics.drawLine(0, 0, 0, length);
+        });
     }
 
-    public MarkerRingRenderer addMarkerRingRenderer(double radius, double interval, int majorLength, int minorLength, int majorInterval) {
-        return addMarkerRingRenderer(radius, interval, majorLength, minorLength, value -> Math.round(value) % majorInterval == 0);
+    public MarkerRingRenderer addMarkerRingRenderer(double radius, double minorInterval, int minorLength, int majorInterval, int majorLength, Paint paint, float width) {
+        return addMarkerRingRenderer(radius, minorInterval, majorLength, minorLength, matches(majorInterval), paint, width);
     }
 
-    public MarkerRingRenderer addMarkerRingRenderer(double radius, double interval, int majorLength, int minorLength, Predicate<Double> isMajor) {
+    private static Predicate<Double> matches(int majorInterval) {
+        return value -> Math.round(value) % majorInterval == 0;
+    }
+
+    public MarkerRingRenderer addMarkerRingRenderer(double radius, double interval, int majorLength, int minorLength, Predicate<Double> isMajor, Paint paint, float width) {
         return addMarkerRingRenderer(radius, interval, (graphics, value) -> {
+            graphics.setPaint(paint);
+            graphics.setStroke(roundedStroke(width));
             if (isMajor.test(value)) {
                 graphics.drawLine(0, 0, 0, majorLength);
             }
-            graphics.drawLine(0, 0, 0, minorLength);
+            else {
+                graphics.drawLine(0, 0, 0, minorLength);
+            }
         });
     }
 
@@ -67,7 +75,11 @@ public class ClockRenderer extends CompositeRenderer {
     }
 
     public MarkerRingRenderer addNumberRingRenderer(double radius, double interval, Paint paint) {
-        return addNonTiltedMarkerRingRenderer(radius, interval, new FormattedValueRenderer(paint));
+        return addNumberRingRenderer(radius, interval, paint, null);
+    }
+
+    public MarkerRingRenderer addNumberRingRenderer(double radius, double interval, Paint paint, Font font) {
+        return addNonTiltedMarkerRingRenderer(radius, interval, new FormattedValueRenderer(paint, font));
     }
 
     public MarkerRingRenderer addNonTiltedMarkerRingRenderer(double radius, double interval, MarkerRenderer markerRenderer) {
@@ -77,7 +89,7 @@ public class ClockRenderer extends CompositeRenderer {
     }
 
     public void addArc(double radius, double start, double end, Paint paint, float width) {
-        addArc(radius, start, end, paint, new BasicStroke(width, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER));
+        addArc(radius, start, end, paint, roundedStroke(width));
     }
 
     public void addArc(double radius, double start, double end, Paint paint, Stroke stroke) {
@@ -102,7 +114,7 @@ public class ClockRenderer extends CompositeRenderer {
     }
 
     public NeedleRenderer addNeedleRenderer(int length, int tailLength, Paint paint, float width) {
-        return addNeedleRenderer(length, tailLength, paint, new BasicStroke(width, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER));
+        return addNeedleRenderer(length, tailLength, paint, roundedStroke(width));
     }
 
     public NeedleRenderer addNeedleRenderer(int length, int tailLength, Paint paint, Stroke stroke) {
@@ -117,6 +129,10 @@ public class ClockRenderer extends CompositeRenderer {
         NeedleRenderer needleRenderer = new NeedleRenderer(center, scale, renderer);
         add(needleRenderer);
         return needleRenderer;
+    }
+
+    private static Stroke roundedStroke(float width) {
+        return new BasicStroke(width, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER);
     }
 
     private final Point center;

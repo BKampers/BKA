@@ -21,16 +21,14 @@ public class ClockDemo extends javax.swing.JFrame {
     private void initComponents() {
 
         mainPanel = new javax.swing.JPanel();
-        deprecatedPanel = new javax.swing.JPanel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
+        mainPanel.setMaximumSize(new java.awt.Dimension(500, 500));
+        mainPanel.setMinimumSize(new java.awt.Dimension(500, 500));
+        mainPanel.setPreferredSize(new java.awt.Dimension(500, 500));
+        mainPanel.setSize(new java.awt.Dimension(500, 500));
         mainPanel.setLayout(new javax.swing.BoxLayout(mainPanel, javax.swing.BoxLayout.LINE_AXIS));
-
-        deprecatedPanel.setPreferredSize(new java.awt.Dimension(400, 400));
-        deprecatedPanel.setLayout(new java.awt.BorderLayout());
-        mainPanel.add(deprecatedPanel);
-
         getContentPane().add(mainPanel, java.awt.BorderLayout.LINE_END);
 
         pack();
@@ -73,7 +71,6 @@ public class ClockDemo extends javax.swing.JFrame {
     // </editor-fold>
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JPanel deprecatedPanel;
     private javax.swing.JPanel mainPanel;
     // End of variables declaration//GEN-END:variables
 

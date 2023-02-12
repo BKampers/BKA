@@ -1,45 +1,55 @@
 /*
-** © Bart Kampers
+ * © Bart Kampers
  */
 package bka.demo.clock;
 
 import bka.awt.clock.*;
 import java.awt.*;
-import java.io.*;
-import javax.imageio.*;
+import java.util.*;
 
 public class ClockPanel extends javax.swing.JPanel {
 
-    /**
-     * Creates new form ClockPanel
-     */
-    public ClockPanel() throws IOException {
-        Image needleImage = ImageIO.read(new File("Resources/Needle2.png")).getScaledInstance(15, 90, java.awt.Image.SCALE_SMOOTH);
-        System.out.println(needleImage.getHeight(null));
-        System.out.println(needleImage.getWidth(null));
+    public ClockPanel() {
+        final int radius = 250;
+        Point center = new Point(radius, radius);
+        Scale scale = new Scale(0, 60);
+        renderer = new ClockRenderer(center, new Scale(1, 12, 1.0 / 12.0, 1.0));
+        renderer.addClockFace(radius, Color.WHITE);
+        MarkerRingRenderer markers = renderer.addMarkerRingRenderer(radius, 1, radius / 75, 5, radius / 25, new Color(127, 127, 255), radius / 50f);
+        markers.setScale(scale);
+        renderer.addNumberRingRenderer(radius * 0.9, 1, new Color(190, 190, 255), new Font(Font.SANS_SERIF, Font.BOLD, radius / 10));
+        hourHand = renderer.addNeedleRenderer((int) (radius * 0.6), (int) (radius * 0.03), Color.BLACK, (float) radius / 20);
+        minuteHand = renderer.addNeedleRenderer((int) (radius * 0.8), (int) (radius * 0.04), Color.BLACK, (float) radius / 30);
+        minuteHand.setScale(scale);
+        renderer.add(minuteHand);
+        secondHand = renderer.addNeedleRenderer((int) (radius * 0.9), (int) (radius * 0.045), Color.RED, (float) radius / 100);
+        secondHand.setScale(scale);
+        renderer.add(secondHand);
         initComponents();
-        Dimension size = rendererPanel.getSize();
-        int radius = Math.min(size.width, size.height) / 2 - 24;
-        Point center = new Point(size.width / 2, size.height / 2);
-        Scale scale = new Scale(0, 1);
-        markerRing = new SimpleMarkerRing(center, radius, scale, 15);
-//        renderer.addRing(markerRing);
-        valueRing = new SimpleValueRing(center, radius, scale);
-        valueRing.setInterval(30);
-        valueRing.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
-        renderer.addRing(valueRing);
-        needle = new PolygonNeedle(center, scale, radius);//ImageNeedle(center, scale, needleImage, new Point(7, 85));
-//        needle.setLength(radius);
-        ((PolygonNeedle) needle).setStroke(new BasicStroke(4, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER));
-        ((PolygonNeedle) needle).setPaint(Color.RED);
-        needle.setValue(10);
-        renderer.addNeedle(needle);
-        minValueSpinner.setValue(-150);
-        maxValueSpinner.setValue(180);
-        minAngleSpinner.setValue(-150 / 360.0);
-        maxAngleSpinner.setValue(180 / 360.0);
-        valueIntervalSpinner.setValue(30);
-        updateClockPanel();
+        Timer timer = new Timer();
+        timer.schedule(timerTask, 0, 1000);
+    }
+
+    private final Calendar calendar = Calendar.getInstance();
+
+    TimerTask timerTask = new TimerTask() {
+        @Override
+        public void run() {
+            calendar.setTimeInMillis(System.currentTimeMillis());
+            hourHand.setValue(calendar.get(Calendar.HOUR));
+            minuteHand.setValue(calendar.get(Calendar.MINUTE));
+            secondHand.setValue(calendar.get(Calendar.SECOND));
+            repaint();
+
+        }
+    };
+
+    @Override
+    public void paint(Graphics graphics) {
+        super.paint(graphics);
+        if (graphics instanceof Graphics2D) {
+            renderer.paint((Graphics2D) graphics);
+        }
     }
 
     /**
@@ -50,258 +60,23 @@ public class ClockPanel extends javax.swing.JPanel {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        javax.swing.JPanel scalePanel = new javax.swing.JPanel();
-        javax.swing.JLabel angleLabel = new javax.swing.JLabel();
-        intervalLabel = new javax.swing.JLabel();
-        javax.swing.JLabel maxAngleFactorLabel = new javax.swing.JLabel();
-        maxLabel = new javax.swing.JLabel();
-        javax.swing.JLabel minAngleFactorLabel = new javax.swing.JLabel();
-        minLabel = new javax.swing.JLabel();
-        javax.swing.JLabel valueLabel = new javax.swing.JLabel();
-        maxAngleSpinner = new javax.swing.JSpinner();
-        customizeSpinner(maxAngleSpinner);
-        maxValueSpinner = new javax.swing.JSpinner();
-        customizeSpinner(maxValueSpinner);
-        minAngleSpinner = new javax.swing.JSpinner();
-        customizeSpinner(minAngleSpinner);
-        minValueSpinner = new javax.swing.JSpinner();
-        customizeSpinner(minValueSpinner);
-        valueIntervalSpinner = new javax.swing.JSpinner();
-        customizeSpinner(maxValueSpinner);
-        rendererPanel = new RendererPanel();
-        valuePanel = new javax.swing.JPanel();
-        valueSlider = new javax.swing.JSlider();
-
-        setLayout(new java.awt.BorderLayout());
-
-        scalePanel.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
-
-        angleLabel.setText("Angle");
-
-        intervalLabel.setText("interval");
-
-        maxAngleFactorLabel.setText("× 2π");
-
-        maxLabel.setText("max.");
-
-        minAngleFactorLabel.setText("× 2π");
-
-        minLabel.setText("min.");
-
-        valueLabel.setText("Value");
-
-        maxAngleSpinner.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                maxAngleSpinnerStateChanged(evt);
-            }
-        });
-
-        maxValueSpinner.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                maxValueSpinnerStateChanged(evt);
-            }
-        });
-
-        minAngleSpinner.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                minAngleSpinnerStateChanged(evt);
-            }
-        });
-
-        minValueSpinner.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                minValueSpinnerStateChanged(evt);
-            }
-        });
-
-        valueIntervalSpinner.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                valueIntervalSpinnerStateChanged(evt);
-            }
-        });
-
-        javax.swing.GroupLayout scalePanelLayout = new javax.swing.GroupLayout(scalePanel);
-        scalePanel.setLayout(scalePanelLayout);
-        scalePanelLayout.setHorizontalGroup(
-            scalePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(scalePanelLayout.createSequentialGroup()
-                .addGap(10, 10, 10)
-                .addGroup(scalePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(scalePanelLayout.createSequentialGroup()
-                        .addComponent(minLabel)
-                        .addGap(116, 116, 116)
-                        .addComponent(maxLabel)
-                        .addGap(12, 12, 12))
-                    .addGroup(scalePanelLayout.createSequentialGroup()
-                        .addGroup(scalePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addGroup(scalePanelLayout.createSequentialGroup()
-                                .addComponent(valueLabel)
-                                .addGap(18, 18, 18)
-                                .addComponent(minValueSpinner, javax.swing.GroupLayout.PREFERRED_SIZE, 70, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(scalePanelLayout.createSequentialGroup()
-                                .addComponent(angleLabel)
-                                .addGap(18, 18, 18)
-                                .addComponent(minAngleSpinner)))
-                        .addGap(33, 33, 33)
-                        .addGroup(scalePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, scalePanelLayout.createSequentialGroup()
-                                .addComponent(minAngleFactorLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(maxAngleSpinner, javax.swing.GroupLayout.PREFERRED_SIZE, 67, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(maxValueSpinner, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 67, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addGroup(scalePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(scalePanelLayout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(maxAngleFactorLabel)
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, scalePanelLayout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 44, Short.MAX_VALUE)
-                        .addGroup(scalePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(intervalLabel)
-                            .addComponent(valueIntervalSpinner, javax.swing.GroupLayout.PREFERRED_SIZE, 67, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addContainerGap())))
-        );
-        scalePanelLayout.setVerticalGroup(
-            scalePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(scalePanelLayout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(scalePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(minLabel)
-                    .addComponent(maxLabel)
-                    .addComponent(intervalLabel))
-                .addGap(3, 3, 3)
-                .addGroup(scalePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(minValueSpinner, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(valueLabel)
-                    .addComponent(maxValueSpinner, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(valueIntervalSpinner, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
-                .addGroup(scalePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(angleLabel)
-                    .addComponent(minAngleSpinner, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(minAngleFactorLabel)
-                    .addComponent(maxAngleFactorLabel)
-                    .addComponent(maxAngleSpinner, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(15, Short.MAX_VALUE))
-        );
-
-        add(scalePanel, java.awt.BorderLayout.NORTH);
-
-        rendererPanel.setBounds(new java.awt.Rectangle(0, 0, 200, 200));
-        rendererPanel.setMaximumSize(new java.awt.Dimension(200, 200));
-
-        javax.swing.GroupLayout rendererPanelLayout = new javax.swing.GroupLayout(rendererPanel);
-        rendererPanel.setLayout(rendererPanelLayout);
-        rendererPanelLayout.setHorizontalGroup(
-            rendererPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
+        this.setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGap(0, 400, Short.MAX_VALUE)
         );
-        rendererPanelLayout.setVerticalGroup(
-            rendererPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 86, Short.MAX_VALUE)
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 300, Short.MAX_VALUE)
         );
-
-        add(rendererPanel, java.awt.BorderLayout.CENTER);
-
-        valueSlider.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                valueSliderStateChanged(evt);
-            }
-        });
-
-        javax.swing.GroupLayout valuePanelLayout = new javax.swing.GroupLayout(valuePanel);
-        valuePanel.setLayout(valuePanelLayout);
-        valuePanelLayout.setHorizontalGroup(
-            valuePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(valuePanelLayout.createSequentialGroup()
-                .addGap(15, 15, 15)
-                .addComponent(valueSlider, javax.swing.GroupLayout.DEFAULT_SIZE, 379, Short.MAX_VALUE)
-                .addContainerGap())
-        );
-        valuePanelLayout.setVerticalGroup(
-            valuePanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(valuePanelLayout.createSequentialGroup()
-                .addGap(27, 27, 27)
-                .addComponent(valueSlider, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(44, Short.MAX_VALUE))
-        );
-
-        add(valuePanel, java.awt.BorderLayout.SOUTH);
     }// </editor-fold>//GEN-END:initComponents
 
-    private static void customizeSpinner(javax.swing.JSpinner spinner) {
-        javax.swing.SpinnerNumberModel model = new javax.swing.SpinnerNumberModel(0.0, 0.0, 1.0, 0.1);
-        spinner.setModel(model);
-        javax.swing.JSpinner.NumberEditor editor = new javax.swing.JSpinner.NumberEditor(spinner);
-    }
-
-
-    private void maxAngleSpinnerStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_maxAngleSpinnerStateChanged
-        updateClockPanel();
-    }//GEN-LAST:event_maxAngleSpinnerStateChanged
-
-    private void maxValueSpinnerStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_maxValueSpinnerStateChanged
-        updateClockPanel();
-    }//GEN-LAST:event_maxValueSpinnerStateChanged
-
-    private void minAngleSpinnerStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_minAngleSpinnerStateChanged
-        updateClockPanel();
-    }//GEN-LAST:event_minAngleSpinnerStateChanged
-
-    private void minValueSpinnerStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_minValueSpinnerStateChanged
-        updateClockPanel();
-    }//GEN-LAST:event_minValueSpinnerStateChanged
-
-    public final void updateClockPanel() {
-        Scale scale = new Scale(getValue(minValueSpinner), getValue(maxValueSpinner), getValue(minAngleSpinner), getValue(maxAngleSpinner));
-        markerRing.setScale(scale);
-        valueRing.setScale(scale);
-        needle.setScale(scale);
-        rendererPanel.repaint();
-    }
-
-
-    private void valueIntervalSpinnerStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_valueIntervalSpinnerStateChanged
-        valueRing.setInterval(getValue(valueIntervalSpinner));
-        rendererPanel.repaint();
-    }//GEN-LAST:event_valueIntervalSpinnerStateChanged
-
-    private void valueSliderStateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_valueSliderStateChanged
-        needle.setValue(getValue(minValueSpinner) + (valueSlider.getValue() / 100.0) * (getValue(maxValueSpinner) - getValue(minValueSpinner)));
-        rendererPanel.repaint();
-    }//GEN-LAST:event_valueSliderStateChanged
-
-    private static double getValue(javax.swing.JSpinner spinner) {
-        return ((Number) spinner.getValue()).doubleValue();
-    }
-
-
-    private class RendererPanel extends javax.swing.JPanel {
-
-        @Override
-        public void paintComponent(Graphics graphics) {
-            renderer.paint((Graphics2D) graphics);
-        }
-
-    }
+    private final ClockRenderer renderer;
+    private final NeedleRenderer hourHand;
+    private final NeedleRenderer minuteHand;
+    private final NeedleRenderer secondHand;
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JLabel intervalLabel;
-    private javax.swing.JSpinner maxAngleSpinner;
-    private javax.swing.JLabel maxLabel;
-    private javax.swing.JSpinner maxValueSpinner;
-    private javax.swing.JSpinner minAngleSpinner;
-    private javax.swing.JLabel minLabel;
-    private javax.swing.JSpinner minValueSpinner;
-    private javax.swing.JPanel rendererPanel;
-    private javax.swing.JSpinner valueIntervalSpinner;
-    private javax.swing.JPanel valuePanel;
-    private javax.swing.JSlider valueSlider;
     // End of variables declaration//GEN-END:variables
-
-    private final ClockRenderer renderer = new SimpleClock();
-    private final MarkerRing markerRing;
-    private final SimpleValueRing valueRing;
-    private final Needle needle;
-
 }

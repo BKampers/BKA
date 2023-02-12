@@ -5,13 +5,14 @@ package bka.demo.clock;
 
 import bka.awt.clock.*;
 import java.awt.*;
+import java.awt.image.*;
 import java.io.*;
+import java.text.*;
+import java.util.*;
 import java.util.logging.*;
 import javax.imageio.*;
 
 /**
- *
- * @author bartkampers
  */
 public class MotorManagementFrame extends javax.swing.JFrame {
 
@@ -33,9 +34,9 @@ public class MotorManagementFrame extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        rpmPanel = new ClockRendererPanel(rpmClockRenderer);
-        loadPanel = new ClockRendererPanel(loadClockRenderer);
-        temperaturePanel = new ClockRendererPanel(temperatureClockRenderer);
+        rpmPanel = new ClockRendererPanel();
+        loadPanel = new ClockRendererPanel();
+        temperaturePanel = new ClockRendererPanel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setPreferredSize(new java.awt.Dimension(700, 700));
@@ -137,79 +138,281 @@ public class MotorManagementFrame extends javax.swing.JFrame {
         });
     }
 
+    @Override
+    public void paint(Graphics graphics) {
+        super.paint(graphics);
+
+    }
+
     private void initializeRpmClockRenderer() {
         Dimension size = rpmPanel.getSize();
         Scale scale = new Scale(0, 10, -0.4, 0.4);
         Point center = new Point(size.width / 2, size.height / 2);
-        int radius = Math.min(size.width, size.height) / 2 - 32;
-        rpmClockRenderer.setBackground(Color.WHITE);
-        SimpleValueRing valueRing = new SimpleValueRing(center, radius, scale);
-        valueRing.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
-        valueRing.setMarkersRotated(true);
-        rpmClockRenderer.addRing(valueRing);
-        SimpleMarkerRing markerRing = new SimpleMarkerRing(center, radius + 12, scale, 0.5);
-        rpmClockRenderer.addRing(markerRing);
-        rpmClockRenderer.addText(new Text("RPM", center, new Font(Font.SANS_SERIF, Font.PLAIN, 14), Color.DARK_GRAY));
-        rpmClockRenderer.addText(new Text("\u00d7 1000", new Point(center.x, center.y + 15), new Font(Font.SANS_SERIF, Font.PLAIN, 14), Color.DARK_GRAY));
-        ArcRing arcRing = new ArcRing(center, radius - 10, scale, java.util.List.of(new ArcRing.Arc(7.5, 10, Color.RED, new BasicStroke(8))));
-        rpmClockRenderer.addRing(arcRing);
-        PolygonNeedle needle = new PolygonNeedle(center, scale, radius);//new ImageNeedle(center, scale, NEEDLE_IMAGE, new Point(13, 95));
-        needle.setStroke(new BasicStroke(5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER));
-        needle.setPaint(Color.ORANGE.darker());
-        needle.setPolygon(new Polygon(new int[]{ -1, 0, 4, -1 }, new int[]{ -4, -radius, -4, -4 }, 4));
-        needle.setValue(2.3);
-        rpmClockRenderer.addNeedle(needle);
+        int diameter = Math.min(size.width, size.height);
+        int radius = diameter / 2 - 32;
+        rpmClockRenderer = new ClockRenderer(center, scale);
+        ((ClockRendererPanel) rpmPanel).setRenderer(rpmClockRenderer);
+        rpmClockRenderer.addMarkerRingRenderer(radius, 1, MotorManagementFrame::paintImageMarker);
+        rpmClockRenderer.addMarkerRingRenderer(radius + 12, 0.5, graphics -> {
+            graphics.setPaint(Color.BLACK);
+            graphics.drawLine(-1, 0, 1, 0);
+            graphics.drawLine(0, -1, 0, 1);
+        });
+        rpmClockRenderer.add(new Text("RPM", center, new Font(Font.SANS_SERIF, Font.PLAIN, 14), Color.DARK_GRAY));
+        rpmClockRenderer.add(new Text("\u00d7 1000", new Point(center.x, center.y + 15), new Font(Font.SANS_SERIF, Font.PLAIN, 14), Color.DARK_GRAY));
+        rpmClockRenderer.addArc(radius - 10, 7.5, 10.0, Color.RED, 8f);
+        NeedleRenderer needle = rpmClockRenderer.addNeedleRenderer(new NeedleImageRenderer(needleImage(), new Point(0, 0)));
+        needle.setValue(5);
     }
+
+    private static Image needleImage() {
+        int width = 11;
+        int height = 29;
+        int[] rgb = new int[]{
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF00FF00, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF00FF00, 0xFF00FF00, 0xFF00FF00, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000,
+            0x00000000, 0xFF000000, 0xFF00FF00, 0xFF00FF00, 0xFF00FF00, 0xFF00FF00, 0xFF00FF00, 0xFF00FF00, 0xFF00FF00, 0xFF000000, 0x00000000,
+            0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000, 0xFF000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF00FF00, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF00FF00, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+            0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xFF000000, 0xFF000000, 0xFF000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, };
+        BufferedImage result = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        result.setRGB(0, 0, width, height, rgb, 0, width);
+        return result;
+    }
+
+    private static void paintImageMarker(Graphics2D graphics, double value) {
+        NumberFormat defaultFormat = new DecimalFormat();
+        defaultFormat.setGroupingUsed(false);
+        Image image = getImage(defaultFormat.format(value));
+        graphics.drawImage(image, image.getWidth(null) / -2, image.getHeight(null) / -2, null);
+    }
+
+    private static Image getImage(String text) {
+        ArrayList<Image> images = new ArrayList<>(text.length());
+        int width = 0;
+        int height = 0;
+        int i = 0;
+        for (char ch : text.toCharArray()) {
+            if ('0' <= ch && ch <= '9') {
+                Image image = get(ch - '0');
+                images.add(image);
+                width += image.getWidth(null);
+                height = Math.max(height, image.getHeight(null));
+                i++;
+            }
+        }
+        BufferedImage image = new BufferedImage(width,height,BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = image.createGraphics();
+        int x = 0;
+        for (Image charImage : images) {
+            int y = (height - charImage.getHeight(null)) / 2;
+            graphics.drawImage(charImage, x, y, null);
+            x += charImage.getWidth(null);
+        }
+        graphics.dispose();
+        return image;
+    }
+
+    private static Image get(int digit) {
+        final int width=8;
+        final int height = 7;
+        byte[] bitmap = NUMBERS[digit];
+        int[] rgb = new int[width * height];
+        for (int row = 0; row < height; ++row) {
+            byte pattern = bitmap[row];
+            for (int column = 0; column < width; ++ column) {
+                rgb[row * width + column] = ((pattern & 0b10000000) == 0) ? 0x00FFFFFF : 0xFF000000;
+                pattern <<= 1;
+            }
+        }
+        BufferedImage result = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        result.setRGB(0, 0, width, height, rgb, 0, width);
+        return result;
+    }
+
+    private static final byte[][] NUMBERS = {
+        {
+            (byte) 0b01111110,
+            (byte) 0b10000001,
+            (byte) 0b10000001,
+            (byte) 0b10000001,
+            (byte) 0b10000001,
+            (byte) 0b10000001,
+            (byte) 0b01111110
+        },
+        {
+            (byte) 0b00001000,
+            (byte) 0b00011000,
+            (byte) 0b00111000,
+            (byte) 0b00001000,
+            (byte) 0b00001000,
+            (byte) 0b00001000,
+            (byte) 0b01111110
+        },
+        {
+            (byte) 0b01111110,
+            (byte) 0b00000001,
+            (byte) 0b00000001,
+            (byte) 0b01111110,
+            (byte) 0b10000000,
+            (byte) 0b10000000,
+            (byte) 0b01111110
+        },
+        {
+            (byte) 0b11111110,
+            (byte) 0b00000001,
+            (byte) 0b00000001,
+            (byte) 0b01111110,
+            (byte) 0b00000001,
+            (byte) 0b00000001,
+            (byte) 0b11111110
+        },
+        {
+            (byte) 0b10000001,
+            (byte) 0b10000001,
+            (byte) 0b10000001,
+            (byte) 0b01111111,
+            (byte) 0b00000001,
+            (byte) 0b00000001,
+            (byte) 0b00000001
+        },
+        {
+            (byte) 0b01111110,
+            (byte) 0b10000000,
+            (byte) 0b10000000,
+            (byte) 0b01111110,
+            (byte) 0b00000001,
+            (byte) 0b00000001,
+            (byte) 0b01111110
+        },
+        {
+            (byte) 0b01111110,
+            (byte) 0b10000000,
+            (byte) 0b10000000,
+            (byte) 0b11111110,
+            (byte) 0b10000001,
+            (byte) 0b10000001,
+            (byte) 0b01111110
+        },
+        {
+            (byte) 0b11111111,
+            (byte) 0b10000001,
+            (byte) 0b00000010,
+            (byte) 0b00000100,
+            (byte) 0b00001000,
+            (byte) 0b00010000,
+            (byte) 0b00100000
+        },
+        {
+            (byte) 0b01111110,
+            (byte) 0b10000001,
+            (byte) 0b10000001,
+            (byte) 0b01111110,
+            (byte) 0b10000001,
+            (byte) 0b10000001,
+            (byte) 0b01111110
+        },
+        {
+            (byte) 0b01111110,
+            (byte) 0b10000001,
+            (byte) 0b10000001,
+            (byte) 0b01111111,
+            (byte) 0b00000001,
+            (byte) 0b00000001,
+            (byte) 0b01111110
+        }
+    };
+
+//    private static Image normalized(Image image) {
+//        int width = image.getWidth(null);
+//        int height = image.getHeight(null);
+//        int adaptedWidth = odd(width);
+//        int adaptedHeight = odd(height);
+//        if (adaptedWidth == width && adaptedHeight == height) {
+//            return image;
+//        }
+//        BufferedImage bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+//        Graphics2D g2d = bi.createGraphics();
+//        g2d.drawImage(image, 0, 0, null);
+//        g2d.dispose();
+//        int[] rgb = new int[adaptedWidth * adaptedHeight];
+//        bi.getRGB(0, 0, adaptedWidth, adaptedHeight, rgb, 0, adaptedWidth);
+//        for (int x = 0; x < adaptedWidth; ++x) {
+//            for (int y = 0; y < adaptedHeight; ++y) {
+//                if (rgb[x + y * adaptedWidth] != 0) {
+//                    rgb[x + y * adaptedWidth] = 0xFF000000 | (x + y * adaptedWidth);
+//                }
+//            }
+//        }
+//        BufferedImage result = new BufferedImage(adaptedWidth, adaptedHeight, BufferedImage.TYPE_INT_ARGB);
+//        result.setRGB(0, 0, adaptedWidth, adaptedHeight, rgb, 0, adaptedWidth);
+//        return result;
+//    }
+//
+//    private static int odd(int value) {
+//        return (value > 0 && value % 2 == 0) ? value - 1 : value;
+//    }
 
     private void initializeLoadClockRenderer() {
         Dimension size = loadPanel.getSize();
         Scale scale = new Scale(0, 100, -0.4, 0.4);
         Point center = new Point(size.width / 2, size.height / 2);
+        loadClockRenderer = new ClockRenderer(center, scale);
+        ((ClockRendererPanel) loadPanel).setRenderer(loadClockRenderer);
         int radius = Math.min(size.width, size.height) / 2 - 32;
-        SimpleValueRing valueRing = new SimpleValueRing(center, radius, scale);
-        valueRing.setInterval(10);
-        valueRing.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
-        loadClockRenderer.addRing(valueRing);
-//        loadClockRenderer.addRing(new ImageMarkerRing(center, radius + 12, scale, 1, MARKER_IMAGE, new Dimension(1, 1), MARKER_IMAGE, new Dimension(2, 2)));
-        loadClockRenderer.addRing(new SimpleMarkerRing(center, radius + 12, scale, 1));
-        loadClockRenderer.addText(new Text("load %", center, new Font(Font.SANS_SERIF, Font.PLAIN, 14), Color.DARK_GRAY));
-        PolygonNeedle needle = new PolygonNeedle(center, scale, radius);
-        needle.setStroke(new BasicStroke(5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER));
-        needle.setPaint(Color.ORANGE.darker());
-        needle.setPolygon(new Polygon(new int[]{ -1, 0, 4, -1 }, new int[]{ -4, -radius, -4, -4 }, 4));
+        loadClockRenderer.addNonTiltedMarkerRingRenderer(radius, 10, new FormattedValueRenderer(Color.BLACK, new Font(Font.SANS_SERIF, Font.BOLD, 12)));
+        loadClockRenderer.addMarkerRingRenderer(radius + 12, 1, 2, 5, 5, Color.BLACK, 1f);
+        loadClockRenderer.add(new Text("load %", center, new Font(Font.SANS_SERIF, Font.PLAIN, 14), Color.DARK_GRAY));
+        NeedleRenderer needle = loadClockRenderer.addNeedleRenderer(new ShapeRenderer(new Polygon(new int[]{ -1, 0, 4, -1 }, new int[]{ -4, -radius, -4, -4 }, 4), Color.ORANGE.darker(), new BasicStroke(5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER)));
         needle.setValue(37);
-        loadClockRenderer.addNeedle(needle);
     }
 
     private void initializeTemperatureClockRenderer() {
         Dimension size = temperaturePanel.getSize();
         Scale scale = new Scale(-50, 200, -0.5, 0.0);
         Point center = new Point(size.width / 2, size.height / 2);
+        temperatureClockRenderer = new ClockRenderer(center, scale);
+        ((ClockRendererPanel) temperaturePanel).setRenderer(temperatureClockRenderer);
         int radius = Math.min(size.width, size.height) / 2 - 32;
-        SimpleValueRing valueRing = new SimpleValueRing(center, radius + 12, scale);
-        valueRing.setInterval(50);
-        valueRing.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
-        temperatureClockRenderer.addRing(valueRing);
-//        temperatureClockRenderer.addRing(new SimpleMarkerRing(center, radius, scale, 50));
-        temperatureClockRenderer.addRing(new ImageMarkerRing(center, radius + 12, scale, 50, MARKER_IMAGE, new Dimension(10, 10), MARKER_IMAGE, new Dimension(20, 20)));
-        temperatureClockRenderer.addText(new Text("\u2103", new Point(center.x, center.y - radius / 2), new Font(Font.SANS_SERIF, Font.PLAIN, 14), Color.DARK_GRAY));
-        PolygonNeedle airNeedle = new PolygonNeedle(center, scale, radius);
-        airNeedle.setStroke(new BasicStroke(3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER));
-        airNeedle.setPaint(Color.BLUE.darker());
-        airNeedle.setPolygon(new Polygon(new int[]{ -1, 0, 4, -1 }, new int[]{ -1, -radius, -1, -1 }, 4));
+        temperatureClockRenderer.addClockFace(radius, new Color(0x7F7FFF7F), Color.BLACK, 3f);
+        temperatureClockRenderer.addNonTiltedMarkerRingRenderer(radius + 12, 50, new FormattedValueRenderer(Color.BLACK, new Font(Font.SANS_SERIF, Font.BOLD, 10)));
+        temperatureClockRenderer.addMarkerRingRenderer(radius, 50, new ImageRenderer(MARKER_IMAGE));
+        temperatureClockRenderer.add(new Text("\u2103", new Point(center.x, center.y - radius / 2), new Font(Font.SANS_SERIF, Font.PLAIN, 14), Color.DARK_GRAY));
+        Shape needleShape = new Polygon(new int[]{ -1, 0, 4, -1 }, new int[]{ -1, -radius, -1, -1 }, 4);
+        Stroke needleStroke = new BasicStroke(3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER);
+        ShapeRenderer airNeedleRenderer = new ShapeRenderer(needleShape, Color.BLUE.darker(), needleStroke);
+        NeedleRenderer airNeedle = temperatureClockRenderer.addNeedleRenderer(airNeedleRenderer::paint);
         airNeedle.setValue(17);
-        temperatureClockRenderer.addNeedle(airNeedle);
-        PolygonNeedle engineNeedle = new PolygonNeedle(center, scale, radius);
-        engineNeedle.setStroke(new BasicStroke(3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER));
-        engineNeedle.setPaint(Color.RED.darker());
-        engineNeedle.setPolygon(new Polygon(new int[]{ -1, 0, 4, -1 }, new int[]{ 0, -radius, 0, 0 }, 4));
+        NeedleRenderer engineNeedle = temperatureClockRenderer.addNeedleRenderer(new ShapeRenderer(needleShape, Color.RED.darker(), needleStroke));
         engineNeedle.setValue(90);
-        temperatureClockRenderer.addNeedle(engineNeedle);
     }
 
     private class ClockRendererPanel extends javax.swing.JPanel {
 
-        private ClockRendererPanel(ClockRenderer renderer) {
+        public void setRenderer(ClockRenderer renderer) {
             this.renderer = renderer;
         }
 
@@ -223,7 +426,7 @@ public class MotorManagementFrame extends javax.swing.JFrame {
             renderer.paint((Graphics2D) graphics);
         }
 
-        private final ClockRenderer renderer;
+        private ClockRenderer renderer;
 
     }
 
@@ -233,21 +436,21 @@ public class MotorManagementFrame extends javax.swing.JFrame {
     private javax.swing.JPanel temperaturePanel;
     // End of variables declaration//GEN-END:variables
 
-    private final SimpleClock rpmClockRenderer = new SimpleClock();
-    private final ClockRenderer loadClockRenderer = new SimpleClock();
-    private final ClockRenderer temperatureClockRenderer = new SimpleClock();
+    private ClockRenderer rpmClockRenderer;
+    private ClockRenderer loadClockRenderer;
+    private ClockRenderer temperatureClockRenderer;
 
     private static final Image NEEDLE_IMAGE;
     private static final Image MARKER_IMAGE;
 
     static {
         NEEDLE_IMAGE = loadImage("Resources/Needle1.png");
-        MARKER_IMAGE = loadImage("Resources/Flash.png").getScaledInstance(10, 10, Image.SCALE_SMOOTH);
+        MARKER_IMAGE = loadImage("Resources/Flash.png").getScaledInstance(11, 11, Image.SCALE_SMOOTH);
     }
 
     private static Image loadImage(String filename) {
         try {
-            return ImageIO.read(new File(filename));//.getScaledInstance(35, 100, java.awt.Image.SCALE_SMOOTH);
+            return ImageIO.read(new File(filename));
         }
         catch (IOException ex) {
             Logger.getLogger(MotorManagementFrame.class.getName()).log(Level.SEVERE, null, ex);

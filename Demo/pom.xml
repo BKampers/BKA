@@ -6,23 +6,18 @@
         <artifactId>BKA</artifactId>
         <version>0</version>
     </parent>
-    <artifactId>Demo</artifactId>
+    <artifactId>demo</artifactId>
     <packaging>jar</packaging>
     <dependencies>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>AWT</artifactId>
-            <version>${project.version}</version>
-        </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>Chart</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>Clock</artifactId>
-            <version>${project.version}</version>
+            <groupId>bka.awt</groupId>
+            <artifactId>clock</artifactId>
+            <version>0</version>
         </dependency>
     </dependencies>
     <properties>
@@ -58,5 +53,5 @@
             -->
         </plugins>
     </build>
- 
+    <name>Demo</name>
 </project>

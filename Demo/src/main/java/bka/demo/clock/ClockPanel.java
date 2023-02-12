@@ -27,7 +27,7 @@ public class ClockPanel extends javax.swing.JPanel {
         renderer.add(secondHand);
         initComponents();
         Timer timer = new Timer();
-        timer.schedule(timerTask, 0, 1000);
+        timer.schedule(timerTask, 0, 10);
     }
 
     private final Calendar calendar = Calendar.getInstance();
@@ -35,10 +35,16 @@ public class ClockPanel extends javax.swing.JPanel {
     TimerTask timerTask = new TimerTask() {
         @Override
         public void run() {
-            calendar.setTimeInMillis(System.currentTimeMillis());
-            hourHand.setValue(calendar.get(Calendar.HOUR));
-            minuteHand.setValue(calendar.get(Calendar.MINUTE));
-            secondHand.setValue(calendar.get(Calendar.SECOND));
+            long millis = System.currentTimeMillis();
+//            calendar.setTimeInMillis(System.currentTimeMillis());
+//            System.out.println("Time = " + Math.round((millis % (12 * 60 * 60 * 1000L) / (60 * 60 * 1000d))) + ":" + Math.round(millis % 3600000 / 60000d) + ":" + Math.round((millis % 60000 / 1000d)));
+            double hour = millis % (12 * 60 * 60 * 1000L) / (60 * 60 * 1000d);
+            if (hour < 1.0) {
+                hour += 12.0;
+            }
+            hourHand.setValue(hour);
+            minuteHand.setValue(millis % 3600000 / 60000d);
+            secondHand.setValue(millis % 60000 / 1000d);
             repaint();
 
         }

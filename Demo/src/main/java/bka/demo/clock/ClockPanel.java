@@ -30,14 +30,10 @@ public class ClockPanel extends javax.swing.JPanel {
         timer.schedule(timerTask, 0, 10);
     }
 
-    private final Calendar calendar = Calendar.getInstance();
-
     TimerTask timerTask = new TimerTask() {
         @Override
         public void run() {
             long millis = System.currentTimeMillis();
-//            calendar.setTimeInMillis(System.currentTimeMillis());
-//            System.out.println("Time = " + Math.round((millis % (12 * 60 * 60 * 1000L) / (60 * 60 * 1000d))) + ":" + Math.round(millis % 3600000 / 60000d) + ":" + Math.round((millis % 60000 / 1000d)));
             double hour = millis % (12 * 60 * 60 * 1000L) / (60 * 60 * 1000d);
             if (hour < 1.0) {
                 hour += 12.0;

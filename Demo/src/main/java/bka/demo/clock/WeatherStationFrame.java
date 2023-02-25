@@ -3,7 +3,9 @@
  */
 package bka.demo.clock;
 
+import java.io.*;
 import java.util.*;
+import java.util.logging.*;
 import java.util.stream.*;
 
 /**
@@ -14,19 +16,8 @@ public class WeatherStationFrame extends javax.swing.JFrame {
 
     public WeatherStationFrame() {
         initComponents();
-        ((WeatherStationPanel) weatherPanel).addListener((Collection<WeatherStation> stations) -> {
-            Object selected = stationComboBoxModel.getSelectedItem();
-            java.util.List<String> stationNames = stations.stream().map(station -> station.getStationName()).sorted().collect(Collectors.toList());
-            stationComboBoxModel.removeAllElements();
-            stationComboBoxModel.addAll(stationNames);
-            if (stationNames.contains(Objects.toString(selected))) {
-                stationComboBoxModel.setSelectedItem(selected);
-            }
-            else {
-                stationComboBoxModel.setSelectedItem("Eindhoven");
-            }
-            stationComboBox.setEnabled(true);
-        });
+        Timer timer = new Timer();
+        timer.schedule(new DataReaderTask(), 0, 10 * 60 * 1000);
     }
 
     /**
@@ -37,27 +28,11 @@ public class WeatherStationFrame extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        weatherPanel = new WeatherStationPanel();
-        controlPanel = new javax.swing.JPanel();
-        stationComboBox = new javax.swing.JComboBox<>();
+        javax.swing.JPanel controlPanel = new javax.swing.JPanel();
+        javax.swing.JPanel weatherPanelPlaceholder = weatherPanel;
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Weather Station");
-
-        weatherPanel.setPreferredSize(new java.awt.Dimension(500, 500));
-
-        javax.swing.GroupLayout weatherPanelLayout = new javax.swing.GroupLayout(weatherPanel);
-        weatherPanel.setLayout(weatherPanelLayout);
-        weatherPanelLayout.setHorizontalGroup(
-            weatherPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 500, Short.MAX_VALUE)
-        );
-        weatherPanelLayout.setVerticalGroup(
-            weatherPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 400, Short.MAX_VALUE)
-        );
-
-        getContentPane().add(weatherPanel, java.awt.BorderLayout.CENTER);
 
         stationComboBox.setModel(stationComboBoxModel);
         stationComboBox.setEnabled(false);
@@ -90,12 +65,32 @@ public class WeatherStationFrame extends javax.swing.JFrame {
 
         getContentPane().add(controlPanel, java.awt.BorderLayout.PAGE_START);
 
+        javax.swing.GroupLayout weatherPanelPlaceholderLayout = new javax.swing.GroupLayout(weatherPanelPlaceholder);
+        weatherPanelPlaceholder.setLayout(weatherPanelPlaceholderLayout);
+        weatherPanelPlaceholderLayout.setHorizontalGroup(
+            weatherPanelPlaceholderLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 500, Short.MAX_VALUE)
+        );
+        weatherPanelPlaceholderLayout.setVerticalGroup(
+            weatherPanelPlaceholderLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 400, Short.MAX_VALUE)
+        );
+
+        getContentPane().add(weatherPanelPlaceholder, java.awt.BorderLayout.CENTER);
+
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void stationComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_stationComboBoxActionPerformed
-        
-        ((WeatherStationPanel) weatherPanel).setSelectedStation((String) stationComboBoxModel.getSelectedItem());
+        synchronized (mutex) {
+            Object selectedName = stationComboBoxModel.getSelectedItem();
+            if (selectedName != null) {
+                weatherPanel.setStation(stations.stream().filter(station -> selectedName.equals(station.getStationName())).findAny().get());
+            }
+            else {
+                weatherPanel.setStation(null);
+            }
+        }
     }//GEN-LAST:event_stationComboBoxActionPerformed
 
     /**
@@ -127,12 +122,63 @@ public class WeatherStationFrame extends javax.swing.JFrame {
         });
     }
 
+    private class DataReaderTask extends TimerTask {
+
+        @Override
+        public void run() {
+            try {
+                synchronized (mutex) {
+                    stations = WeatherStationReader.getStations();
+                    String selected = (String) stationComboBoxModel.getSelectedItem();
+                    stationNames = stations.stream().map(station -> normalizedForAlphabet(station.getStationName())).sorted().collect(Collectors.toList());
+                    stationComboBoxModel.removeAllElements();
+                    stationComboBoxModel.addAll(stationNames);
+                    if (stationNames.contains(selected)) {
+                        stationComboBoxModel.setSelectedItem(selected);
+                    }
+                    else {
+                        stationComboBoxModel.setSelectedItem(null);
+                    }
+                    stationComboBox.setEnabled(true);
+                }
+            }
+            catch (IOException ex) {
+                Logger.getLogger(WeatherStationFrame.class.getName()).log(Level.WARNING, "Stations could not be retrieved", ex);
+            }
+        }
+
+        private String normalizedForAlphabet(String string) {
+           String prefix = getPrefix(string);
+            if (prefix == null) {
+               return string;
+            }
+            return string.substring(prefix.length() + 1) + ", " + prefix;
+        }
+
+        private String getPrefix(String string) {
+            for (String prefix : prefixes) {
+                if (string.startsWith(prefix+' ')) {
+                    return prefix;
+                }
+            }
+            return null;
+        }
+
+        private Collection<String> stationNames;
+
+        private final String[] prefixes = { "De", "Den", "Het", "'t", "Ter" };
+
+    }
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JPanel controlPanel;
-    private javax.swing.JComboBox<String> stationComboBox;
-    private javax.swing.JPanel weatherPanel;
+    private final javax.swing.JComboBox<String> stationComboBox = new javax.swing.JComboBox<>();
     // End of variables declaration//GEN-END:variables
 
-    javax.swing.DefaultComboBoxModel<String> stationComboBoxModel = new javax.swing.DefaultComboBoxModel<>();
+    private final WeatherStationPanel weatherPanel = new WeatherStationPanel();
+    private final javax.swing.DefaultComboBoxModel<String> stationComboBoxModel = new javax.swing.DefaultComboBoxModel<>();
+
+    private Collection<WeatherStation> stations;
+
+    private static final Object mutex = new Object();
 
 }

@@ -6,12 +6,7 @@ package bka.demo.clock;
 import java.io.*;
 import java.util.*;
 import java.util.logging.*;
-import java.util.stream.*;
 
-/**
- *
- * @author bartkampers
- */
 public class WeatherStationFrame extends javax.swing.JFrame {
 
     public WeatherStationFrame() {
@@ -83,9 +78,9 @@ public class WeatherStationFrame extends javax.swing.JFrame {
 
     private void stationComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_stationComboBoxActionPerformed
         synchronized (mutex) {
-            Object selectedName = stationComboBoxModel.getSelectedItem();
+            String selectedName = (String) stationComboBoxModel.getSelectedItem();
             if (selectedName != null) {
-                weatherPanel.setStation(stations.stream().filter(station -> selectedName.equals(station.getStationName())).findAny().get());
+                weatherPanel.setStation(stationsMap.get(selectedName));
             }
             else {
                 weatherPanel.setStation(null);
@@ -122,19 +117,35 @@ public class WeatherStationFrame extends javax.swing.JFrame {
         });
     }
 
+    private static String normalizedForAlphabet(String string) {
+       String prefix = getPrefix(string);
+        if (prefix == null) {
+           return string;
+        }
+        return string.substring(prefix.length() + 1) + ", " + prefix;
+    }
+
+    private static String getPrefix(String string) {
+        for (String prefix : PREFIXES) {
+            if (string.startsWith(prefix + ' ')) {
+                return prefix;
+            }
+        }
+        return null;
+    }
+
     private class DataReaderTask extends TimerTask {
 
         @Override
         public void run() {
             try {
                 synchronized (mutex) {
-                    stations = WeatherStationReader.getStations();
+                    WeatherStationReader.getStations().forEach(station -> stationsMap.put(normalizedForAlphabet(station.getStationName()), station));
                     String selected = (String) stationComboBoxModel.getSelectedItem();
-                    stationNames = stations.stream().map(station -> normalizedForAlphabet(station.getStationName())).sorted().collect(Collectors.toList());
                     stationComboBoxModel.removeAllElements();
-                    stationComboBoxModel.addAll(stationNames);
-                    if (stationNames.contains(selected)) {
-                        stationComboBoxModel.setSelectedItem(selected);
+                    stationComboBoxModel.addAll(stationsMap.keySet());
+                    if (selected != null && stationsMap.keySet().contains(selected)) {
+                        stationComboBoxModel.setSelectedItem(stationsMap.get(selected));
                     }
                     else {
                         stationComboBoxModel.setSelectedItem(null);
@@ -147,27 +158,6 @@ public class WeatherStationFrame extends javax.swing.JFrame {
             }
         }
 
-        private String normalizedForAlphabet(String string) {
-           String prefix = getPrefix(string);
-            if (prefix == null) {
-               return string;
-            }
-            return string.substring(prefix.length() + 1) + ", " + prefix;
-        }
-
-        private String getPrefix(String string) {
-            for (String prefix : prefixes) {
-                if (string.startsWith(prefix+' ')) {
-                    return prefix;
-                }
-            }
-            return null;
-        }
-
-        private Collection<String> stationNames;
-
-        private final String[] prefixes = { "De", "Den", "Het", "'t", "Ter" };
-
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -177,8 +167,10 @@ public class WeatherStationFrame extends javax.swing.JFrame {
     private final WeatherStationPanel weatherPanel = new WeatherStationPanel();
     private final javax.swing.DefaultComboBoxModel<String> stationComboBoxModel = new javax.swing.DefaultComboBoxModel<>();
 
-    private Collection<WeatherStation> stations;
+    private final SortedMap<String, WeatherStation> stationsMap = new TreeMap<>();
 
-    private static final Object mutex = new Object();
+    private final Object mutex = new Object();
+
+    private static final String[] PREFIXES = { "De", "Den", "Het", "'t", "Ter" };
 
 }

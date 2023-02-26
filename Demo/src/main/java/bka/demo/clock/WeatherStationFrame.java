@@ -145,7 +145,7 @@ public class WeatherStationFrame extends javax.swing.JFrame {
                     stationComboBoxModel.removeAllElements();
                     stationComboBoxModel.addAll(stationsMap.keySet());
                     if (selected != null && stationsMap.keySet().contains(selected)) {
-                        stationComboBoxModel.setSelectedItem(stationsMap.get(selected));
+                        stationComboBoxModel.setSelectedItem(selected);
                     }
                     else {
                         stationComboBoxModel.setSelectedItem(null);

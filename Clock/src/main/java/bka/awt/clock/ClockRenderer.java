@@ -135,6 +135,12 @@ public class ClockRenderer extends CompositeRenderer {
         return new BasicStroke(width, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER);
     }
 
+    @Override
+    public void paint(Graphics2D graphics) {
+        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        super.paint(graphics);
+    }
+
     private final Point center;
     private final Scale scale;
     

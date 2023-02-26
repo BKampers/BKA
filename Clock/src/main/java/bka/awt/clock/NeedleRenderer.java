@@ -23,7 +23,6 @@ public class NeedleRenderer implements Renderer {
     }
 
     private void paintNeedle(Graphics2D graphics) {
-        Point2D rotationPoint = getRotationPoint();
         graphics.translate(rotationPoint.getX(), rotationPoint.getY());
         renderer.paint(graphics);
         graphics.translate(-rotationPoint.getX(), -rotationPoint.getY());

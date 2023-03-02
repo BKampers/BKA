@@ -3,6 +3,7 @@ package bka.awt.clock;
 import bka.awt.*;
 import java.awt.*;
 import java.awt.geom.*;
+import java.text.*;
 import java.util.*;
 import java.util.function.*;
 
@@ -80,6 +81,10 @@ public class ClockRenderer extends CompositeRenderer {
 
     public MarkerRingRenderer addNumberRingRenderer(double radius, double interval, Paint paint, Font font) {
         return addNonTiltedMarkerRingRenderer(radius, interval, new FormattedValueRenderer(paint, font));
+    }
+
+    public MarkerRingRenderer addNumberRingRenderer(double radius, double interval, NumberFormat format, Paint paint, Font font) {
+        return addNonTiltedMarkerRingRenderer(radius, interval, new FormattedValueRenderer(paint, font, format));
     }
 
     public MarkerRingRenderer addNonTiltedMarkerRingRenderer(double radius, double interval, MarkerRenderer markerRenderer) {

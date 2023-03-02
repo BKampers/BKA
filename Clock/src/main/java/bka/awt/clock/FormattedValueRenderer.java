@@ -25,6 +25,10 @@ public class FormattedValueRenderer implements MarkerRenderer {
         this.format = Objects.requireNonNull(format);
     }
 
+    public void setPaint(Paint paint) {
+        this.paint = Objects.requireNonNull(paint);
+    }
+
     @Override
     public void paint(Graphics2D graphics, double value) {
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
@@ -43,7 +47,7 @@ public class FormattedValueRenderer implements MarkerRenderer {
         return defaultFormat;
     }
 
-    private final Paint paint;
+    private Paint paint;
     private final Font font;
     private final NumberFormat format;
 

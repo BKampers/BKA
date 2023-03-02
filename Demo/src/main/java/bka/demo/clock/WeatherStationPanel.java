@@ -20,7 +20,7 @@ public class WeatherStationPanel extends JPanel {
         chillNeedle = thermometer.addNeedleRenderer(chillArrow);
         temperatureNeedle = thermometer.addNeedleRenderer(temperatureArrow);
         windRose.addClockFace(RADIUS, Color.WHITE);
-        cardinalMarkers = new FormattedValueRenderer(NO_DATA_COLOR, null, new CardinalNumberFormat());
+        cardinalMarkers = new FormattedValueRenderer(NO_DATA_COLOR, null, cardinalFormat);
         windRose.addMarkerRingRenderer(RADIUS * 0.9, 45, cardinalMarkers);
         windDirectionNeedle = windRose.addNeedleRenderer(windDirectionArrow);
     }
@@ -40,88 +40,20 @@ public class WeatherStationPanel extends JPanel {
         repaint();
     }
 
+    private static double degrees(String cardinalDirection) {
+        try {
+            return cardinalFormat.parse(cardinalDirection).doubleValue();
+        }
+        catch (ParseException ex) {
+            Logger.getLogger(WeatherStationPanel.class.getName()).log(Level.WARNING, null, ex);
+            return 0.0;
+        }
+    }
+
     @Override
     public void paint(Graphics graphics) {
         thermometer.paint((Graphics2D) graphics);
         windRose.paint((Graphics2D) graphics);
-    }
-
-    private static double degrees(String cardinalDirection) {
-        switch (cardinalDirection) {
-            case "N":
-                return 0.0;
-            case "NNO":
-                return 22.5;
-            case "NO":
-                return 45.0;
-            case "ONO":
-                return 67.5;
-            case "O":
-                return 90.0;
-            case "OZO":
-                return 112.5;
-            case "ZO":
-                return 135.0;
-            case "ZZO":
-                return 157.5;
-            case "Z":
-                return 180.0;
-            case "ZZW":
-                return 202.5;
-            case "ZW":
-                return 225.0;
-            case "WZW":
-                return 247.5;
-            case "W":
-                return 270.0;
-            case "WNW":
-                return 292.5;
-            case "NW":
-                return 315.0;
-            case "NNW":
-                return 337.5;
-            default:
-                throw new IllegalStateException("Invalid cardinal direction: '" + cardinalDirection + '\'');
-        }
-    }
-
-    private class CardinalNumberFormat extends NumberFormat {
-
-        @Override
-        public StringBuffer format(double number, StringBuffer toAppendTo, FieldPosition position) {
-            return format(Math.round(number), toAppendTo, position);
-        }
-
-        @Override
-        public StringBuffer format(long number, StringBuffer toAppendTo, FieldPosition position) {
-            String result = switch ((int) (number % 360)) {
-                case 0:
-                    yield "N";
-                case 45:
-                    yield "NO";
-                case 90:
-                    yield "O";
-                case 135:
-                    yield "ZO";
-                case 180:
-                    yield "Z";
-                case 225:
-                    yield "ZW";
-                case 270:
-                    yield "W";
-                case 315:
-                    yield "NW";
-                default:
-                    throw new IllegalArgumentException("Cannot convert " + number + " to cardinal direction");
-            };
-            return toAppendTo.append(result);
-        }
-
-        @Override
-        public Number parse(String string, ParsePosition position) {
-            return degrees(string);
-        }
-
     }
 
     private class ArrowRenderer implements bka.awt.Renderer {
@@ -156,4 +88,6 @@ public class WeatherStationPanel extends JPanel {
 
     private static final int RADIUS = 100;
     private static final Color NO_DATA_COLOR = new Color(225, 225, 225);
+
+    private static final CardinalNumberFormat cardinalFormat = new CardinalNumberFormat();
 }

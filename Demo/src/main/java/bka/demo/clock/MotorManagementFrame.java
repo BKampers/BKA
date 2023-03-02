@@ -445,7 +445,18 @@ public class MotorManagementFrame extends javax.swing.JFrame {
 
     static {
         NEEDLE_IMAGE = loadImage("Resources/Needle1.png");
-        MARKER_IMAGE = loadImage("Resources/Flash.png").getScaledInstance(11, 11, Image.SCALE_SMOOTH);
+//        MARKER_IMAGE = loadImage("Resources/Flash.png").getScaledInstance(11, 11, Image.SCALE_SMOOTH);
+        MARKER_IMAGE = loadSvgImage("Resources/circle.svg", 11, 11);
+    }
+
+    private static Image loadSvgImage(String filename, int width, int height) {
+        try {
+            return new SvgToRasterizeImageConverter().transcodeSVGToBufferedImage(new File(filename), width, height);
+        }
+        catch (IOException ex) {
+            Logger.getLogger(MotorManagementFrame.class.getName()).log(Level.SEVERE, null, ex);
+            return null;
+        }
     }
 
     private static Image loadImage(String filename) {

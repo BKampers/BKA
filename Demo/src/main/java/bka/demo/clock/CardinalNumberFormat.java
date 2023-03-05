@@ -41,7 +41,18 @@ public class CardinalNumberFormat extends NumberFormat {
 
     @Override
     public Number parse(String string, ParsePosition position) {
-        return switch (string) {
+        Double degrees = degrees(string.substring(position.getIndex()));
+        if (degrees != null) {
+            position.setIndex(position.getIndex() + string.length());
+        }
+        else {
+            position.setErrorIndex(position.getIndex());
+        }
+        return degrees;
+    }
+
+    private static Double degrees(String cardinalDirection) {
+        return switch (cardinalDirection) {
             case "N" ->
                 0.0;
             case "NNO" ->
@@ -75,7 +86,7 @@ public class CardinalNumberFormat extends NumberFormat {
             case "NNW" ->
                 337.5;
             default ->
-                throw new IllegalStateException("Invalid cardinal direction: '" + string + '\'');
+                null;
         };
     }
 }

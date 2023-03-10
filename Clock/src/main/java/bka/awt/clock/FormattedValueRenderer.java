@@ -25,6 +25,12 @@ public class FormattedValueRenderer implements MarkerRenderer {
         this.format = Objects.requireNonNull(format);
     }
 
+    private static NumberFormat defaultFormat() {
+        NumberFormat defaultFormat = new DecimalFormat();
+        defaultFormat.setGroupingUsed(false);
+        return defaultFormat;
+    }
+
     public void setPaint(Paint paint) {
         this.paint = Objects.requireNonNull(paint);
     }
@@ -37,14 +43,7 @@ public class FormattedValueRenderer implements MarkerRenderer {
         if (font != null) {
             graphics.setFont(font);
         }
-        FontMetrics fontMetrics = graphics.getFontMetrics();
-        graphics.drawString(text, fontMetrics.stringWidth(text) / -2, fontMetrics.getHeight() / 2 - fontMetrics.getDescent());
-    }
-
-    private static NumberFormat defaultFormat() {
-        NumberFormat defaultFormat = new DecimalFormat();
-        defaultFormat.setGroupingUsed(false);
-        return defaultFormat;
+        TextRenderer.centerText(graphics, text);
     }
 
     private Paint paint;

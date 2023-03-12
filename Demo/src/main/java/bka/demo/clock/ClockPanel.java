@@ -19,8 +19,6 @@ public class ClockPanel extends javax.swing.JPanel {
         Scale scale = new Scale(0, 60);
         renderer = new ClockRenderer(center, new Scale(1, 12, 1.0 / 12.0, 1.0));
         renderer.add(graphics -> clockFace(graphics, center, radius));
-        timeZoneNameRenderer = new TextRenderer(new Point(radius, radius + radius / 3), timeZoneName(), new Font(Font.SANS_SERIF, Font.BOLD, 50), new Color(190, 190, 255));
-        renderer.add(timeZoneNameRenderer);
         MarkerRingRenderer markers = renderer.addMarkerRingRenderer(radius - 6, 1, new ImageRenderer(markerImage));
         markers.setScale(scale);
         renderer.addNumberRingRenderer(radius * 0.9, 1, new Color(190, 190, 255), new Font(Font.SANS_SERIF, Font.BOLD, radius / 10));
@@ -37,13 +35,12 @@ public class ClockPanel extends javax.swing.JPanel {
     }
 
     private static void clockFace(Graphics2D graphics, Point center, int radius) {
-        graphics.setPaint(Color.WHITE);
-        paintCircle(graphics, center, radius);
-        graphics.setPaint(Color.RED);
-        paintCircle(graphics, center, 10);
+        paintCircle(graphics, center, radius, Color.WHITE);
+        paintCircle(graphics, center, 10, Color.RED);
     }
 
-    private static void paintCircle(Graphics2D graphics, Point center, int radius) {
+    private static void paintCircle(Graphics2D graphics, Point center, int radius, Paint paint) {
+        graphics.setPaint(paint);
         graphics.fillOval(center.x - radius, center.y - radius, radius * 2, radius * 2);
     }
 
@@ -55,7 +52,6 @@ public class ClockPanel extends javax.swing.JPanel {
             hourHand.setValue(millis % MILLIS_PER_TWELVE_HOURS / (double) MILLIS_PER_HOUR);
             minuteHand.setValue(millis % MILLIS_PER_HOUR / (double) MILLIS_PER_MINUTE);
             secondHand.setValue(millis % MILLIS_PER_MINUTE / (double) MILLIS_PER_SECOND);
-            timeZoneNameRenderer.setText(timeZoneName());
             repaint();
 
         }
@@ -67,10 +63,6 @@ public class ClockPanel extends javax.swing.JPanel {
         if (graphics instanceof Graphics2D) {
             renderer.paint((Graphics2D) graphics);
         }
-    }
-
-    private static String timeZoneName() {
-        return TIME_ZONE.getDisplayName(TIME_ZONE.inDaylightTime(new Date()), TIME_ZONE.SHORT);
     }
 
     /**
@@ -97,7 +89,6 @@ public class ClockPanel extends javax.swing.JPanel {
     private final NeedleRenderer hourHand;
     private final NeedleRenderer minuteHand;
     private final NeedleRenderer secondHand;
-    private final TextRenderer  timeZoneNameRenderer;
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     // End of variables declaration//GEN-END:variables

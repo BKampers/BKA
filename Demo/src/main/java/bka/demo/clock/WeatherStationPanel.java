@@ -15,14 +15,26 @@ public class WeatherStationPanel extends JPanel {
 
     public WeatherStationPanel() {
         thermometer.addClockFace(RADIUS, Color.WHITE);
+        thermometer.add(new TextRenderer(new Point(RADIUS, RADIUS + RADIUS / 3), "\u2103", Color.BLUE));
+        thermometer.addArc(ARC_RADIUS, -50, -16, Color.BLUE.darker(), ARC_WIDTH);
+        thermometer.addArc(ARC_RADIUS, -15, 10, Color.BLUE.brighter().brighter(), ARC_WIDTH);
+        thermometer.addArc(ARC_RADIUS, 25, 35, Color.RED.brighter(), ARC_WIDTH);
+        thermometer.addArc(ARC_RADIUS, 36, 50, Color.RED.darker().darker(), ARC_WIDTH);
         temperatureMarkers = new FormattedValueRenderer(NO_DATA_COLOR);
-        thermometer.addMarkerRingRenderer(RADIUS * 0.9, 10, temperatureMarkers);
+        thermometer.addMarkerRingRenderer(MARKER_RADIUS, 10, temperatureMarkers);
         chillNeedle = thermometer.addNeedleRenderer(chillArrow);
         temperatureNeedle = thermometer.addNeedleRenderer(temperatureArrow);
         windRose.addClockFace(RADIUS, Color.WHITE);
         cardinalMarkers = new FormattedValueRenderer(NO_DATA_COLOR, null, cardinalFormat);
-        windRose.addMarkerRingRenderer(RADIUS * 0.9, 45, cardinalMarkers);
+        addCardinalArcs();
+        windRose.addMarkerRingRenderer(MARKER_RADIUS, 45, cardinalMarkers);
         windDirectionNeedle = windRose.addNeedleRenderer(windDirectionArrow);
+    }
+
+    private void addCardinalArcs() {
+        for (int a = 0; a < 16; ++a) {
+            windRose.addArc(ARC_RADIUS, a * 22.5 - 9.5, a * 22.5 + 9.5, (a % 2 == 0) ? ARC_COLOR_EVEN : ARC_COLOR_ODD, ARC_WIDTH);
+        }
     }
 
     public void setStation(WeatherStation station) {
@@ -88,6 +100,11 @@ public class WeatherStationPanel extends JPanel {
 
     private static final int RADIUS = 100;
     private static final Color NO_DATA_COLOR = new Color(225, 225, 225);
+    private static final double MARKER_RADIUS = 0.85 * RADIUS;
+    private static final double ARC_RADIUS = 0.95 * RADIUS;
+    private static final float ARC_WIDTH = 5f;
+    private static final Color ARC_COLOR_EVEN = new Color(0x4A41AF);
+    private static final Color ARC_COLOR_ODD = new Color(0x918AE5);
 
     private static final CardinalNumberFormat cardinalFormat = new CardinalNumberFormat();
 }

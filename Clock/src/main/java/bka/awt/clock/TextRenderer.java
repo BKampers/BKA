@@ -11,10 +11,46 @@ import java.util.*;
 
 public class TextRenderer implements Renderer {
 
+    public TextRenderer(Point point, String text, Paint paint) {
+        this(point, text, null, paint);
+    }
+
     public TextRenderer(Point point, String text, Font font, Paint paint) {
-        this.point = Objects.requireNonNull(point);
+        setPoint(point);
+        setText(text);
+        setFont(font);
+        setPaint(paint);
+    }
+
+    public final Point getPoint() {
+        return new Point(point);
+    }
+
+    public final void setPoint(Point point) {
+        this.point = new Point(point);
+    }
+
+    public final String getText() {
+        return text;
+    }
+
+    public final void setText(String text) {
         this.text = Objects.requireNonNull(text);
+    }
+
+    public final Font getFont() {
+        return font;
+    }
+
+    public final void setFont(Font font) {
         this.font = font;
+    }
+
+    public final Paint getPaint() {
+        return paint;
+    }
+
+    public final void setPaint(Paint paint) {
         this.paint = Objects.requireNonNull(paint);
     }
 
@@ -37,9 +73,9 @@ public class TextRenderer implements Renderer {
         graphics.drawString(text, x - fontMetrics.stringWidth(text) / 2, y + fontMetrics.getHeight() / 2 - fontMetrics.getDescent());
     }
 
-    private final Point point;
-    private final String text;
-    private final Font font;
-    private final Paint paint;
+    private Point point;
+    private String text;
+    private Font font;
+    private Paint paint;
 
 }

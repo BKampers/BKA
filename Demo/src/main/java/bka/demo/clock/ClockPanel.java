@@ -5,24 +5,30 @@ package bka.demo.clock;
 
 import bka.awt.clock.*;
 import java.awt.*;
+import java.io.*;
 import java.util.*;
 
 public class ClockPanel extends javax.swing.JPanel {
 
-    public ClockPanel() {
+    public ClockPanel() throws IOException {
+        Image markerImage = ImageFactory.loadImage("Resources/circle.svg", 11, 11);
+        Image hourHandImage = ImageFactory.loadImage("Resources/hour-hand.svg");
+        Image minuteHandImage = ImageFactory.loadImage("Resources/minute-hand.svg");
         final int radius = 250;
         Point center = new Point(radius, radius);
         Scale scale = new Scale(0, 60);
         renderer = new ClockRenderer(center, new Scale(1, 12, 1.0 / 12.0, 1.0));
-        renderer.addClockFace(radius, Color.WHITE);
-        MarkerRingRenderer markers = renderer.addMarkerRingRenderer(radius, 1, radius / 75, 5, radius / 25, new Color(127, 127, 255), radius / 50f);
+        renderer.add(graphics -> clockFace(graphics, center, radius));
+        timeZoneNameRenderer = new TextRenderer(new Point(radius, radius + radius / 3), timeZoneName(), new Font(Font.SANS_SERIF, Font.BOLD, 50), new Color(190, 190, 255));
+        renderer.add(timeZoneNameRenderer);
+        MarkerRingRenderer markers = renderer.addMarkerRingRenderer(radius - 6, 1, new ImageRenderer(markerImage));
         markers.setScale(scale);
         renderer.addNumberRingRenderer(radius * 0.9, 1, new Color(190, 190, 255), new Font(Font.SANS_SERIF, Font.BOLD, radius / 10));
-        hourHand = renderer.addNeedleRenderer((int) (radius * 0.6), (int) (radius * 0.03), Color.BLACK, (float) radius / 20);
-        minuteHand = renderer.addNeedleRenderer((int) (radius * 0.8), (int) (radius * 0.04), Color.BLACK, (float) radius / 30);
+        hourHand = renderer.addNeedleRenderer(new ImageRenderer(hourHandImage, -16, -184));
+        minuteHand = renderer.addNeedleRenderer(new ImageRenderer(minuteHandImage, -12, -234));
         minuteHand.setScale(scale);
         renderer.add(minuteHand);
-        secondHand = renderer.addNeedleRenderer((int) (radius * 0.9), (int) (radius * 0.045), Color.RED, (float) radius / 100);
+        secondHand = renderer.addNeedleRenderer(radius, (int) (radius * 0.075), Color.RED, (float) radius / 100);
         secondHand.setScale(scale);
         renderer.add(secondHand);
         initComponents();
@@ -30,17 +36,26 @@ public class ClockPanel extends javax.swing.JPanel {
         timer.schedule(timerTask, 0, 10);
     }
 
+    private static void clockFace(Graphics2D graphics, Point center, int radius) {
+        graphics.setPaint(Color.WHITE);
+        paintCircle(graphics, center, radius);
+        graphics.setPaint(Color.RED);
+        paintCircle(graphics, center, 10);
+    }
+
+    private static void paintCircle(Graphics2D graphics, Point center, int radius) {
+        graphics.fillOval(center.x - radius, center.y - radius, radius * 2, radius * 2);
+    }
+
     TimerTask timerTask = new TimerTask() {
         @Override
         public void run() {
             long millis = System.currentTimeMillis();
-            double hour = millis % (12 * 60 * 60 * 1000L) / (60 * 60 * 1000d);
-            if (hour < 1.0) {
-                hour += 12.0;
-            }
-            hourHand.setValue(hour);
-            minuteHand.setValue(millis % 3600000 / 60000d);
-            secondHand.setValue(millis % 60000 / 1000d);
+            millis += TIME_ZONE.getOffset(millis);
+            hourHand.setValue(millis % MILLIS_PER_TWELVE_HOURS / (double) MILLIS_PER_HOUR);
+            minuteHand.setValue(millis % MILLIS_PER_HOUR / (double) MILLIS_PER_MINUTE);
+            secondHand.setValue(millis % MILLIS_PER_MINUTE / (double) MILLIS_PER_SECOND);
+            timeZoneNameRenderer.setText(timeZoneName());
             repaint();
 
         }
@@ -52,6 +67,10 @@ public class ClockPanel extends javax.swing.JPanel {
         if (graphics instanceof Graphics2D) {
             renderer.paint((Graphics2D) graphics);
         }
+    }
+
+    private static String timeZoneName() {
+        return TIME_ZONE.getDisplayName(TIME_ZONE.inDaylightTime(new Date()), TIME_ZONE.SHORT);
     }
 
     /**
@@ -78,7 +97,16 @@ public class ClockPanel extends javax.swing.JPanel {
     private final NeedleRenderer hourHand;
     private final NeedleRenderer minuteHand;
     private final NeedleRenderer secondHand;
+    private final TextRenderer  timeZoneNameRenderer;
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     // End of variables declaration//GEN-END:variables
+
+    private static final TimeZone TIME_ZONE = TimeZone.getDefault();
+
+    private static final long MILLIS_PER_SECOND = 1000;
+    private static final long MILLIS_PER_MINUTE = 60 * MILLIS_PER_SECOND;
+    private static final long MILLIS_PER_HOUR = 60 * MILLIS_PER_MINUTE;
+    private static final long MILLIS_PER_TWELVE_HOURS = 12 * MILLIS_PER_HOUR;
+
 }

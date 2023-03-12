@@ -10,7 +10,6 @@ import java.io.*;
 import java.text.*;
 import java.util.*;
 import java.util.logging.*;
-import javax.imageio.*;
 
 /**
  */
@@ -158,10 +157,10 @@ public class MotorManagementFrame extends javax.swing.JFrame {
             graphics.drawLine(-1, 0, 1, 0);
             graphics.drawLine(0, -1, 0, 1);
         });
-        rpmClockRenderer.add(new Text("RPM", center, new Font(Font.SANS_SERIF, Font.PLAIN, 14), Color.DARK_GRAY));
-        rpmClockRenderer.add(new Text("\u00d7 1000", new Point(center.x, center.y + 15), new Font(Font.SANS_SERIF, Font.PLAIN, 14), Color.DARK_GRAY));
+        rpmClockRenderer.add(new TextRenderer(center, "RPM", new Font(Font.SANS_SERIF, Font.PLAIN, 14), Color.DARK_GRAY));
+        rpmClockRenderer.add(new TextRenderer(new Point(center.x, center.y + 15), "\u00d7 1000", new Font(Font.SANS_SERIF, Font.PLAIN, 14), Color.DARK_GRAY));
         rpmClockRenderer.addArc(radius - 10, 7.5, 10.0, Color.RED, 8f);
-        NeedleRenderer needle = rpmClockRenderer.addNeedleRenderer(new NeedleImageRenderer(needleImage(), new Point(0, 0)));
+        NeedleRenderer needle = rpmClockRenderer.addNeedleRenderer(new ImageRenderer(needleImage(), 0, 0));
         needle.setValue(5);
     }
 
@@ -385,7 +384,7 @@ public class MotorManagementFrame extends javax.swing.JFrame {
         int radius = Math.min(size.width, size.height) / 2 - 32;
         loadClockRenderer.addNonTiltedMarkerRingRenderer(radius, 10, new FormattedValueRenderer(Color.BLACK, new Font(Font.SANS_SERIF, Font.BOLD, 12)));
         loadClockRenderer.addMarkerRingRenderer(radius + 12, 1, 2, 5, 5, Color.BLACK, 1f);
-        loadClockRenderer.add(new Text("load %", center, new Font(Font.SANS_SERIF, Font.PLAIN, 14), Color.DARK_GRAY));
+        loadClockRenderer.add(new TextRenderer(center, "load %", new Font(Font.SANS_SERIF, Font.PLAIN, 14), Color.DARK_GRAY));
         NeedleRenderer needle = loadClockRenderer.addNeedleRenderer(new ShapeRenderer(new Polygon(new int[]{ -1, 0, 4, -1 }, new int[]{ -4, -radius, -4, -4 }, 4), Color.ORANGE.darker(), new BasicStroke(5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER)));
         needle.setValue(37);
     }
@@ -400,7 +399,7 @@ public class MotorManagementFrame extends javax.swing.JFrame {
         temperatureClockRenderer.addClockFace(radius, new Color(0x7F7FFF7F), Color.BLACK, 3f);
         temperatureClockRenderer.addNonTiltedMarkerRingRenderer(radius + 12, 50, new FormattedValueRenderer(Color.BLACK, new Font(Font.SANS_SERIF, Font.BOLD, 10)));
         temperatureClockRenderer.addMarkerRingRenderer(radius, 50, new ImageRenderer(MARKER_IMAGE));
-        temperatureClockRenderer.add(new Text("\u2103", new Point(center.x, center.y - radius / 2), new Font(Font.SANS_SERIF, Font.PLAIN, 14), Color.DARK_GRAY));
+        temperatureClockRenderer.add(new TextRenderer(new Point(center.x, center.y - radius / 2), "\u2103", new Font(Font.SANS_SERIF, Font.PLAIN, 14), Color.DARK_GRAY));
         Shape needleShape = new Polygon(new int[]{ -1, 0, 4, -1 }, new int[]{ -1, -radius, -1, -1 }, 4);
         Stroke needleStroke = new BasicStroke(3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER);
         ShapeRenderer airNeedleRenderer = new ShapeRenderer(needleShape, Color.BLUE.darker(), needleStroke);
@@ -440,34 +439,39 @@ public class MotorManagementFrame extends javax.swing.JFrame {
     private ClockRenderer loadClockRenderer;
     private ClockRenderer temperatureClockRenderer;
 
-    private static final Image NEEDLE_IMAGE;
-    private static final Image MARKER_IMAGE;
+    private static Image NEEDLE_IMAGE = null;
+    private static Image MARKER_IMAGE = null;
 
     static {
-        NEEDLE_IMAGE = loadImage("Resources/Needle1.png");
+        try {
+            NEEDLE_IMAGE = ImageFactory.loadImage("Resources/Needle1.png");
 //        MARKER_IMAGE = loadImage("Resources/Flash.png").getScaledInstance(11, 11, Image.SCALE_SMOOTH);
-        MARKER_IMAGE = loadSvgImage("Resources/circle.svg", 11, 11);
-    }
-
-    private static Image loadSvgImage(String filename, int width, int height) {
-        try {
-            return new SvgToRasterizeImageConverter().transcodeSVGToBufferedImage(new File(filename), width, height);
+            MARKER_IMAGE = ImageFactory.loadImage("Resources/circle.svg", 11, 11);
         }
         catch (IOException ex) {
             Logger.getLogger(MotorManagementFrame.class.getName()).log(Level.SEVERE, null, ex);
-            return null;
         }
     }
 
-    private static Image loadImage(String filename) {
-        try {
-            return ImageIO.read(new File(filename));
-        }
-        catch (IOException ex) {
-            Logger.getLogger(MotorManagementFrame.class.getName()).log(Level.SEVERE, null, ex);
-            return null;
-        }
-    }
+//    private static Image loadSvgImage(String filename, int width, int height) {
+//        try {
+//            return new SvgToRasterizeImageConverter().transcodeSVGToBufferedImage(new File(filename), width, height);
+//        }
+//        catch (IOException ex) {
+//            Logger.getLogger(MotorManagementFrame.class.getName()).log(Level.SEVERE, null, ex);
+//            return null;
+//        }
+//    }
+//
+//    private static Image loadImage(String filename) {
+//        try {
+//            return ImageIO.read(new File(filename));
+//        }
+//        catch (IOException ex) {
+//            Logger.getLogger(MotorManagementFrame.class.getName()).log(Level.SEVERE, null, ex);
+//            return null;
+//        }
+//    }
 
 
 //     private final Needle rpmNeedle = new PolygonNeedle(50);

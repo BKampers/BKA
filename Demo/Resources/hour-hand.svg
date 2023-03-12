@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="200">
+    <ellipse cx="16" cy="95" rx="14" ry="78" style="fill:black" shape-rendering="geometricPrecision" />
+    <circle cx="16" cy="184" r="12" stroke-width="7" stroke="black" fill="none" shape-rendering="geometricPrecision" /> 
+    <polyline points="0,20 16,0 32,20 0,20" style="fill:black" shape-rendering="geometricPrecision" />
+</svg>

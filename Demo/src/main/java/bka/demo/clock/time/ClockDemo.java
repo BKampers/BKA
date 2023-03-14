@@ -1,4 +1,6 @@
-package bka.demo.clock;
+package bka.demo.clock.time;
+
+
 
 import java.io.*;
 import java.util.logging.*;

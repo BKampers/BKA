@@ -1,8 +1,10 @@
+package bka.demo.clock.weatherstation;
+
 /*
 ** © Bart Kampers
 */
 
-package bka.demo.clock;
+
 
 import bka.awt.clock.*;
 import java.awt.*;

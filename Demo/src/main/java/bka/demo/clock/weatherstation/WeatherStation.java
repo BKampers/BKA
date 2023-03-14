@@ -1,8 +1,9 @@
+package bka.demo.clock.weatherstation;
+
 /*
 ** © Bart Kampers
 */
 
-package bka.demo.clock;
 
 
 public interface WeatherStation {
@@ -11,13 +12,13 @@ public interface WeatherStation {
 
     String getWeatherSummary();
 
-    Double getTemperature(); //* Celcius
+    Double getTemperature(); //* celcius
 
-    Double getChill(); //* Celcius
+    Double getChill(); //* celcius
 
     Double getHumidity(); //* percent
 
-    String getWindDirection();
+    String getWindDirection(); // cardinal direction
 
     Double getWindSpeed(); //* m/s
 

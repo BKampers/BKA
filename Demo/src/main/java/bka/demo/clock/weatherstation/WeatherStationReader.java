@@ -1,8 +1,9 @@
+package bka.demo.clock.weatherstation;
+
 /*
 ** © Bart Kampers
 */
 
-package bka.demo.clock;
 
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.dataformat.xml.*;
@@ -10,31 +11,10 @@ import com.fasterxml.jackson.dataformat.xml.annotation.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.logging.*;
 import java.util.stream.*;
 
 
 public class WeatherStationReader {
-
-    public static void main(String[] args) {
-        try {
-            WeatherStationReader.getStations().forEach(station -> {
-                System.out.println(station.getStationName());
-                System.out.println("\tSummary: " + station.getWeatherSummary());
-                System.out.println("\tTemperature: " + station.getTemperature() + '\u2103');
-                System.out.println("\tChill: " + station.getChill() + '\u2103');
-                System.out.println("\tHumidity: " + station.getHumidity() + '%');
-                System.out.println("\tWind: " + station.getWindDirection());
-                System.out.println("\tSpeed: " + station.getWindSpeed() + " m/s");
-                System.out.println("\tSquall: " + station.getSquall() + " km/h");
-                System.out.println("\tVisibility: " + station.getVisibility() + " m");
-                System.out.println("\tPressure: " + station.getPressure() + " hPa");
-            });
-        }
-        catch (IOException ex) {
-            Logger.getLogger(WeatherStationReader.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
 
     public static Collection<WeatherStation> getStations() throws IOException {
         XmlMapper xmlMapper = new XmlMapper();

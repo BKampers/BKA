@@ -1,12 +1,16 @@
+package bka.demo.clock.time;
+
 /*
  * © Bart Kampers
  */
-package bka.demo.clock;
+
 
 import bka.awt.clock.*;
+import bka.demo.clock.*;
 import java.awt.*;
 import java.io.*;
 import java.util.*;
+
 
 public class ClockPanel extends javax.swing.JPanel {
 

@@ -1,15 +1,17 @@
+package bka.demo.clock.weatherstation;
+
 /*
  * © Bart Kampers
  */
-package bka.demo.clock;
+
 
 import java.io.*;
 import java.util.*;
 import java.util.logging.*;
 
-public class WeatherStationFrame extends javax.swing.JFrame {
+public class WeatherStationDemo extends javax.swing.JFrame {
 
-    public WeatherStationFrame() {
+    public WeatherStationDemo() {
         initComponents();
         Timer timer = new Timer();
         timer.schedule(new DataReaderTask(), 0, 10 * 60 * 1000);
@@ -103,14 +105,16 @@ public class WeatherStationFrame extends javax.swing.JFrame {
             }
         }
         catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(WeatherStationFrame.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(WeatherStationDemo.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
+        //</editor-fold>
+        //</editor-fold>
         //</editor-fold>
         //</editor-fold>
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(() -> {
-            new WeatherStationFrame().setVisible(true);
+            new WeatherStationDemo().setVisible(true);
         });
     }
 
@@ -151,7 +155,7 @@ public class WeatherStationFrame extends javax.swing.JFrame {
                 }
             }
             catch (IOException ex) {
-                Logger.getLogger(WeatherStationFrame.class.getName()).log(Level.WARNING, "Stations could not be retrieved", ex);
+                Logger.getLogger(WeatherStationDemo.class.getName()).log(Level.WARNING, "Stations could not be retrieved", ex);
             }
         }
 

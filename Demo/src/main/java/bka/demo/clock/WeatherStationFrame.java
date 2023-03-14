@@ -28,6 +28,7 @@ public class WeatherStationFrame extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Weather Station");
+        setPreferredSize(new java.awt.Dimension(1200, 400));
 
         stationComboBox.setModel(stationComboBoxModel);
         stationComboBox.setEnabled(false);

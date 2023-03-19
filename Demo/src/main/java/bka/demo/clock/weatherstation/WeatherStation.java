@@ -18,7 +18,7 @@ public interface WeatherStation {
 
     Double getHumidity(); //* percent
 
-    String getWindDirection(); // cardinal direction
+    Double getWindDirection(); // degrees clockwise
 
     Double getWindSpeed(); //* m/s
 

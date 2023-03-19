@@ -1,8 +1,8 @@
 package bka.demo.clock.weatherstation;
 
 /*
- * © Bart Kampers
- */
+** © Bart Kampers
+*/
 
 
 import java.io.*;
@@ -14,7 +14,7 @@ public class WeatherStationDemo extends javax.swing.JFrame {
     public WeatherStationDemo() {
         initComponents();
         Timer timer = new Timer();
-        timer.schedule(new DataReaderTask(), 0, 10 * 60 * 1000);
+        timer.schedule(new DataReaderTask(), 0, TEN_MINUTES);
     }
 
     /**
@@ -91,6 +91,10 @@ public class WeatherStationDemo extends javax.swing.JFrame {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
+        PANEL_LOGGER.setLevel(Level.FINEST);
+        ConsoleHandler handler = new ConsoleHandler();
+        handler.setLevel(Level.FINEST);
+        PANEL_LOGGER.addHandler(handler);
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
         /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
@@ -108,9 +112,6 @@ public class WeatherStationDemo extends javax.swing.JFrame {
             java.util.logging.Logger.getLogger(WeatherStationDemo.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(() -> {
@@ -119,20 +120,11 @@ public class WeatherStationDemo extends javax.swing.JFrame {
     }
 
     private static String normalizedForAlphabet(String string) {
-       String prefix = getPrefix(string);
-        if (prefix == null) {
-           return string;
-        }
-        return string.substring(prefix.length() + 1) + ", " + prefix;
-    }
-
-    private static String getPrefix(String string) {
-        for (String prefix : PREFIXES) {
-            if (string.startsWith(prefix + ' ')) {
-                return prefix;
-            }
-        }
-        return null;
+        return PREFIXES.stream()
+            .filter(prefix -> string.startsWith(prefix + ' '))
+            .map(prefix -> string.substring(prefix.length() + 1) + ", " + prefix)
+            .findAny()
+            .orElse(string);
     }
 
     private class DataReaderTask extends TimerTask {
@@ -172,6 +164,10 @@ public class WeatherStationDemo extends javax.swing.JFrame {
 
     private final Object mutex = new Object();
 
-    private static final String[] PREFIXES = { "De", "Den", "Het", "'t", "Ter" };
+    private static final int TEN_MINUTES = 10 * 60 * 1000;
+
+    private static final List<String> PREFIXES = List.of("De", "Den", "Het", "'t", "Ter");
+
+    private static final Logger PANEL_LOGGER = Logger.getLogger(WeatherStationPanel.class.getName());
 
 }

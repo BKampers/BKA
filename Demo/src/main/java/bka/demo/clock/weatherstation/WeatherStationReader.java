@@ -10,6 +10,7 @@ import com.fasterxml.jackson.dataformat.xml.*;
 import com.fasterxml.jackson.dataformat.xml.annotation.*;
 import java.io.*;
 import java.net.*;
+import java.text.*;
 import java.util.*;
 import java.util.stream.*;
 
@@ -138,11 +139,17 @@ public class WeatherStationReader {
         }
 
         @Override
-        public String getWindDirection() {
+        public Double getWindDirection() {
             if (row.getColumns()[5].getData() == null) {
                 return null;
             }
-            return row.getColumns()[5].getData().substring(0, row.getColumns()[5].getData().indexOf(' '));
+            String cardinal = row.getColumns()[5].getData().substring(0, row.getColumns()[5].getData().indexOf(' '));
+            try {
+                return new CardinalNumberFormat().parse(cardinal).doubleValue();
+            }
+            catch (ParseException ex) {
+                throw new IllegalStateException("Invalid cardinal direction: " + cardinal);
+            }
         }
 
         @Override

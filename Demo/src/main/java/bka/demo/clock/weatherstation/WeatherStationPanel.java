@@ -8,7 +8,6 @@ package bka.demo.clock.weatherstation;
 
 import bka.awt.clock.*;
 import java.awt.*;
-import java.text.*;
 import java.util.logging.*;
 import javax.swing.*;
 
@@ -81,7 +80,7 @@ public class WeatherStationPanel extends JPanel {
             humidityNeedle.setValue((station.getHumidity() != null) ? station.getHumidity() : 0);
             humidityArrow.setPaint((station.getHumidity() != null) ? Color.GREEN.darker() : NO_DATA_COLOR);
             humidityMarkers.setPaint((station.getHumidity() != null) ? Color.BLUE : NO_DATA_COLOR);
-            windDirectionNeedle.setValue((station.getWindDirection() != null) ? degrees(station.getWindDirection()) : 0);
+            windDirectionNeedle.setValue((station.getWindDirection() != null) ? station.getWindDirection() : 0);
             windDirectionArrow.setPaint((station.getWindDirection() != null) ? Color.BLACK : NO_DATA_COLOR);
             cardinalMarkers.setPaint((station.getWindDirection() != null) ? Color.BLUE : NO_DATA_COLOR);
             squallNeedle.setValue((station.getSquall() != null) ? station.getSquall() * (1000d / 3600d) : 0);
@@ -95,19 +94,23 @@ public class WeatherStationPanel extends JPanel {
             visibilityNeedle.setValue((station.getVisibility() != null) ? station.getVisibility() / 1000 : 0);
             visibilityArrow.setPaint((station.getVisibility() != null) ? Color.ORANGE : NO_DATA_COLOR);
             visibilityMarkers.setPaint(((station.getVisibility()) != null) ? Color.BLUE : NO_DATA_COLOR);
-            Logger.getLogger(WeatherStationPanel.class.getName()).log(Level.FINE, "{0}: {1}; {2}; {3}", new Object[]{ station.getStationName(), station.getTemperature(), station.getChill(), station.getWindDirection() });
+            Logger.getLogger(WeatherStationPanel.class.getName()).log(
+                Level.FINE,
+                "{0}: {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}",
+                new Object[]{
+                    station.getStationName(),
+                    station.getTemperature(),
+                    station.getChill(),
+                    station.getHumidity(),
+                    station.getWindDirection(),
+                    station.getWindSpeed(),
+                    station.getSquall(),
+                    station.getPressure(),
+                    station.getVisibility()
+                }
+            );
         }
         repaint();
-    }
-
-    private static double degrees(String cardinalDirection) {
-        try {
-            return cardinalFormat.parse(cardinalDirection).doubleValue();
-        }
-        catch (ParseException ex) {
-            Logger.getLogger(WeatherStationPanel.class.getName()).log(Level.WARNING, null, ex);
-            return 0.0;
-        }
     }
 
     @Override
@@ -184,7 +187,7 @@ public class WeatherStationPanel extends JPanel {
     private final ArrowRenderer squallArrow = new ArrowRenderer();
     private final NeedleRenderer squallNeedle;
     private final FormattedValueRenderer windSpeedMarkers;
-    private final ClockRenderer barometer = new ClockRenderer(new Point(9 * RADIUS, RADIUS), new Scale(930, 1050, MIN_ANGLE, MAX_ANGLE));
+    private final ClockRenderer barometer = new ClockRenderer(new Point(9 * RADIUS, RADIUS), new Scale(940, 1040, MIN_ANGLE, MAX_ANGLE));
     private final ArrowRenderer airPressureArrow = new ArrowRenderer();
     private final NeedleRenderer airPressureNeedle;
     private final FormattedValueRenderer airPressureMarkers;

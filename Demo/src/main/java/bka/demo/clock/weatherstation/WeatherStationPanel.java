@@ -8,6 +8,7 @@ package bka.demo.clock.weatherstation;
 
 import bka.awt.clock.*;
 import java.awt.*;
+import java.awt.geom.*;
 import java.util.logging.*;
 import javax.swing.*;
 
@@ -36,6 +37,7 @@ public class WeatherStationPanel extends JPanel {
         anonemeter.addClockFace(RADIUS, Color.WHITE);
         anonemeter.add(new TextRenderer(new Point(RADIUS * 7, RADIUS + RADIUS / 3), "m/s", Color.BLUE));
         anonemeter.addMarkerRingRenderer(MARKER_RADIUS, 5, windSpeedMarkers);
+        addBeaufortArcs();
         squallNeedle = anonemeter.addNeedleRenderer(squallArrow);
         windSpeedNeedle = anonemeter.addNeedleRenderer(windSpeedArrow);
         barometer.addClockFace(RADIUS, Color.WHITE);
@@ -68,6 +70,40 @@ public class WeatherStationPanel extends JPanel {
         for (int a = 0; a < 16; ++a) {
             windRose.addArc(ARC_RADIUS, a * 22.5 - 9.5, a * 22.5 + 9.5, (a % 2 == 0) ? ARC_COLOR_EVEN : ARC_COLOR_ODD, ARC_WIDTH);
         }
+    }
+
+    private void addBeaufortArcs() {
+        final double[] beaufortWindSpeeds = { 0.3, 1.6, 3.4, 5.5, 8.0, 10.8, 13.9, 17.2, 20.8, 24.5, 28.5, 32.7, 40.0 };
+        for (int i = 1; i < beaufortWindSpeeds.length; ++i) {
+            bka.awt.Renderer renderer = beaufortArcRenderer(Integer.toString(i), beaufortWindSpeeds[i - 1], beaufortWindSpeeds[i], beaufortColor(i));
+            anonemeter.add(renderer);
+        }
+    }
+
+    private static Color beaufortColor(int index) {
+        return new Color(255 - (12 - index) * 20, (12 - index) * 15, 0);
+    }
+
+    private bka.awt.Renderer beaufortArcRenderer(final String index, final double arcStart, final double arcEnd, final Color color) {
+        final double cap = 0.2;
+        return graphics -> {
+            graphics.setPaint(color);
+            graphics.setStroke(new BasicStroke(ARC_WIDTH, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER));
+            final Shape arc = anonemeter.createArc(ARC_RADIUS, arcStart + cap, arcEnd - cap);
+            graphics.draw(arc);
+            double value = arcStart + (arcEnd - arcStart) / 2d;
+            Point2D point = anonemeter.markerPoint(value, ARC_RADIUS);
+            graphics.translate(point.getX(), point.getY());
+            final int SIZE = 5;
+            graphics.fillOval(-SIZE, -SIZE, SIZE * 2, SIZE * 2);
+            TextRenderer textRenderer = new TextRenderer(new Point(0, 0), index, new Font(Font.SERIF, Font.ROMAN_BASELINE, 7), Color.WHITE);
+            graphics.rotate(anonemeter.radians(value));
+            Font savedFont = graphics.getFont();
+            textRenderer.paint(graphics);
+            graphics.setFont(savedFont);
+            graphics.rotate(-anonemeter.radians(value));
+            graphics.translate(-point.getX(), -point.getY());
+        };
     }
 
     public void setStation(WeatherStation station) {

@@ -12,11 +12,14 @@ public abstract class IntervalRingRenderer extends RingRenderer {
 
     protected IntervalRingRenderer(Point2D center, double radius, Scale scale, double interval, boolean markersRotated) {
         super(center, radius, scale);
-        this.interval = interval;
+        setInterval(interval);
         this.markersRotated = markersRotated;
     }
 
-    public void setInterval(double interval) {
+    public final void setInterval(double interval) {
+        if (interval <= 0d) {
+            throw new IllegalArgumentException("interval < 0");
+        }
         this.interval = interval;
     }
 
@@ -30,9 +33,6 @@ public abstract class IntervalRingRenderer extends RingRenderer {
 
     @Override
     public void paint(Graphics2D graphics) {
-        if (interval <= 0.0) {
-            return;
-        }
         Scale scale = getScale();
         Point2D center = getCenter();
         double minValue = Math.min(scale.getMinValue(), scale.getMaxValue());

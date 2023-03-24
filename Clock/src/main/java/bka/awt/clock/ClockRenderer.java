@@ -98,11 +98,25 @@ public class ClockRenderer extends CompositeRenderer {
     }
 
     public void addArc(double radius, double start, double end, Paint paint, Stroke stroke) {
-        double diameter = radius * 2d;
+        add(new ShapeRenderer(createArc(radius, start, end), paint, stroke));
+    }
+
+    public Shape createArc(double radius, double start, double end) {
         double startDegrees = scale.degrees(start);
         double endDegrees = scale.degrees(end);
-        Arc2D arc = new Arc2D.Double(center.getX() - radius, center.getY() - radius, diameter, diameter, angleStart(startDegrees), angleExtent(startDegrees, endDegrees), Arc2D.OPEN);
-        add(new ShapeRenderer(arc, paint, stroke));
+        double diameter = radius * 2d;
+        return new Arc2D.Double(center.getX() - radius, center.getY() - radius, diameter, diameter, angleStart(startDegrees), angleExtent(startDegrees, endDegrees), Arc2D.OPEN);
+    }
+
+    public Point2D markerPoint(double value, double radius) {
+        double angle = scale.radians(value);
+        return new Point.Double(
+            center.getX() + Math.sin(angle) * radius,
+            center.getY() - Math.cos(angle) * radius);
+    }
+
+    public double radians(double value) {
+        return scale.radians(value);
     }
 
     private static double angleStart(double start) {

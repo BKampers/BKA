@@ -15,8 +15,7 @@ public class WeatherStationDemo extends javax.swing.JFrame {
 
     public WeatherStationDemo() {
         initComponents();
-        Timer timer = new Timer();
-        timer.schedule(new DataReaderTask(), 0, TEN_MINUTES);
+        loadTimer.schedule(new DataReaderTask(), 0, TEN_MINUTES);
     }
 
     /**
@@ -28,6 +27,7 @@ public class WeatherStationDemo extends javax.swing.JFrame {
     private void initComponents() {
 
         javax.swing.JPanel controlPanel = new javax.swing.JPanel();
+        reloadButton = new javax.swing.JButton();
         timestampLabel = new javax.swing.JLabel();
         javax.swing.JPanel weatherPanelPlaceholder = weatherPanel;
 
@@ -43,6 +43,16 @@ public class WeatherStationDemo extends javax.swing.JFrame {
             }
         });
 
+        reloadButton.setFont(new java.awt.Font("Lucida Grande", 0, 18)); // NOI18N
+        reloadButton.setText("\u27F3");
+        reloadButton.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                reloadButtonActionPerformed(evt);
+            }
+        });
+
+        timestampLabel.setForeground(new java.awt.Color(102, 102, 0));
+
         javax.swing.GroupLayout controlPanelLayout = new javax.swing.GroupLayout(controlPanel);
         controlPanel.setLayout(controlPanelLayout);
         controlPanelLayout.setHorizontalGroup(
@@ -50,19 +60,24 @@ public class WeatherStationDemo extends javax.swing.JFrame {
             .addGroup(controlPanelLayout.createSequentialGroup()
                 .addGap(22, 22, 22)
                 .addComponent(stationComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, 199, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(27, 27, 27)
-                .addComponent(timestampLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 224, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(28, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(reloadButton, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
+                .addComponent(timestampLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 704, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         controlPanelLayout.setVerticalGroup(
             controlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(controlPanelLayout.createSequentialGroup()
-                .addGap(31, 31, 31)
-                .addGroup(controlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(stationComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(30, 30, 30)
+                .addGroup(controlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.CENTER)
+                    .addComponent(stationComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(reloadButton, javax.swing.GroupLayout.PREFERRED_SIZE, 29, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(timestampLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 27, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(42, Short.MAX_VALUE))
         );
+
+        controlPanelLayout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {reloadButton, stationComboBox, timestampLabel});
 
         getContentPane().add(controlPanel, java.awt.BorderLayout.PAGE_START);
 
@@ -70,11 +85,11 @@ public class WeatherStationDemo extends javax.swing.JFrame {
         weatherPanelPlaceholder.setLayout(weatherPanelPlaceholderLayout);
         weatherPanelPlaceholderLayout.setHorizontalGroup(
             weatherPanelPlaceholderLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 500, Short.MAX_VALUE)
+            .addGap(0, 996, Short.MAX_VALUE)
         );
         weatherPanelPlaceholderLayout.setVerticalGroup(
             weatherPanelPlaceholderLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 400, Short.MAX_VALUE)
+            .addGap(0, 399, Short.MAX_VALUE)
         );
 
         getContentPane().add(weatherPanelPlaceholder, java.awt.BorderLayout.CENTER);
@@ -98,6 +113,12 @@ public class WeatherStationDemo extends javax.swing.JFrame {
             }
         }
     }//GEN-LAST:event_stationComboBoxActionPerformed
+
+    private void reloadButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_reloadButtonActionPerformed
+        loadTimer.cancel();
+        loadTimer = new Timer();
+        loadTimer.schedule(new DataReaderTask(), 0, TEN_MINUTES);
+    }//GEN-LAST:event_reloadButtonActionPerformed
 
     /**
      * @param args the command line arguments
@@ -166,6 +187,7 @@ public class WeatherStationDemo extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton reloadButton;
     private final javax.swing.JComboBox<String> stationComboBox = new javax.swing.JComboBox<>();
     private javax.swing.JLabel timestampLabel;
     // End of variables declaration//GEN-END:variables
@@ -175,6 +197,7 @@ public class WeatherStationDemo extends javax.swing.JFrame {
 
     private final SortedMap<String, WeatherStation> stationsMap = new TreeMap<>();
 
+    private Timer loadTimer = new Timer();
     private final Object mutex = new Object();
 
     private static final int TEN_MINUTES = 10 * 60 * 1000;

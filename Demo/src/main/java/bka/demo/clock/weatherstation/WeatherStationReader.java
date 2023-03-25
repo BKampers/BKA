@@ -10,6 +10,7 @@ import com.fasterxml.jackson.dataformat.xml.*;
 import com.fasterxml.jackson.dataformat.xml.annotation.*;
 import java.io.*;
 import java.net.*;
+import java.nio.charset.*;
 import java.text.*;
 import java.time.*;
 import java.time.format.*;
@@ -29,28 +30,25 @@ public class WeatherStationReader {
     }
 
     private static LocalDateTime getTimestamp(String page) {
-        final String START_TAG = "<h2>Waarnemingen ";
-        final String END_TAG = " uur</h2>";
-        int dateStart = page.indexOf(START_TAG) + START_TAG.length();
-        int dateEnd = page.indexOf(END_TAG, dateStart);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMMM yyyy HH:mm");
+        int dateStart = page.indexOf(TIMESTAMP_START_TAG) + TIMESTAMP_START_TAG.length();
+        int dateEnd = page.indexOf(TIMESTAMP_END_TAG, dateStart);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(TIMESTAMP_FORMAT);
+        System.out.println(page.substring(dateStart, dateEnd));
         return LocalDateTime.parse(page.substring(dateStart, dateEnd), formatter);
     }
 
     private static String getTable(String page) throws IOException {
-        final String START_TAG = "<tbody>";
-        final String END_TAG = "</tbody>";
-        int tableStart = page.indexOf(START_TAG);
-        int tableEnd = page.indexOf(END_TAG, tableStart + START_TAG.length()) + END_TAG.length();
+        int tableStart = page.indexOf(TABLE_START_TAG);
+        int tableEnd = page.indexOf(TABLE_END_TAG, tableStart + TABLE_START_TAG.length()) + TABLE_END_TAG.length();
         return page.substring(tableStart, tableEnd);
     }
 
     private static String loadPage() throws IOException {
         StringBuilder page = new StringBuilder();
-        URL url = new URL("https://www.knmi.nl/nederland-nu/weer/waarnemingen");
+        URL url = new URL(KNMI_URL);
         try (InputStream stream = url.openStream()) {
             char[] buffer = new char[4096];
-            Reader reader = new InputStreamReader(stream, "UTF-8");
+            Reader reader = new InputStreamReader(stream, StandardCharsets.UTF_8.name());
             int count;
             while ((count = reader.read(buffer)) > 0) {
                 page.append(buffer, 0, count);
@@ -58,9 +56,7 @@ public class WeatherStationReader {
         }
         return page.toString();
     }
-
-
-    @JacksonXmlRootElement(localName = "tbody")
+    @JacksonXmlRootElement(localName = TABLE_BODY)
     private static class TableBody {
 
         public List<TableRow> getRows() {
@@ -71,7 +67,7 @@ public class WeatherStationReader {
             this.rows = rows;
         }
 
-        @JacksonXmlProperty(localName = "tr")
+        @JacksonXmlProperty(localName = TABLE_ROW)
         @JacksonXmlElementWrapper(useWrapping = false)
         private List<TableRow> rows;
     }
@@ -87,7 +83,7 @@ public class WeatherStationReader {
             this.columns = columns;
         }
 
-        @JacksonXmlProperty(localName = "td")
+        @JacksonXmlProperty(localName = TABLE_DATA)
         @JacksonXmlElementWrapper(useWrapping = false)
         private TableData[] columns;
     }
@@ -111,7 +107,7 @@ public class WeatherStationReader {
             this.data = data;
         }
 
-        @JacksonXmlProperty(isAttribute = true, localName = "class")
+        @JacksonXmlProperty(isAttribute = true, localName = DATA_CLASS)
         private String dataClass;
 
         @JacksonXmlText
@@ -204,8 +200,19 @@ public class WeatherStationReader {
 
         private final TableRow row;
         private final LocalDateTime timestamp;
-
-
     }
+
+    private static final String KNMI_URL = "https://www.knmi.nl/nederland-nu/weer/waarnemingen";
+
+    private static final String TABLE_BODY = "tbody";
+    private static final String TABLE_ROW = "tr";
+    private static final String TABLE_DATA = "td";
+    private static final String DATA_CLASS = "class";
+
+    private static final String TABLE_START_TAG = "<tbody>";
+    private static final String TABLE_END_TAG = "</tbody>";
+    private static final String TIMESTAMP_START_TAG = "<h2>Waarnemingen ";
+    private static final String TIMESTAMP_END_TAG = " uur</h2>";
+    private static final String TIMESTAMP_FORMAT = "dd MMMM yyyy HH:mm";
 
 }

@@ -1,5 +1,7 @@
 package bka.demo.clock.weatherstation;
 
+import java.time.*;
+
 /*
 ** © Bart Kampers
 */
@@ -9,6 +11,8 @@ package bka.demo.clock.weatherstation;
 public interface WeatherStation {
 
     String getStationName();
+
+    LocalDateTime getTimestamp();
 
     String getWeatherSummary();
 

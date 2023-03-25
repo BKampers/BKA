@@ -6,6 +6,8 @@ package bka.demo.clock.weatherstation;
 
 
 import java.io.*;
+import java.time.*;
+import java.time.format.*;
 import java.util.*;
 import java.util.logging.*;
 
@@ -26,6 +28,7 @@ public class WeatherStationDemo extends javax.swing.JFrame {
     private void initComponents() {
 
         javax.swing.JPanel controlPanel = new javax.swing.JPanel();
+        timestampLabel = new javax.swing.JLabel();
         javax.swing.JPanel weatherPanelPlaceholder = weatherPanel;
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -45,16 +48,20 @@ public class WeatherStationDemo extends javax.swing.JFrame {
         controlPanelLayout.setHorizontalGroup(
             controlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(controlPanelLayout.createSequentialGroup()
-                .addGap(144, 144, 144)
+                .addGap(22, 22, 22)
                 .addComponent(stationComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, 199, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(157, Short.MAX_VALUE))
+                .addGap(27, 27, 27)
+                .addComponent(timestampLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 224, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(28, Short.MAX_VALUE))
         );
         controlPanelLayout.setVerticalGroup(
             controlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(controlPanelLayout.createSequentialGroup()
-                .addGap(34, 34, 34)
-                .addComponent(stationComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(39, Short.MAX_VALUE))
+                .addGap(31, 31, 31)
+                .addGroup(controlPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(stationComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(timestampLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 27, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(42, Short.MAX_VALUE))
         );
 
         getContentPane().add(controlPanel, java.awt.BorderLayout.PAGE_START);
@@ -79,7 +86,12 @@ public class WeatherStationDemo extends javax.swing.JFrame {
         synchronized (mutex) {
             String selectedName = (String) stationComboBoxModel.getSelectedItem();
             if (selectedName != null) {
-                weatherPanel.setStation(stationsMap.get(selectedName));
+                WeatherStation station = stationsMap.get(selectedName);
+                DateTimeFormatter dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG);
+                DateTimeFormatter timeFormatter = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT);
+                LocalDateTime timestamp = station.getTimestamp();
+                timestampLabel.setText(timestamp.toLocalDate().format(dateFormatter) + ' ' + timestamp.toLocalTime().format(timeFormatter));
+                weatherPanel.setStation(station);
             }
             else {
                 weatherPanel.setStation(null);
@@ -155,6 +167,7 @@ public class WeatherStationDemo extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private final javax.swing.JComboBox<String> stationComboBox = new javax.swing.JComboBox<>();
+    private javax.swing.JLabel timestampLabel;
     // End of variables declaration//GEN-END:variables
 
     private final WeatherStationPanel weatherPanel = new WeatherStationPanel();

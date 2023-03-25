@@ -11,6 +11,8 @@ import com.fasterxml.jackson.dataformat.xml.annotation.*;
 import java.io.*;
 import java.net.*;
 import java.text.*;
+import java.time.*;
+import java.time.format.*;
 import java.util.*;
 import java.util.stream.*;
 
@@ -18,16 +20,26 @@ import java.util.stream.*;
 public class WeatherStationReader {
 
     public static Collection<WeatherStation> getStations() throws IOException {
+        final String page = loadPage();
+        final LocalDateTime timestamp = getTimestamp(page);
         XmlMapper xmlMapper = new XmlMapper();
         xmlMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        return xmlMapper.readValue(getTable(), TableBody.class)
-            .getRows().stream().map(row -> new Station(row)).collect(Collectors.toList());
+        return xmlMapper.readValue(getTable(page), TableBody.class)
+            .getRows().stream().map(row -> new Station(row, timestamp)).collect(Collectors.toList());
     }
 
-    private static String getTable() throws IOException {
+    private static LocalDateTime getTimestamp(String page) {
+        final String START_TAG = "<h2>Waarnemingen ";
+        final String END_TAG = " uur</h2>";
+        int dateStart = page.indexOf(START_TAG) + START_TAG.length();
+        int dateEnd = page.indexOf(END_TAG, dateStart);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMMM yyyy HH:mm");
+        return LocalDateTime.parse(page.substring(dateStart, dateEnd), formatter);
+    }
+
+    private static String getTable(String page) throws IOException {
         final String START_TAG = "<tbody>";
         final String END_TAG = "</tbody>";
-        String page = loadPage();
         int tableStart = page.indexOf(START_TAG);
         int tableEnd = page.indexOf(END_TAG, tableStart + START_TAG.length()) + END_TAG.length();
         return page.substring(tableStart, tableEnd);
@@ -109,41 +121,48 @@ public class WeatherStationReader {
 
     private static class Station implements WeatherStation {
 
-        Station(TableRow row) {
-            this.row = row;
+        Station(TableRow row, LocalDateTime timestamp) {
+            this.row = Objects.requireNonNull(row);
+            this.timestamp = Objects.requireNonNull(timestamp);
         }
 
         @Override
         public String getStationName() {
-            return row.getColumns()[0].getData();
+            return column(0);
+        }
+
+        @Override
+        public LocalDateTime getTimestamp() {
+            return timestamp;
         }
 
         @Override
         public String getWeatherSummary() {
-            return row.getColumns()[1].getData();
+            return column(1);
         }
 
         @Override
         public Double getTemperature() {
-            return parseDouble(row.getColumns()[2]);
+            return parseDouble(column(2));
         }
 
         @Override
         public Double getChill() {
-            return parseDouble(row.getColumns()[3]);
+            return parseDouble(column(3));
         }
 
         @Override
         public Double getHumidity() {
-            return parseDouble(row.getColumns()[4]);
+            return parseDouble(column(4));
         }
 
         @Override
         public Double getWindDirection() {
-            if (row.getColumns()[5].getData() == null) {
+            String directionData = column(5);
+            if (directionData == null) {
                 return null;
             }
-            String cardinal = row.getColumns()[5].getData().substring(0, row.getColumns()[5].getData().indexOf(' '));
+            String cardinal = directionData.substring(0, directionData.indexOf(' '));
             try {
                 return new CardinalNumberFormat().parse(cardinal).doubleValue();
             }
@@ -154,32 +173,38 @@ public class WeatherStationReader {
 
         @Override
         public Double getWindSpeed() {
-            return parseDouble(row.getColumns()[6]);
+            return parseDouble(column(6));
         }
 
         @Override
         public Double getSquall() {
-            return parseDouble(row.getColumns()[7]);
+            return parseDouble(column(7));
         }
 
         @Override
         public Double getVisibility() {
-            return parseDouble(row.getColumns()[8]);
+            return parseDouble(column(8));
         }
 
         @Override
         public Double getPressure() {
-            return parseDouble(row.getColumns()[9]);
+            return parseDouble(column(9));
         }
 
-        private Double parseDouble(TableData data) {
-            if (data.getData() == null) {
+        private Double parseDouble(String data) {
+            if (data == null) {
                 return null;
             }
-            return Double.parseDouble(data.getData());
+            return Double.parseDouble(data);
         }
 
-        private TableRow row;
+        private String column(int index) {
+            return row.getColumns()[index].getData();
+        }
+
+        private final TableRow row;
+        private final LocalDateTime timestamp;
+
 
     }
 

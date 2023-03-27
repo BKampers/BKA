@@ -32,7 +32,7 @@ public class WeatherStationReader {
     private static LocalDateTime getTimestamp(String page) {
         int dateStart = page.indexOf(TIMESTAMP_START_TAG) + TIMESTAMP_START_TAG.length();
         int dateEnd = page.indexOf(TIMESTAMP_END_TAG, dateStart);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(TIMESTAMP_FORMAT);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(TIMESTAMP_FORMAT, Locale.forLanguageTag("nl"));
         return LocalDateTime.parse(page.substring(dateStart, dateEnd), formatter);
     }
 

@@ -4,7 +4,6 @@ package bka.demo.clock.weatherstation;
 ** © Bart Kampers
 */
 
-
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.dataformat.xml.*;
 import com.fasterxml.jackson.dataformat.xml.annotation.*;
@@ -40,7 +39,7 @@ public class WeatherStationReader {
     private static String getTableHead(String page) {
         int tableStart = page.indexOf(TABLE_HEAD_START_TAG);
         int tableEnd = page.indexOf(TABLE_HEAD_END_TAG, tableStart + TABLE_START_TAG.length()) + TABLE_END_TAG.length();
-        return page.substring(tableStart, tableEnd).replace("<br>", "").replace("&nbsp;", "").replace("&deg;", "\u00b0");
+        return page.substring(tableStart, tableEnd).replace("<br>", "").replace("&nbsp;", "").replace("&deg;", "");
 
     }
 
@@ -175,15 +174,16 @@ public class WeatherStationReader {
 
     private static class Station implements WeatherStation {
 
-        Station(TableHeadRow tableHead, TableRow row, LocalDateTime timestamp) {
-            this.tableHead = Objects.requireNonNull(tableHead);
-            this.row = Objects.requireNonNull(row);
+        Station(TableHeadRow head, TableRow row, LocalDateTime timestamp) {
             this.timestamp = Objects.requireNonNull(timestamp);
+            for (int i = 0; i < head.getColumns().length; ++i) {
+                data.put(head.getColumns()[i].getData(), row.getColumns()[i].getData());
+            }
         }
 
         @Override
         public String getStationName() {
-            return column(STATION_NAME_HEADER);
+            return data.get(STATION_NAME_HEADER);
         }
 
         @Override
@@ -193,27 +193,27 @@ public class WeatherStationReader {
 
         @Override
         public String getWeatherSummary() {
-            return column(WEATHER_SUMMARY_HEADER);
+            return data.get(WEATHER_SUMMARY_HEADER);
         }
 
         @Override
         public Double getTemperature() {
-            return parseDouble(column(TEMPERATURE_HEADER));
+            return parseDouble(data.get(TEMPERATURE_HEADER));
         }
 
         @Override
         public Double getChill() {
-            return parseDouble(column(CHILL_HEADER));
+            return parseDouble(data.get(CHILL_HEADER));
         }
 
         @Override
         public Double getHumidity() {
-            return parseDouble(column(HUMIDITY_HEADER));
+            return parseDouble(data.get(HUMIDITY_HEADER));
         }
 
         @Override
         public Double getWindDirection() {
-            String directionData = column(WIND_DIRECTION_HEADER);
+            String directionData = data.get(WIND_DIRECTION_HEADER);
             if (directionData == null) {
                 return null;
             }
@@ -228,22 +228,22 @@ public class WeatherStationReader {
 
         @Override
         public Double getWindSpeed() {
-            return parseDouble(column(WIND_SPEED_HEADER));
+            return parseDouble(data.get(WIND_SPEED_HEADER));
         }
 
         @Override
         public Double getSquall() {
-            return parseDouble(column(SQUALL_HEADER));
+            return parseDouble(data.get(SQUALL_HEADER));
         }
 
         @Override
         public Double getVisibility() {
-            return parseDouble(column(VISIBILITY_HEADER));
+            return parseDouble(data.get(VISIBILITY_HEADER));
         }
 
         @Override
         public Double getPressure() {
-            return parseDouble(column(PRESSURE_HEADER));
+            return parseDouble(data.get(PRESSURE_HEADER));
         }
 
         private Double parseDouble(String data) {
@@ -253,21 +253,8 @@ public class WeatherStationReader {
             return Double.parseDouble(data);
         }
 
-        private String column(String header) {
-            int index = tableHead.indexOf(header);
-            if (index < 0) {
-                return null;
-            }
-            return column(index);
-        }
-
-        private String column(int index) {
-            return row.getColumns()[index].getData();
-        }
-
-        private final TableHeadRow tableHead;
-        private final TableRow row;
         private final LocalDateTime timestamp;
+        private final Map<String, String> data = new HashMap<>();
     }
 
     private static final String KNMI_URL = "https://www.knmi.nl/nederland-nu/weer/waarnemingen";
@@ -289,8 +276,8 @@ public class WeatherStationReader {
 
     private static final String STATION_NAME_HEADER = "Station";
     private static final String WEATHER_SUMMARY_HEADER = "Weer";
-    private static final String TEMPERATURE_HEADER = "Temp(\u00b0C)";
-    private static final String CHILL_HEADER = "Chill(\u00b0C)";
+    private static final String TEMPERATURE_HEADER = "Temp(C)";
+    private static final String CHILL_HEADER = "Chill(C)";
     private static final String HUMIDITY_HEADER = "RV(%)";
     private static final String WIND_DIRECTION_HEADER = "Wind(bft)";
     private static final String WIND_SPEED_HEADER = "Wind(m/s)";

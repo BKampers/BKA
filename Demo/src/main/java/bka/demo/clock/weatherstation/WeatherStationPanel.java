@@ -17,37 +17,37 @@ public class WeatherStationPanel extends JPanel {
 
     public WeatherStationPanel() {
         thermometer.addClockFace(RADIUS, Color.WHITE);
-        thermometer.add(new TextRenderer(new Point(RADIUS, RADIUS + RADIUS / 3), "\u2103", Color.BLUE));
+        thermometer.add(new TextRenderer(new Point(RADIUS, RADIUS + RADIUS / 3), "\u2103", FONT, Color.BLUE));
         addTemperatureArcs();
-        temperatureMarkers = new FormattedValueRenderer(NO_DATA_COLOR);
+        temperatureMarkers = new FormattedValueRenderer(NO_DATA_COLOR, FONT);
         thermometer.addMarkerRingRenderer(MARKER_RADIUS, 10, temperatureMarkers);
         chillNeedle = thermometer.addNeedleRenderer(chillArrow);
         temperatureNeedle = thermometer.addNeedleRenderer(temperatureArrow);
         hygrometer.addClockFace(RADIUS, Color.WHITE);
-        hygrometer.add(new TextRenderer(new Point(RADIUS * 3, RADIUS + RADIUS / 3), "RH %", Color.BLUE));
-        humidityMarkers = new FormattedValueRenderer(NO_DATA_COLOR);
+        hygrometer.add(new TextRenderer(new Point(RADIUS * 3, RADIUS + RADIUS / 3), "RH %", FONT, Color.BLUE));
+        humidityMarkers = new FormattedValueRenderer(NO_DATA_COLOR, FONT);
         hygrometer.addMarkerRingRenderer(MARKER_RADIUS, 10, humidityMarkers);
         humidityNeedle = hygrometer.addNeedleRenderer(humidityArrow);
         windRose.addClockFace(RADIUS, Color.WHITE);
-        cardinalMarkers = new FormattedValueRenderer(NO_DATA_COLOR, null, cardinalFormat);
+        cardinalMarkers = new FormattedValueRenderer(NO_DATA_COLOR, FONT, cardinalFormat);
         addCardinalArcs();
         windRose.addMarkerRingRenderer(MARKER_RADIUS, 45, cardinalMarkers);
         windDirectionNeedle = windRose.addNeedleRenderer(windDirectionArrow);
-        windSpeedMarkers = new FormattedValueRenderer(NO_DATA_COLOR);
+        windSpeedMarkers = new FormattedValueRenderer(NO_DATA_COLOR, FONT);
         anonemeter.addClockFace(RADIUS, Color.WHITE);
-        anonemeter.add(new TextRenderer(new Point(RADIUS * 7, RADIUS + RADIUS / 3), "m/s", Color.BLUE));
+        anonemeter.add(new TextRenderer(new Point(RADIUS * 7, RADIUS + RADIUS / 3), "m/s", FONT, Color.BLUE));
         anonemeter.addMarkerRingRenderer(MARKER_RADIUS, 5, windSpeedMarkers);
         addBeaufortArcs();
         squallNeedle = anonemeter.addNeedleRenderer(squallArrow);
         windSpeedNeedle = anonemeter.addNeedleRenderer(windSpeedArrow);
         barometer.addClockFace(RADIUS, Color.WHITE);
-        barometer.add(new TextRenderer(new Point(RADIUS * 9, RADIUS + RADIUS / 3), "hPa", Color.BLUE));
-        airPressureMarkers = new FormattedValueRenderer(NO_DATA_COLOR);
+        barometer.add(new TextRenderer(new Point(RADIUS * 9, RADIUS + RADIUS / 3), "hPa", FONT, Color.BLUE));
+        airPressureMarkers = new FormattedValueRenderer(NO_DATA_COLOR, FONT);
         barometer.addMarkerRingRenderer(MARKER_RADIUS, 20, airPressureMarkers);
         airPressureNeedle = barometer.addNeedleRenderer(airPressureArrow);
         viewmeter.addClockFace(RADIUS, Color.WHITE);
-        viewmeter.add(new TextRenderer(new Point(RADIUS * 11, RADIUS + RADIUS / 3), "km", Color.BLUE));
-        visibilityMarkers = new FormattedValueRenderer(NO_DATA_COLOR);
+        viewmeter.add(new TextRenderer(new Point(RADIUS * 11, RADIUS + RADIUS / 3), "km", FONT, Color.BLUE));
+        visibilityMarkers = new FormattedValueRenderer(NO_DATA_COLOR, FONT);
         viewmeter.addMarkerRingRenderer(MARKER_RADIUS, 5, visibilityMarkers);
         visibilityNeedle = viewmeter.addNeedleRenderer(visibilityArrow);
     }
@@ -96,11 +96,10 @@ public class WeatherStationPanel extends JPanel {
             graphics.translate(point.getX(), point.getY());
             final int SIZE = 5;
             graphics.fillOval(-SIZE, -SIZE, SIZE * 2, SIZE * 2);
+            graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             TextRenderer textRenderer = new TextRenderer(new Point(0, 0), index, new Font(Font.SERIF, Font.ROMAN_BASELINE, 7), Color.WHITE);
             graphics.rotate(anonemeter.radians(value));
-            Font savedFont = graphics.getFont();
             textRenderer.paint(graphics);
-            graphics.setFont(savedFont);
             graphics.rotate(-anonemeter.radians(value));
             graphics.translate(-point.getX(), -point.getY());
         };
@@ -231,6 +230,8 @@ public class WeatherStationPanel extends JPanel {
     private final ArrowRenderer visibilityArrow = new ArrowRenderer();
     private final NeedleRenderer visibilityNeedle;
     private final FormattedValueRenderer visibilityMarkers;
+
+    private static final Font FONT = new Font(Font.DIALOG, Font.PLAIN, 12);
 
     private static final int RADIUS = 100;
     private static final double MIN_ANGLE = -0.4125;

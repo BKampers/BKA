@@ -102,10 +102,7 @@ public class WeatherStationDemo extends javax.swing.JFrame {
             String selectedName = (String) stationComboBoxModel.getSelectedItem();
             if (selectedName != null) {
                 WeatherStation station = stationsMap.get(selectedName);
-                DateTimeFormatter dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG);
-                DateTimeFormatter timeFormatter = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT);
-                LocalDateTime timestamp = station.getTimestamp();
-                timestampLabel.setText(timestamp.toLocalDate().format(dateFormatter) + ' ' + timestamp.toLocalTime().format(timeFormatter));
+                timestampLabel.setText(timestampText(station.getTimestamp()));
                 weatherPanel.setStation(station);
             }
             else {
@@ -119,6 +116,12 @@ public class WeatherStationDemo extends javax.swing.JFrame {
         loadTimer = new Timer();
         loadTimer.schedule(new DataReaderTask(), 0, TEN_MINUTES);
     }//GEN-LAST:event_reloadButtonActionPerformed
+
+
+    private static String timestampText(LocalDateTime timestamp) {
+        return timestamp.toLocalDate().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG)) + ' '
+            + timestamp.toLocalTime().format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT));
+    }
 
     /**
      * @param args the command line arguments

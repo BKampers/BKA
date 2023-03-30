@@ -11,10 +11,6 @@ import java.util.*;
 
 public class TextRenderer implements Renderer {
 
-    public TextRenderer(Point point, String text, Paint paint) {
-        this(point, text, null, paint);
-    }
-
     public TextRenderer(Point point, String text, Font font, Paint paint) {
         setPoint(point);
         setText(text);
@@ -43,7 +39,7 @@ public class TextRenderer implements Renderer {
     }
 
     public final void setFont(Font font) {
-        this.font = font;
+        this.font = Objects.requireNonNull(font);
     }
 
     public final Paint getPaint() {
@@ -57,9 +53,7 @@ public class TextRenderer implements Renderer {
     @Override
     public void paint(Graphics2D graphics) {
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        if (font != null) {
-            graphics.setFont(font);
-        }
+        graphics.setFont(font);
         graphics.setPaint(paint);
         centerText(graphics, point.x, point.y, text);
     }

@@ -29,24 +29,42 @@ public class WeatherStationReader {
             .getRows().stream().map(row -> new Station(tableHead, row, timestamp)).collect(Collectors.toList());
     }
 
-    private static LocalDateTime getTimestamp(String page) {
-        int dateStart = page.indexOf(TIMESTAMP_START_TAG) + TIMESTAMP_START_TAG.length();
-        int dateEnd = page.indexOf(TIMESTAMP_END_TAG, dateStart);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(TIMESTAMP_FORMAT, Locale.forLanguageTag("nl"));
-        return LocalDateTime.parse(page.substring(dateStart, dateEnd), formatter);
+    private static LocalDateTime getTimestamp(String page) throws IOException {
+        try {
+            int dateStart = page.indexOf(TIMESTAMP_START_TAG) + TIMESTAMP_START_TAG.length();
+            int dateEnd = page.indexOf(TIMESTAMP_END_TAG, dateStart);
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(TIMESTAMP_PATTERN, Locale.forLanguageTag("nl"));
+            return LocalDateTime.parse(page.substring(dateStart, dateEnd), formatter);
+        }
+        catch (RuntimeException ex) {
+            throw contentException("timestamp", ex);
+        }
     }
 
-    private static String getTableHead(String page) {
-        int tableStart = page.indexOf(TABLE_HEAD_START_TAG);
-        int tableEnd = page.indexOf(TABLE_HEAD_END_TAG, tableStart + TABLE_START_TAG.length()) + TABLE_END_TAG.length();
-        return page.substring(tableStart, tableEnd).replace("<br>", "").replace("&nbsp;", "").replace("&deg;", "");
-
+    private static String getTableHead(String page) throws IOException {
+        try {
+            int tableStart = page.indexOf(TABLE_HEAD_START_TAG);
+            int tableEnd = page.indexOf(TABLE_HEAD_END_TAG, tableStart + TABLE_START_TAG.length()) + TABLE_END_TAG.length();
+            return page.substring(tableStart, tableEnd).replace("<br>", "").replace("&nbsp;", "").replace("&deg;", "");
+        }
+        catch (RuntimeException ex) {
+            throw contentException("table head", ex);
+        }
     }
 
     private static String getTable(String page) throws IOException {
-        int tableStart = page.indexOf(TABLE_START_TAG);
-        int tableEnd = page.indexOf(TABLE_END_TAG, tableStart + TABLE_START_TAG.length()) + TABLE_END_TAG.length();
-        return page.substring(tableStart, tableEnd);
+        try {
+            int tableStart = page.indexOf(TABLE_START_TAG);
+            int tableEnd = page.indexOf(TABLE_END_TAG, tableStart + TABLE_START_TAG.length()) + TABLE_END_TAG.length();
+            return page.substring(tableStart, tableEnd);
+        }
+        catch (RuntimeException ex) {
+            throw contentException("measurements table", ex);
+        }
+    }
+
+    private static IOException contentException(String component, Exception cause) {
+        return new IOException("Unexpected page content: could not determine " + component + '.', cause);
     }
 
     private static String loadPage() throws IOException {
@@ -272,7 +290,7 @@ public class WeatherStationReader {
     private static final String TABLE_END_TAG = "</tbody>";
     private static final String TIMESTAMP_START_TAG = "<h2>Waarnemingen ";
     private static final String TIMESTAMP_END_TAG = " uur</h2>";
-    private static final String TIMESTAMP_FORMAT = "dd MMMM yyyy HH:mm";
+    private static final String TIMESTAMP_PATTERN = "d MMMM yyyy HH:mm";
 
     private static final String STATION_NAME_HEADER = "Station";
     private static final String WEATHER_SUMMARY_HEADER = "Weer";

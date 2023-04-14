@@ -44,6 +44,29 @@ public class ClockRenderer extends CompositeRenderer {
         });
     }
 
+    public void addMarkerRenderer(final double radius, final double value, final Renderer renderer) {
+        add(graphics -> paintMarker(graphics, value, radius, renderer));
+    }
+
+    public void addTiltedMarkerRenderer(final double radius, final double value, final Renderer renderer) {
+        add(graphics -> paintMarker(graphics, value, radius, tiltedRenderer(radians(value), renderer)));
+    }
+
+    private void paintMarker(Graphics2D graphics, double value, double radius, Renderer renderer) {
+        Point2D point = markerPoint(value, radius);
+        graphics.translate(point.getX(), point.getY());
+        renderer.paint(graphics);
+        graphics.translate(-point.getX(), -point.getY());
+    }
+
+    private static Renderer tiltedRenderer(double angle, Renderer renderer) {
+        return graphics -> {
+            graphics.rotate(angle);
+            renderer.paint(graphics);
+            graphics.rotate(-angle);
+        };
+    }
+
     public MarkerRingRenderer addMarkerRingRenderer(double radius, double minorInterval, int minorLength, int majorInterval, int majorLength, Paint paint, float width) {
         return addMarkerRingRenderer(radius, minorInterval, majorLength, minorLength, matches(majorInterval), paint, width);
     }
@@ -101,21 +124,21 @@ public class ClockRenderer extends CompositeRenderer {
         add(new ShapeRenderer(createArc(radius, start, end), paint, stroke));
     }
 
-    public Shape createArc(double radius, double start, double end) {
+    private Shape createArc(double radius, double start, double end) {
         double startDegrees = scale.degrees(start);
         double endDegrees = scale.degrees(end);
         double diameter = radius * 2d;
         return new Arc2D.Double(center.getX() - radius, center.getY() - radius, diameter, diameter, angleStart(startDegrees), angleExtent(startDegrees, endDegrees), Arc2D.OPEN);
     }
 
-    public Point2D markerPoint(double value, double radius) {
+    private Point2D markerPoint(double value, double radius) {
         double angle = scale.radians(value);
         return new Point.Double(
             center.getX() + Math.sin(angle) * radius,
             center.getY() - Math.cos(angle) * radius);
     }
 
-    public double radians(double value) {
+    private double radians(double value) {
         return scale.radians(value);
     }
 

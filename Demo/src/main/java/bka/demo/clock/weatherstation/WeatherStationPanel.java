@@ -8,7 +8,6 @@ package bka.demo.clock.weatherstation;
 
 import bka.awt.clock.*;
 import java.awt.*;
-import java.awt.geom.*;
 import java.util.logging.*;
 import javax.swing.*;
 
@@ -73,10 +72,16 @@ public class WeatherStationPanel extends JPanel {
     }
 
     private void addBeaufortArcs() {
+        final Font font = new Font(Font.SERIF, Font.ROMAN_BASELINE, 7);
         final double[] beaufortWindSpeeds = { 0.3, 1.6, 3.4, 5.5, 8.0, 10.8, 13.9, 17.2, 20.8, 24.5, 28.5, 32.7, 40.0 };
+        final double capMargin = 0.2;
+        final int ovalSize = 5;
         for (int i = 1; i < beaufortWindSpeeds.length; ++i) {
-            bka.awt.Renderer renderer = beaufortArcRenderer(Integer.toString(i), beaufortWindSpeeds[i - 1], beaufortWindSpeeds[i], beaufortColor(i));
-            anonemeter.add(renderer);
+            final Color color = beaufortColor(i);
+            final double startValue = beaufortWindSpeeds[i - 1];
+            final double endValue = beaufortWindSpeeds[i];
+            anonemeter.addArc(ARC_RADIUS, startValue + capMargin, endValue - capMargin, color, ARC_WIDTH);
+            anonemeter.addTiltedMarkerRenderer(ARC_RADIUS, startValue + (endValue - startValue) / 2d, ovalMarkerRenderer(Integer.toString(i), font, Color.WHITE, ovalSize, color));
         }
     }
 
@@ -84,24 +89,13 @@ public class WeatherStationPanel extends JPanel {
         return new Color(255 - (12 - index) * 20, (12 - index) * 15, 0);
     }
 
-    private bka.awt.Renderer beaufortArcRenderer(final String index, final double arcStart, final double arcEnd, final Color color) {
-        final double cap = 0.2;
+    private bka.awt.Renderer ovalMarkerRenderer(final String text, Font font, final Paint foreground, final int size, final Paint background) {
         return graphics -> {
-            graphics.setPaint(color);
-            graphics.setStroke(new BasicStroke(ARC_WIDTH, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER));
-            final Shape arc = anonemeter.createArc(ARC_RADIUS, arcStart + cap, arcEnd - cap);
-            graphics.draw(arc);
-            double value = arcStart + (arcEnd - arcStart) / 2d;
-            Point2D point = anonemeter.markerPoint(value, ARC_RADIUS);
-            graphics.translate(point.getX(), point.getY());
-            final int SIZE = 5;
-            graphics.fillOval(-SIZE, -SIZE, SIZE * 2, SIZE * 2);
+            graphics.setPaint(background);
+            graphics.fillOval(-size, -size, size * 2, size * 2);
             graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-            TextRenderer textRenderer = new TextRenderer(new Point(0, 0), index, new Font(Font.SERIF, Font.ROMAN_BASELINE, 7), Color.WHITE);
-            graphics.rotate(anonemeter.radians(value));
+            TextRenderer textRenderer = new TextRenderer(new Point(0, 0), text, font, foreground);
             textRenderer.paint(graphics);
-            graphics.rotate(-anonemeter.radians(value));
-            graphics.translate(-point.getX(), -point.getY());
         };
     }
 

@@ -19,36 +19,54 @@ public class WeatherStationPanel extends JPanel {
         thermometer.add(new TextRenderer(new Point(RADIUS, RADIUS + RADIUS / 3), "\u2103", FONT, Color.BLUE));
         addTemperatureArcs();
         temperatureMarkers = new FormattedValueRenderer(NO_DATA_COLOR, FONT);
-        thermometer.addMarkerRingRenderer(MARKER_RADIUS, 10, temperatureMarkers);
+        thermometer.addMarkerRingRenderer(NUMBER_MARKER_RADIUS, 10, temperatureMarkers);
+        thermometer.addMarkerRingRenderer(FINE_MARKER_RADIUS, 1d, MAJOR_MARKER_LENGTH, MINOR_MARKER_LENGTH, value -> Math.round(value) % 5 == 0, Color.LIGHT_GRAY, 1f);
         chillNeedle = thermometer.addNeedleRenderer(chillArrow);
         temperatureNeedle = thermometer.addNeedleRenderer(temperatureArrow);
         hygrometer.addClockFace(RADIUS, Color.WHITE);
         hygrometer.add(new TextRenderer(new Point(RADIUS * 3, RADIUS + RADIUS / 3), "RH %", FONT, Color.BLUE));
         humidityMarkers = new FormattedValueRenderer(NO_DATA_COLOR, FONT);
-        hygrometer.addMarkerRingRenderer(MARKER_RADIUS, 10, humidityMarkers);
+        hygrometer.addMarkerRingRenderer(NUMBER_MARKER_RADIUS, 10, humidityMarkers);
+        hygrometer.addMarkerRingRenderer(FINE_MARKER_RADIUS, 1d, MAJOR_MARKER_LENGTH, MINOR_MARKER_LENGTH, value -> Math.round(value) % 5 == 0, Color.LIGHT_GRAY, 1f);
         humidityNeedle = hygrometer.addNeedleRenderer(humidityArrow);
         windRose.addClockFace(RADIUS, Color.WHITE);
         cardinalMarkers = new FormattedValueRenderer(NO_DATA_COLOR, FONT, cardinalFormat);
         addCardinalArcs();
-        windRose.addMarkerRingRenderer(MARKER_RADIUS, 45, cardinalMarkers);
+        for (double angle = 22.5; angle < 360; angle += 45.0) {
+            windRose.addTiltedMarkerRenderer(NUMBER_MARKER_RADIUS, angle, crossMarker());
+        }
+        windRose.addMarkerRingRenderer(NUMBER_MARKER_RADIUS, 45, cardinalMarkers);
+        windRose.addMarkerRingRenderer(FINE_MARKER_RADIUS, 2d, MAJOR_MARKER_LENGTH, MINOR_MARKER_LENGTH, value -> Math.round(value) % 30 == 0, Color.LIGHT_GRAY, 1f);
         windDirectionNeedle = windRose.addNeedleRenderer(windDirectionArrow);
         windSpeedMarkers = new FormattedValueRenderer(NO_DATA_COLOR, FONT);
         anonemeter.addClockFace(RADIUS, Color.WHITE);
         anonemeter.add(new TextRenderer(new Point(RADIUS * 7, RADIUS + RADIUS / 3), "m/s", FONT, Color.BLUE));
-        anonemeter.addMarkerRingRenderer(MARKER_RADIUS, 5, windSpeedMarkers);
+        anonemeter.addMarkerRingRenderer(NUMBER_MARKER_RADIUS, 5, windSpeedMarkers);
+        anonemeter.addMarkerRingRenderer(FINE_MARKER_RADIUS, 1d, MAJOR_MARKER_LENGTH, MINOR_MARKER_LENGTH, value -> Math.round(value) % 5 == 0, Color.LIGHT_GRAY, 1f);
         addBeaufortArcs();
         squallNeedle = anonemeter.addNeedleRenderer(squallArrow);
         windSpeedNeedle = anonemeter.addNeedleRenderer(windSpeedArrow);
         barometer.addClockFace(RADIUS, Color.WHITE);
         barometer.add(new TextRenderer(new Point(RADIUS * 9, RADIUS + RADIUS / 3), "hPa", FONT, Color.BLUE));
         airPressureMarkers = new FormattedValueRenderer(NO_DATA_COLOR, FONT);
-        barometer.addMarkerRingRenderer(MARKER_RADIUS, 20, airPressureMarkers);
+        barometer.addMarkerRingRenderer(NUMBER_MARKER_RADIUS, 20, airPressureMarkers);
+        barometer.addMarkerRingRenderer(FINE_MARKER_RADIUS, 1d, MAJOR_MARKER_LENGTH, MINOR_MARKER_LENGTH, value -> Math.round(value) % 10 == 0, Color.LIGHT_GRAY, 1f);
         airPressureNeedle = barometer.addNeedleRenderer(airPressureArrow);
         viewmeter.addClockFace(RADIUS, Color.WHITE);
         viewmeter.add(new TextRenderer(new Point(RADIUS * 11, RADIUS + RADIUS / 3), "km", FONT, Color.BLUE));
         visibilityMarkers = new FormattedValueRenderer(NO_DATA_COLOR, FONT);
-        viewmeter.addMarkerRingRenderer(MARKER_RADIUS, 5, visibilityMarkers);
+        viewmeter.addMarkerRingRenderer(NUMBER_MARKER_RADIUS, 5, visibilityMarkers);
+        viewmeter.addMarkerRingRenderer(FINE_MARKER_RADIUS, 1d, MAJOR_MARKER_LENGTH, MINOR_MARKER_LENGTH, value -> Math.round(value) % 5 == 0, Color.LIGHT_GRAY, 1f);
         visibilityNeedle = viewmeter.addNeedleRenderer(visibilityArrow);
+    }
+
+    private static bka.awt.Renderer crossMarker() {
+        return graphics -> {
+            graphics.setPaint(Color.LIGHT_GRAY);
+            graphics.setStroke(new BasicStroke(1f));
+            graphics.drawLine(0, 2, 0, -2);
+            graphics.drawLine(-2, 0, 2, 0);
+        };
     }
 
     private void addTemperatureArcs() {
@@ -89,7 +107,7 @@ public class WeatherStationPanel extends JPanel {
         return new Color(255 - (12 - index) * 20, (12 - index) * 15, 0);
     }
 
-    private bka.awt.Renderer ovalMarkerRenderer(final String text, Font font, final Paint foreground, final int size, final Paint background) {
+    private bka.awt.Renderer ovalMarkerRenderer(String text, Font font, Paint foreground, int size, Paint background) {
         return graphics -> {
             graphics.setPaint(background);
             graphics.fillOval(-size, -size, size * 2, size * 2);
@@ -159,9 +177,9 @@ public class WeatherStationPanel extends JPanel {
             graphics.setPaint(paint);
             graphics.setStroke(new BasicStroke(3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER));
             graphics.fillOval(0 - RADIUS / 20, 0 - RADIUS / 20, RADIUS / 10, RADIUS / 10);
-            graphics.drawLine(0, RADIUS / 10, 0, -(RADIUS / 10) * 8);
-            graphics.drawLine(5, -(RADIUS / 10 * 7), 0, -(RADIUS / 10) * 8);
-            graphics.drawLine(-5, -(RADIUS / 10 * 7), 0, -(RADIUS / 10) * 8);
+            graphics.drawLine(0, RADIUS / 10, 0, -(RADIUS / 10) * 7);
+            graphics.drawLine(4, -(RADIUS / 10 * 6), 0, -(RADIUS / 10) * 7);
+            graphics.drawLine(-4, -(RADIUS / 10 * 6), 0, -(RADIUS / 10) * 7);
         }
 
         public void setPaint(Paint paint) {
@@ -230,10 +248,14 @@ public class WeatherStationPanel extends JPanel {
     private static final int RADIUS = 100;
     private static final double MIN_ANGLE = -0.4125;
     private static final double MAX_ANGLE = 0.4125;
-    private static final Color NO_DATA_COLOR = new Color(225, 225, 225);
-    private static final double MARKER_RADIUS = 0.85 * RADIUS;
+    private static final double NUMBER_MARKER_RADIUS = 0.85 * RADIUS;
+    private static final double FINE_MARKER_RADIUS = 0.79 * RADIUS;
     private static final double ARC_RADIUS = 0.95 * RADIUS;
-    private static final float ARC_WIDTH = 5f;
+    private static final float ARC_WIDTH = (float) RADIUS / 20f;
+    private static final int MINOR_MARKER_LENGTH = (int) (RADIUS * 0.07);
+    private static final int MAJOR_MARKER_LENGTH = (int) (RADIUS * 0.1);
+
+    private static final Color NO_DATA_COLOR = new Color(225, 225, 225);
     private static final Color ARC_COLOR_EVEN = new Color(0x4A41AF);
     private static final Color ARC_COLOR_ODD = new Color(0x918AE5);
 

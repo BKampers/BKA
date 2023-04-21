@@ -32,7 +32,19 @@ public class FormattedValueRenderer implements MarkerRenderer {
         String text = format.format(value);
         graphics.setPaint(paint);
         graphics.setFont(font);
-        TextRenderer.centerText(graphics, text);
+        FontMetrics fontMetrics = graphics.getFontMetrics();
+        Point offset = offset(graphics, text, value, fontMetrics);
+        graphics.drawString(text, -offset.x, offset.y);
+    }
+
+    private Point offset(Graphics2D graphics, String text, double value, FontMetrics fontMetrics) {
+        if (value < 0.0) {
+            String truncText = format.format(-value);
+            Point offset = TextRenderer.center(graphics, truncText);
+            offset.x += fontMetrics.stringWidth(text) - fontMetrics.stringWidth(truncText);
+            return offset;
+        }
+        return TextRenderer.center(graphics, text);
     }
 
     private static NumberFormat defaultFormat() {

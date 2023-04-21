@@ -58,13 +58,39 @@ public class TextRenderer implements Renderer {
         centerText(graphics, point.x, point.y, text);
     }
 
+    /**
+     * Draw text centered around the origin of graphics
+     *
+     * @param graphics
+     * @param text
+     */
     public static void centerText(Graphics2D graphics, String text) {
         centerText(graphics, 0, 0, text);
     }
 
+    /**
+     * Draw text centered around point x,y
+     *
+     * @param graphics
+     * @param x
+     * @param y
+     * @param text
+     */
     public static void centerText(Graphics2D graphics, int x, int y, String text) {
+        Point offset = center(graphics, text);
+        graphics.drawString(text, x - offset.x, y + offset.y);
+    }
+
+    /**
+     * Computes coordinate to draw given texts at in order to center it
+     *
+     * @param graphics to draw text on
+     * @param text to draw
+     * @return offset point
+     */
+    public static Point center(Graphics2D graphics, String text) {
         FontMetrics fontMetrics = graphics.getFontMetrics();
-        graphics.drawString(text, x - fontMetrics.stringWidth(text) / 2, y + fontMetrics.getHeight() / 2 - fontMetrics.getDescent());
+        return new Point(fontMetrics.stringWidth(text) / 2, fontMetrics.getHeight() / 2 - fontMetrics.getDescent());
     }
 
     private Point point;

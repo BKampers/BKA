@@ -4,10 +4,10 @@ package bka.demo.clock.weatherstation;
 ** © Bart Kampers
 */
 
-
-
 import bka.awt.clock.*;
+import bka.demo.clock.*;
 import java.awt.*;
+import java.io.*;
 import java.util.logging.*;
 import javax.swing.*;
 
@@ -32,11 +32,11 @@ public class WeatherStationPanel extends JPanel {
         windRose.addClockFace(RADIUS, Color.WHITE);
         cardinalMarkers = new FormattedValueRenderer(NO_DATA_COLOR, FONT, cardinalFormat);
         addCardinalArcs();
-        for (double angle = 22.5; angle < 360; angle += 45.0) {
+        for (double angle = 22.5; angle < 360.0; angle += 45.0) {
             windRose.addTiltedMarkerRenderer(NUMBER_MARKER_RADIUS, angle, crossMarker());
         }
         windRose.addMarkerRingRenderer(NUMBER_MARKER_RADIUS, 45, cardinalMarkers);
-        windRose.addMarkerRingRenderer(FINE_MARKER_RADIUS, 2d, MAJOR_MARKER_LENGTH, MINOR_MARKER_LENGTH, value -> Math.round(value) % 30 == 0, Color.LIGHT_GRAY, 1f);
+        windRose.addMarkerRingRenderer(FINE_MARKER_RADIUS, 5d, MAJOR_MARKER_LENGTH, MINOR_MARKER_LENGTH, value -> Math.round(value) % 15 == 0, Color.LIGHT_GRAY, 1f);
         windDirectionNeedle = windRose.addNeedleRenderer(windDirectionArrow);
         windSpeedMarkers = new FormattedValueRenderer(NO_DATA_COLOR, FONT);
         anonemeter.addClockFace(RADIUS, Color.WHITE);
@@ -51,6 +51,7 @@ public class WeatherStationPanel extends JPanel {
         airPressureMarkers = new FormattedValueRenderer(NO_DATA_COLOR, FONT);
         barometer.addMarkerRingRenderer(NUMBER_MARKER_RADIUS, 20, airPressureMarkers);
         barometer.addMarkerRingRenderer(FINE_MARKER_RADIUS, 1d, MAJOR_MARKER_LENGTH, MINOR_MARKER_LENGTH, value -> Math.round(value) % 10 == 0, Color.LIGHT_GRAY, 1f);
+        addBarometerSymbols();
         airPressureNeedle = barometer.addNeedleRenderer(airPressureArrow);
         viewmeter.addClockFace(RADIUS, Color.WHITE);
         viewmeter.add(new TextRenderer(new Point(RADIUS * 11, RADIUS + RADIUS / 3), "km", FONT, Color.BLUE));
@@ -115,6 +116,20 @@ public class WeatherStationPanel extends JPanel {
             TextRenderer textRenderer = new TextRenderer(new Point(0, 0), text, font, foreground);
             textRenderer.paint(graphics);
         };
+    }
+
+    private void addBarometerSymbols() {
+        for (Symbol symbol : BAROMETER_SYMBOLS) {
+            try {
+                barometer.addMarkerRenderer(NUMBER_MARKER_RADIUS, symbol.getValue(), new ImageRenderer(ImageFactory.loadImage(symbol.getImageFilename(), 15, 15)));
+            }
+            catch (IOException ex) {
+                Logger.getLogger(WeatherStationPanel.class.getName()).log(Level.WARNING, "Could not load " + symbol.getImageFilename(), ex);
+                barometer.addTiltedMarkerRenderer(NUMBER_MARKER_RADIUS, symbol.getValue(), graphics -> {
+                    TextRenderer.centerText(graphics, symbol.getFallbackText());
+                });
+            }
+        }
     }
 
     public void setStation(WeatherStation station) {
@@ -214,6 +229,31 @@ public class WeatherStationPanel extends JPanel {
 
     }
 
+    private static class Symbol {
+
+        public Symbol(double value, String imageFilename, String fallbackText) {
+            this.value = value;
+            this.imageFilename = imageFilename;
+            this.fallbackText = fallbackText;
+        }
+
+        public double getValue() {
+            return value;
+        }
+
+        public String getImageFilename() {
+            return imageFilename;
+        }
+
+        public String getFallbackText() {
+            return fallbackText;
+        }
+
+        private final double value;
+        private final String imageFilename;
+        private final String fallbackText;
+    }
+
     private final ClockRenderer thermometer = new ClockRenderer(new Point(RADIUS, RADIUS), new Scale(-50, 50, MIN_ANGLE, MAX_ANGLE));
     private final ArrowRenderer temperatureArrow = new ArrowRenderer();
     private final NeedleRenderer temperatureNeedle;
@@ -243,21 +283,28 @@ public class WeatherStationPanel extends JPanel {
     private final NeedleRenderer visibilityNeedle;
     private final FormattedValueRenderer visibilityMarkers;
 
+    private static final Symbol[] BAROMETER_SYMBOLS = {
+        new Symbol(950d, "Resources/raincloud.png", "Rain"),
+        new Symbol(990d, "Resources/sun cloud.png", "Change"),
+        new Symbol(1030d, "Resources/sun.png", "Fair")
+    };
+
     private static final Font FONT = new Font(Font.DIALOG, Font.PLAIN, 12);
 
-    private static final int RADIUS = 100;
+    private static final Color NO_DATA_COLOR = new Color(0xE1E1E1);
+    private static final Color ARC_COLOR_EVEN = new Color(0x4A41AF);
+    private static final Color ARC_COLOR_ODD = new Color(0x918AE5);
+
     private static final double MIN_ANGLE = -0.4125;
     private static final double MAX_ANGLE = 0.4125;
+
+    private static final int RADIUS = 100;
     private static final double NUMBER_MARKER_RADIUS = 0.85 * RADIUS;
     private static final double FINE_MARKER_RADIUS = 0.79 * RADIUS;
     private static final double ARC_RADIUS = 0.95 * RADIUS;
     private static final float ARC_WIDTH = (float) RADIUS / 20f;
     private static final int MINOR_MARKER_LENGTH = (int) (RADIUS * 0.07);
     private static final int MAJOR_MARKER_LENGTH = (int) (RADIUS * 0.1);
-
-    private static final Color NO_DATA_COLOR = new Color(225, 225, 225);
-    private static final Color ARC_COLOR_EVEN = new Color(0x4A41AF);
-    private static final Color ARC_COLOR_ODD = new Color(0x918AE5);
 
     private static final CardinalNumberFormat cardinalFormat = new CardinalNumberFormat();
 }

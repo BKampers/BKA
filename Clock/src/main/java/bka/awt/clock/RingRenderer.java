@@ -1,3 +1,6 @@
+/*
+** © Bart Kampers
+ */
 package bka.awt.clock;
 
 import bka.awt.*;

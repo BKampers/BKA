@@ -40,11 +40,11 @@ public class FormattedValueRenderer implements MarkerRenderer {
     private Point offset(Graphics2D graphics, String text, double value, FontMetrics fontMetrics) {
         if (value < 0.0) {
             String truncText = format.format(-value);
-            Point offset = TextRenderer.center(graphics, truncText);
+            Point offset = TextRenderer.centerPoint(graphics, truncText);
             offset.x += fontMetrics.stringWidth(text) - fontMetrics.stringWidth(truncText);
             return offset;
         }
-        return TextRenderer.center(graphics, text);
+        return TextRenderer.centerPoint(graphics, text);
     }
 
     private static NumberFormat defaultFormat() {

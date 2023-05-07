@@ -183,6 +183,10 @@ public class ClockRenderer extends CompositeRenderer {
         super.paint(graphics);
     }
 
+    public Point getCenter() {
+        return new Point(center);
+    }
+
     private final Point center;
     private final Scale scale;
     

@@ -77,7 +77,7 @@ public class TextRenderer implements Renderer {
      * @param text
      */
     public static void centerText(Graphics2D graphics, int x, int y, String text) {
-        Point offset = center(graphics, text);
+        Point offset = centerPoint(graphics, text);
         graphics.drawString(text, x - offset.x, y + offset.y);
     }
 
@@ -88,7 +88,7 @@ public class TextRenderer implements Renderer {
      * @param text to draw
      * @return offset point
      */
-    public static Point center(Graphics2D graphics, String text) {
+    public static Point centerPoint(Graphics2D graphics, String text) {
         FontMetrics fontMetrics = graphics.getFontMetrics();
         return new Point(fontMetrics.stringWidth(text) / 2, fontMetrics.getHeight() / 2 - fontMetrics.getDescent());
     }

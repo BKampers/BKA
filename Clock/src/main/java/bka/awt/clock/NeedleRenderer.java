@@ -32,16 +32,16 @@ public class NeedleRenderer implements Renderer {
         this.value = value;
     }
 
+    public double getValue() {
+        return value;
+    }
+
     public final void setScale(Scale scale) {
         this.scale = Objects.requireNonNull(scale);
     }
 
-    protected Scale getScale() {
+    public Scale getScale() {
         return scale;
-    }
-
-    public final void setRotationPoint(Point2D point) {
-        rotationPoint = Objects.requireNonNull(point);
     }
 
     protected final Point2D getRotationPoint() {

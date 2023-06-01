@@ -34,16 +34,16 @@ public class WeatherStationPanel extends JPanel {
     private ClockPanel createThermometer() {
         ClockPanel thermometer = new ClockPanel(new Scale(MIN_TEMPERATURE, MAX_TEMPERATURE, MIN_ANGLE, MAX_ANGLE), 10);
         thermometer.addText("\u2103");
-        addTemperatureArcs(thermometer.getRenderer());
+        addTemperatureArcs(thermometer);
         thermometer.addFineMarkers(1d, value -> Math.round(value) % 5 == 0);
-        thermometer.addNeedle(ClockPanel.Measurement.CHILL, Color.BLUE);
-        thermometer.addNeedle(ClockPanel.Measurement.TEMPERATURE, Color.RED);
+        thermometer.addNeedle(Measurement.CHILL, Color.BLUE);
+        thermometer.addNeedle(Measurement.TEMPERATURE, Color.RED);
         return thermometer;
     }
 
-    private static void addTemperatureArcs(ClockRenderer thermometer) {
+    private static void addTemperatureArcs(ClockPanel thermometer) {
         for (int t = MIN_TEMPERATURE; t < MAX_TEMPERATURE; t += 10) {
-            thermometer.addArc(ARC_RADIUS, t, t + 9, (t < 0) ? coldColor(t) : warmColor(t), ARC_WIDTH);
+            thermometer.addArc(t, t + 9, (t < 0) ? coldColor(t) : warmColor(t));
         }
     }
 
@@ -59,24 +59,24 @@ public class WeatherStationPanel extends JPanel {
         ClockPanel hygrometer = new ClockPanel(new Scale(0, 100, MIN_ANGLE, MAX_ANGLE), 10);
         hygrometer.addText("RH %");
         hygrometer.addFineMarkers(1d, value -> Math.round(value) % 5 == 0);
-        hygrometer.addNeedle(ClockPanel.Measurement.HUMIDITY, Color.GREEN.darker());
+        hygrometer.addNeedle(Measurement.HUMIDITY, Color.GREEN.darker());
         return hygrometer;
     }
 
     private ClockPanel createWindrose() {
-        ClockPanel windRose = new ClockPanel(new Scale(0, 360), 45, new FormattedValueRenderer(NO_DATA_COLOR, FONT, CARDINAL_FORMAT));
-        addCardinalArcs(windRose.getRenderer());
+        ClockPanel windRose = new ClockPanel(new Scale(0, 360), 45, new CardinalNumberFormat());
+        addCardinalArcs(windRose);
         for (double angle = 22.5; angle < 360.0; angle += 45.0) {
-            windRose.getRenderer().addTiltedMarkerRenderer(NUMBER_MARKER_RADIUS, angle, crossMarker());
+            windRose.addMarker(angle, CROSS_MARKER);
         }
         windRose.addFineMarkers(5d, value -> Math.round(value) % 15 == 0);
-        windRose.addCardinalNeedle(ClockPanel.Measurement.WIND_DIRECTION, Color.BLACK, 180);
+        windRose.addCardinalNeedle(Measurement.WIND_DIRECTION, Color.BLACK, 180);
         return windRose;
     }
 
-    private static void addCardinalArcs(ClockRenderer windRose) {
+    private static void addCardinalArcs(ClockPanel windRose) {
         for (int a = 0; a < 16; ++a) {
-            windRose.addArc(ARC_RADIUS, a * 22.5 - 9.5, a * 22.5 + 9.5, (a % 2 == 0) ? ARC_COLOR_EVEN : ARC_COLOR_ODD, ARC_WIDTH);
+            windRose.addArc(a * 22.5 - 9.5, a * 22.5 + 9.5, (a % 2 == 0) ? ARC_COLOR_EVEN : ARC_COLOR_ODD);
         }
     }
 
@@ -84,23 +84,23 @@ public class WeatherStationPanel extends JPanel {
         ClockPanel anonemeter = new ClockPanel(new Scale(0, 40, MIN_ANGLE, MAX_ANGLE), 5);
         anonemeter.addText("m/s");
         anonemeter.addFineMarkers(1d, value -> Math.round(value) % 5 == 0);
-        addBeaufortArcs(anonemeter.getRenderer());
-        anonemeter.addNeedle(ClockPanel.Measurement.SQUALL, Color.RED);
-        anonemeter.addNeedle(ClockPanel.Measurement.WIND_SPEED, Color.BLACK);
+        addBeaufortArcs(anonemeter);
+        anonemeter.addNeedle(Measurement.SQUALL, Color.RED);
+        anonemeter.addNeedle(Measurement.WIND_SPEED, Color.BLACK);
         return anonemeter;
     }
 
-    private static void addBeaufortArcs(ClockRenderer anonemeter) {
+    private static void addBeaufortArcs(ClockPanel anonemeter) {
         final Font font = new Font(Font.SERIF, Font.ROMAN_BASELINE, 7);
         final double[] beaufortWindSpeeds = { 0.3, 1.6, 3.4, 5.5, 8.0, 10.8, 13.9, 17.2, 20.8, 24.5, 28.5, 32.7, 40.0 };
         final double capMargin = 0.2;
         final int ovalSize = 5;
         for (int i = 1; i < beaufortWindSpeeds.length; ++i) {
-            final Color color = beaufortColor(i);
-            final double startValue = beaufortWindSpeeds[i - 1];
-            final double endValue = beaufortWindSpeeds[i];
-            anonemeter.addArc(ARC_RADIUS, startValue + capMargin, endValue - capMargin, color, ARC_WIDTH);
-            anonemeter.addTiltedMarkerRenderer(ARC_RADIUS, startValue + (endValue - startValue) / 2d, ovalMarkerRenderer(Integer.toString(i), font, Color.WHITE, ovalSize, color));
+            Color color = beaufortColor(i);
+            double startValue = beaufortWindSpeeds[i - 1];
+            double endValue = beaufortWindSpeeds[i];
+            anonemeter.addArc(startValue + capMargin, endValue - capMargin, color);
+            anonemeter.addArcMarker(startValue + (endValue - startValue) / 2d, ovalMarkerRenderer(Integer.toString(i), font, Color.WHITE, ovalSize, color));
         }
     }
 
@@ -122,19 +122,19 @@ public class WeatherStationPanel extends JPanel {
         ClockPanel barometer = new ClockPanel(new Scale(MIN_PRESSURE, MAX_PRESSURE, MIN_ANGLE, MAX_ANGLE), 20);
         barometer.addText("hPa");
         barometer.addFineMarkers(1d, value -> Math.round(value) % 10 == 0);
-        addBarometerSymbols(barometer.getRenderer());
-        barometer.addNeedle(ClockPanel.Measurement.PRESSURE, Color.BLUE, MIN_PRESSURE);
+        addBarometerSymbols(barometer);
+        barometer.addNeedle(Measurement.PRESSURE, Color.BLUE, MIN_PRESSURE);
         return barometer;
     }
 
-    private static void addBarometerSymbols(ClockRenderer barometer) {
+    private static void addBarometerSymbols(ClockPanel barometer) {
         for (Symbol symbol : BAROMETER_SYMBOLS) {
             try {
-                barometer.addMarkerRenderer(NUMBER_MARKER_RADIUS, symbol.getValue(), new ImageRenderer(ImageFactory.loadImage(symbol.getImageFilename(), 15, 15)));
+                barometer.addMarker(symbol.getValue(), new ImageRenderer(ImageFactory.loadImage(symbol.getImageFilename(), BAROMETER_SYMBOL_SIZE, BAROMETER_SYMBOL_SIZE)));
             }
             catch (IOException ex) {
                 Logger.getLogger(WeatherStationPanel.class.getName()).log(Level.WARNING, "Could not load " + symbol.getImageFilename(), ex);
-                barometer.addTiltedMarkerRenderer(NUMBER_MARKER_RADIUS, symbol.getValue(), graphics -> {
+                barometer.addMarker(symbol.getValue(), graphics -> {
                     TextRenderer.centerText(graphics, symbol.getFallbackText());
                 });
             }
@@ -145,17 +145,8 @@ public class WeatherStationPanel extends JPanel {
         ClockPanel viewmeter = new ClockPanel(new Scale(0, 60, MIN_ANGLE, MAX_ANGLE), 5);
         viewmeter.addFineMarkers(1d, value -> Math.round(value) % 5 == 0);
         viewmeter.addText("km");
-        viewmeter.addNeedle(ClockPanel.Measurement.VISIBILITY, Color.ORANGE);
+        viewmeter.addNeedle(Measurement.VISIBILITY, Color.ORANGE);
         return viewmeter;
-    }
-
-    private static bka.awt.Renderer crossMarker() {
-        return graphics -> {
-            graphics.setPaint(Color.LIGHT_GRAY);
-            graphics.setStroke(new BasicStroke(MARKER_WIDTH));
-            graphics.drawLine(0, 2, 0, -2);
-            graphics.drawLine(-2, 0, 2, 0);
-        };
     }
 
     public void setStation(WeatherStation station) {
@@ -219,24 +210,18 @@ public class WeatherStationPanel extends JPanel {
         new Symbol(990d, "Resources/sun cloud.png", "Change"),
         new Symbol(1030d, "Resources/sun.png", "Fair")
     };
+    private static final int BAROMETER_SYMBOL_SIZE = 15;
 
-    private static final Font FONT = new Font(Font.DIALOG, Font.PLAIN, 12);
+    private static final bka.awt.Renderer CROSS_MARKER = graphics -> {
+        graphics.drawLine(0, 2, 0, -2);
+        graphics.drawLine(-2, 0, 2, 0);
+    };
 
-    private static final Color NO_DATA_COLOR = new Color(0xE1E1E1);
     private static final Color ARC_COLOR_EVEN = new Color(0x4A41AF);
     private static final Color ARC_COLOR_ODD = new Color(0x918AE5);
 
     private static final double MIN_ANGLE = -0.4125;
     private static final double MAX_ANGLE = 0.4125;
-
-    private static final int RADIUS = 100;
-    private static final double NUMBER_MARKER_RADIUS = 0.85 * RADIUS;
-//    private static final double FINE_MARKER_RADIUS = 0.79 * RADIUS;
-    private static final double ARC_RADIUS = 0.95 * RADIUS;
-    private static final float ARC_WIDTH = (float) RADIUS / 20f;
-    private static final float MARKER_WIDTH = RADIUS / 100f;
-
-    private static final CardinalNumberFormat CARDINAL_FORMAT = new CardinalNumberFormat();
 
     private static final int MIN_TEMPERATURE = -50;
     private static final int MAX_TEMPERATURE = 50;

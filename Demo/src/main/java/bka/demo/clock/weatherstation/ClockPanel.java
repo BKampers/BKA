@@ -6,61 +6,34 @@ package bka.demo.clock.weatherstation;
 
 import bka.awt.clock.*;
 import java.awt.*;
+import java.text.*;
 import java.util.*;
 import java.util.function.*;
 
 public class ClockPanel extends javax.swing.JPanel {
 
-    public enum Measurement {
-        TEMPERATURE(station -> station.getTemperature()),
-        CHILL(station -> computeValue(station.getChill(), () -> station.getTemperature())),
-        HUMIDITY(station -> station.getHumidity()),
-        WIND_DIRECTION(station -> station.getWindDirection()),
-        WIND_SPEED(station -> station.getWindSpeed()),
-        SQUALL(station -> computeValue(station.getSquall(), value -> value / 3.6, () -> station.getWindSpeed())),
-        PRESSURE(station -> station.getPressure()),
-        VISIBILITY(station -> computeValue(station.getVisibility(), value -> value / 1000));
-
-        private Measurement(Function<WeatherStation, Double> provider) {
-            this.provider = provider;
-        }
-
-        public Double getValue(WeatherStation station) {
-            return provider.apply(station);
-        }
-
-        private static Double computeValue(Double value, Supplier<Double> alternative) {
-            return computeValue(value, Function.identity(), alternative);
-        }
-
-        private static Double computeValue(Double value, Function<Double, Double> processor) {
-            return computeValue(value, processor, () -> null);
-        }
-
-        private static Double computeValue(Double value, Function<Double, Double> processor, Supplier<Double> alternative) {
-            if (value == null) {
-                return alternative.get();
-            }
-            return processor.apply(value);
-        }
-
-        private final Function<WeatherStation, Double> provider;
-    }
-
-
     public ClockPanel(Scale scale, int markerInterval) {
         this(scale, markerInterval, new FormattedValueRenderer(NO_DATA_COLOR, FONT));
     }
 
-    public ClockPanel(Scale scale, int markerInterval, FormattedValueRenderer markers) {
+    public ClockPanel(Scale scale, int markerInterval, NumberFormat format) {
+        this(scale, markerInterval, new FormattedValueRenderer(NO_DATA_COLOR, FONT, format));
+    }
+
+    public ClockPanel(Scale scale, int markerInterval, FormattedValueRenderer markerRenderer) {
         super();
         setDimension();
-        renderer = new ClockRenderer(new Point(RADIUS, RADIUS), scale);
-        this.markers = markers;
-        renderer.addClockFace(RADIUS, Color.WHITE);
-        renderer.addMarkerRingRenderer(NUMBER_MARKER_RADIUS, markerInterval, markers);
-        java.util.Timer timer = new java.util.Timer();
+        clockRenderer = new ClockRenderer(new Point(RADIUS, RADIUS), scale);
+        mainMarkerRenderer = markerRenderer;
+        continuousScale = normalized(scale.getMinAngle()) == normalized(scale.getMaxAngle());
+        clockRenderer.addClockFace(RADIUS, Color.WHITE);
+        clockRenderer.addMarkerRingRenderer(NUMBER_MARKER_RADIUS, markerInterval, mainMarkerRenderer);
+        Timer timer = new Timer();
         timer.schedule(updateTask, UPDATE_INTERVAL, UPDATE_INTERVAL);
+    }
+
+    private static int normalized(double value) {
+        return (int) Math.round((value - Math.floor(value)) * 10000);
     }
 
     private void setDimension() {
@@ -70,13 +43,34 @@ public class ClockPanel extends javax.swing.JPanel {
         setSize(size);
     }
 
+    @Override
+    public void paint(Graphics graphics) {
+        clockRenderer.paint((Graphics2D) graphics);
+    }
+
     public void addFineMarkers(double interval, Predicate<Double> isMajor) {
-        getRenderer().addMarkerRingRenderer(FINE_MARKER_RADIUS, interval, MAJOR_MARKER_LENGTH, MINOR_MARKER_LENGTH, isMajor, Color.LIGHT_GRAY, MARKER_WIDTH);
+        clockRenderer.addMarkerRingRenderer(FINE_MARKER_RADIUS, interval, MAJOR_MARKER_LENGTH, MINOR_MARKER_LENGTH, isMajor, FINE_MARKER_COLOR, MARKER_WIDTH);
     }
 
     public void addText(String text) {
-        Point center = renderer.getCenter();
-        getRenderer().add(new TextRenderer(new Point(center.x, center.y + RADIUS / 3), text, FONT, Color.BLUE));
+        Point center = clockRenderer.getCenter();
+        clockRenderer.add(new TextRenderer(new Point(center.x, center.y + RADIUS / 3), text, FONT, MARKER_COLOR));
+    }
+
+    public void addArc(double start, double end, Paint paint) {
+        clockRenderer.addArc(ARC_RADIUS, start, end, paint, ARC_WIDTH);
+    }
+
+    public void addArcMarker(double value, bka.awt.Renderer markerRenderer) {
+        clockRenderer.addTiltedMarkerRenderer(ARC_RADIUS, value, markerRenderer);
+    }
+
+    public void addMarker(double value, bka.awt.Renderer markerRenderer) {
+        clockRenderer.addTiltedMarkerRenderer(NUMBER_MARKER_RADIUS, value, graphics -> {
+            graphics.setPaint(FINE_MARKER_COLOR);
+            graphics.setStroke(new BasicStroke(MARKER_WIDTH));
+            markerRenderer.paint(graphics);
+        });
     }
 
     public void addNeedle(Measurement measurement, Paint paint) {
@@ -84,42 +78,32 @@ public class ClockPanel extends javax.swing.JPanel {
     }
 
     public void addCardinalNeedle(Measurement measurement, Paint paint, double defaultValue) {
-        addNeedle(measurement, new CardinalArrowRenderer(), paint, defaultValue);
+        addNeedle(measurement, ArrowRenderer.cardinalArrowRenderer(RADIUS, NO_DATA_COLOR), paint, defaultValue);
     }
 
     public void addNeedle(Measurement measurement, Paint paint, double defaultValue) {
-        addNeedle(measurement, new ArrowRenderer(), paint, defaultValue);
+        addNeedle(measurement, ArrowRenderer.defaultArrowRenderer(RADIUS, NO_DATA_COLOR), paint, defaultValue);
     }
 
-    @Override
-    public void paint(Graphics graphics) {
-        renderer.paint((Graphics2D) graphics);
-    }
-
-    private void addNeedle(Measurement measurement, ArrowRenderer arrowRenderer, Paint paint, double defaultValue) {
-        needles.put(measurement, new Needle(renderer, arrowRenderer, paint, defaultValue));
+    public void addNeedle(Measurement measurement, ArrowRenderer arrowRenderer, Paint paint, double defaultValue) {
+        needles.put(measurement, new Needle(clockRenderer, arrowRenderer, paint, defaultValue));
     }
 
     public void update(WeatherStation station) {
         needles.forEach((measurement, needle) -> {
             Double value = measurement.getValue(station);
             if (value != null) {
-                markers.setPaint(Color.BLUE);
+                mainMarkerRenderer.setPaint(MARKER_COLOR);
                 needle.applyPaint();
                 updateTask.setValue(measurement, value);
             }
             else {
-                markers.setPaint(NO_DATA_COLOR);
+                mainMarkerRenderer.setPaint(NO_DATA_COLOR);
                 needle.applyPaint(NO_DATA_COLOR);
                 updateTask.removeValue(measurement);
             }
         });
     }
-
-    public ClockRenderer getRenderer() {
-        return renderer;
-    }
-
 
     private class Needle {
 
@@ -128,6 +112,11 @@ public class ClockPanel extends javax.swing.JPanel {
             needleRenderer = clockRenderer.addNeedleRenderer(arrowRenderer);
             needleRenderer.setValue(defaultValue);
             this.paint = paint;
+            incrementStep = Math.abs(getScale().getMaxValue() - getScale().getMinValue()) * UPDATE_INCREMENT_FRACTION;
+        }
+
+        public double getValue() {
+            return needleRenderer.getValue();
         }
 
         public void setValue(double value) {
@@ -135,7 +124,14 @@ public class ClockPanel extends javax.swing.JPanel {
         }
 
         public void addValue(double increment) {
-            setValue(needleRenderer.getValue() + increment);
+            double value = needleRenderer.getValue() + increment;
+            if (value < needleRenderer.getScale().getMinValue()) {
+                value = needleRenderer.getScale().getMaxValue() + (value - needleRenderer.getScale().getMinValue());
+            }
+            else if (value > needleRenderer.getScale().getMaxValue()) {
+                value = needleRenderer.getScale().getMinValue() + (value - needleRenderer.getScale().getMaxValue());
+            }
+            setValue(value);
         }
 
         public void applyPaint() {
@@ -150,60 +146,14 @@ public class ClockPanel extends javax.swing.JPanel {
             return needleRenderer.getScale();
         }
 
+        public double getAnimationStep() {
+            return incrementStep;
+        }
+
         private final NeedleRenderer needleRenderer;
         private final ArrowRenderer arrowRenderer;
         private final Paint paint;
-    }
-
-
-    private static class ArrowRenderer implements bka.awt.Renderer {
-
-        @Override
-        public void paint(Graphics2D graphics) {
-            graphics.setPaint(paint);
-            graphics.setStroke(stroke);
-            graphics.fillOval(0 - RADIUS / 20, 0 - RADIUS / 20, RADIUS / 10, RADIUS / 10);
-            graphics.drawLine(0, RADIUS / 10, 0, -(RADIUS / 10) * 7);
-            graphics.drawLine(4, -(RADIUS / 10 * 6), 0, -(RADIUS / 10) * 7);
-            graphics.drawLine(-4, -(RADIUS / 10 * 6), 0, -(RADIUS / 10) * 7);
-        }
-
-        public void setPaint(Paint paint) {
-            this.paint = paint;
-        }
-
-        protected Stroke getStroke() {
-            return stroke;
-        }
-
-        protected Paint getPaint() {
-            return paint;
-        }
-
-        private Paint paint = NO_DATA_COLOR;
-        private final Stroke stroke = new BasicStroke(RADIUS * 0.03f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER);
-    }
-
-
-    private static class CardinalArrowRenderer extends ArrowRenderer {
-
-        @Override
-        public void paint(Graphics2D graphics) {
-            graphics.setPaint(getPaint());
-            graphics.setStroke(getStroke());
-            graphics.fillPolygon(
-                new Polygon(
-                    new int[]{ 0, RADIUS / -10, RADIUS / 10 },
-                    new int[]{ RADIUS / 10, RADIUS / -10, RADIUS / -10 },
-                    3)
-            );
-            graphics.drawLine(0, 0, 0, -(RADIUS / 10) * 7);
-            graphics.drawLine(RADIUS / 20, -(RADIUS / 20) * 14, 0, -(RADIUS / 20) * 12);
-            graphics.drawLine(RADIUS / -20, -(RADIUS / 20) * 14, 0, -(RADIUS / 20) * 12);
-            graphics.drawLine(RADIUS / 20, -(RADIUS / 20) * 12, 0, -(RADIUS / 20) * 10);
-            graphics.drawLine(RADIUS / -20, -(RADIUS / 20) * 12, 0, -(RADIUS / 20) * 10);
-        }
-
+        final double incrementStep;
     }
 
 
@@ -218,30 +168,54 @@ public class ClockPanel extends javax.swing.JPanel {
         public void removeValue(Measurement measurement) {
             synchronized (targetValues) {
                 targetValues.remove(measurement);
+                repaint();
             }
         }
 
         @Override
         public void run() {
-            for (Map.Entry<Measurement, Needle> entry : needles.entrySet()) {
-                Measurement measurement = entry.getKey();
-                synchronized (targetValues) {
+            synchronized (targetValues) {
+                if (targetValues.isEmpty()) {
+                    return;
+                }
+                needles.forEach((measurement, needle) -> {
                     Double targetValue = targetValues.get(measurement);
                     if (targetValue != null) {
-                        Needle needle = entry.getValue();
-                        double step = Math.abs(needle.getScale().getMaxValue() - needle.getScale().getMinValue()) * INCREMENT_FRACTION;
-                        double distance = targetValue - needle.needleRenderer.getValue();
-                        if (Math.abs(distance) > step) {
-                            needle.addValue((distance < 0) ? -step : step);
-                        }
-                        else {
-                            needle.setValue(targetValues.get(measurement));
-                            targetValues.remove(entry.getKey());
-                        }
+                        move(needle, targetValue, measurement);
                     }
+                });
+                repaint();
+            }
+        }
+
+        private void move(Needle needle, Double targetValue, Measurement measurement) {
+            double distance = distance(needle, targetValue);
+            double step = needle.getAnimationStep();
+            if (Math.abs(distance) > step) {
+                needle.addValue((distance < 0) ? -step : step);
+            }
+            else {
+                needle.setValue(targetValues.get(measurement));
+                targetValues.remove(measurement);
+            }
+        }
+
+        private double distance(Needle needle, double targetValue) {
+            double distance = targetValue - needle.getValue();
+            if (continuousScale) {
+                double alternative = alternativeDistance(needle.getScale(), needle.getValue(), targetValue);
+                if (Math.abs(alternative) < Math.abs(distance)) {
+                    return alternative;
                 }
             }
-            repaint();
+            return distance;
+        }
+
+        private double alternativeDistance(Scale scale, double actual, double target) {
+            if (actual < target) {
+                return -(actual - scale.getMinValue() + scale.getMaxValue() - target);
+            }
+            return target - scale.getMinValue() + scale.getMaxValue() - actual;
         }
 
         private final Map<Measurement, Double> targetValues = new HashMap<>();
@@ -252,12 +226,18 @@ public class ClockPanel extends javax.swing.JPanel {
     private final UpdateTask updateTask = new UpdateTask();
     private final LinkedHashMap<Measurement, Needle> needles = new LinkedHashMap<>();
 
-    private final ClockRenderer renderer;
-    private final FormattedValueRenderer markers;
+    private final ClockRenderer clockRenderer;
+    private final FormattedValueRenderer mainMarkerRenderer;
+    private final boolean continuousScale;
 
-    private static final Font FONT = new Font(Font.DIALOG, Font.PLAIN, 12);
+    private static final Color MARKER_COLOR = Color.BLUE;
+    private static final Color FINE_MARKER_COLOR = Color.LIGHT_GRAY;
     private static final Color NO_DATA_COLOR = new Color(0xE1E1E1);
+    private static final Font FONT = new Font(Font.DIALOG, Font.PLAIN, 12);
+
     private static final int RADIUS = 100;
+    private static final float ARC_WIDTH = (float) RADIUS / 20f;
+    private static final double ARC_RADIUS = 0.95 * RADIUS;
     private static final double NUMBER_MARKER_RADIUS = 0.85 * RADIUS;
     private static final double FINE_MARKER_RADIUS = 0.79 * RADIUS;
     private static final float MARKER_WIDTH = RADIUS / 100f;
@@ -265,6 +245,6 @@ public class ClockPanel extends javax.swing.JPanel {
     private static final int MAJOR_MARKER_LENGTH = (int) (RADIUS * 0.1);
 
     private static final long UPDATE_INTERVAL = 100;
-    private static final double INCREMENT_FRACTION = 0.01;
+    private static final double UPDATE_INCREMENT_FRACTION = 0.01;
 
 }

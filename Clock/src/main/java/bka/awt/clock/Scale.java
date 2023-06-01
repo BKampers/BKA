@@ -29,6 +29,14 @@ public final class Scale {
         return maxValue;
     }
 
+    public double getMinAngle() {
+        return minAngle;
+    }
+
+    public double getMaxAngle() {
+        return maxAngle;
+    }
+
     public double radians(double value) {
         return angleRatio(value) * 2d * Math.PI;
     }

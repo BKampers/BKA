@@ -59,7 +59,7 @@ public class NeedleRenderer implements Renderer {
     }
 
 
-    private Point2D rotationPoint;
+    private final Point2D rotationPoint;
     private Scale scale;
     private double value;
     private final Renderer renderer;

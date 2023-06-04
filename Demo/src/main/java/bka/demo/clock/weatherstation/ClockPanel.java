@@ -4,6 +4,7 @@
 
 package bka.demo.clock.weatherstation;
 
+import bka.awt.*;
 import bka.awt.clock.*;
 import java.awt.*;
 import java.text.*;
@@ -61,16 +62,24 @@ public class ClockPanel extends javax.swing.JPanel {
         clockRenderer.addArc(ARC_RADIUS, start, end, paint, ARC_WIDTH);
     }
 
-    public void addArcMarker(double value, bka.awt.Renderer markerRenderer) {
-        clockRenderer.addTiltedMarkerRenderer(ARC_RADIUS, value, markerRenderer);
+    public void addArcMarker(double value, Renderer renderer) {
+        clockRenderer.addTiltedMarkerRenderer(ARC_RADIUS, value, renderer);
     }
 
-    public void addMarker(double value, bka.awt.Renderer markerRenderer) {
-        clockRenderer.addTiltedMarkerRenderer(NUMBER_MARKER_RADIUS, value, graphics -> {
+    public void addMarker(double value, Renderer renderer) {
+        clockRenderer.addMarkerRenderer(NUMBER_MARKER_RADIUS, value, markerRenderer(renderer));;
+    }
+
+    public void addTiltedMarker(double value, Renderer renderer) {
+        clockRenderer.addTiltedMarkerRenderer(NUMBER_MARKER_RADIUS, value, markerRenderer(renderer));
+    }
+
+    private Renderer markerRenderer(Renderer renderer) {
+        return graphics -> {
             graphics.setPaint(FINE_MARKER_COLOR);
             graphics.setStroke(new BasicStroke(MARKER_WIDTH));
-            markerRenderer.paint(graphics);
-        });
+            renderer.paint(graphics);
+        };
     }
 
     public void addNeedle(Measurement measurement, Paint paint) {

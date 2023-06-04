@@ -67,7 +67,7 @@ public class WeatherStationPanel extends JPanel {
         ClockPanel windRose = new ClockPanel(new Scale(0, 360), 45, new CardinalNumberFormat());
         addCardinalArcs(windRose);
         for (double angle = 22.5; angle < 360.0; angle += 45.0) {
-            windRose.addMarker(angle, CROSS_MARKER);
+            windRose.addTiltedMarker(angle, CROSS_MARKER);
         }
         windRose.addFineMarkers(5d, value -> Math.round(value) % 15 == 0);
         windRose.addCardinalNeedle(Measurement.WIND_DIRECTION, Color.BLACK, 180);
@@ -134,7 +134,7 @@ public class WeatherStationPanel extends JPanel {
             }
             catch (IOException ex) {
                 Logger.getLogger(WeatherStationPanel.class.getName()).log(Level.WARNING, "Could not load " + symbol.getImageFilename(), ex);
-                barometer.addMarker(symbol.getValue(), graphics -> {
+                barometer.addTiltedMarker(symbol.getValue(), graphics -> {
                     TextRenderer.centerText(graphics, symbol.getFallbackText());
                 });
             }

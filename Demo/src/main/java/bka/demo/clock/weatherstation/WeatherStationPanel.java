@@ -70,7 +70,7 @@ public class WeatherStationPanel extends JPanel {
             windRose.addTiltedMarker(angle, CROSS_MARKER);
         }
         windRose.addFineMarkers(5d, value -> Math.round(value) % 15 == 0);
-        windRose.addCardinalNeedle(Measurement.WIND_DIRECTION, Color.BLACK, 180);
+        windRose.addCardinalNeedle(Measurement.WIND_DIRECTION, Color.BLACK);
         return windRose;
     }
 
@@ -91,10 +91,10 @@ public class WeatherStationPanel extends JPanel {
     }
 
     private static void addBeaufortArcs(ClockPanel anonemeter) {
-        final Font font = new Font(Font.SERIF, Font.ROMAN_BASELINE, 7);
-        final double[] beaufortWindSpeeds = { 0.3, 1.6, 3.4, 5.5, 8.0, 10.8, 13.9, 17.2, 20.8, 24.5, 28.5, 32.7, 40.0 };
-        final double capMargin = 0.2;
-        final int ovalSize = 5;
+        Font font = new Font(Font.SERIF, Font.ROMAN_BASELINE, 7);
+        double[] beaufortWindSpeeds = { 0.3, 1.6, 3.4, 5.5, 8.0, 10.8, 13.9, 17.2, 20.8, 24.5, 28.5, 32.7, 40.0 };
+        double capMargin = 0.2;
+        int ovalSize = 5;
         for (int i = 1; i < beaufortWindSpeeds.length; ++i) {
             Color color = beaufortColor(i);
             double startValue = beaufortWindSpeeds[i - 1];

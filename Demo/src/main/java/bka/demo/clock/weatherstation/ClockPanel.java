@@ -67,7 +67,7 @@ public class ClockPanel extends javax.swing.JPanel {
     }
 
     public void addMarker(double value, Renderer renderer) {
-        clockRenderer.addMarkerRenderer(NUMBER_MARKER_RADIUS, value, markerRenderer(renderer));;
+        clockRenderer.addMarkerRenderer(NUMBER_MARKER_RADIUS, value, markerRenderer(renderer));
     }
 
     public void addTiltedMarker(double value, Renderer renderer) {
@@ -83,11 +83,11 @@ public class ClockPanel extends javax.swing.JPanel {
     }
 
     public void addNeedle(Measurement measurement, Paint paint) {
-        addNeedle(measurement, paint, 0);
+        addNeedle(measurement, paint, 0d);
     }
 
-    public void addCardinalNeedle(Measurement measurement, Paint paint, double defaultValue) {
-        addNeedle(measurement, ArrowRenderer.cardinalArrowRenderer(RADIUS, NO_DATA_COLOR), paint, defaultValue);
+    public void addCardinalNeedle(Measurement measurement, Paint paint) {
+        addNeedle(measurement, ArrowRenderer.cardinalArrowRenderer(RADIUS, NO_DATA_COLOR), paint, 0d);
     }
 
     public void addNeedle(Measurement measurement, Paint paint, double defaultValue) {
@@ -118,10 +118,18 @@ public class ClockPanel extends javax.swing.JPanel {
 
         public Needle(ClockRenderer clockRenderer, ArrowRenderer arrowRenderer, Paint paint, double defaultValue) {
             this.arrowRenderer = arrowRenderer;
+            shadeRenderer = clockRenderer.addNeedleRenderer(shadeOffset(), ArrowRenderer.shadeRenderer(arrowRenderer));
             needleRenderer = clockRenderer.addNeedleRenderer(arrowRenderer);
             needleRenderer.setValue(defaultValue);
+            shadeRenderer.setValue(defaultValue);
             this.paint = paint;
-            incrementStep = Math.abs(getScale().getMaxValue() - getScale().getMinValue()) * UPDATE_INCREMENT_FRACTION;
+            animationStep = Math.abs(getScale().getMaxValue() - getScale().getMinValue()) * UPDATE_INCREMENT_FRACTION;
+        }
+
+        private Point shadeOffset() {
+            Point offset = clockRenderer.getCenter();
+            offset.translate(0, 2);
+            return offset;
         }
 
         public double getValue() {
@@ -129,6 +137,7 @@ public class ClockPanel extends javax.swing.JPanel {
         }
 
         public void setValue(double value) {
+            shadeRenderer.setValue(value);
             needleRenderer.setValue(value);
         }
 
@@ -151,20 +160,20 @@ public class ClockPanel extends javax.swing.JPanel {
             arrowRenderer.setPaint(paint);
         }
 
-        public Scale getScale() {
+        public final Scale getScale() {
             return needleRenderer.getScale();
         }
 
-        public double getAnimationStep() {
-            return incrementStep;
+        public final double getAnimationStep() {
+            return animationStep;
         }
 
+        private final NeedleRenderer shadeRenderer;
         private final NeedleRenderer needleRenderer;
         private final ArrowRenderer arrowRenderer;
         private final Paint paint;
-        final double incrementStep;
+        final double animationStep;
     }
-
 
     private class UpdateTask extends TimerTask {
 

@@ -12,6 +12,7 @@ import java.util.*;
 public class ArrowRenderer implements Renderer {
 
     private ArrowRenderer(int radius, Paint initialPaint, Renderer renderer) {
+        this.radius = radius;
         stroke = new BasicStroke(radius * 0.03f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER);
         setPaint(initialPaint);
         this.renderer = renderer;
@@ -39,6 +40,10 @@ public class ArrowRenderer implements Renderer {
         });
     }
 
+    public static ArrowRenderer shadeRenderer(ArrowRenderer original) {
+        return new ArrowRenderer(original.radius, SHADE_COLOR, original.renderer);
+    }
+
     private static void drawChevron(Graphics2D graphics, int base, int width, int height) {
         graphics.drawLine(width, base - height, 0, base);
         graphics.drawLine(-width, base - height, 0, base);
@@ -62,8 +67,10 @@ public class ArrowRenderer implements Renderer {
         renderer.paint(graphics);
     }
 
+    private final int radius;
     private final Stroke stroke;
     private Paint paint;
     Renderer renderer;
 
+    private static final Color SHADE_COLOR = new Color(0x80202020, true);
 }

@@ -173,6 +173,12 @@ public class ClockRenderer extends CompositeRenderer {
         return needleRenderer;
     }
 
+    public NeedleRenderer addNeedleRenderer(Point center, Renderer renderer) {
+        NeedleRenderer needleRenderer = new NeedleRenderer(center, scale, renderer);
+        add(needleRenderer);
+        return needleRenderer;
+    }
+
     private static Stroke roundedStroke(float width) {
         return new BasicStroke(width, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER);
     }

@@ -58,7 +58,6 @@ public class NeedleRenderer implements Renderer {
         graphics.translate(-rotationPoint.getX(), -rotationPoint.getY());
     }
 
-
     private final Point2D rotationPoint;
     private Scale scale;
     private double value;

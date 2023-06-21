@@ -46,6 +46,7 @@ public class ClockPanel extends javax.swing.JPanel {
 
     @Override
     public void paint(Graphics graphics) {
+        super.paint(graphics);
         clockRenderer.paint((Graphics2D) graphics);
     }
 

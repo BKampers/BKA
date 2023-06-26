@@ -11,6 +11,7 @@
         <module>Chart</module>
         <module>Demo</module>
         <module>Clock</module>
+        <module>Graphs</module>
     </modules>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -24,7 +25,7 @@
                     <version>3.8.1</version>        
                     <configuration>
                         <release>15</release>
-                        <jvmArguments>--enable-preview</jvmArguments>
+                        <!-- <jvmArguments> - -enable-preview</jvmArguments> -->
                     </configuration>
                 </plugin>
             </plugins>

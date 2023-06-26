@@ -1,9 +1,3 @@
-/BKA/AWT/nbproject/
-/BKA/AWT/target/
-/BKA/Chart/target/
-/BKA/Demo/target/
-/BKA/Text/target/
-/BKA/Text/nbproject/
 /AWT/nbproject/
 /AWT/target/
 /Chart/target/
@@ -12,3 +6,5 @@
 /Text/nbproject/
 /Clock/target/
 /Graphs/target/
+.DS_Store
+.DS_Store?

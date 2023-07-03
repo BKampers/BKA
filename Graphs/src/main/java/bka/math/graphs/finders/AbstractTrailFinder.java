@@ -24,8 +24,8 @@ public abstract class AbstractTrailFinder<V, E extends Edge<V>> implements Trail
         return edges.stream().filter(Predicate.not(EdgeUtil.isIncidentWith(vertex))).collect(Collectors.toList());
     }
 
-    protected static <T> boolean pass(Predicate<T> predicate, T argument) {
-        return predicate == null || predicate.test(argument);
+    protected <T> Predicate<T> allPass() {
+        return (T object) -> true;
     }
 
 }

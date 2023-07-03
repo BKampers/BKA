@@ -23,11 +23,11 @@ public class NonRecursiveTrailFinder<V, E extends Edge<V>> extends AbstractTrail
 
     @Override
     public void setFilter(Predicate<List<E>> filter) {
-        this.filter = filter;
+        this.filter = (filter == null) ? allPass() : filter;
     }
 
     public void setLimiter(Predicate<Collection<List<E>>> limiter) {
-        this.limiter = limiter;
+        this.limiter = (limiter == null) ? allPass() : limiter;
     }
 
     @Override
@@ -39,8 +39,8 @@ public class NonRecursiveTrailFinder<V, E extends Edge<V>> extends AbstractTrail
             if (stage.selectNextEdge()) {
                 V nextVertex = stage.getAdjacentVertex();
                 TrailBuilder currentTrail = new TrailBuilder(stack, stage);
-                if (pass(restriction, currentTrail)) {
-                    if ((end == null || nextVertex.equals(end)) && pass(filter, currentTrail)) {
+                if (restriction.test(currentTrail.get())) {
+                    if ((end == null || nextVertex.equals(end)) && filter.test(currentTrail.get())) {
                         foundTrails.add(currentTrail.get());
                         if (limiter != null && limiter.test(foundTrails)) {
                             return foundTrails;
@@ -71,10 +71,6 @@ public class NonRecursiveTrailFinder<V, E extends Edge<V>> extends AbstractTrail
     
     private boolean isFirstInCircuit(Deque stack, V start, V end) {
         return stack.size() == 1 && start.equals(end);
-    }
-
-    private boolean pass(Predicate<List<E>> predicate, TrailBuilder trailBuilder) {
-        return predicate == null || predicate.test(trailBuilder.get());
     }
 
     private class TrailBuilder {
@@ -136,8 +132,8 @@ public class NonRecursiveTrailFinder<V, E extends Edge<V>> extends AbstractTrail
         private E current;
     }
 
-    private Predicate<List<E>> restriction;
-    private Predicate<List<E>> filter;
+    private Predicate<List<E>> restriction = allPass();
+    private Predicate<List<E>> filter = allPass();
     private Predicate<Collection<List<E>>> limiter;
 
 }

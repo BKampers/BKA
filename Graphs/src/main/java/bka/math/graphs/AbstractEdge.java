@@ -13,22 +13,24 @@ import java.util.*;
 public abstract class AbstractEdge<V> implements Edge<V> {
 
     public AbstractEdge(V vertex1, V vertex2) {
-        vertices.add(vertex1);
-        vertices.add(vertex2);
+        vertices = List.of(vertex1, vertex2);
     }
 
     public AbstractEdge(Edge<V> other) {
-        vertices.addAll(other.getVertices());
+        if (other.getVertices().size() != VERTEX_COUNT) {
+            throw new IllegalArgumentException("Invalid vertex count");
+        }
+        vertices = Collections.unmodifiableList(new ArrayList<>(other.getVertices()));
     }
 
     @Override
     public Collection<V> getVertices() {
-        return Collections.unmodifiableCollection(vertices);
+        return vertices;
     }
 
     @Override
     public String toString() {
-        return String.format(stringPattern(), toString(vertices.get(0)), toString(vertices.get(1)));
+        return String.format(stringPattern(), toString(vertices.get(VERTEX_1)), toString(vertices.get(VERTEX_2)));
     }
 
     protected String toString(V vertex) {
@@ -39,9 +41,17 @@ public abstract class AbstractEdge<V> implements Edge<V> {
         return "{%s,%s}";
     }
 
-    protected List<V> vertices() {
-        return vertices;
+    protected V getVertex1() {
+        return vertices.get(VERTEX_1);
     }
 
-    private final List<V> vertices = new ArrayList<>(2);
+    protected V getVertex2() {
+        return vertices.get(VERTEX_2);
+    }
+
+    private final List<V> vertices;
+
+    private static final int VERTEX_1 = 0;
+    private static final int VERTEX_2 = 1;
+    private static final int VERTEX_COUNT = 2;
 }

@@ -18,11 +18,11 @@ public class DirectedEdge<V> extends AbstractEdge<V> {
     }
 
     public V getOrigin() {
-        return vertices().get(0);
+        return getVertex1();
     }
 
     public V getTerminus() {
-        return vertices().get(1);
+        return getVertex2();
     }
 
     @Override

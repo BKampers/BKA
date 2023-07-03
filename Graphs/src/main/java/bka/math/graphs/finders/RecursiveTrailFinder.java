@@ -18,12 +18,12 @@ public class RecursiveTrailFinder<V, E extends Edge<V>> extends AbstractTrailFin
 
     @Override
     public void setRestriction(Predicate<List<E>> restriction) {
-        this.restriction = restriction;
+        this.restriction = (restriction == null) ? allPass() : restriction;
     }
 
     @Override
     public void setFilter(Predicate<List<E>> filter) {
-        this.filter = filter;
+        this.filter = (filter == null) ? allPass() : filter;
     }
 
     @Override
@@ -40,8 +40,8 @@ public class RecursiveTrailFinder<V, E extends Edge<V>> extends AbstractTrailFin
         graph.stream().filter(from(start)).forEach(nextEdge -> {
             currentTrail.add(nextEdge);
             V nextVertex = next(nextEdge, start);
-            if (pass(restriction, currentTrail)) {
-                if ((end == null || nextVertex.equals(end)) && pass(filter, currentTrail)) {
+            if (restriction.test(currentTrail)) {
+                if ((end == null || nextVertex.equals(end)) && filter.test(currentTrail)) {
                     List<E> trail = new LinkedList<>();
                     trail.add(nextEdge);
                     allTrails.add(trail);
@@ -67,7 +67,7 @@ public class RecursiveTrailFinder<V, E extends Edge<V>> extends AbstractTrailFin
         return EdgeUtil.getAdjacentVertex(edge, start);
     }
 
-    private Predicate<List<E>> restriction;
-    private Predicate<List<E>> filter;
+    private Predicate<List<E>> restriction = allPass();
+    private Predicate<List<E>> filter = allPass();
 
 }

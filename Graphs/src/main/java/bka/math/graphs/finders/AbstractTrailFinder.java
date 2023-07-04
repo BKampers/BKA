@@ -25,7 +25,11 @@ public abstract class AbstractTrailFinder<V, E extends Edge<V>> implements Trail
     }
 
     protected <T> Predicate<T> allPass() {
-        return (T object) -> true;
+        return (T any) -> true;
+    }
+
+    protected <T> Predicate<T> nonePass() {
+        return (T any) -> false;
     }
 
 }

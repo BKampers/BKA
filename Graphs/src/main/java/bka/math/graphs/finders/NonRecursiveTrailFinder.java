@@ -27,7 +27,7 @@ public class NonRecursiveTrailFinder<V, E extends Edge<V>> extends AbstractTrail
     }
 
     public void setLimiter(Predicate<Collection<List<E>>> limiter) {
-        this.limiter = (limiter == null) ? allPass() : limiter;
+        this.limiter = (limiter == null) ? nonePass() : limiter;
     }
 
     @Override
@@ -42,7 +42,7 @@ public class NonRecursiveTrailFinder<V, E extends Edge<V>> extends AbstractTrail
                 if (restriction.test(currentTrail.get())) {
                     if ((end == null || nextVertex.equals(end)) && filter.test(currentTrail.get())) {
                         foundTrails.add(currentTrail.get());
-                        if (limiter != null && limiter.test(foundTrails)) {
+                        if (limiter.test(foundTrails)) {
                             return foundTrails;
                         }
                     }
@@ -134,6 +134,6 @@ public class NonRecursiveTrailFinder<V, E extends Edge<V>> extends AbstractTrail
 
     private Predicate<List<E>> restriction = allPass();
     private Predicate<List<E>> filter = allPass();
-    private Predicate<Collection<List<E>>> limiter;
+    private Predicate<Collection<List<E>>> limiter = nonePass();
 
 }

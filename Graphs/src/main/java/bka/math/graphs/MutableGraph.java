@@ -10,6 +10,13 @@ package bka.math.graphs;
 import java.util.*;
 
 
+/**
+ * Mutable graph. Once constructed, edges and vertices can be added or removed. Does not contain duplicate edges or vertices. That is, this graph
+ * contains no pair of edges {e1,e2} where e1.equals(e2) and no pair of vertices {v1,v2} where v1.equals(v2). Edges may be directed or undirected.
+ *
+ * @param <V> Vertex type
+ * @param <E> Edge of Vertex type
+ */
 public class MutableGraph<V, E extends Edge<V>> implements GraphBase<V, E> {
 
     public MutableGraph() {
@@ -28,6 +35,9 @@ public class MutableGraph<V, E extends Edge<V>> implements GraphBase<V, E> {
         addEdges(edges);
     }
 
+    /**
+     * Remove all edges and vertices.
+     */
     public final void clear() {
         edges.clear();
         vertices.clear();

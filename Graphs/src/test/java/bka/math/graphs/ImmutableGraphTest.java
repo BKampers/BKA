@@ -5,11 +5,11 @@
 package bka.math.graphs;
 
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.*;
 
-public class ImmutableGraphTest {
+@SuppressWarnings("unchecked")
+public class ImmutableGraphTest extends GraphTestBase {
 
 
     @Test
@@ -68,11 +68,6 @@ public class ImmutableGraphTest {
             }
 
         };
-    }
-
-    private static <T> void assertEqualCollections(Collection<T> expected, Set<T> actual) {
-        assertEquals(expected.size(), actual.size());
-        assertTrue(actual.containsAll(expected));
     }
 
 }

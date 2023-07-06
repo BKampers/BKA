@@ -559,8 +559,6 @@ public class TrailFinderTest {
             new NonRecursiveTrailFinder(),
             new RecursiveTrailFinder() };
     }
-//    private TrailFinder[] trailFinders;
-//    private GraphExplorer[] explorers;
 
     private static final String[] AA = { "a", "a" };
     private static final String[] AB = { "a", "b" };

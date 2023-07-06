@@ -27,8 +27,7 @@ public class EdgeUtilTest {
     @Test
     public void testInvalidAdjacentVertex() {
         Assertions.assertThrows(
-                NoSuchElementException.class,
-                () -> EdgeUtil.getAdjacentVertex(new UndirectedEdge("1", "2"), "x")
+            IllegalArgumentException.class, () -> EdgeUtil.getAdjacentVertex(new UndirectedEdge("1", "2"), "x")
         );
     }
 

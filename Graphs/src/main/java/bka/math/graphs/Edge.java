@@ -12,7 +12,14 @@ import java.util.*;
 
 public interface Edge<V> {
 
+    /**
+     * @return a collection of the two vertices that this edge connetcs.
+     */
     Collection<V> getVertices();
+
+    /**
+     * @return true if this edge is directed, false if this edge is undirected.
+     */
     boolean isDirected();
 
 }

@@ -4,13 +4,12 @@
 package bka.math.graphs;
 
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.*;
 
 @SuppressWarnings("unchecked")
-public class MutableGraphTest {
+public class MutableGraphTest extends GraphTestBase {
 
 
     @Test
@@ -158,12 +157,6 @@ public class MutableGraphTest {
         assertTrue(graph.getVertices().isEmpty());
     }
 
-    private static <T> void assertEqualCollections(Collection<T> expected, Set<T> actual) {
-        assertEquals(expected.size(), actual.size());
-        assertTrue(actual.containsAll(expected));
-    }
-
     private MutableGraph graph;
-
 
 }

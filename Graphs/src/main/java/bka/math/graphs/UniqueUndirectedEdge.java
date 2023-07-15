@@ -8,6 +8,7 @@
 package bka.math.graphs;
 
 import java.util.*;
+import java.util.stream.*;
 
 
 public class UniqueUndirectedEdge<V> extends UndirectedEdge<V> {
@@ -24,14 +25,14 @@ public class UniqueUndirectedEdge<V> extends UndirectedEdge<V> {
         if (object == null || !getClass().equals(object.getClass())) {
             return false;
         }
-        Collection<?> thisVertices = getVertices();
+        Collection<?> thisVertices = new ArrayList(getVertices());
         Collection<?> otherVertices = ((UniqueUndirectedEdge) object).getVertices();
         return otherVertices.containsAll(thisVertices) && thisVertices.containsAll(otherVertices);
     }
 
     @Override
     public int hashCode() {
-        return getVertices().hashCode();
+        return getVertices().stream().map(vertex -> vertex.hashCode()).sorted().collect(Collectors.toList()).hashCode();
     }
 
 }

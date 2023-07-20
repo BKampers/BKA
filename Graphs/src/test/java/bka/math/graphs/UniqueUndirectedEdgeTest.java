@@ -15,6 +15,7 @@ public class UniqueUndirectedEdgeTest {
         assertEquals(new UniqueUndirectedEdge('a', 'b'), new UniqueUndirectedEdge('a', 'b'));
         assertEquals(new UniqueUndirectedEdge('a', 'b'), new UniqueUndirectedEdge('b', 'a'));
         assertNotEquals(new UniqueUndirectedEdge('a', 'b'), new UniqueUndirectedEdge('a', 'c'));
+        assertNotEquals(new UniqueUndirectedEdge('a', 'b'), new UniqueUndirectedEdge('c', 'b'));
     }
 
     @Test

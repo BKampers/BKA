@@ -25,8 +25,8 @@ public class UniqueUndirectedEdge<V> extends UndirectedEdge<V> {
         if (object == null || !getClass().equals(object.getClass())) {
             return false;
         }
-        Collection<?> thisVertices = new ArrayList(getVertices());
-        Collection<?> otherVertices = ((UniqueUndirectedEdge) object).getVertices();
+        Collection<V> thisVertices = getVertices();
+        Collection<V> otherVertices = ((UniqueUndirectedEdge) object).getVertices();
         return otherVertices.containsAll(thisVertices) && thisVertices.containsAll(otherVertices);
     }
 

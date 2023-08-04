@@ -31,14 +31,6 @@ public class DefaultEdgeRenderer implements EdgeRenderer {
         points.add(point);
     }
 
-    public Point selectEdgePoint(Point point) {
-        Point selected = points.stream().filter(edgePoint -> squareDistance(edgePoint, point) < 10).findAny().orElse(null);
-        if (selected != null) {
-            return selected;
-        }
-        return null;
-    }
-
     @Override
     public void paint(Graphics2D graphics) {
         int count = points.size() + 1;
@@ -47,30 +39,36 @@ public class DefaultEdgeRenderer implements EdgeRenderer {
         }
         int[] x = new int[count];
         int[] y = new int[count];
-        x[0] = start.getLocation().x;
-        y[0] = start.getLocation().y;
+        Point startPoint = getStartConnectorPoint();
+        x[0] = startPoint.x;
+        y[0] = startPoint.y;
         for (int i = 0; i < points.size(); ++i) {
             x[i + 1] = points.get(i).x;
             y[i + 1] = points.get(i).y;
         }
         if (end != null) {
-            x[count - 1] = end.getLocation().x;
-            y[count - 1] = end.getLocation().y;
+            Point endPoint = getEndConnectorPoint();
+            x[count - 1] = endPoint.x;
+            y[count - 1] = endPoint.y;
         }
         graphics.drawPolyline(x, y, count);
     }
 
     @Override
     public long squareDistance(Point point) {
-        Collection<Double> distances = new ArrayList<>(points.size() + 1);
-        Point startPoint = start.getLocation();
+        long distance = Long.MAX_VALUE;
+        Point startPoint = getStartConnectorPoint();
         for (Point endPoint : points) {
-            distances.add(squareDistance(point, startPoint, endPoint));
+            distance = Math.min(distance, squareDistance(point, startPoint, endPoint));
             startPoint = endPoint;
         }
-        distances.add(squareDistance(point, startPoint, end.getLocation()));
-//        System.out.printf("sqDist (%d,%d) : %f\n", point.x, point.y, distances.stream().sorted().findFirst().orElseThrow());
-        return Math.round(distances.stream().sorted().findFirst().orElseThrow());
+        if (end == null) {
+            if (distance == Long.MAX_VALUE) {
+                return squareDistance(point, startPoint);
+            }
+            return distance;
+        }
+        return Math.min(distance, squareDistance(point, startPoint, getEndConnectorPoint()));
     }
 
     @Override
@@ -90,85 +88,41 @@ public class DefaultEdgeRenderer implements EdgeRenderer {
     }
 
     private static long squareDistance(Point point1, Point point2) {
-        long dx = point1.x - point2.x;
-        long dy = point1.y - point2.y;
-        return dx * dx + dy * dy;
+        long deltaX = point1.x - point2.x;
+        long deltaY = point1.y - point2.y;
+        return deltaX * deltaX + deltaY * deltaY;
     }
 
-    private static double squareDistance(Point point, Point linePoint1, Point linePoint2) {
-        int xMin = Math.min(linePoint1.x, linePoint2.x);
-        int xMax = Math.max(linePoint1.x, linePoint2.x);
-        int yMin = Math.min(linePoint1.y, linePoint2.y);
-        int yMax = Math.max(linePoint1.y, linePoint2.y);
-        if (point.x < xMin || xMax < point.x || point.y < yMin || yMax < point.y) {
+    private static long squareDistance(Point point, Point linePoint1, Point linePoint2) {
+        if (!pointInSquare(point, linePoint1, linePoint2)) {
             return Math.min(squareDistance(point, linePoint1), squareDistance(point, linePoint2));
         }
-        float dx = linePoint1.x - linePoint2.x;
-        float dy = linePoint1.y - linePoint2.y;
-        float a = dy / dx;
-        float b = -a * linePoint1.x + linePoint1.y;
-        float ap = -1 / a;
-        float bp = point.y - ap * point.x;
-        float xi = (b - bp) / (ap - a);
-        float yi = a * xi + b;
-        Point intersection = new Point(Math.round(xi), Math.round(yi));
-        return squareDistance(point, intersection);
+        return squareDistance(point, intersectionPoint(point, linePoint1, linePoint2));
     }
 
-    private int indexNear(Point point) {
-        int count = points.size() - 1;
-        int index = 0;
-        while (index < count) {
-            int x1 = points.get(index).x;
-            int y1 = points.get(index).y;
-            int x2 = points.get(index + 1).x;
-            int y2 = points.get(index + 1).y;
-            int xRangeMin = Math.min(x1, x2) - NEAR_TOLERANCE;
-            int xRangeMax = Math.max(x1, x2) + NEAR_TOLERANCE;
-            int yRangeMin = Math.min(y1, y2) - NEAR_TOLERANCE;
-            int yRangeMax = Math.max(y1, y2) + NEAR_TOLERANCE;
-            if (xRangeMin < point.x && point.x < xRangeMax && yRangeMin < point.y && point.y < yRangeMax) {
-                int dx = deltaX(index);
-                int dy = deltaY(index);
-                if (-NEAR_TOLERANCE < dx && dx < NEAR_TOLERANCE || -NEAR_TOLERANCE < dy && dy < NEAR_TOLERANCE) {
-                    return index;
-                }
-                else {
-                    float a = (float) dy / dx;
-                    float b = -a * x1 + y1;
-                    if (dy < dx) {
-                        float y = a * point.x + b;
-                        if (y - NEAR_TOLERANCE < point.y && point.y < y + NEAR_TOLERANCE) {
-                            return index;
-                        }
-                    }
-                    else {
-                        float x = (b - point.y) / -a;
-                        if (x - NEAR_TOLERANCE < point.x && point.x < x + NEAR_TOLERANCE) {
-                            return index;
-                        }
-                    }
-                }
-            }
-            index++;
+    private static boolean pointInSquare(Point point, Point linePoint1, Point linePoint2) {
+        return Math.min(linePoint1.x, linePoint2.x) <= point.x && point.x <= Math.max(linePoint1.x, linePoint2.x)
+            && Math.min(linePoint1.y, linePoint2.y) <= point.y && point.y <= Math.max(linePoint1.y, linePoint2.y);
+    }
+
+    private static Point intersectionPoint(Point point, Point linePoint1, Point linePoint2) {
+        if (linePoint1.x == linePoint2.x) {
+            return new Point(linePoint1.x, point.y);
         }
-        return NO_INDEX;
+        else if (linePoint1.y == linePoint2.y) {
+            return new Point(point.x, linePoint1.y);
+        }
+        float slope = (float) (linePoint1.x - linePoint2.x) / (linePoint1.y - linePoint2.y);
+        float offset = -slope * linePoint1.x + linePoint1.y;
+        float perpendicularSlope = -1 / slope;
+        float perpendicularOffset = point.y - perpendicularSlope * point.x;
+        float xIntersection = (offset - perpendicularOffset) / (perpendicularSlope - slope);
+        float yIntersection = slope * xIntersection + offset;
+        return new Point(Math.round(xIntersection), Math.round(yIntersection));
     }
 
-    private int deltaX(int index) {
-        return points.get(index + 1).x - points.get(index).x;
-    }
-
-
-    private int deltaY(int index) {
-        return points.get(index + 1).y - points.get(index).y;
-    }
-
-    private final ArrayList<Point> points = new ArrayList<>();
+    private final java.util.List<Point> points = new ArrayList<>();
     private final VertexRenderer start;
     private VertexRenderer end;
-
-    private static final int NEAR_TOLERANCE = 7;
-    private static final int NO_INDEX = -1;
 
 }

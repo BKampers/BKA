@@ -19,12 +19,13 @@ public class GraphCanvas extends CompositeRenderer {
         graphics.setPaint(Color.BLACK);
         vertices.forEach(renderer -> renderer.paint(graphics));
         edges.forEach(edge -> {
+            graphics.setPaint(Color.BLACK);
             edge.paint(graphics);
             graphics.setPaint(Color.MAGENTA);
-            Point c = edge.getStartConnectorPoint();
-            graphics.fillOval(c.x - 3, c.y - 3, 7, 7);
-            c = edge.getEndConnectorPoint();
-            graphics.fillOval(c.x - 3, c.y - 3, 7, 7);
+            Point connector = edge.getStartConnectorPoint();
+            graphics.fillOval(connector.x - 3, connector.y - 3, 7, 7);
+            connector = edge.getEndConnectorPoint();
+            graphics.fillOval(connector.x - 3, connector.y - 3, 7, 7);
         });
         if (draggingEdgeRenderer != null) {
             graphics.setPaint(Color.GREEN.darker());
@@ -38,6 +39,10 @@ public class GraphCanvas extends CompositeRenderer {
         if (connectorPoint != null) {
             graphics.setPaint(Color.RED);
             graphics.fillOval(connectorPoint.x - 3, connectorPoint.y - 3, 7, 7);
+        }
+        if (edgePoint != null) {
+            graphics.setPaint(Color.RED);
+            graphics.fillOval(edgePoint.x - 3, edgePoint.y - 3, 7, 7);
         }
     }
 
@@ -112,7 +117,7 @@ public class GraphCanvas extends CompositeRenderer {
             VertexRenderer nearestVertex = findNearestVertex(point);
             if (nearestVertex != null) {
                 if (connectorPoint != null) {
-                    draggingEdgeRenderer = new DefaultEdgeRenderer(nearestVertex);
+                    draggingEdgeRenderer = new EdgeRenderer(nearestVertex);
                     state = State.CREATING_EDGE;
                 }
                 else {
@@ -215,8 +220,9 @@ public class GraphCanvas extends CompositeRenderer {
     }
 
     private boolean handleMouseMoved(Point point) {
-        boolean needRepaint = connectorPoint != null || !hovered.isEmpty();
+        boolean needRepaint = connectorPoint != null || edgePoint != null || !hovered.isEmpty();
         connectorPoint = null;
+        edgePoint = null;
         hovered.clear();
         EdgeRenderer nearestEdge = findNearestEdge(point);
         VertexRenderer nearestVertex = findNearestVertex(point);
@@ -227,7 +233,6 @@ public class GraphCanvas extends CompositeRenderer {
                     hovered.add(nearestVertex);
                 }
                 else if (distance < 10) {
-//                    System.out.println(distance);
                     connectorPoint = point;
                 }
                 return true;
@@ -235,6 +240,7 @@ public class GraphCanvas extends CompositeRenderer {
         }
         else if (nearestEdge != null) {
             hovered.add(nearestEdge);
+            edgePoint = point;
             return true;
         }
         return needRepaint;
@@ -299,8 +305,9 @@ public class GraphCanvas extends CompositeRenderer {
     private final Set<Renderer> hovered = new HashSet<>();
 
     private Point connectorPoint;
+    private Point edgePoint;
     private VertexRenderer movingVertex;
-    private DefaultEdgeRenderer draggingEdgeRenderer;
+    private EdgeRenderer draggingEdgeRenderer;
 
     private final Collection<VertexRenderer> vertices = new LinkedList<>();
     private final Collection<EdgeRenderer> edges = new LinkedList<>();

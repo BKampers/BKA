@@ -38,11 +38,16 @@ public class GraphCanvas extends CompositeRenderer {
         hovered.forEach(renderer -> renderer.paint(graphics));
         if (connectorPoint != null) {
             graphics.setPaint(Color.RED);
-            graphics.fillOval(connectorPoint.x - 3, connectorPoint.y - 3, 7, 7);
+            graphics.drawOval(connectorPoint.x - 4, connectorPoint.y - 4, 9, 9);
         }
         if (edgePoint != null) {
             graphics.setPaint(Color.RED);
-            graphics.fillOval(edgePoint.x - 3, edgePoint.y - 3, 7, 7);
+            if (edgeBendSelected) {
+                graphics.fillOval(edgePoint.x - 3, edgePoint.y - 3, 7, 7);
+            }
+            else {
+                graphics.drawOval(edgePoint.x - 3, edgePoint.y - 3, 7, 7);
+            }
         }
     }
 
@@ -128,11 +133,35 @@ public class GraphCanvas extends CompositeRenderer {
             }
             EdgeRenderer nearestEdge = findNearestEdge(point);
             if (nearestEdge != null) {
+                edgePoint = nearestEdgePoint(nearestEdge, point);
+                draggingEdgeRenderer = nearestEdge;
                 state = State.MOVING_EDGE_POINT;
                 return false;
             }
         }
         return false;
+    }
+
+    private Point nearestEdgePoint(EdgeRenderer edge, Point cursor) {
+        Point p0 = edge.getStartConnectorPoint();
+        if (isNear(cursor, p0)) {
+            edge.addPoint(0, cursor);
+            return cursor;
+        }
+        int index = 0;
+        for (Point p1 : edge.getPoints()) {
+            if (isNear(cursor, p1)) {
+                return p1;
+            }
+            if (isNear(cursor, p0, p1)) {
+                edge.addPoint(index, cursor);
+                return cursor;
+            }
+            p0 = p1;
+            ++index;
+        }
+        edge.addPoint(cursor);
+        return cursor;
     }
 
     public boolean handleMouseReleased(MouseEvent event) {
@@ -177,8 +206,9 @@ public class GraphCanvas extends CompositeRenderer {
     }
 
     private boolean finishEdgePointMove() {
+        draggingEdgeRenderer = null;
         state = State.IDLE;
-        return true;
+        return false;
     }
 
     public boolean handleMouseMoved(MouseEvent event) {
@@ -211,12 +241,17 @@ public class GraphCanvas extends CompositeRenderer {
             case MOVING_EDGE ->
                 false;
             case MOVING_EDGE_POINT ->
-                false;
+                moveEdgePoint(event.getPoint());
             case SELECTING_AREA ->
                 false;
             case MOVING_AREA ->
                 false;
         };
+    }
+
+    private boolean moveEdgePoint(Point point) {
+        edgePoint.setLocation(point);
+        return true;
     }
 
     private boolean handleMouseMoved(Point point) {
@@ -232,20 +267,20 @@ public class GraphCanvas extends CompositeRenderer {
                 if (distance < 0) {
                     hovered.add(nearestVertex);
                 }
-                else if (distance < 10) {
+                else if (isNear(distance)) {
                     connectorPoint = point;
                 }
                 return true;
             }
         }
         else if (nearestEdge != null) {
+            edgeBendSelected = nearestEdge.getPoints().stream().anyMatch(p -> isNear(point, p));
             hovered.add(nearestEdge);
             edgePoint = point;
             return true;
         }
         return needRepaint;
     }
-
 
     private boolean setVertexLocation(Point point) {
         movingVertex.setLocation(point);
@@ -262,11 +297,6 @@ public class GraphCanvas extends CompositeRenderer {
             @Override
             public Point getLocation() {
                 return point;
-            }
-
-            @Override
-            public void setLocation(Point location) {
-                throw new UnsupportedOperationException();
             }
 
             @Override
@@ -296,6 +326,18 @@ public class GraphCanvas extends CompositeRenderer {
         return nearest.getValue();
     }
 
+    private static boolean isNear(Point cursor, Point linePoint1, Point linePoint2) {
+        return isNear(CanvasUtil.squareDistance(cursor, linePoint1, linePoint2));
+    }
+
+    private static boolean isNear(Point cursor, Point p0) {
+        return isNear(CanvasUtil.squareDistance(cursor, p0));
+    }
+
+    private static boolean isNear(long distance) {
+        return distance < EDGE_POINT_SELECTION_RANGE;
+    }
+
     private enum State {
         IDLE, CREATING_EDGE, MOVING_VERTEX, MOVING_EDGE, MOVING_EDGE_POINT, SELECTING_AREA, MOVING_AREA
     }
@@ -308,8 +350,11 @@ public class GraphCanvas extends CompositeRenderer {
     private Point edgePoint;
     private VertexRenderer movingVertex;
     private EdgeRenderer draggingEdgeRenderer;
+    private boolean edgeBendSelected;
 
     private final Collection<VertexRenderer> vertices = new LinkedList<>();
     private final Collection<EdgeRenderer> edges = new LinkedList<>();
+
+    private static final long EDGE_POINT_SELECTION_RANGE = 10;
 
 }

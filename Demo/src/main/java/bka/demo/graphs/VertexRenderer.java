@@ -20,6 +20,8 @@ public interface VertexRenderer extends Renderer {
         throw new UnsupportedOperationException();
     }
 
-    public void setLocation(Point point);
+    default public void setLocation(Point point) {
+        throw new UnsupportedOperationException();
+    }
 
 }

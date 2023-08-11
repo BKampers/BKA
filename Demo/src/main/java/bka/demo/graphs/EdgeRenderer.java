@@ -20,6 +20,10 @@ public class EdgeRenderer implements Renderer {
         this.start = start;
     }
 
+    public VertexRenderer getStart() {
+        return start;
+    }
+
     public void setEnd(VertexRenderer end) {
         this.end = end;
     }

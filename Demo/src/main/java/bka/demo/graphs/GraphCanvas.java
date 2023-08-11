@@ -49,6 +49,14 @@ public class GraphCanvas extends CompositeRenderer {
                 graphics.drawOval(edgePoint.x - 3, edgePoint.y - 3, 7, 7);
             }
         }
+        if (selectionRectangle != null) {
+            graphics.setColor(Color.LIGHT_GRAY);
+            graphics.drawRect(
+                (selectionRectangle.width >= 0) ? selectionRectangle.x : selectionRectangle.x + selectionRectangle.width,
+                (selectionRectangle.height >= 0) ? selectionRectangle.y : selectionRectangle.y + selectionRectangle.height,
+                Math.abs(selectionRectangle.width),
+                Math.abs(selectionRectangle.height));
+        }
     }
 
     public boolean handleMousePressed(MouseEvent event) {
@@ -86,7 +94,7 @@ public class GraphCanvas extends CompositeRenderer {
     public boolean handleMouseDragged(MouseEvent event) {
         return switch (state) {
             case IDLE ->
-                false;
+                initializeSelectionRectangle(event.getPoint());
             case CREATING_EDGE ->
                 handleMouseMoved(event.getPoint()) | addEdgePoint(event.getPoint());
             case MOVING_SELECTION ->
@@ -94,7 +102,7 @@ public class GraphCanvas extends CompositeRenderer {
             case MOVING_EDGE_POINT ->
                 moveEdgePoint(event.getPoint());
             case SELECTING_AREA ->
-                false;
+                resizeSelectionRectangle(event.getPoint());
         };
     }
 
@@ -109,8 +117,15 @@ public class GraphCanvas extends CompositeRenderer {
                 finishVertexMove(event.getPoint());
             case MOVING_EDGE_POINT ->
                 finishEdgePointMove();
-            case SELECTING_AREA ->
-                false;
+            case SELECTING_AREA -> {
+                selection.clear();
+                vertices.stream()
+                    .filter(vertex -> selectionRectangle.contains(vertex.getLocation()))
+                    .forEach(vertex -> selection.add(vertex));
+                selectionRectangle = null;
+                state = State.IDLE;
+                yield true;
+            }
         };
     }
 
@@ -191,6 +206,18 @@ public class GraphCanvas extends CompositeRenderer {
             }
         }
         return false;
+    }
+
+    private boolean initializeSelectionRectangle(Point point) {
+        selectionRectangle = new Rectangle(cursor.x, cursor.y, xDistanceToCursor(point), yDistanceToCursor(point));
+        state = State.SELECTING_AREA;
+        return false;
+    }
+
+    private boolean resizeSelectionRectangle(Point point) {
+        selectionRectangle.width = xDistanceToCursor(point);
+        selectionRectangle.height = yDistanceToCursor(point);
+        return true;
     }
 
     private Point nearestEdgePoint(EdgeRenderer edge, Point point) {
@@ -280,17 +307,16 @@ public class GraphCanvas extends CompositeRenderer {
     }
 
     private boolean moveSelection(Point target) {
-        int deltaX = target.x - cursor.x;
-        int deltaY = target.y - cursor.y;
-        Set<EdgeRenderer> edgesToMove = new HashSet();
+        int deltaX = xDistanceToCursor(target);
+        int deltaY = yDistanceToCursor(target);
         selection.forEach(renderer -> {
             Point location = renderer.getLocation();
             location.move(location.x + deltaX, location.y + deltaY);
-            edges.stream().filter(edge -> renderer.equals(edge.getStart()) || renderer.equals(edge.getEnd())).forEach(edge -> {
-                edgesToMove.add(edge);
-            });
         });
-        edgesToMove.forEach(edge -> edge.getPoints().forEach(point -> point.move(point.x + deltaX, point.y + deltaY)));
+        edges.stream()
+            .filter(edge -> selection.contains(edge.getStart()))
+            .filter(edge -> selection.contains(edge.getEnd()))
+            .forEach(edge -> edge.getPoints().forEach(point -> point.move(point.x + deltaX, point.y + deltaY)));
         cursor = target;
         return true;
     }
@@ -327,7 +353,7 @@ public class GraphCanvas extends CompositeRenderer {
     private EdgeRenderer findNearestEdge(Point point) {
         TreeMap<Long, EdgeRenderer> distances = new TreeMap<>();
         edges.forEach(edgeRenderer -> distances.put(edgeRenderer.squareDistance(point), edgeRenderer));
-        Map.Entry<Long, EdgeRenderer> nearest = distances.floorEntry(10L);
+        Map.Entry<Long, EdgeRenderer> nearest = distances.floorEntry(EDGE_POINT_SELECTION_RANGE);
         if (nearest == null) {
             return null;
         }
@@ -346,6 +372,13 @@ public class GraphCanvas extends CompositeRenderer {
         return distance < EDGE_POINT_SELECTION_RANGE;
     }
 
+    private int xDistanceToCursor(Point point) {
+        return point.x - cursor.x;
+    }
+
+    private int yDistanceToCursor(Point point) {
+        return point.y - cursor.y;
+    }
 
     private enum State {
         IDLE, CREATING_EDGE, MOVING_SELECTION, MOVING_EDGE_POINT, SELECTING_AREA
@@ -368,6 +401,9 @@ public class GraphCanvas extends CompositeRenderer {
         }
 
         public static Button get(MouseEvent event, int eventModifiers) {
+            if (event.getClickCount() != 1) {
+                return UNSUPPORTED;
+            }
             return Arrays.asList(values()).stream()
                 .filter(button -> event.getButton() == button.buttonId)
                 .filter(button -> modifiersMatch(eventModifiers, button))
@@ -397,6 +433,7 @@ public class GraphCanvas extends CompositeRenderer {
     private Point edgePoint;
     private EdgeRenderer draggingEdgeRenderer;
     private boolean edgeBendSelected;
+    private Rectangle selectionRectangle;
 
     private int eventModifiers; // Because of a bug in modifiers from the mouseClicked event, modifiers from the emousePressed event need to be remembered.
 

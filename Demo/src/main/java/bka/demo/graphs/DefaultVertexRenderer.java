@@ -49,6 +49,11 @@ public class DefaultVertexRenderer implements VertexRenderer {
         graphics.fillOval(location.x - radius, location.y - radius, size, size);
     }
 
+    @Override
+    public void resize(Point target) {
+        size = Math.abs((int) Math.round(Math.sqrt(CanvasUtil.squareDistance(location, target)) * 2));
+    }
+
     private Point location;
     private int size = 12;
 

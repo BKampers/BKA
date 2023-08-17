@@ -3,6 +3,8 @@
 */
 package bka.demo.graphs;
 
+import java.awt.*;
+
 
 public class GraphEditorDemo extends javax.swing.JFrame {
 
@@ -61,36 +63,27 @@ public class GraphEditorDemo extends javax.swing.JFrame {
 
     private void graphPanelMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_graphPanelMouseClicked
 //        System.out.println("Clicked " + evt.getPoint());
-        if (canvas.handleMouseClicked(evt)) {
-            repaint();
-        }
+        updateGraphPanel(canvas.handleMouseClicked(evt));
     }//GEN-LAST:event_graphPanelMouseClicked
 
     private void graphPanelMouseDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_graphPanelMouseDragged
 //        System.out.println("Dragged " + evt.getPoint());
-        if (canvas.handleMouseDragged(evt))
-        repaint();
+        updateGraphPanel(canvas.handleMouseDragged(evt));
     }//GEN-LAST:event_graphPanelMouseDragged
 
     private void graphPanelMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_graphPanelMousePressed
 //        System.out.println("Pressed " + evt.getPoint());
-        if (canvas.handleMousePressed(evt)) {
-            repaint();
-        }
+        updateGraphPanel(canvas.handleMousePressed(evt));
     }//GEN-LAST:event_graphPanelMousePressed
 
     private void graphPanelMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_graphPanelMouseReleased
 //        System.out.println("Released " + evt.getPoint());
-        if (canvas.handleMouseReleased(evt)) {
-            repaint();
-        }
+        updateGraphPanel(canvas.handleMouseReleased(evt));
     }//GEN-LAST:event_graphPanelMouseReleased
 
     private void graphPanelMouseMoved(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_graphPanelMouseMoved
 //        System.out.println("Moved " + evt.getPoint());
-        if (canvas.handleMouseMoved(evt)) {
-            repaint();
-        }
+        updateGraphPanel(canvas.handleMouseMoved(evt));
     }//GEN-LAST:event_graphPanelMouseMoved
 
     /**
@@ -121,6 +114,22 @@ public class GraphEditorDemo extends javax.swing.JFrame {
             new GraphEditorDemo().setVisible(true);
         });
     }
+
+    private void updateGraphPanel(ComponentUpdate update){
+        if (Cursor.DEFAULT_CURSOR <= update.getCursorType() && update.getCursorType() <= Cursor.MOVE_CURSOR) {
+            setGraphPanelCursor(update.getCursorType());
+        }
+        if (update.needsRepeaint()) {
+            graphPanel.repaint();
+        }
+    }
+
+    private void setGraphPanelCursor(int type) {
+        if (graphPanel.getCursor().getType() != type) {
+            graphPanel.setCursor(new Cursor(type));
+        }
+    }
+
 
     private class GraphPanel extends javax.swing.JPanel {
 

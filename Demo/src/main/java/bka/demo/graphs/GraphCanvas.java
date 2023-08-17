@@ -27,6 +27,10 @@ public class GraphCanvas extends CompositeRenderer {
             connector = edge.getEndConnectorPoint();
             graphics.fillOval(connector.x - 3, connector.y - 3, 7, 7);
         });
+        if (draggingVertex != null) {
+            graphics.setPaint(Color.RED);
+            graphics.drawOval(draggingVertex.getLocation().x - 5, draggingVertex.getLocation().y - 5, 11, 11);
+        }
         if (draggingEdgeRenderer != null) {
             graphics.setPaint(Color.GREEN.darker());
             draggingEdgeRenderer.paint(graphics);
@@ -34,8 +38,10 @@ public class GraphCanvas extends CompositeRenderer {
         }
         graphics.setPaint(Color.BLUE);
         selection.forEach(renderer -> renderer.paint(graphics));
-        graphics.setPaint(Color.ORANGE);
-        hovered.forEach(renderer -> renderer.paint(graphics));
+//        if (hovered != null) {
+//            graphics.setPaint(Color.ORANGE);
+//            hovered.paint(graphics);
+//        };
         if (connectorPoint != null) {
             graphics.setPaint(Color.RED);
             graphics.drawOval(connectorPoint.x - 4, connectorPoint.y - 4, 9, 9);
@@ -51,110 +57,207 @@ public class GraphCanvas extends CompositeRenderer {
         }
         if (selectionRectangle != null) {
             graphics.setColor(Color.LIGHT_GRAY);
-            graphics.drawRect(
-                (selectionRectangle.width >= 0) ? selectionRectangle.x : selectionRectangle.x + selectionRectangle.width,
-                (selectionRectangle.height >= 0) ? selectionRectangle.y : selectionRectangle.y + selectionRectangle.height,
-                Math.abs(selectionRectangle.width),
-                Math.abs(selectionRectangle.height));
+            graphics.drawRect(selectionRectangle.x, selectionRectangle.y, selectionRectangle.width, selectionRectangle.height);
         }
     }
 
-    public boolean handleMousePressed(MouseEvent event) {
+    public ComponentUpdate handleMouseMoved(MouseEvent event) {
+        return switch (state) {
+            case IDLE ->
+                handleMouseMoved(event.getPoint());
+            case CREATING_EDGE ->
+                handleMouseMoved(event.getPoint());
+            case MOVING_SELECTION ->
+                ComponentUpdate.NO_OPERATION;
+            case MOVING_EDGE_POINT ->
+                ComponentUpdate.NO_OPERATION;
+            case RESIZING_VERTEX ->
+                ComponentUpdate.NO_OPERATION;
+            case SELECTING_AREA ->
+                ComponentUpdate.NO_OPERATION;
+        };
+    }
+
+    public ComponentUpdate handleMousePressed(MouseEvent event) {
         cursor = event.getPoint();
         eventModifiers = event.getModifiersEx();
         return switch (state) {
             case IDLE ->
                 handleMousePressed(Button.get(event, eventModifiers));
             case CREATING_EDGE ->
-                false;
+                ComponentUpdate.NO_OPERATION;
             case MOVING_SELECTION ->
-                false;
+                ComponentUpdate.NO_OPERATION;
             case MOVING_EDGE_POINT ->
-                false;
+                ComponentUpdate.NO_OPERATION;
+            case RESIZING_VERTEX ->
+                ComponentUpdate.NO_OPERATION;
             case SELECTING_AREA ->
-                false;
+                ComponentUpdate.NO_OPERATION;
         };
     }
 
-    public boolean handleMouseClicked(MouseEvent event) {
+    public ComponentUpdate handleMouseClicked(MouseEvent event) {
         return switch (state) {
             case IDLE ->
                 handleMouseClicked(event.getPoint(), Button.get(event, eventModifiers));
             case CREATING_EDGE ->
                 clickedDraggingEdge(Button.get(event, eventModifiers));
             case MOVING_SELECTION ->
-                false;
+                ComponentUpdate.NO_OPERATION;
             case MOVING_EDGE_POINT ->
-                false;
+                ComponentUpdate.NO_OPERATION;
+            case RESIZING_VERTEX ->
+                ComponentUpdate.NO_OPERATION;
             case SELECTING_AREA ->
-                false;
+                ComponentUpdate.NO_OPERATION;
         };
     }
 
-    public boolean handleMouseDragged(MouseEvent event) {
+    public ComponentUpdate handleMouseDragged(MouseEvent event) {
         return switch (state) {
             case IDLE ->
                 initializeSelectionRectangle(event.getPoint());
             case CREATING_EDGE ->
-                handleMouseMoved(event.getPoint()) | addEdgePoint(event.getPoint());
+                dragNewEdge(event);
             case MOVING_SELECTION ->
                 moveSelection(event.getPoint());
             case MOVING_EDGE_POINT ->
                 moveEdgePoint(event.getPoint());
+            case RESIZING_VERTEX ->
+                resizeVertex(event.getPoint());
             case SELECTING_AREA ->
                 resizeSelectionRectangle(event.getPoint());
         };
     }
 
-    public boolean handleMouseReleased(MouseEvent event) {
+    public ComponentUpdate handleMouseReleased(MouseEvent event) {
         cursor = null;
         return switch (state) {
             case IDLE ->
-                false;
+                ComponentUpdate.NO_OPERATION;
             case CREATING_EDGE ->
                 updateDraggingEdge(event.getPoint());
             case MOVING_SELECTION ->
                 finishVertexMove(event.getPoint());
             case MOVING_EDGE_POINT ->
                 finishEdgePointMove();
-            case SELECTING_AREA -> {
-                selection.clear();
-                vertices.stream()
-                    .filter(vertex -> selectionRectangle.contains(vertex.getLocation()))
-                    .forEach(vertex -> selection.add(vertex));
-                selectionRectangle = null;
-                state = State.IDLE;
-                yield true;
-            }
-        };
-    }
-
-    public boolean handleMouseMoved(MouseEvent event) {
-        return switch (state) {
-            case IDLE ->
-                handleMouseMoved(event.getPoint());
-            case CREATING_EDGE ->
-                handleMouseMoved(event.getPoint());
-            case MOVING_SELECTION ->
-                false;
-            case MOVING_EDGE_POINT ->
-                false;
+            case RESIZING_VERTEX ->
+                finishResizingVertex();
             case SELECTING_AREA ->
-                false;
+                finishSelectionRectangle();
         };
     }
 
-    private boolean handleMouseClicked(Point point, Button button) {
+    private ComponentUpdate handleMouseMoved(Point point) {
+        boolean needRepaint = connectorPoint != null || edgePoint != null || hovered != null;
+        connectorPoint = null;
+        edgePoint = null;
+        hovered = null;
+        EdgeRenderer nearestEdge = findNearestEdge(point);
+        VertexRenderer nearestVertex = findNearestVertex(point);
+        if (nearestVertex != null) {
+            long distance = nearestVertex.squareDistance(point);
+            System.out.println(distance);
+//            if (nearestEdge == null || distance < nearestEdge.squareDistance(point)) {
+                if (isInside(distance)) {
+                    hovered = nearestVertex;
+                }
+                else if (isOnBorder(distance)) {
+                    return new ComponentUpdate(getPositionCursorType(point, nearestVertex.getLocation()), needRepaint);
+                }
+                else if (isNear(distance)) {
+                    System.out.println("connector");
+                    connectorPoint = point;
+                    return new ComponentUpdate(Cursor.DEFAULT_CURSOR, true);
+                }
+            return new ComponentUpdate(Cursor.HAND_CURSOR, needRepaint);
+//            }
+        }
+        else if (nearestEdge != null) {
+            edgeBendSelected = nearestEdge.getPoints().stream().anyMatch(p -> isNear(point, p));
+            hovered = nearestEdge;
+            edgePoint = point;
+            return new ComponentUpdate(Cursor.HAND_CURSOR, true);
+        }
+        return new ComponentUpdate(Cursor.DEFAULT_CURSOR, needRepaint);
+    }
+
+    private static int getPositionCursorType(Point cursor, Point location) {
+        double dx = cursor.x - location.x;
+        double dy = cursor.y - location.y;
+        double angle = (dy != 0) ? Math.abs(Math.atan(dx / dy)) : 0.5 * Math.PI;
+        if (0.1 * Math.PI < angle && angle < 0.4 * Math.PI) {
+            if (dx < 0 && dy < 0) {
+                return Cursor.NW_RESIZE_CURSOR;
+            }
+            if (dx > 0 && dy < 0) {
+                return Cursor.NE_RESIZE_CURSOR;
+            }
+            if (dx < 0 && dy > 0) {
+                return Cursor.SW_RESIZE_CURSOR;
+            }
+            if (dx > 0 && dy > 0) {
+                return Cursor.SE_RESIZE_CURSOR;
+            }
+        }
+        else if (angle <= 0.1 * Math.PI) {
+            return (dy < 0) ? Cursor.N_RESIZE_CURSOR : Cursor.S_RESIZE_CURSOR;
+        }
+        else if (0.4 * Math.PI <= angle) {
+            return (dx < 0) ? Cursor.W_RESIZE_CURSOR : Cursor.E_RESIZE_CURSOR;
+        }
+        throw new IllegalStateException();
+    }
+
+    private ComponentUpdate handleMousePressed(Button button) {
+        if (button == Button.MAIN) {
+            VertexRenderer nearestVertex = findNearestVertex(cursor);
+            if (nearestVertex != null) {
+                if (connectorPoint != null) {
+                    draggingEdgeRenderer = new EdgeRenderer(nearestVertex);
+                    state = State.CREATING_EDGE;
+                }
+                else if (selection.contains(nearestVertex)) {
+                    state = State.MOVING_SELECTION;
+                    return ComponentUpdate.NO_OPERATION;
+                }
+                else {
+                    long distance = nearestVertex.squareDistance(cursor);
+                    if (isOnBorder(distance)) {
+                        draggingVertex = nearestVertex;
+                        state = State.RESIZING_VERTEX;
+                    }
+                }
+                return ComponentUpdate.NO_OPERATION;
+            }
+            EdgeRenderer nearestEdge = findNearestEdge(cursor);
+            if (nearestEdge != null) {
+                edgePoint = nearestEdgePoint(nearestEdge, cursor);
+                draggingEdgeRenderer = nearestEdge;
+                state = State.MOVING_EDGE_POINT;
+                return ComponentUpdate.NO_OPERATION;
+            }
+        }
+        return ComponentUpdate.NO_OPERATION;
+    }
+
+    private ComponentUpdate dragNewEdge(MouseEvent event) {
+        handleMouseMoved(event.getPoint());
+        return addEdgePoint(event.getPoint());
+    }
+
+    private ComponentUpdate handleMouseClicked(Point point, Button button) {
         if (button == Button.MAIN) {
             selection.clear();
             VertexRenderer nearest = findNearestVertex(point);
-            if (nearest != null) {
-                selection.add(nearest);
-            }
-            else {
+            if (nearest == null) {
                 vertices.add(new DefaultVertexRenderer(point));
             }
-            return true;
+            else {
+                selection.add(nearest);
+            }
+            return ComponentUpdate.REPAINT;
         }
         if (button == Button.TOGGLE_SELECT) {
             VertexRenderer nearest = findNearestVertex(point);
@@ -165,59 +268,57 @@ public class GraphCanvas extends CompositeRenderer {
                 else {
                     selection.add(nearest);
                 }
+                return ComponentUpdate.REPAINT;
             }
-            return true;
+            return ComponentUpdate.NO_OPERATION;
         }
         if (button == Button.RESET) {
             resetSelection();
-            return true;
+            return ComponentUpdate.REPAINT;
         }
-        return false;
+        return ComponentUpdate.NO_OPERATION;
     }
 
-    private boolean clickedDraggingEdge(Button button) {
-        if (button == Button.MAIN) {
-            return false;
+    private ComponentUpdate clickedDraggingEdge(Button button) {
+        if (button == Button.RESET) {
+            draggingEdgeRenderer = null;
+            state = State.IDLE;
+            return ComponentUpdate.REPAINT;
         }
-        draggingEdgeRenderer = null;
-        state = State.IDLE;
-        return true;
+        return ComponentUpdate.NO_OPERATION;
     }
 
-    private boolean handleMousePressed(Button button) {
-        if (button == Button.MAIN) {
-            VertexRenderer nearestVertex = findNearestVertex(cursor);
-            if (nearestVertex != null) {
-                if (connectorPoint != null) {
-                    draggingEdgeRenderer = new EdgeRenderer(nearestVertex);
-                    state = State.CREATING_EDGE;
-                }
-                else if (selection.contains(nearestVertex)) {
-                    state = State.MOVING_SELECTION;
-                }
-                return false;
-            }
-            EdgeRenderer nearestEdge = findNearestEdge(cursor);
-            if (nearestEdge != null) {
-                edgePoint = nearestEdgePoint(nearestEdge, cursor);
-                draggingEdgeRenderer = nearestEdge;
-                state = State.MOVING_EDGE_POINT;
-                return false;
-            }
-        }
-        return false;
-    }
-
-    private boolean initializeSelectionRectangle(Point point) {
-        selectionRectangle = new Rectangle(cursor.x, cursor.y, xDistanceToCursor(point), yDistanceToCursor(point));
+    private ComponentUpdate initializeSelectionRectangle(Point point) {
+        createSelectionRectangle(point);
         state = State.SELECTING_AREA;
-        return false;
+        return ComponentUpdate.NO_OPERATION;
     }
 
-    private boolean resizeSelectionRectangle(Point point) {
-        selectionRectangle.width = xDistanceToCursor(point);
-        selectionRectangle.height = yDistanceToCursor(point);
-        return true;
+    private ComponentUpdate resizeSelectionRectangle(Point point) {
+        createSelectionRectangle(point);
+        return ComponentUpdate.REPAINT;
+    }
+
+    private void createSelectionRectangle(Point corner) {
+        selectionRectangle = new Rectangle(cursor.x, cursor.y, xDistanceToCursor(corner), yDistanceToCursor(corner));
+        if (selectionRectangle.width < 0) {
+            selectionRectangle.x += selectionRectangle.width;
+            selectionRectangle.width = -selectionRectangle.width;
+        }
+        if (selectionRectangle.height < 0) {
+            selectionRectangle.y += selectionRectangle.height;
+            selectionRectangle.height = -selectionRectangle.height;
+        }
+    }
+
+    private ComponentUpdate finishSelectionRectangle() {
+        selection.clear();
+        vertices.stream()
+            .filter(vertex -> selectionRectangle.contains(vertex.getLocation()))
+            .forEach(vertex -> selection.add(vertex));
+        selectionRectangle = null;
+        state = State.IDLE;
+        return ComponentUpdate.REPAINT;
     }
 
     private Point nearestEdgePoint(EdgeRenderer edge, Point point) {
@@ -247,7 +348,7 @@ public class GraphCanvas extends CompositeRenderer {
         state = State.IDLE;
     }
 
-    private boolean updateDraggingEdge(Point point) {
+    private ComponentUpdate updateDraggingEdge(Point point) {
         VertexRenderer nearest = findNearestVertex(point);
         if (nearest != null) {
             draggingEdgeRenderer.setEnd(nearest);
@@ -259,54 +360,37 @@ public class GraphCanvas extends CompositeRenderer {
             draggingEdgeRenderer.addPoint(point);
             draggingEdgeRenderer.setEnd(dragEndPoint(point));
         }
-        return true;
+        return ComponentUpdate.REPAINT;
     }
 
-    private boolean finishVertexMove(Point point) {
+    private ComponentUpdate finishVertexMove(Point point) {
         state = State.IDLE;
-        return false;
+        return ComponentUpdate.NO_OPERATION;
     }
 
-    private boolean finishEdgePointMove() {
+    private ComponentUpdate finishEdgePointMove() {
         draggingEdgeRenderer = null;
         state = State.IDLE;
-        return false;
+        return ComponentUpdate.NO_OPERATION;
     }
 
-    private boolean moveEdgePoint(Point point) {
+    private ComponentUpdate resizeVertex(Point target) {
+        draggingVertex.resize(target);
+        return ComponentUpdate.REPAINT;
+    }
+
+    private ComponentUpdate finishResizingVertex() {
+        draggingVertex = null;
+        state = State.IDLE;
+        return ComponentUpdate.NO_OPERATION;
+    }
+
+    private ComponentUpdate moveEdgePoint(Point point) {
         edgePoint.setLocation(point);
-        return true;
+        return ComponentUpdate.REPAINT;
     }
 
-    private boolean handleMouseMoved(Point point) {
-        boolean needRepaint = connectorPoint != null || edgePoint != null || !hovered.isEmpty();
-        connectorPoint = null;
-        edgePoint = null;
-        hovered.clear();
-        EdgeRenderer nearestEdge = findNearestEdge(point);
-        VertexRenderer nearestVertex = findNearestVertex(point);
-        if (nearestVertex != null) {
-            long distance = nearestVertex.squareDistance(point);
-            if (nearestEdge == null || distance < nearestEdge.squareDistance(point)) {
-                if (distance < 0) {
-                    hovered.add(nearestVertex);
-                }
-                else if (isNear(distance)) {
-                    connectorPoint = point;
-                }
-                return true;
-            }
-        }
-        else if (nearestEdge != null) {
-            edgeBendSelected = nearestEdge.getPoints().stream().anyMatch(p -> isNear(point, p));
-            hovered.add(nearestEdge);
-            edgePoint = point;
-            return true;
-        }
-        return needRepaint;
-    }
-
-    private boolean moveSelection(Point target) {
+    private ComponentUpdate moveSelection(Point target) {
         int deltaX = xDistanceToCursor(target);
         int deltaY = yDistanceToCursor(target);
         selection.forEach(renderer -> {
@@ -318,12 +402,12 @@ public class GraphCanvas extends CompositeRenderer {
             .filter(edge -> selection.contains(edge.getEnd()))
             .forEach(edge -> edge.getPoints().forEach(point -> point.move(point.x + deltaX, point.y + deltaY)));
         cursor = target;
-        return true;
+        return ComponentUpdate.REPAINT;
     }
 
-    private boolean addEdgePoint(Point point) {
+    private ComponentUpdate addEdgePoint(Point point) {
         draggingEdgeRenderer.setEnd(dragEndPoint(point));
-        return true;
+        return ComponentUpdate.REPAINT;
     }
 
     private static VertexRenderer dragEndPoint(Point point) {
@@ -372,6 +456,14 @@ public class GraphCanvas extends CompositeRenderer {
         return distance < EDGE_POINT_SELECTION_RANGE;
     }
 
+    private static boolean isOnBorder(long distance) {
+        return -500 < distance && distance < 25;
+    }
+
+    private static boolean isInside(long distance) {
+        return distance <= -500;
+    }
+
     private int xDistanceToCursor(Point point) {
         return point.x - cursor.x;
     }
@@ -381,7 +473,7 @@ public class GraphCanvas extends CompositeRenderer {
     }
 
     private enum State {
-        IDLE, CREATING_EDGE, MOVING_SELECTION, MOVING_EDGE_POINT, SELECTING_AREA
+        IDLE, CREATING_EDGE, MOVING_SELECTION, MOVING_EDGE_POINT, RESIZING_VERTEX, SELECTING_AREA
     }
 
 
@@ -426,17 +518,18 @@ public class GraphCanvas extends CompositeRenderer {
 
     private State state = State.IDLE;
     private final Set<VertexRenderer> selection = new HashSet<>();
-    private final Set<Renderer> hovered = new HashSet<>();
 
     private Point cursor;
     private Point connectorPoint;
     private Point edgePoint;
+    private VertexRenderer draggingVertex;
     private EdgeRenderer draggingEdgeRenderer;
-    private boolean edgeBendSelected;
+    private Renderer hovered;
     private Rectangle selectionRectangle;
+    private boolean edgeBendSelected;
 
     private int eventModifiers; // Because of a bug in modifiers from the mouseClicked event, modifiers from the emousePressed event need to be remembered.
 
-    private static final long EDGE_POINT_SELECTION_RANGE = 10;
+    private static final long EDGE_POINT_SELECTION_RANGE = 100;
 
 }

@@ -21,45 +21,49 @@ public class GraphCanvas extends CompositeRenderer {
         edges.forEach(edge -> {
             graphics.setPaint(Color.BLACK);
             edge.paint(graphics);
-            graphics.setPaint(Color.MAGENTA);
-            Point connector = edge.getStartConnectorPoint();
-            graphics.fillOval(connector.x - 3, connector.y - 3, 7, 7);
-            connector = edge.getEndConnectorPoint();
-            graphics.fillOval(connector.x - 3, connector.y - 3, 7, 7);
+            paintDot(graphics, edge.getStartConnectorPoint(), 3, Color.MAGENTA);
+            paintDot(graphics, edge.getEndConnectorPoint(), 3, Color.MAGENTA);
         });
         if (draggingEdgeRenderer != null) {
             graphics.setPaint(Color.DARK_GRAY);
             draggingEdgeRenderer.paint(graphics);
-            Point connector = draggingEdgeRenderer.getStartConnectorPoint();
-            graphics.setPaint(Color.MAGENTA);
-            graphics.drawOval(connector.x - 3, connector.y - 3, 7, 7);
+            paintCircle(graphics, draggingEdgeRenderer.getStartConnectorPoint(), 3, Color.MAGENTA);
         }
         graphics.setPaint(Color.BLUE);
         selection.forEach(renderer -> renderer.paint(graphics));
         if (connectorPoint != null) {
             if (draggingEdgeRenderer == null) {
-                graphics.setPaint(Color.RED);
-                graphics.drawOval(connectorPoint.x - 4, connectorPoint.y - 4, 9, 9);
+                paintCircle(graphics, connectorPoint, 4, Color.RED);
             }
             else {
-                graphics.setPaint(Color.MAGENTA);
-//                Point connector = draggingEdgeRenderer.getStartConnectorPoint();
-                graphics.drawOval(connectorPoint.x - 3, connectorPoint.y - 3, 7, 7);
+                paintCircle(graphics, connectorPoint, 3, Color.MAGENTA);
             }
         }
         if (edgePoint != null) {
             graphics.setPaint(Color.RED);
             if (edgeBendSelected) {
-                graphics.fillOval(edgePoint.x - 3, edgePoint.y - 3, 7, 7);
+                paintDot(graphics, edgePoint, 3, Color.RED);
             }
             else {
-                graphics.drawOval(edgePoint.x - 3, edgePoint.y - 3, 7, 7);
+                paintCircle(graphics, edgePoint, 3, Color.RED);
             }
         }
         if (selectionRectangle != null) {
             graphics.setColor(Color.LIGHT_GRAY);
             graphics.drawRect(selectionRectangle.x, selectionRectangle.y, selectionRectangle.width, selectionRectangle.height);
         }
+    }
+
+    private static void paintDot(Graphics2D graphics, Point point, int radius, Paint paint) {
+        int size = radius * 2 + 1;
+        graphics.setPaint(paint);
+        graphics.fillOval(point.x - radius, point.y - radius, size, size);
+    }
+
+    private static void paintCircle(Graphics2D graphics, Point point, int radius, Paint paint) {
+        int size = radius * 2 + 1;
+        graphics.setPaint(paint);
+        graphics.drawOval(point.x - radius, point.y - radius, size, size);
     }
 
     public ComponentUpdate handleMouseMoved(MouseEvent event) {
@@ -166,15 +170,14 @@ public class GraphCanvas extends CompositeRenderer {
         return new ComponentUpdate(Cursor.DEFAULT_CURSOR, needRepaint);
     }
 
-    private ComponentUpdate handleVertexHovered(VertexRenderer nearestVertex, Point point, boolean needRepaint) {
-        long distance = nearestVertex.squareDistance(point);
-        System.out.println(distance);
+    private ComponentUpdate handleVertexHovered(VertexRenderer vertex, Point point, boolean needRepaint) {
+        long distance = vertex.squareDistance(point);
         if (isInside(distance)) {
-            hovered = nearestVertex;
+            hovered = vertex;
             return new ComponentUpdate(Cursor.HAND_CURSOR, needRepaint);
         }
         if (isOnBorder(distance)) {
-            return new ComponentUpdate(getPositionCursorType(point, nearestVertex.getLocation()), needRepaint);
+            return new ComponentUpdate(getPositionCursorType(point, vertex.getLocation()), needRepaint);
         }
         if (isNear(distance)) {
             connectorPoint = point;
@@ -541,8 +544,8 @@ public class GraphCanvas extends CompositeRenderer {
 
     private int eventModifiers; // Because of a bug in modifiers from the mouseClicked event, modifiers from the emousePressed event need to be remembered.
 
-    private static final long INSIDE_BORDER_MARGIN = -25;
-    private static final long OUTSIDE_BORDER_MARGIN = 25;
-    private static final long NEAR_DISTANCE = 40;
+    private static final long INSIDE_BORDER_MARGIN = -4 * 4;
+    private static final long OUTSIDE_BORDER_MARGIN = 4 * 4;
+    private static final long NEAR_DISTANCE = 5 * 5;
 
 }

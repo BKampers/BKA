@@ -7,7 +7,7 @@ package bka.demo.graphs;
 
 public class ComponentUpdate {
 
-    private static final int NO_CURSOR_CHANGE = 0;
+    private static final int NO_CURSOR_CHANGE = -1;
     public static final ComponentUpdate NO_OPERATION = new ComponentUpdate(NO_CURSOR_CHANGE, false);
     public static final ComponentUpdate REPAINT = new ComponentUpdate(NO_CURSOR_CHANGE, true);
 

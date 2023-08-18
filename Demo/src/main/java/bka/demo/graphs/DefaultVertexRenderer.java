@@ -39,8 +39,9 @@ public class DefaultVertexRenderer implements VertexRenderer {
     public long squareDistance(Point point) {
         long dx = location.x - point.x;
         long dy = location.y - point.y;
-        long radius = size / 2;
-        return (dx * dx + dy * dy) - radius * radius;
+        double distance = Math.sqrt(dx * dx + dy * dy) - size / 2d;
+        long squareDistance = Math.round(distance * distance);
+        return (distance < 0) ? -squareDistance : squareDistance;
     }
 
     @Override

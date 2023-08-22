@@ -28,7 +28,7 @@ public class DefaultVertexRenderer implements VertexRenderer {
     public Point getConnectorPoint(Point edgePoint) {
         float dx = edgePoint.x - location.x;
         float dy = edgePoint.y - location.y;
-        float angle = (float) Math.atan(dx / dy);
+        double angle = Math.atan(dx / dy);
         float radius = size / ((dy < 0) ? -2f : 2f);
         float cx = (float) Math.sin(angle) * radius;
         float cy = (float) Math.cos(angle) * radius;
@@ -37,9 +37,7 @@ public class DefaultVertexRenderer implements VertexRenderer {
 
     @Override
     public long squareDistance(Point point) {
-        long dx = location.x - point.x;
-        long dy = location.y - point.y;
-        double distance = Math.sqrt(dx * dx + dy * dy) - size / 2d;
+        double distance = CanvasUtil.distance(point, location) - size / 2d;
         long squareDistance = Math.round(distance * distance);
         return (distance < 0) ? -squareDistance : squareDistance;
     }
@@ -52,7 +50,7 @@ public class DefaultVertexRenderer implements VertexRenderer {
 
     @Override
     public void resize(Point target) {
-        size = Math.abs((int) Math.round(Math.sqrt(CanvasUtil.squareDistance(location, target)) * 2));
+        size = Math.abs((int) Math.round(CanvasUtil.distance(location, target) * 2));
     }
 
     private Point location;

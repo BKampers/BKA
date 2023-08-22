@@ -144,7 +144,7 @@ public class GraphCanvas extends CompositeRenderer {
             case CREATING_EDGE ->
                 updateDraggingEdge(event.getPoint());
             case MOVING_SELECTION ->
-                finishVertexMove(event.getPoint());
+                finishSelectionMove();
             case MOVING_EDGE_POINT ->
                 finishEdgePointMove();
             case RESIZING_VERTEX ->
@@ -363,9 +363,10 @@ public class GraphCanvas extends CompositeRenderer {
     }
 
     private ComponentUpdate updateDraggingEdge(Point point) {
-        VertexRenderer nearest = findNearestVertex(point);
-        if (nearest != null) {
-            draggingEdgeRenderer.setEnd(nearest);
+        VertexRenderer vertex = findNearestVertex(point);
+        if (vertex != null) {
+            draggingEdgeRenderer.setEnd(vertex);
+            cleanup(draggingEdgeRenderer);
             edges.add(draggingEdgeRenderer);
             draggingEdgeRenderer = null;
             state = State.IDLE;
@@ -377,15 +378,17 @@ public class GraphCanvas extends CompositeRenderer {
         return ComponentUpdate.REPAINT;
     }
 
-    private ComponentUpdate finishVertexMove(Point point) {
+    private ComponentUpdate finishSelectionMove() {
+        edges.stream().filter(edge -> selection.contains(edge.getStart()) != selection.contains(edge.getEnd())).forEach(edge -> cleanup(edge));
         state = State.IDLE;
-        return ComponentUpdate.NO_OPERATION;
+        return ComponentUpdate.REPAINT;
     }
 
     private ComponentUpdate finishEdgePointMove() {
+        cleanup(draggingEdgeRenderer);
         draggingEdgeRenderer = null;
         state = State.IDLE;
-        return ComponentUpdate.NO_OPERATION;
+        return ComponentUpdate.REPAINT;
     }
 
     private ComponentUpdate resizeVertex(Point target) {
@@ -394,6 +397,7 @@ public class GraphCanvas extends CompositeRenderer {
     }
 
     private ComponentUpdate finishResizingVertex() {
+        edges.stream().filter(edge -> draggingVertex.equals(edge.getStart()) || draggingVertex.equals(edge.getEnd())).forEach(edge -> cleanup(edge));
         draggingVertex = null;
         state = State.IDLE;
         return ComponentUpdate.NO_OPERATION;
@@ -456,6 +460,10 @@ public class GraphCanvas extends CompositeRenderer {
             return null;
         }
         return nearest.getValue();
+    }
+
+    private static void cleanup(EdgeRenderer edge) {
+        edge.cleanup(TWIN_TOLERANCE, ACUTE_COSINE_LIMIT, OBTUSE_COSINE_LIMIT);
     }
 
     private static boolean isNear(Point cursor, Point linePoint1, Point linePoint2) {
@@ -547,5 +555,9 @@ public class GraphCanvas extends CompositeRenderer {
     private static final long INSIDE_BORDER_MARGIN = -4 * 4;
     private static final long OUTSIDE_BORDER_MARGIN = 4 * 4;
     private static final long NEAR_DISTANCE = 5 * 5;
+    private static final double ACUTE_COSINE_LIMIT = -0.99;
+    private static final double OBTUSE_COSINE_LIMIT = 0.99;
+    private static final long TWIN_TOLERANCE = 3 * 3;
+
 
 }

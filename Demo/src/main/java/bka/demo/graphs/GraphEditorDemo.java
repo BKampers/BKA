@@ -20,10 +20,14 @@ public class GraphEditorDemo extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        graphScrollPane = new javax.swing.JScrollPane();
         graphPanel = new GraphPanel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Graph editor");
+
+        graphScrollPane.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
+        graphScrollPane.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 
         graphPanel.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
             public void mouseDragged(java.awt.event.MouseEvent evt) {
@@ -53,10 +57,12 @@ public class GraphEditorDemo extends javax.swing.JFrame {
         );
         graphPanelLayout.setVerticalGroup(
             graphPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 300, Short.MAX_VALUE)
+            .addGap(0, 296, Short.MAX_VALUE)
         );
 
-        getContentPane().add(graphPanel, java.awt.BorderLayout.CENTER);
+        graphScrollPane.setViewportView(graphPanel);
+
+        getContentPane().add(graphScrollPane, java.awt.BorderLayout.CENTER);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -142,6 +148,7 @@ public class GraphEditorDemo extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel graphPanel;
+    private javax.swing.JScrollPane graphScrollPane;
     // End of variables declaration//GEN-END:variables
 
     private final GraphCanvas canvas = new GraphCanvas();

@@ -9,6 +9,10 @@ import java.awt.*;
 
 public class CanvasUtil {
 
+    public static double distance(Point point1, Point point2) {
+        return Math.sqrt(squareDistance(point1, point2));
+    }
+
     public static long squareDistance(Point point1, Point point2) {
         long deltaX = point1.x - point2.x;
         long deltaY = point1.y - point2.y;

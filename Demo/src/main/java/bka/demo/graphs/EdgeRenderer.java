@@ -5,6 +5,7 @@
 package bka.demo.graphs;
 
 import bka.awt.*;
+import bka.demo.graphs.Vector;
 import java.awt.*;
 import java.util.*;
 
@@ -99,9 +100,58 @@ public class EdgeRenderer implements Renderer {
         return end.getConnectorPoint(points.getLast());
     }
 
+    public void cleanup(long twinTolerance, double acuteCosineLimit, double obtuseCosineLimit) {
+        if (!points.isEmpty()) {
+            if (twinTolerance > 0) {
+                removeTwins(twinTolerance);
+            }
+            if (acuteCosineLimit > -1 || obtuseCosineLimit < 1) {
+                removeExtremeAngles(acuteCosineLimit, obtuseCosineLimit);
+            }
+        }
+    }
+
+    private void removeTwins(long twinTolerance) {
+        Point p0 = getStartConnectorPoint();
+        int i = 0;
+        while (i <= points.size()) {
+            Point pi = (i < points.size()) ? points.get(i) : getEndConnectorPoint();
+            if (CanvasUtil.squareDistance(p0, pi) < twinTolerance) {
+                points.remove(i);
+            }
+            else {
+                p0 = pi;
+                i++;
+            }
+        }
+    }
+
+    private void removeExtremeAngles(double acuteCosineLimit, double obtuseCosineLimit) {
+        Vector point = vector(points.getFirst());
+        Vector segment1 = point.subtract(vector(getStartConnectorPoint()));
+        int i = 0;
+        while (i < points.size()) {
+            Vector nextPoint = vector((i + 1 < points.size()) ? points.get(i + 1) : getEndConnectorPoint());
+            Vector segment2 = nextPoint.subtract(point);
+            double cosine = Vector.cosine(segment1, segment2);
+            if (cosine < acuteCosineLimit || obtuseCosineLimit < cosine) {
+                points.remove(i);
+            }
+            else {
+                point = nextPoint;
+                segment1 = segment2;
+                i++;
+            }
+        }
+    }
+
+    private static Vector vector(Point point) {
+        return new Vector(point.getX(), point.getY());
+    }
+
+
     private final LinkedList<Point> points = new LinkedList<>();
     private final VertexRenderer start;
     private VertexRenderer end;
-
 
 }

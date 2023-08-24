@@ -10,7 +10,6 @@ public class GraphEditorDemo extends javax.swing.JFrame {
 
     public GraphEditorDemo() {
         initComponents();
-        graphPanel.requestFocus();
     }
 
     /**
@@ -75,6 +74,7 @@ public class GraphEditorDemo extends javax.swing.JFrame {
 
     private void graphPanelMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_graphPanelMouseClicked
         updateGraphPanel(canvas.handleMouseClicked(evt));
+        graphPanel.requestFocus();
     }//GEN-LAST:event_graphPanelMouseClicked
 
     private void graphPanelMouseDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_graphPanelMouseDragged

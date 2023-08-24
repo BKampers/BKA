@@ -259,13 +259,17 @@ public class GraphCanvas extends CompositeRenderer {
             }
             else {
                 if (!vertexSelection.contains(vertex)) {
-                    edgeSelection.clear();
-                    vertexSelection.clear();
-                    vertexSelection.add(vertex);
+                    selectSingleVertex(vertex);
                 }
                 state = State.MOVING_SELECTION;
             }
         }
+    }
+
+    private void selectSingleVertex(VertexRenderer vertex) {
+        edgeSelection.clear();
+        vertexSelection.clear();
+        vertexSelection.add(vertex);
     }
 
     private void handleEdgePressed(EdgeRenderer nearestEdge) {
@@ -282,52 +286,66 @@ public class GraphCanvas extends CompositeRenderer {
 
     private ComponentUpdate handleMouseClicked(Point point, Button button) {
         if (button == Button.MAIN) {
+            return mainButtonClicked(point);
+        }
+        if (button == Button.TOGGLE_SELECT) {
+            return toggleSelection(point);
+        }
+        if (button == Button.RESET) {
+            return resetSelection();
+        }
+        return ComponentUpdate.NO_OPERATION;
+    }
+
+    private ComponentUpdate mainButtonClicked(Point point) {
+        vertexSelection.clear();
+        edgeSelection.clear();
+        EdgeRenderer nearestEdge = findNearestEdge(point);
+        if (nearestEdge != null) {
+            edgeSelection.add(nearestEdge);
+            return ComponentUpdate.REPAINT;
+        }
+        VertexRenderer nearest = findNearestVertex(point);
+        if (nearest == null) {
+            vertices.add(new DefaultVertexRenderer(point));
+        }
+        else {
             vertexSelection.clear();
             edgeSelection.clear();
-            EdgeRenderer nearestEdge = findNearestEdge(point);
-            if (nearestEdge != null) {
-                edgeSelection.add(nearestEdge);
-                return ComponentUpdate.REPAINT;
-            }
-            VertexRenderer nearest = findNearestVertex(point);
-            if (nearest == null) {
-                vertices.add(new DefaultVertexRenderer(point));
+            vertexSelection.add(nearest);
+        }
+        return ComponentUpdate.REPAINT;
+    }
+
+    private ComponentUpdate toggleSelection(Point point) {
+        VertexRenderer nearestVertex = findNearestVertex(point);
+        if (nearestVertex != null) {
+            if (vertexSelection.contains(nearestVertex)) {
+                vertexSelection.remove(nearestVertex);
             }
             else {
-                vertexSelection.clear();
-                edgeSelection.clear();
-                vertexSelection.add(nearest);
+                vertexSelection.add(nearestVertex);
             }
             return ComponentUpdate.REPAINT;
         }
-        if (button == Button.TOGGLE_SELECT) {
-            VertexRenderer nearestVertex = findNearestVertex(point);
-            if (nearestVertex != null) {
-                if (vertexSelection.contains(nearestVertex)) {
-                    vertexSelection.remove(nearestVertex);
-                }
-                else {
-                    vertexSelection.add(nearestVertex);
-                }
-                return ComponentUpdate.REPAINT;
+        EdgeRenderer nearestEdge = findNearestEdge(point);
+        if (nearestEdge != null) {
+            if (edgeSelection.contains(nearestEdge)) {
+                edgeSelection.remove(nearestEdge);
             }
-            EdgeRenderer nearestEdge = findNearestEdge(point);
-            if (nearestEdge != null) {
-                if (edgeSelection.contains(nearestEdge)) {
-                    edgeSelection.remove(nearestEdge);
-                }
-                else {
-                    edgeSelection.add(nearestEdge);
-                }
-                return ComponentUpdate.REPAINT;
+            else {
+                edgeSelection.add(nearestEdge);
             }
-            return ComponentUpdate.NO_OPERATION;
-        }
-        if (button == Button.RESET) {
-            resetSelection();
             return ComponentUpdate.REPAINT;
         }
         return ComponentUpdate.NO_OPERATION;
+    }
+
+    private ComponentUpdate resetSelection() {
+        edgeSelection.clear();
+        vertexSelection.clear();
+        state = State.IDLE;
+        return ComponentUpdate.REPAINT;
     }
 
     private ComponentUpdate clickedDraggingEdge(Button button) {
@@ -393,12 +411,6 @@ public class GraphCanvas extends CompositeRenderer {
         }
         edge.addPoint(point);
         return point;
-    }
-
-    private void resetSelection() {
-        edgeSelection.clear();
-        vertexSelection.clear();
-        state = State.IDLE;
     }
 
     private ComponentUpdate updateDraggingEdge(Point point) {

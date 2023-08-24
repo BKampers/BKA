@@ -8,12 +8,20 @@ package bka.demo.graphs;
 public class ComponentUpdate {
 
     private static final int NO_CURSOR_CHANGE = -1;
-    public static final ComponentUpdate NO_OPERATION = new ComponentUpdate(NO_CURSOR_CHANGE, false);
-    public static final ComponentUpdate REPAINT = new ComponentUpdate(NO_CURSOR_CHANGE, true);
+    public static final ComponentUpdate NO_OPERATION = ComponentUpdate.noOperation(NO_CURSOR_CHANGE);
+    public static final ComponentUpdate REPAINT = ComponentUpdate.repaint(NO_CURSOR_CHANGE);
 
     public ComponentUpdate(int cursorType, boolean needRepeaint) {
         this.cursorType = cursorType;
         this.needRepeaint = needRepeaint;
+    }
+
+    public static ComponentUpdate noOperation(int cursorType) {
+        return new ComponentUpdate(cursorType, false);
+    }
+
+    public static ComponentUpdate repaint(int cursorType) {
+        return new ComponentUpdate(cursorType, true);
     }
 
     public int getCursorType() {

@@ -10,6 +10,7 @@ public class GraphEditorDemo extends javax.swing.JFrame {
 
     public GraphEditorDemo() {
         initComponents();
+        graphPanel.requestFocus();
     }
 
     /**
@@ -48,6 +49,11 @@ public class GraphEditorDemo extends javax.swing.JFrame {
                 graphPanelMouseReleased(evt);
             }
         });
+        graphPanel.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                graphPanelKeyReleased(evt);
+            }
+        });
 
         javax.swing.GroupLayout graphPanelLayout = new javax.swing.GroupLayout(graphPanel);
         graphPanel.setLayout(graphPanelLayout);
@@ -68,29 +74,28 @@ public class GraphEditorDemo extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void graphPanelMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_graphPanelMouseClicked
-//        System.out.println("Clicked " + evt.getPoint());
         updateGraphPanel(canvas.handleMouseClicked(evt));
     }//GEN-LAST:event_graphPanelMouseClicked
 
     private void graphPanelMouseDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_graphPanelMouseDragged
-//        System.out.println("Dragged " + evt.getPoint());
         updateGraphPanel(canvas.handleMouseDragged(evt));
     }//GEN-LAST:event_graphPanelMouseDragged
 
     private void graphPanelMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_graphPanelMousePressed
-//        System.out.println("Pressed " + evt.getPoint());
         updateGraphPanel(canvas.handleMousePressed(evt));
     }//GEN-LAST:event_graphPanelMousePressed
 
     private void graphPanelMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_graphPanelMouseReleased
-//        System.out.println("Released " + evt.getPoint());
         updateGraphPanel(canvas.handleMouseReleased(evt));
     }//GEN-LAST:event_graphPanelMouseReleased
 
     private void graphPanelMouseMoved(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_graphPanelMouseMoved
-//        System.out.println("Moved " + evt.getPoint());
         updateGraphPanel(canvas.handleMouseMoved(evt));
     }//GEN-LAST:event_graphPanelMouseMoved
+
+    private void graphPanelKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_graphPanelKeyReleased
+        updateGraphPanel(canvas.handleKeyReleased(evt));
+    }//GEN-LAST:event_graphPanelKeyReleased
 
     /**
      * @param args the command line arguments

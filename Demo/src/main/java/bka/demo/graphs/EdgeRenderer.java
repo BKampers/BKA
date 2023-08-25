@@ -4,13 +4,12 @@
 
 package bka.demo.graphs;
 
-import bka.awt.*;
 import bka.demo.graphs.Vector;
 import java.awt.*;
 import java.util.*;
 
 
-public class EdgeRenderer implements Renderer {
+public class EdgeRenderer implements Element {
 
     public EdgeRenderer(VertexRenderer start, VertexRenderer end) {
         this(start);
@@ -19,6 +18,16 @@ public class EdgeRenderer implements Renderer {
 
     public EdgeRenderer(VertexRenderer start) {
         this.start = start;
+    }
+
+    @Override
+    public Point getLocation() {
+        return start.getLocation();
+    }
+
+    @Override
+    public void move(Point vector) {
+        points.forEach(point -> point.move(point.x + vector.x, point.y + vector.y));
     }
 
     public VertexRenderer getStart() {

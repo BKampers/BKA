@@ -31,8 +31,7 @@ public class GraphCanvas extends CompositeRenderer {
             paintCircle(graphics, draggingEdgeRenderer.getStartConnectorPoint(), 3, Color.MAGENTA);
         }
         graphics.setPaint(Color.BLUE);
-        vertexSelection.forEach(renderer -> renderer.paint(graphics));
-        edgeSelection.forEach(renderer -> renderer.paint(graphics));
+        selection.forEach(renderer -> renderer.paint(graphics));
         if (connectorPoint != null) {
             if (draggingEdgeRenderer == null) {
                 paintCircle(graphics, connectorPoint, 4, Color.RED);
@@ -158,21 +157,29 @@ public class GraphCanvas extends CompositeRenderer {
 
     public ComponentUpdate handleKeyReleased(KeyEvent event) {
         if (Keyboard.getInstance().isDelete(event)) {
-            edgeSelection.forEach(edge -> edges.remove(edge));
-            edgeSelection.clear();
-            vertexSelection.forEach(vertex -> removeVertex(vertex));
-            vertexSelection.clear();
+            selection.forEach(element -> {
+                if (element instanceof EdgeRenderer) {
+                    edges.remove((EdgeRenderer) element);
+                }
+                else {
+                    removeVertex((VertexRenderer) element);
+                }
+            });
+            selection.clear();
             return ComponentUpdate.REPAINT;
         }
         return ComponentUpdate.NO_OPERATION;
     }
 
     private void removeVertex(VertexRenderer vertex) {
-        edges.removeAll(
-            edges.stream()
-                .filter(edge -> vertex.equals(edge.getStart()) || vertex.equals(edge.getEnd()))
-                .collect(Collectors.toList()));
+        edges.removeAll(getEdges(vertex));
         vertices.remove(vertex);
+    }
+
+    private Collection<EdgeRenderer> getEdges(VertexRenderer vertex) {
+        return edges.stream()
+            .filter(edge -> vertex.equals(edge.getStart()) || vertex.equals(edge.getEnd()))
+            .collect(Collectors.toList());
     }
 
     private ComponentUpdate handleMouseMoved(Point point) {
@@ -258,7 +265,7 @@ public class GraphCanvas extends CompositeRenderer {
                 state = State.RESIZING_VERTEX;
             }
             else {
-                if (!vertexSelection.contains(vertex)) {
+                if (!selection.contains(vertex)) {
                     selectSingleVertex(vertex);
                 }
                 state = State.MOVING_SELECTION;
@@ -267,9 +274,8 @@ public class GraphCanvas extends CompositeRenderer {
     }
 
     private void selectSingleVertex(VertexRenderer vertex) {
-        edgeSelection.clear();
-        vertexSelection.clear();
-        vertexSelection.add(vertex);
+        selection.clear();
+        selection.add(vertex);
     }
 
     private void handleEdgePressed(EdgeRenderer nearestEdge) {
@@ -280,7 +286,14 @@ public class GraphCanvas extends CompositeRenderer {
 
     private ComponentUpdate dragNewEdge(Point cursor) {
         VertexRenderer nearestVertex = findNearestVertex(cursor);
-        connectorPoint = (nearestVertex != null) ? nearestVertex.getConnectorPoint(cursor) : null;
+        if (nearestVertex == null) {
+            connectorPoint = null;
+        }
+        else {
+            if (!cursor.equals(nearestVertex.getLocation())) {
+                connectorPoint = nearestVertex.getConnectorPoint(cursor);
+            }
+        }
         return addEdgePoint(cursor);
     }
 
@@ -292,27 +305,24 @@ public class GraphCanvas extends CompositeRenderer {
             return toggleSelection(point);
         }
         if (button == Button.RESET) {
-            return resetSelection();
+            return clearSelection();
         }
         return ComponentUpdate.NO_OPERATION;
     }
 
     private ComponentUpdate mainButtonClicked(Point point) {
-        vertexSelection.clear();
-        edgeSelection.clear();
+        selection.clear();
         EdgeRenderer nearestEdge = findNearestEdge(point);
         if (nearestEdge != null) {
-            edgeSelection.add(nearestEdge);
+            selection.add(nearestEdge);
             return ComponentUpdate.REPAINT;
         }
         VertexRenderer nearest = findNearestVertex(point);
         if (nearest == null) {
-            vertices.add(new DefaultVertexRenderer(point));
+            vertices.add(new VertexRenderer(point));
         }
         else {
-            vertexSelection.clear();
-            edgeSelection.clear();
-            vertexSelection.add(nearest);
+            selection.add(nearest);
         }
         return ComponentUpdate.REPAINT;
     }
@@ -320,30 +330,29 @@ public class GraphCanvas extends CompositeRenderer {
     private ComponentUpdate toggleSelection(Point point) {
         VertexRenderer nearestVertex = findNearestVertex(point);
         if (nearestVertex != null) {
-            if (vertexSelection.contains(nearestVertex)) {
-                vertexSelection.remove(nearestVertex);
+            if (selection.contains(nearestVertex)) {
+                selection.remove(nearestVertex);
             }
             else {
-                vertexSelection.add(nearestVertex);
+                selection.add(nearestVertex);
             }
             return ComponentUpdate.REPAINT;
         }
         EdgeRenderer nearestEdge = findNearestEdge(point);
         if (nearestEdge != null) {
-            if (edgeSelection.contains(nearestEdge)) {
-                edgeSelection.remove(nearestEdge);
+            if (selection.contains(nearestEdge)) {
+                selection.remove(nearestEdge);
             }
             else {
-                edgeSelection.add(nearestEdge);
+                selection.add(nearestEdge);
             }
             return ComponentUpdate.REPAINT;
         }
         return ComponentUpdate.NO_OPERATION;
     }
 
-    private ComponentUpdate resetSelection() {
-        edgeSelection.clear();
-        vertexSelection.clear();
+    private ComponentUpdate clearSelection() {
+        selection.clear();
         state = State.IDLE;
         return ComponentUpdate.REPAINT;
     }
@@ -381,11 +390,14 @@ public class GraphCanvas extends CompositeRenderer {
     }
 
     private ComponentUpdate finishSelectionRectangle() {
-        edgeSelection.clear();
-        vertexSelection.clear();
+        selection.clear();
         vertices.stream()
             .filter(vertex -> selectionRectangle.contains(vertex.getLocation()))
-            .forEach(vertex -> vertexSelection.add(vertex));
+            .forEach(vertex -> selection.add(vertex));
+        edges.stream()
+            .filter(edge -> selection.contains(edge.getStart()))
+            .filter(edge -> selection.contains(edge.getEnd()))
+            .forEach(edge -> selection.add(edge));
         selectionRectangle = null;
         state = State.IDLE;
         return ComponentUpdate.REPAINT;
@@ -430,7 +442,7 @@ public class GraphCanvas extends CompositeRenderer {
     }
 
     private ComponentUpdate finishSelectionMove() {
-        edges.stream().filter(edge -> vertexSelection.contains(edge.getStart()) != vertexSelection.contains(edge.getEnd())).forEach(edge -> cleanup(edge));
+        edges.stream().filter(edge -> selection.contains(edge.getStart()) != selection.contains(edge.getEnd())).forEach(edge -> cleanup(edge));
         state = State.IDLE;
         return ComponentUpdate.REPAINT;
     }
@@ -462,14 +474,8 @@ public class GraphCanvas extends CompositeRenderer {
     private ComponentUpdate moveSelection(Point target) {
         int deltaX = xDistanceToCursor(target);
         int deltaY = yDistanceToCursor(target);
-        vertexSelection.forEach(renderer -> {
-            Point location = renderer.getLocation();
-            location.move(location.x + deltaX, location.y + deltaY);
-        });
-        edges.stream()
-            .filter(edge -> vertexSelection.contains(edge.getStart()))
-            .filter(edge -> vertexSelection.contains(edge.getEnd()))
-            .forEach(edge -> edge.getPoints().forEach(point -> point.move(point.x + deltaX, point.y + deltaY)));
+        Point vector = new Point(deltaX, deltaY);
+        selection.forEach(element -> element.move(vector));
         cursor = target;
         return ComponentUpdate.REPAINT;
     }
@@ -480,17 +486,7 @@ public class GraphCanvas extends CompositeRenderer {
     }
 
     private static VertexRenderer dragEndPoint(Point point) {
-        return new VertexRenderer() {
-            @Override
-            public Point getLocation() {
-                return point;
-            }
-
-            @Override
-            public void paint(Graphics2D graphics) {
-                graphics.drawOval(point.x - 2, point.y - 2, 5, 5);
-            }
-        };
+        return new VertexRenderer(point);
     }
 
     private VertexRenderer findNearestVertex(Point point) {
@@ -585,13 +581,11 @@ public class GraphCanvas extends CompositeRenderer {
         private final int modifiers;
     }
 
-
     private final Collection<VertexRenderer> vertices = new LinkedList<>();
     private final Collection<EdgeRenderer> edges = new LinkedList<>();
 
     private State state = State.IDLE;
-    private final Set<VertexRenderer> vertexSelection = new HashSet<>();
-    private final Set<EdgeRenderer> edgeSelection = new HashSet<>();
+    private final Set<Element> selection = new HashSet<>();
 
     private Point cursor;
     private Point connectorPoint;

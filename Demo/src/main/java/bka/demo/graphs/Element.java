@@ -12,6 +12,8 @@ public interface Element extends Renderer {
 
     Point getLocation();
 
+    Dimension getDimension();
+
     void move(Point vector);
 
 }

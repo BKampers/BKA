@@ -18,6 +18,19 @@ public class VertexRenderer implements Element {
         return new Point(location);
     }
 
+    public void setLocation(Point location) {
+        this.location.move(location.x, location.y);
+    }
+
+    @Override
+    public Dimension getDimension() {
+        return new Dimension(size, size);
+    }
+
+    public void setDimension(Dimension dimension) {
+        size = dimension.height;
+    }
+
     @Override
     public void move(Point vector) {
         location.move(location.x + vector.x, location.y + vector.y);

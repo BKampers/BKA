@@ -26,6 +26,11 @@ public class EdgeRenderer implements Element {
     }
 
     @Override
+    public Dimension getDimension() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
     public void move(Point vector) {
         points.forEach(point -> point.move(point.x + vector.x, point.y + vector.y));
     }
@@ -44,6 +49,11 @@ public class EdgeRenderer implements Element {
 
     public java.util.List<Point> getPoints() {
         return Collections.unmodifiableList(points);
+    }
+
+    public void setPoints(java.util.List<Point> points) {
+        this.points.clear();
+        this.points.addAll(points);
     }
 
     public void addPoint(Point point) {
@@ -109,33 +119,43 @@ public class EdgeRenderer implements Element {
         return end.getConnectorPoint(points.getLast());
     }
 
-    public void cleanup(long twinTolerance, double acuteCosineLimit, double obtuseCosineLimit) {
-        if (!points.isEmpty()) {
-            if (twinTolerance > 0) {
-                removeTwins(twinTolerance);
-            }
-            if (acuteCosineLimit > -1 || obtuseCosineLimit < 1) {
-                removeExtremeAngles(acuteCosineLimit, obtuseCosineLimit);
-            }
+    public boolean cleanup(long twinTolerance, double acuteCosineLimit, double obtuseCosineLimit) {
+        boolean removed = false;
+        if (twinTolerance > 0) {
+            removed = removeTwins(twinTolerance);
         }
+        if (acuteCosineLimit > -1 || obtuseCosineLimit < 1) {
+            removed |= removeExtremeAngles(acuteCosineLimit, obtuseCosineLimit);
+        }
+        return removed;
     }
 
-    private void removeTwins(long twinTolerance) {
+    private boolean removeTwins(long twinTolerance) {
+        if (points.isEmpty()) {
+            return false;
+        }
+        boolean removed = false;
         Point p0 = getStartConnectorPoint();
         int i = 0;
         while (i <= points.size()) {
             Point pi = (i < points.size()) ? points.get(i) : getEndConnectorPoint();
             if (CanvasUtil.squareDistance(p0, pi) < twinTolerance) {
                 points.remove(i);
+                removed = true;
             }
             else {
                 p0 = pi;
                 i++;
             }
         }
+        return removed;
     }
 
-    private void removeExtremeAngles(double acuteCosineLimit, double obtuseCosineLimit) {
+    private boolean removeExtremeAngles(double acuteCosineLimit, double obtuseCosineLimit) {
+        if (points.isEmpty()) {
+            return false;
+        }
+        boolean removed = false;
         Vector point = vector(points.getFirst());
         Vector segment1 = point.subtract(vector(getStartConnectorPoint()));
         int i = 0;
@@ -145,6 +165,7 @@ public class EdgeRenderer implements Element {
             double cosine = Vector.cosine(segment1, segment2);
             if (cosine < acuteCosineLimit || obtuseCosineLimit < cosine) {
                 points.remove(i);
+                removed = true;
             }
             else {
                 point = nextPoint;
@@ -152,6 +173,7 @@ public class EdgeRenderer implements Element {
                 i++;
             }
         }
+        return removed;
     }
 
     private static Vector vector(Point point) {

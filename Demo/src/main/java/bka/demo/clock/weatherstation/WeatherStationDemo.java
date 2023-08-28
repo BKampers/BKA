@@ -33,7 +33,8 @@ public class WeatherStationDemo extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Weather Station");
-        setPreferredSize(new java.awt.Dimension(1200, 400));
+        setPreferredSize(new java.awt.Dimension(1216, 400));
+        setResizable(false);
 
         stationComboBox.setModel(stationComboBoxModel);
         stationComboBox.setEnabled(false);
@@ -61,8 +62,8 @@ public class WeatherStationDemo extends javax.swing.JFrame {
                 .addGap(22, 22, 22)
                 .addComponent(stationComboBox, javax.swing.GroupLayout.PREFERRED_SIZE, 199, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(reloadButton, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
+                .addComponent(reloadButton, javax.swing.GroupLayout.PREFERRED_SIZE, 47, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(timestampLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 704, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -80,6 +81,8 @@ public class WeatherStationDemo extends javax.swing.JFrame {
         controlPanelLayout.linkSize(javax.swing.SwingConstants.VERTICAL, new java.awt.Component[] {reloadButton, stationComboBox, timestampLabel});
 
         getContentPane().add(controlPanel, java.awt.BorderLayout.PAGE_START);
+
+        weatherPanelPlaceholder.setPreferredSize(new java.awt.Dimension(1200, 400));
 
         javax.swing.GroupLayout weatherPanelPlaceholderLayout = new javax.swing.GroupLayout(weatherPanelPlaceholder);
         weatherPanelPlaceholder.setLayout(weatherPanelPlaceholderLayout);

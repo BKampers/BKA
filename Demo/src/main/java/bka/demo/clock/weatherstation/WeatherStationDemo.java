@@ -33,7 +33,7 @@ public class WeatherStationDemo extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Weather Station");
-        setPreferredSize(new java.awt.Dimension(1216, 400));
+        setPreferredSize(new java.awt.Dimension(1200 + getFrameWitdhAdjustment(), 400));
         setResizable(false);
 
         stationComboBox.setModel(stationComboBoxModel);
@@ -100,6 +100,20 @@ public class WeatherStationDemo extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    /**
+     * @return OS dependent frame adjustment
+     */
+    private static int getFrameWitdhAdjustment() {
+        String osName = System.getProperty("os.name");
+        if (osName.contains("Mac")) {
+            return 3;
+        }
+        else if (osName.contains("Windows")) {
+            return 16;
+        }
+        return 0;
+    }
+
     private void stationComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_stationComboBoxActionPerformed
         synchronized (mutex) {
             String selectedName = (String) stationComboBoxModel.getSelectedItem();
@@ -119,7 +133,6 @@ public class WeatherStationDemo extends javax.swing.JFrame {
         loadTimer = new Timer();
         loadTimer.schedule(new DataReaderTask(), 0, TEN_MINUTES);
     }//GEN-LAST:event_reloadButtonActionPerformed
-
 
     private static String timestampText(LocalDateTime timestamp) {
         return timestamp.toLocalDate().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG)) + ' '

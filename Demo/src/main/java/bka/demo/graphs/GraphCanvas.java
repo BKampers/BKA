@@ -303,7 +303,7 @@ public class GraphCanvas extends CompositeRenderer {
     }
 
     private void handleEdgePressed(EdgeRenderer nearestEdge) {
-        history.addEdgeTransformation(nearestEdge, new ArrayList<>(nearestEdge.getPoints()));
+        originalEdgePoints = deepCopy(nearestEdge.getPoints());
         edgePoint = nearestEdgePoint(nearestEdge, dragStartPoint);
         draggingEdgeRenderer = nearestEdge;
         state = State.MOVING_EDGE_POINT;
@@ -475,7 +475,9 @@ public class GraphCanvas extends CompositeRenderer {
     }
 
     private ComponentUpdate finishResizingVertex() {
-        edges.stream().filter(edge -> draggingVertex.equals(edge.getStart()) || draggingVertex.equals(edge.getEnd())).forEach(edge -> cleanup(edge));
+        edges.stream()
+            .filter(edge -> draggingVertex.equals(edge.getStart()) || draggingVertex.equals(edge.getEnd()))
+            .forEach(edge -> cleanup(edge));
         history.addVertexSizeChange(draggingVertex, originalDimension);
         originalDimension = null;
         draggingVertex = null;
@@ -490,7 +492,9 @@ public class GraphCanvas extends CompositeRenderer {
 
     private ComponentUpdate finishEdgePointMove() {
         cleanup(draggingEdgeRenderer);
+        history.addEdgeTransformation(draggingEdgeRenderer, originalEdgePoints);
         draggingEdgeRenderer = null;
+        originalEdgePoints = null;
         edgePoint = null;
         state = State.IDLE;
         return ComponentUpdate.REPAINT;
@@ -510,7 +514,7 @@ public class GraphCanvas extends CompositeRenderer {
             .filter(edge -> selection.contains(edge.getStart()) != selection.contains(edge.getEnd()))
             .collect(Collectors.toMap(
                 edge -> edge,
-                edge -> edge.getPoints().stream().map(point -> new Point(point)).collect(Collectors.toList())));
+                edge -> deepCopy(edge.getPoints())));
         Iterator<EdgeRenderer> it = affectedEdges.keySet().iterator();
         while (it.hasNext()) {
             if (!cleanup(it.next())) {
@@ -520,6 +524,10 @@ public class GraphCanvas extends CompositeRenderer {
         history.addElementRelocation(selection, new Point(xDistanceToDragStart(cursor), yDistanceToDragStart(cursor)), affectedEdges);
         state = State.IDLE;
         return ComponentUpdate.REPAINT;
+    }
+
+    private static List<Point> deepCopy(List<Point> list) {
+        return list.stream().map(point -> new Point(point)).collect(Collectors.toList());
     }
 
     private ComponentUpdate addEdgePoint(Point cursor) {
@@ -589,31 +597,36 @@ public class GraphCanvas extends CompositeRenderer {
         return point.y - dragStartPoint.y;
     }
 
-    void removeRenderers(Collection<VertexRenderer> vertexRenderers, Collection<EdgeRenderer> edgeRenderers) {
+    public void removeRenderers(Collection<VertexRenderer> vertexRenderers, Collection<EdgeRenderer> edgeRenderers) {
         vertices.removeAll(vertexRenderers);
         edges.removeAll(edgeRenderers);
         selection.removeAll(edgeRenderers);
         selection.removeAll(vertexRenderers);
     }
 
-    void insertRenderers(Collection<VertexRenderer> vertexRenderers, Collection<EdgeRenderer> edgeRenderers) {
+    public void insertRenderers(Collection<VertexRenderer> vertexRenderers, Collection<EdgeRenderer> edgeRenderers) {
         vertices.addAll(vertexRenderers);
         edges.addAll(edgeRenderers);
     }
 
-    void revertVertexMutation(VertexRenderer vertex, Point originalLocation, Dimension originalDimension) {
+    public void revertVertexMutation(VertexRenderer vertex, Point originalLocation, Dimension originalDimension) {
         vertex.setLocation(originalLocation);
         vertex.setDimension(originalDimension);
     }
 
-    void revertElementRelocation(Collection<Element> elements, Point vector) {
+    public void revertElementRelocation(Collection<Element> elements, Point vector) {
         elements.forEach(element -> element.move(vector));
     }
 
 
+    public DrawHistory getDrawHistory() {
+        return history;
+    }
+
     private enum State {
         IDLE, CREATING_EDGE, MOVING_SELECTION, MOVING_EDGE_POINT, RESIZING_VERTEX, SELECTING_AREA
     }
+
 
     private enum Button {
         MAIN(MouseEvent.BUTTON1),
@@ -661,6 +674,7 @@ public class GraphCanvas extends CompositeRenderer {
     private Point dragStartPoint;
     private Point dragPoint;
     private Dimension originalDimension;
+    private List<Point> originalEdgePoints;
     private Point connectorPoint;
     private Point edgePoint;
     private VertexRenderer draggingVertex;

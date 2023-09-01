@@ -11,7 +11,7 @@ import java.util.*;
 import java.util.stream.*;
 
 
-class DrawHistory {
+public class DrawHistory {
 
     public interface Listener {
 
@@ -55,12 +55,6 @@ class DrawHistory {
     public void addVertexSizeChange(VertexRenderer vertexRenderer, Dimension dimension) {
         addToHistory(new SizeChange(vertexRenderer, dimension));
     }
-
-//    public void addVertexSizeChange(Map<VertexRenderer, Dimension> resizements) {
-//        if (!resizements.isEmpty()) {
-//            addToHistory(new SizeChange(resizements));
-//        }
-//    }
 
     public void addElementDeletion(Collection<VertexRenderer> vertexRenderers, Collection<EdgeRenderer> edgeRenderers) {
         addToHistory(new ElementDeletion(vertexRenderers, edgeRenderers));
@@ -167,6 +161,16 @@ class DrawHistory {
             graphCanvas.insertRenderers(vertexRenderers, edgeRenderers);
         }
 
+        @Override
+        public Collection<VertexRenderer> getVertices() {
+            return Collections.unmodifiableCollection(vertexRenderers);
+        }
+
+        @Override
+        public Collection<EdgeRenderer> getEdges() {
+            return Collections.unmodifiableCollection(edgeRenderers);
+        }
+
         private final Collection<VertexRenderer> vertexRenderers = new ArrayList<>();
         private final Collection<EdgeRenderer> edgeRenderers = new ArrayList<>();
 
@@ -198,6 +202,16 @@ class DrawHistory {
             graphCanvas.removeRenderers(vertexRenderers, edgeRenderers);
         }
 
+        @Override
+        public Collection<VertexRenderer> getVertices() {
+            return Collections.unmodifiableCollection(vertexRenderers);
+        }
+
+        @Override
+        public Collection<EdgeRenderer> getEdges() {
+            return Collections.unmodifiableCollection(edgeRenderers);
+        }
+
         private final Collection<VertexRenderer> vertexRenderers;
         private final Collection<EdgeRenderer> edgeRenderers;
 
@@ -223,6 +237,22 @@ class DrawHistory {
             });
         }
 
+        @Override
+        public Collection<VertexRenderer> getVertices() {
+            Collection vertices = elements.stream()
+                .filter(element -> element instanceof VertexRenderer)
+                .collect(Collectors.toList());
+            return vertices;
+        }
+
+        @Override
+        public Collection<EdgeRenderer> getEdges() {
+            Collection edges = elements.stream()
+                .filter(element -> element instanceof EdgeRenderer)
+                .collect(Collectors.toList());
+            return edges;
+        }
+
         private final Collection<Element> elements;
         private final Point vector;
         private final Map<EdgeRenderer, List<Point>> affectedEdges;
@@ -239,13 +269,19 @@ class DrawHistory {
 
         @Override
         protected void revert() {
-//            for (Map.Entry<VertexRenderer, Dimension> entry : mutations.entrySet()) {
-//                VertexRenderer element = entry.getKey();
-//                Dimension originalDimension = entry.getValue();
             Dimension currentDimension = vertexRenderer.getDimension();
             graphCanvas.revertVertexMutation(vertexRenderer, vertexRenderer.getLocation(), dimension);
             dimension = currentDimension;
-//            }
+        }
+
+        @Override
+        public Collection<VertexRenderer> getVertices() {
+            return List.of(vertexRenderer);
+        }
+
+        @Override
+        public Collection<EdgeRenderer> getEdges() {
+            return Collections.emptyList();
         }
 
         private final VertexRenderer vertexRenderer;
@@ -266,6 +302,16 @@ class DrawHistory {
             List<Point> currentPoints = new ArrayList<>(element.getPoints());
             element.setPoints(originalPoints);
             originalPoints = currentPoints;
+        }
+
+        @Override
+        public Collection<VertexRenderer> getVertices() {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public Collection<EdgeRenderer> getEdges() {
+            return List.of(element);
         }
 
         private final EdgeRenderer element;

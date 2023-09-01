@@ -3,13 +3,50 @@
 */
 package bka.demo.graphs;
 
-import java.awt.*;
-
+import bka.awt.*;
 
 public class GraphEditorDemo extends javax.swing.JFrame {
 
     public GraphEditorDemo() {
         initComponents();
+        canvas.getDrawHistory().addListener(this::updateHistoryList);
+        historyList.addMouseListener(new HistoryListMouseAdapter());
+        historyList.addKeyListener(new HistoryListKeyAdapter());
+    }
+
+    private void updateHistoryList(DrawHistory history) {
+        historyListModel.removeAllElements();
+        history.getMutattions().forEach(this::addMutationName);
+        if (history.getIndex() > 0) {
+            int index = history.getIndex() - 1;
+            historyList.setSelectedIndex(index);
+            java.awt.Rectangle selection = historyList.getCellBounds(index, index);
+            historyScrollPane.getViewport().scrollRectToVisible(selection);
+            historyScrollPane.getVerticalScrollBar().setValue(selection.y);
+        }
+    }
+
+    private void addMutationName(Mutation mutation) {
+        historyListModel.addElement(switch (mutation.getClass().getSimpleName()) {
+            case "ElementInsertion" ->
+                (mutation.getEdges().isEmpty()) ? "Vertex added" : "Edge added";
+            case "ElementDeletion" ->
+                (mutation.getVertices().size() == 1)
+                ? "Vertex deleted"
+                : (mutation.getEdges().size() == 1)
+                ? "Edge deleted"
+                : "Selection deleted";
+            case "ElementRelocation" ->
+                (mutation.getVertices().size() == 1)
+                ? "Vertex relocated"
+                : "Selection relocated";
+            case "SizeChange" ->
+                "Vertex resized";
+            case "EdgeTransformation" ->
+                "Edge transformed";
+            default ->
+                throw new IllegalStateException(mutation.getClass().getSimpleName());
+        });
     }
 
     /**
@@ -20,8 +57,12 @@ public class GraphEditorDemo extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        graphScrollPane = new javax.swing.JScrollPane();
+        javax.swing.JScrollPane graphScrollPane = new javax.swing.JScrollPane();
         graphPanel = new GraphPanel();
+        historyPanel = new javax.swing.JPanel();
+        historyScrollPane = new javax.swing.JScrollPane();
+        historyList = new javax.swing.JList<>();
+        historyList.setCellRenderer(new HistoryListCellRenderer());
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Graph editor");
@@ -62,12 +103,26 @@ public class GraphEditorDemo extends javax.swing.JFrame {
         );
         graphPanelLayout.setVerticalGroup(
             graphPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 296, Short.MAX_VALUE)
+            .addGap(0, 381, Short.MAX_VALUE)
         );
 
         graphScrollPane.setViewportView(graphPanel);
 
         getContentPane().add(graphScrollPane, java.awt.BorderLayout.CENTER);
+
+        historyPanel.setLayout(new javax.swing.BoxLayout(historyPanel, javax.swing.BoxLayout.LINE_AXIS));
+
+        historyScrollPane.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        historyScrollPane.setMinimumSize(new java.awt.Dimension(150, 400));
+        historyScrollPane.setPreferredSize(new java.awt.Dimension(150, 400));
+
+        historyList.setModel(historyListModel);
+        historyList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+        historyScrollPane.setViewportView(historyList);
+
+        historyPanel.add(historyScrollPane);
+
+        getContentPane().add(historyPanel, java.awt.BorderLayout.EAST);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -127,7 +182,7 @@ public class GraphEditorDemo extends javax.swing.JFrame {
     }
 
     private void updateGraphPanel(ComponentUpdate update){
-        if (Cursor.DEFAULT_CURSOR <= update.getCursorType() && update.getCursorType() <= Cursor.MOVE_CURSOR) {
+        if (java.awt.Cursor.DEFAULT_CURSOR <= update.getCursorType() && update.getCursorType() <= java.awt.Cursor.MOVE_CURSOR) {
             setGraphPanelCursor(update.getCursorType());
         }
         if (update.needsRepeaint()) {
@@ -137,7 +192,7 @@ public class GraphEditorDemo extends javax.swing.JFrame {
 
     private void setGraphPanelCursor(int type) {
         if (graphPanel.getCursor().getType() != type) {
-            graphPanel.setCursor(new Cursor(type));
+            graphPanel.setCursor(new java.awt.Cursor(type));
         }
     }
 
@@ -151,11 +206,69 @@ public class GraphEditorDemo extends javax.swing.JFrame {
         }
     }
 
+
+    private class HistoryListCellRenderer extends javax.swing.DefaultListCellRenderer {
+
+        @Override
+        public java.awt.Component getListCellRendererComponent(javax.swing.JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            java.awt.Component renderer = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            if (isSelected) {
+                renderer.setForeground(java.awt.Color.BLACK);
+            }
+            else if (index < canvas.getDrawHistory().getIndex()) {
+                renderer.setForeground(java.awt.Color.BLACK);
+            }
+            else {
+                renderer.setForeground(java.awt.Color.GRAY);
+            }
+            return renderer;
+        }
+
+    };
+
+
+    private class HistoryListMouseAdapter extends java.awt.event.MouseAdapter {
+
+        @Override
+        public void mouseReleased(java.awt.event.MouseEvent event) {
+            int target = historyList.getSelectedIndex() + 1;
+            if (canvas.getDrawHistory().getIndex() != target) {
+                while (canvas.getDrawHistory().getIndex() < target) {
+                    canvas.getDrawHistory().redo();
+                }
+                while (canvas.getDrawHistory().getIndex() > target) {
+                    canvas.getDrawHistory().undo();
+                }
+                graphPanel.repaint();
+            }
+        }
+    }
+
+
+    private class HistoryListKeyAdapter extends java.awt.event.KeyAdapter {
+
+        @Override
+        public void keyReleased(java.awt.event.KeyEvent event) {
+            if (Keyboard.getInstance().isUndo(event)) {
+                canvas.getDrawHistory().undo();
+                graphPanel.repaint();
+            }
+            else if (Keyboard.getInstance().isRedo(event)) {
+                canvas.getDrawHistory().redo();
+                graphPanel.repaint();
+            }
+        }
+    }
+
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel graphPanel;
-    private javax.swing.JScrollPane graphScrollPane;
+    private javax.swing.JList<String> historyList;
+    private javax.swing.JPanel historyPanel;
+    private javax.swing.JScrollPane historyScrollPane;
     // End of variables declaration//GEN-END:variables
 
     private final GraphCanvas canvas = new GraphCanvas();
+    private final javax.swing.DefaultListModel<String> historyListModel = new javax.swing.DefaultListModel<>();
 
 }

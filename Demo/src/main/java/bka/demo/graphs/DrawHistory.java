@@ -48,7 +48,11 @@ public class DrawHistory {
 
     public void addElementRelocation(Collection<Element> elements, Point vector, Map<EdgeRenderer, List<Point>> affectedEdges) {
         if (!elements.isEmpty()) {
-            addToHistory(new ElementRelocation(elements, vector, affectedEdges));
+            addToHistory(new ElementRelocation(
+                elements.stream().filter(element -> element instanceof VertexRenderer).map(element -> (VertexRenderer) element).collect(Collectors.toList()),
+                elements.stream().filter(element -> element instanceof EdgeRenderer).map(element -> (EdgeRenderer) element).collect(Collectors.toList()),
+                vector,
+                affectedEdges));
         }
     }
 
@@ -57,7 +61,7 @@ public class DrawHistory {
     }
 
     public void addElementDeletion(Collection<VertexRenderer> vertexRenderers, Collection<EdgeRenderer> edgeRenderers) {
-        addToHistory(new ElementDeletion(vertexRenderers, edgeRenderers));
+        addToHistory(new ElementDeletion(new ArrayList<>(vertexRenderers), new ArrayList<>(edgeRenderers)));
     }
 
     public void addEdgeInsertion(EdgeRenderer edgeRenderer) {
@@ -124,92 +128,84 @@ public class DrawHistory {
         }
     }
 
-
-    private abstract class AbstractMutation implements Mutation {
-
-        @Override
-        public void undo() {
-            revert();
-        }
-
-        @Override
-        public void redo() {
-            revert();
-        }
-
-        abstract protected void revert();
+    private GraphCanvas getCanvas() {
+        return graphCanvas;
     }
 
 
     private class ElementInsertion implements Mutation {
 
-        ElementInsertion(VertexRenderer element) {
-            vertexRenderers.add(element);
+        public ElementInsertion(VertexRenderer vertex) {
+            vertices = List.of(vertex);
+            edges = Collections.emptyList();
         }
 
-        ElementInsertion(EdgeRenderer element) {
-            edgeRenderers.add(element);
+        public ElementInsertion(EdgeRenderer edge) {
+            vertices = Collections.emptyList();
+            edges = List.of(edge);
+        }
+
+        @Override
+        public Mutation.Type getType() {
+            return Mutation.Type.INSERTION;
         }
 
         @Override
         public void undo() {
-            graphCanvas.removeRenderers(vertexRenderers, edgeRenderers);
+            getCanvas().removeRenderers(vertices, edges);
         }
 
         @Override
         public void redo() {
-            graphCanvas.insertRenderers(vertexRenderers, edgeRenderers);
+            getCanvas().insertRenderers(vertices, edges);
         }
 
         @Override
         public Collection<VertexRenderer> getVertices() {
-            return Collections.unmodifiableCollection(vertexRenderers);
+            return vertices;
         }
 
         @Override
         public Collection<EdgeRenderer> getEdges() {
-            return Collections.unmodifiableCollection(edgeRenderers);
+            return edges;
         }
 
-        private final Collection<VertexRenderer> vertexRenderers = new ArrayList<>();
-        private final Collection<EdgeRenderer> edgeRenderers = new ArrayList<>();
+        private final Collection<VertexRenderer> vertices;
+        private final Collection<EdgeRenderer> edges;
 
     }
 
 
     private class ElementDeletion implements Mutation {
 
-        ElementDeletion(EdgeRenderer edgeRenderer) {
-            this(Collections.emptyList(), List.of(edgeRenderer));
+        public ElementDeletion(Collection<VertexRenderer> vertexRenderers, Collection<EdgeRenderer> edgeRenderers) {
+            this.vertexRenderers = Collections.unmodifiableCollection(vertexRenderers);
+            this.edgeRenderers = Collections.unmodifiableCollection(edgeRenderers);
         }
 
-        ElementDeletion(VertexRenderer vertexRenderer, Collection<EdgeRenderer> edgeRenderers) {
-            this(List.of(vertexRenderer), edgeRenderers);
-        }
-
-        ElementDeletion(Collection<VertexRenderer> vertexRenderers, Collection<EdgeRenderer> edgeRenderers) {
-            this.vertexRenderers = new ArrayList<>(vertexRenderers);
-            this.edgeRenderers = new ArrayList<>(edgeRenderers);
+        @Override
+        public Mutation.Type getType() {
+            return Mutation.Type.DELETION;
         }
 
         @Override
         public void undo() {
-            graphCanvas.insertRenderers(vertexRenderers, edgeRenderers);
+            getCanvas().insertRenderers(vertexRenderers, edgeRenderers);
         }
 
         @Override
         public void redo() {
-            graphCanvas.removeRenderers(vertexRenderers, edgeRenderers);
+            getCanvas().removeRenderers(vertexRenderers, edgeRenderers);
         }
 
         @Override
         public Collection<VertexRenderer> getVertices() {
-            return Collections.unmodifiableCollection(vertexRenderers);
+            return vertexRenderers;
         }
 
         @Override
         public Collection<EdgeRenderer> getEdges() {
-            return Collections.unmodifiableCollection(edgeRenderers);
+            return edgeRenderers;
         }
 
         private final Collection<VertexRenderer> vertexRenderers;
@@ -217,18 +213,25 @@ public class DrawHistory {
 
     }
 
-    private class ElementRelocation extends AbstractMutation {
+    private class ElementRelocation extends Mutation.Symmetrical {
 
-        public ElementRelocation(Collection<Element> elements, Point vector, Map<EdgeRenderer, List<Point>> affectedEdges) {
-            this.elements = new ArrayList(elements);
+        public ElementRelocation(Collection<VertexRenderer> vertices, Collection<EdgeRenderer> edges, Point vector, Map<EdgeRenderer, List<Point>> affectedEdges) {
+            this.vertices = Collections.unmodifiableCollection(vertices);
+            this.edges = Collections.unmodifiableCollection(edges);
             this.vector = vector;
             this.affectedEdges = (affectedEdges.isEmpty()) ? Collections.emptyMap() : affectedEdges;
         }
 
         @Override
+        public Mutation.Type getType() {
+            return Mutation.Type.RELOCATION;
+        }
+
+        @Override
         public void revert() {
             vector.move(-vector.x, -vector.y);
-            graphCanvas.revertElementRelocation(elements, vector);
+            vertices.forEach(element -> element.move(vector));
+            edges.forEach(element -> element.move(vector));
             affectedEdges.forEach((edge, points) -> {
                 List<Point> edgePoints = new ArrayList<>(edge.getPoints());
                 edge.setPoints(points);
@@ -239,82 +242,77 @@ public class DrawHistory {
 
         @Override
         public Collection<VertexRenderer> getVertices() {
-            Collection vertices = elements.stream()
-                .filter(element -> element instanceof VertexRenderer)
-                .collect(Collectors.toList());
             return vertices;
         }
 
         @Override
         public Collection<EdgeRenderer> getEdges() {
-            Collection edges = elements.stream()
-                .filter(element -> element instanceof EdgeRenderer)
-                .collect(Collectors.toList());
             return edges;
         }
 
-        private final Collection<Element> elements;
+        private final Collection<VertexRenderer> vertices;
+        private final Collection<EdgeRenderer> edges;
         private final Point vector;
         private final Map<EdgeRenderer, List<Point>> affectedEdges;
 
     }
 
 
-    private class SizeChange extends AbstractMutation {
+    private class SizeChange extends Mutation.Symmetrical {
 
-        public SizeChange(VertexRenderer vertexRenderer, Dimension dimension) {
-            this.vertexRenderer = vertexRenderer;
+        public SizeChange(VertexRenderer vertex, Dimension dimension) {
+            this.vertex = vertex;
             this.dimension = dimension;
         }
 
         @Override
+        public Mutation.Type getType() {
+            return Mutation.Type.SHAPE_CHANGE;
+        }
+
+        @Override
         protected void revert() {
-            Dimension currentDimension = vertexRenderer.getDimension();
-            graphCanvas.revertVertexMutation(vertexRenderer, vertexRenderer.getLocation(), dimension);
+            Dimension currentDimension = vertex.getDimension();
+            vertex.setDimension(dimension);
             dimension = currentDimension;
         }
 
         @Override
         public Collection<VertexRenderer> getVertices() {
-            return List.of(vertexRenderer);
+            return List.of(vertex);
         }
 
-        @Override
-        public Collection<EdgeRenderer> getEdges() {
-            return Collections.emptyList();
-        }
-
-        private final VertexRenderer vertexRenderer;
+        private final VertexRenderer vertex;
         private Dimension dimension;
 
     }
 
 
-    private class EdgeTransformation extends AbstractMutation {
+    private class EdgeTransformation extends Mutation.Symmetrical {
 
-        public EdgeTransformation(EdgeRenderer element, List<Point> originalPoints) {
-            this.element = element;
+        public EdgeTransformation(EdgeRenderer edge, List<Point> originalPoints) {
+            this.edge = edge;
             this.originalPoints = originalPoints;
         }
 
         @Override
+        public Mutation.Type getType() {
+            return Mutation.Type.SHAPE_CHANGE;
+        }
+
+        @Override
         protected void revert() {
-            List<Point> currentPoints = new ArrayList<>(element.getPoints());
-            element.setPoints(originalPoints);
+            List<Point> currentPoints = new ArrayList<>(edge.getPoints());
+            edge.setPoints(originalPoints);
             originalPoints = currentPoints;
         }
 
         @Override
-        public Collection<VertexRenderer> getVertices() {
-            return Collections.emptyList();
-        }
-
-        @Override
         public Collection<EdgeRenderer> getEdges() {
-            return List.of(element);
+            return List.of(edge);
         }
 
-        private final EdgeRenderer element;
+        private final EdgeRenderer edge;
         private List<Point> originalPoints;
 
     }

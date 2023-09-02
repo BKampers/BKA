@@ -16,7 +16,7 @@ public class GraphEditorDemo extends javax.swing.JFrame {
 
     private void updateHistoryList(DrawHistory history) {
         historyListModel.removeAllElements();
-        history.getMutattions().forEach(this::addMutationName);
+        history.getMutattions().forEach(this::displayMutation);
         if (history.getIndex() > 0) {
             int index = history.getIndex() - 1;
             historyList.setSelectedIndex(index);
@@ -26,27 +26,41 @@ public class GraphEditorDemo extends javax.swing.JFrame {
         }
     }
 
-    private void addMutationName(Mutation mutation) {
-        historyListModel.addElement(switch (mutation.getClass().getSimpleName()) {
-            case "ElementInsertion" ->
-                (mutation.getEdges().isEmpty()) ? "Vertex added" : "Edge added";
-            case "ElementDeletion" ->
-                (mutation.getVertices().size() == 1)
-                ? "Vertex deleted"
-                : (mutation.getEdges().size() == 1)
-                ? "Edge deleted"
-                : "Selection deleted";
-            case "ElementRelocation" ->
-                (mutation.getVertices().size() == 1)
-                ? "Vertex relocated"
-                : "Selection relocated";
-            case "SizeChange" ->
-                "Vertex resized";
-            case "EdgeTransformation" ->
-                "Edge transformed";
+    private void displayMutation(Mutation mutation) {
+        historyListModel.addElement(switch (mutation.getType()) {
+            case INSERTION ->
+                insertionDisplayText(mutation);
+            case DELETION ->
+                deletionDisplayText(mutation);
+            case RELOCATION ->
+                relocationDisplayText(mutation);
+            case SHAPE_CHANGE ->
+                shapeChangeDisplayText(mutation);
             default ->
-                throw new IllegalStateException(mutation.getClass().getSimpleName());
+                throw new IllegalStateException(mutation.getType().name());
         });
+    }
+
+    private static String insertionDisplayText(Mutation mutation) {
+        return (mutation.getEdges().isEmpty()) ? "Vertex added" : "Edge added";
+    }
+
+    private static String deletionDisplayText(Mutation mutation) {
+        if (mutation.getVertices().size() == 1) {
+            return "Vertex deleted";
+        }
+        if (mutation.getEdges().size() == 1) {
+            return "Edge deleted";
+        }
+        return "Selection deleted";
+    }
+
+    private static String relocationDisplayText(Mutation mutation) {
+        return (mutation.getVertices().size() == 1) ? "Vertex relocated" : "Selection relocated";
+    }
+
+    private static String shapeChangeDisplayText(Mutation mutation) {
+        return (mutation.getVertices().isEmpty()) ? "Edge transformed" : "Vertex resized";
     }
 
     /**
@@ -223,8 +237,7 @@ public class GraphEditorDemo extends javax.swing.JFrame {
             }
             return renderer;
         }
-
-    };
+    }
 
 
     private class HistoryListMouseAdapter extends java.awt.event.MouseAdapter {

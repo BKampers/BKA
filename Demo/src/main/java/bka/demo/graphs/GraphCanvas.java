@@ -609,16 +609,6 @@ public class GraphCanvas extends CompositeRenderer {
         edges.addAll(edgeRenderers);
     }
 
-    public void revertVertexMutation(VertexRenderer vertex, Point originalLocation, Dimension originalDimension) {
-        vertex.setLocation(originalLocation);
-        vertex.setDimension(originalDimension);
-    }
-
-    public void revertElementRelocation(Collection<Element> elements, Point vector) {
-        elements.forEach(element -> element.move(vector));
-    }
-
-
     public DrawHistory getDrawHistory() {
         return history;
     }

@@ -8,12 +8,39 @@ import java.util.*;
 
 public interface Mutation {
 
+    public enum Type {
+        INSERTION, DELETION, RELOCATION, SHAPE_CHANGE
+    }
+
+
+    public abstract class Symmetrical implements Mutation {
+
+        @Override
+        public void undo() {
+            revert();
+        }
+
+        @Override
+        public void redo() {
+            revert();
+        }
+
+        abstract protected void revert();
+    }
+
+
+    Type getType();
+
     void undo();
 
     void redo();
 
-    Collection<VertexRenderer> getVertices();
+    default Collection<VertexRenderer> getVertices() {
+        return Collections.emptyList();
+    }
 
-    Collection<EdgeRenderer> getEdges();
+    default Collection<EdgeRenderer> getEdges() {
+        return Collections.emptyList();
+    }
 
 }

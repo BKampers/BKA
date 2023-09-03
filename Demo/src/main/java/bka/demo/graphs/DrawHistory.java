@@ -52,7 +52,7 @@ public class DrawHistory {
                 elements.stream().filter(element -> element instanceof VertexRenderer).map(element -> (VertexRenderer) element).collect(Collectors.toList()),
                 elements.stream().filter(element -> element instanceof EdgeRenderer).map(element -> (EdgeRenderer) element).collect(Collectors.toList()),
                 vector,
-                affectedEdges));
+                new HashMap(affectedEdges)));
         }
     }
 
@@ -132,6 +132,20 @@ public class DrawHistory {
         return graphCanvas;
     }
 
+    private static Collection unmodifiable(Collection collection) {
+        if (collection.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return Collections.unmodifiableCollection(collection);
+    }
+
+    private static Map unmodifiable(Map map) {
+        if (map.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return Collections.unmodifiableMap(map);
+    }
+
 
     private class ElementInsertion implements Mutation {
 
@@ -178,9 +192,9 @@ public class DrawHistory {
 
     private class ElementDeletion implements Mutation {
 
-        public ElementDeletion(Collection<VertexRenderer> vertexRenderers, Collection<EdgeRenderer> edgeRenderers) {
-            this.vertexRenderers = Collections.unmodifiableCollection(vertexRenderers);
-            this.edgeRenderers = Collections.unmodifiableCollection(edgeRenderers);
+        public ElementDeletion(Collection<VertexRenderer> vertices, Collection<EdgeRenderer> edges) {
+            this.vertexRenderers = unmodifiable(vertices);
+            this.edgeRenderers = unmodifiable(edges);
         }
 
         @Override
@@ -216,10 +230,10 @@ public class DrawHistory {
     private class ElementRelocation extends Mutation.Symmetrical {
 
         public ElementRelocation(Collection<VertexRenderer> vertices, Collection<EdgeRenderer> edges, Point vector, Map<EdgeRenderer, List<Point>> affectedEdges) {
-            this.vertices = Collections.unmodifiableCollection(vertices);
-            this.edges = Collections.unmodifiableCollection(edges);
+            this.vertices = unmodifiable(vertices);
+            this.edges = unmodifiable(edges);
             this.vector = vector;
-            this.affectedEdges = (affectedEdges.isEmpty()) ? Collections.emptyMap() : affectedEdges;
+            this.affectedEdges = unmodifiable(affectedEdges);
         }
 
         @Override

@@ -52,7 +52,7 @@ public class DrawHistory {
                 elements.stream().filter(element -> element instanceof VertexRenderer).map(element -> (VertexRenderer) element).collect(Collectors.toList()),
                 elements.stream().filter(element -> element instanceof EdgeRenderer).map(element -> (EdgeRenderer) element).collect(Collectors.toList()),
                 vector,
-                new HashMap(affectedEdges)));
+                new HashMap<>(affectedEdges)));
         }
     }
 
@@ -132,14 +132,14 @@ public class DrawHistory {
         return graphCanvas;
     }
 
-    private static Collection unmodifiable(Collection collection) {
+    private static <T> Collection<T> unmodifiable(Collection<T> collection) {
         if (collection.isEmpty()) {
             return Collections.emptyList();
         }
         return Collections.unmodifiableCollection(collection);
     }
 
-    private static Map unmodifiable(Map map) {
+    private static <K, V> Map<K, V> unmodifiable(Map<K, V> map) {
         if (map.isEmpty()) {
             return Collections.emptyMap();
         }

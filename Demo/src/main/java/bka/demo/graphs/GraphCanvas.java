@@ -48,7 +48,7 @@ public class GraphCanvas extends CompositeRenderer {
     }
 
     public ComponentUpdate handleMousePressed(MouseEvent event) {
-        eventModifiers = event.getModifiersEx();
+        Button.setPressEvent(event);
         return mouseHandler.mousePressed(event);
     }
 
@@ -77,6 +77,22 @@ public class GraphCanvas extends CompositeRenderer {
         return ComponentUpdate.NO_OPERATION;
     }
 
+    private ComponentUpdate historyUndo() {
+        if (!history.canUndo()) {
+            return ComponentUpdate.NO_OPERATION;
+        }
+        history.undo();
+        return ComponentUpdate.repaint(Cursor.DEFAULT_CURSOR);
+    }
+
+    private ComponentUpdate historyRedo() {
+        if (!history.canRedo()) {
+            return ComponentUpdate.NO_OPERATION;
+        }
+        history.redo();
+        return ComponentUpdate.repaint(Cursor.DEFAULT_CURSOR);
+    }
+
     private ComponentUpdate deleteSelection() {
         Collection<EdgeRenderer> edgesToRemove = new HashSet<>();
         Collection<VertexRenderer> verticesToRemove = new ArrayList<>();
@@ -97,20 +113,9 @@ public class GraphCanvas extends CompositeRenderer {
         return ComponentUpdate.repaint(Cursor.DEFAULT_CURSOR);
     }
 
-    private ComponentUpdate historyUndo() {
-        if (!history.canUndo()) {
-            return ComponentUpdate.NO_OPERATION;
-        }
-        history.undo();
-        return ComponentUpdate.repaint(Cursor.DEFAULT_CURSOR);
-    }
-
-    private ComponentUpdate historyRedo() {
-        if (!history.canRedo()) {
-            return ComponentUpdate.NO_OPERATION;
-        }
-        history.redo();
-        return ComponentUpdate.repaint(Cursor.DEFAULT_CURSOR);
+    private void selectSingleVertex(VertexRenderer vertex) {
+        selection.clear();
+        selection.add(vertex);
     }
 
     private static int getResizeCursorType(Point cursor, Point vertexLocation) {
@@ -127,11 +132,6 @@ public class GraphCanvas extends CompositeRenderer {
             return (dy < 0) ? Cursor.NW_RESIZE_CURSOR : Cursor.SW_RESIZE_CURSOR;
         }
         return (dy < 0) ? Cursor.NE_RESIZE_CURSOR : Cursor.SE_RESIZE_CURSOR;
-    }
-
-    private void selectSingleVertex(VertexRenderer vertex) {
-        selection.clear();
-        selection.add(vertex);
     }
 
     private Point nearestEdgePoint(EdgeRenderer edge, Point point) {
@@ -154,14 +154,6 @@ public class GraphCanvas extends CompositeRenderer {
         }
         edge.addPoint(point);
         return point;
-    }
-
-    private static List<Point> deepCopy(List<Point> list) {
-        return list.stream().map(point -> new Point(point)).collect(Collectors.toList());
-    }
-
-    private static VertexRenderer dragEndPoint(Point location) {
-        return new VertexRenderer(location);
     }
 
     private VertexRenderer findNearestVertex(Point point) {
@@ -192,6 +184,14 @@ public class GraphCanvas extends CompositeRenderer {
         return edges.stream()
             .filter(edge -> vertex.equals(edge.getStart()) || vertex.equals(edge.getEnd()))
             .collect(Collectors.toList());
+    }
+
+    private static List<Point> deepCopy(List<Point> list) {
+        return list.stream().map(point -> new Point(point)).collect(Collectors.toList());
+    }
+
+    private static VertexRenderer dragEndPoint(Point location) {
+        return new VertexRenderer(location);
     }
 
     private static boolean isNear(Point cursor, Point linePoint1, Point linePoint2) {
@@ -230,46 +230,6 @@ public class GraphCanvas extends CompositeRenderer {
         return history;
     }
 
-    private enum State {
-        IDLE, CREATING_EDGE, MOVING_SELECTION, MOVING_EDGE_POINT, RESIZING_VERTEX, SELECTING_AREA
-    }
-
-
-    private enum Button {
-        MAIN(MouseEvent.BUTTON1),
-        TOGGLE_SELECT(MouseEvent.BUTTON1, Keyboard.getInstance().getToggleSelectionModifiers()),
-        RESET(MouseEvent.BUTTON3),
-        UNSUPPORTED(0);
-
-        private Button(int buttonId, int modifiers) {
-            this.buttonId = buttonId;
-            this.modifiers = modifiers;
-        }
-
-        private Button(int buttonId) {
-            this(buttonId, 0);
-        }
-
-        public static Button get(MouseEvent event, int eventModifiers) {
-            if (event.getClickCount() != 1) {
-                return UNSUPPORTED;
-            }
-            return Arrays.asList(values()).stream()
-                .filter(button -> event.getButton() == button.buttonId)
-                .filter(button -> button.modifiersMatch(eventModifiers))
-                .findAny()
-                .orElse(UNSUPPORTED);
-        }
-
-        private boolean modifiersMatch(int eventModifiers) {
-            final int MASK = InputEvent.ALT_DOWN_MASK | InputEvent.ALT_GRAPH_DOWN_MASK | InputEvent.CTRL_DOWN_MASK | InputEvent.META_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK;
-            return (eventModifiers & MASK) == modifiers;
-        }
-
-        private final int buttonId;
-        private final int modifiers;
-    }
-
 
     private interface MouseHandler {
 
@@ -302,7 +262,7 @@ public class GraphCanvas extends CompositeRenderer {
 
         @Override
         public ComponentUpdate mouseMoved(MouseEvent event) {
-            boolean needRepaint = connectorPoint != null || edgePoint != null/* || hovered != null*/;
+            boolean needRepaint = connectorPoint != null || edgePoint != null;
             connectorPoint = null;
             edgePoint = null;
             Point cursor = event.getPoint();
@@ -340,7 +300,7 @@ public class GraphCanvas extends CompositeRenderer {
 
         @Override
         public ComponentUpdate mousePressed(MouseEvent event) {
-            button = Button.get(event, event.getModifiersEx());
+            button = Button.get(event);
             Point cursor = event.getPoint();
             if (button == Button.MAIN) {
                 VertexRenderer nearestVertex = findNearestVertex(cursor);
@@ -504,7 +464,7 @@ public class GraphCanvas extends CompositeRenderer {
 
         @Override
         public ComponentUpdate mouseClicked(MouseEvent event) {
-            if (Button.get(event, eventModifiers) == Button.RESET) {
+            if (Button.get(event) == Button.RESET) {
                 mouseHandler = new DefaultMouseHandler();
                 return ComponentUpdate.REPAINT;
             }
@@ -585,6 +545,11 @@ public class GraphCanvas extends CompositeRenderer {
             int deltaY = cursor.y - dragPoint.y;
             Point vector = new Point(deltaX, deltaY);
             selection.forEach(element -> element.move(vector));
+            edges.stream()
+                .filter(edge -> !selection.contains(edge))
+                .filter(edge -> selection.contains(edge.getStart()))
+                .filter(edge -> selection.contains(edge.getEnd()))
+                .forEach(edge -> edge.move(vector));
             dragPoint = cursor;
             return ComponentUpdate.REPAINT;
         }
@@ -633,7 +598,6 @@ public class GraphCanvas extends CompositeRenderer {
                 history.addEdgeTransformation(draggingEdgeRenderer, originalEdgePoints);
             }
             mouseHandler = new DefaultMouseHandler();
-//            state = State.IDLE;
             return ComponentUpdate.REPAINT;
         }
 
@@ -731,6 +695,50 @@ public class GraphCanvas extends CompositeRenderer {
     }
 
 
+    private enum Button {
+        MAIN(MouseEvent.BUTTON1),
+        TOGGLE_SELECT(MouseEvent.BUTTON1, Keyboard.getInstance().getToggleSelectionModifiers()),
+        RESET(MouseEvent.BUTTON3),
+        UNSUPPORTED(0);
+
+        private Button(int buttonId, int modifiers) {
+            this.buttonId = buttonId;
+            this.modifiers = modifiers;
+        }
+
+        private Button(int buttonId) {
+            this(buttonId, 0);
+        }
+
+        public static Button get(MouseEvent event) {
+            if (event.getClickCount() != 1) {
+                return UNSUPPORTED;
+            }
+            Button match = Arrays.asList(values()).stream()
+                .filter(button -> event.getButton() == button.buttonId)
+                .filter(button -> button.modifiersMatch())
+                .findAny()
+                .orElse(UNSUPPORTED);
+            pressEvent = null;
+            return match;
+        }
+
+        private boolean modifiersMatch() {
+            return (pressEvent.getModifiersEx() & MASK) == modifiers;
+        }
+
+        public static void setPressEvent(MouseEvent pressEvent) {
+            Button.pressEvent = pressEvent;
+        }
+
+        private final int buttonId;
+        private final int modifiers;
+
+        private static MouseEvent pressEvent; // Because of a bug in modifiers from the mouseClicked event, modifiers from the emousePressed event need to be remembered.
+        private static final int MASK = InputEvent.ALT_DOWN_MASK | InputEvent.ALT_GRAPH_DOWN_MASK | InputEvent.CTRL_DOWN_MASK | InputEvent.META_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK;
+    }
+
+
     private final Collection<VertexRenderer> vertices = new LinkedList<>();
     private final Collection<EdgeRenderer> edges = new LinkedList<>();
     private final Set<Element> selection = new HashSet<>();
@@ -738,7 +746,6 @@ public class GraphCanvas extends CompositeRenderer {
     private final DrawHistory history = new DrawHistory(this);
 
     private MouseHandler mouseHandler = new DefaultMouseHandler();
-    private int eventModifiers; // Because of a bug in modifiers from the mouseClicked event, modifiers from the emousePressed event need to be remembered.
 
     private static final long INSIDE_BORDER_MARGIN = -4 * 4;
     private static final long OUTSIDE_BORDER_MARGIN = 4 * 4;

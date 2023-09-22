@@ -48,7 +48,6 @@ public class GraphCanvas extends CompositeRenderer {
     }
 
     public ComponentUpdate handleMousePressed(MouseEvent event) {
-        Button.setPressEvent(event);
         return mouseHandler.mousePressed(event);
     }
 
@@ -260,6 +259,14 @@ public class GraphCanvas extends CompositeRenderer {
 
     private class DefaultMouseHandler implements MouseHandler {
 
+        public DefaultMouseHandler() {
+            this(null);
+        }
+
+        public DefaultMouseHandler(Button button) {
+            this.button = button;
+        }
+
         @Override
         public ComponentUpdate mouseMoved(MouseEvent event) {
             boolean needRepaint = connectorPoint != null || edgePoint != null;
@@ -459,15 +466,17 @@ public class GraphCanvas extends CompositeRenderer {
 
         @Override
         public ComponentUpdate mousePressed(MouseEvent event) {
+            button = Button.get(event);
             return ComponentUpdate.NO_OPERATION;
         }
 
         @Override
         public ComponentUpdate mouseClicked(MouseEvent event) {
-            if (Button.get(event) == Button.RESET) {
+            if (button == Button.RESET) {
                 mouseHandler = new DefaultMouseHandler();
                 return ComponentUpdate.REPAINT;
             }
+            button = null;
             return ComponentUpdate.NO_OPERATION;
         }
 
@@ -492,8 +501,10 @@ public class GraphCanvas extends CompositeRenderer {
             if (vertex != null) {
                 draggingEdgeRenderer.setEnd(vertex);
                 cleanup(draggingEdgeRenderer);
-                edges.add(draggingEdgeRenderer);
-                history.addEdgeInsertion(draggingEdgeRenderer);
+                if (!vertex.equals(draggingEdgeRenderer.getStart()) || !draggingEdgeRenderer.getPoints().isEmpty()) {
+                    edges.add(draggingEdgeRenderer);
+                    history.addEdgeInsertion(draggingEdgeRenderer);
+                }
                 mouseHandler = new DefaultMouseHandler();
             }
             else {
@@ -515,6 +526,7 @@ public class GraphCanvas extends CompositeRenderer {
 
         private final EdgeRenderer draggingEdgeRenderer;
         private Point connectorPoint;
+        private Button button;
 
     }
 
@@ -534,7 +546,7 @@ public class GraphCanvas extends CompositeRenderer {
         @Override
         public ComponentUpdate mouseReleased(MouseEvent event) {
             if (dragStartPoint.equals(event.getPoint())) {
-                mouseHandler = new DefaultMouseHandler();
+                mouseHandler = new DefaultMouseHandler(Button.MAIN);
                 return ComponentUpdate.REPAINT;
             }
             return finishSelectionMove(event.getPoint());
@@ -714,27 +726,16 @@ public class GraphCanvas extends CompositeRenderer {
             if (event.getClickCount() != 1) {
                 return UNSUPPORTED;
             }
-            Button match = Arrays.asList(values()).stream()
+            return Arrays.asList(values()).stream()
                 .filter(button -> event.getButton() == button.buttonId)
-                .filter(button -> button.modifiersMatch())
+                .filter(button -> (event.getModifiersEx() & MASK) == button.modifiers)
                 .findAny()
                 .orElse(UNSUPPORTED);
-            pressEvent = null;
-            return match;
-        }
-
-        private boolean modifiersMatch() {
-            return (pressEvent.getModifiersEx() & MASK) == modifiers;
-        }
-
-        public static void setPressEvent(MouseEvent pressEvent) {
-            Button.pressEvent = pressEvent;
         }
 
         private final int buttonId;
         private final int modifiers;
 
-        private static MouseEvent pressEvent; // Because of a bug in modifiers from the mouseClicked event, modifiers from the emousePressed event need to be remembered.
         private static final int MASK = InputEvent.ALT_DOWN_MASK | InputEvent.ALT_GRAPH_DOWN_MASK | InputEvent.CTRL_DOWN_MASK | InputEvent.META_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK;
     }
 

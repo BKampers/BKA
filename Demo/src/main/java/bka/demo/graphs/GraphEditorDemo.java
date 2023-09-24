@@ -4,6 +4,9 @@
 package bka.demo.graphs;
 
 import bka.awt.*;
+import bka.swing.popup.*;
+import java.awt.*;
+import java.util.function.*;
 
 public class GraphEditorDemo extends javax.swing.JFrame {
 
@@ -36,8 +39,8 @@ public class GraphEditorDemo extends javax.swing.JFrame {
                 relocationDisplayText(mutation);
             case SHAPE_CHANGE ->
                 shapeChangeDisplayText(mutation);
-            default ->
-                throw new IllegalStateException(mutation.getType().name());
+            case LABEL_INSERTION ->
+                labelInsertionDisplayText();
         });
     }
 
@@ -61,6 +64,10 @@ public class GraphEditorDemo extends javax.swing.JFrame {
 
     private static String shapeChangeDisplayText(Mutation mutation) {
         return (mutation.getVertices().isEmpty()) ? "Edge transformed" : "Vertex resized";
+    }
+
+    private static String labelInsertionDisplayText() {
+        return "Label added";
     }
 
     /**
@@ -143,7 +150,6 @@ public class GraphEditorDemo extends javax.swing.JFrame {
 
     private void graphPanelMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_graphPanelMouseClicked
         updateGraphPanel(canvas.handleMouseClicked(evt));
-        graphPanel.requestFocus();
     }//GEN-LAST:event_graphPanelMouseClicked
 
     private void graphPanelMouseDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_graphPanelMouseDragged
@@ -156,6 +162,7 @@ public class GraphEditorDemo extends javax.swing.JFrame {
 
     private void graphPanelMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_graphPanelMouseReleased
         updateGraphPanel(canvas.handleMouseReleased(evt));
+        graphPanel.requestFocus();
     }//GEN-LAST:event_graphPanelMouseReleased
 
     private void graphPanelMouseMoved(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_graphPanelMouseMoved
@@ -274,6 +281,25 @@ public class GraphEditorDemo extends javax.swing.JFrame {
     }
 
 
+    private final GraphCanvas canvas = new GraphCanvas(new GraphCanvas.Context() {
+
+        @Override
+        public void editString(String input, Point location, Consumer<String> onApply) {
+            PopupControl.show(
+                graphPanel,
+                new TextFieldPopupModel(
+                    new Rectangle(location.x - POPUP_WIDTH / 2, location.y - POPUP_HEIGHT / 2, POPUP_WIDTH, POPUP_HEIGHT),
+                    input,
+                    onApply)
+            );
+        }
+
+        private static final int POPUP_WIDTH = 50;
+        private static final int POPUP_HEIGHT = 20;
+
+    });
+
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel graphPanel;
     private javax.swing.JList<String> historyList;
@@ -281,7 +307,6 @@ public class GraphEditorDemo extends javax.swing.JFrame {
     private javax.swing.JScrollPane historyScrollPane;
     // End of variables declaration//GEN-END:variables
 
-    private final GraphCanvas canvas = new GraphCanvas();
     private final javax.swing.DefaultListModel<String> historyListModel = new javax.swing.DefaultListModel<>();
 
 }

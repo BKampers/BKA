@@ -180,9 +180,19 @@ public class EdgeRenderer implements Element {
         return new Vector(point.getX(), point.getY());
     }
 
+    @Override
+    public void addLabel(bka.demo.graphs.Label label) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void removeLabel(bka.demo.graphs.Label label) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
 
     private final LinkedList<Point> points = new LinkedList<>();
     private final VertexRenderer start;
     private VertexRenderer end;
+
 
 }

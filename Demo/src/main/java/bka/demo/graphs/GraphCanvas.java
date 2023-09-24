@@ -5,14 +5,25 @@
 package bka.demo.graphs;
 
 import bka.awt.*;
+import bka.demo.graphs.Label;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.List;
 import java.util.*;
+import java.util.function.*;
 import java.util.stream.*;
 
 
 public class GraphCanvas extends CompositeRenderer {
+
+    public interface Context {
+
+        void editString(String input, Point location, Consumer<String> onApply);
+    }
+
+    public GraphCanvas(Context context) {
+        this.context = context;
+    }
 
     @Override
     public void paint(Graphics2D graphics) {
@@ -358,6 +369,9 @@ public class GraphCanvas extends CompositeRenderer {
             if (button == Button.RESET) {
                 return clearSelection();
             }
+            if (button == Button.EDIT) {
+                return editLabel(event.getPoint());
+            }
             return ComponentUpdate.NO_OPERATION;
         }
 
@@ -407,6 +421,21 @@ public class GraphCanvas extends CompositeRenderer {
         private ComponentUpdate clearSelection() {
             selection.clear();
             return ComponentUpdate.REPAINT;
+        }
+
+        private ComponentUpdate editLabel(Point cursor) {
+            connectorPoint = null;
+            VertexRenderer vertex = findNearestVertex(cursor);
+            if (vertex != null) {
+                context.editString("", cursor, text -> {
+                    if (!text.isBlank()) {
+                        Label label = new Label(vertex.distancePositioner(cursor), text);
+                        vertex.addLabel(label);
+                        history.addLabelInsertion(vertex, label);
+                    }
+                });
+            }
+            return ComponentUpdate.NO_OPERATION;
         }
 
         @Override
@@ -497,11 +526,11 @@ public class GraphCanvas extends CompositeRenderer {
         @Override
         public ComponentUpdate mouseReleased(MouseEvent event) {
             Point cursor = event.getPoint();
-            VertexRenderer vertex = findNearestVertex(cursor);
-            if (vertex != null) {
-                draggingEdgeRenderer.setEnd(vertex);
+            VertexRenderer end = findNearestVertex(cursor);
+            if (end != null) {
+                draggingEdgeRenderer.setEnd(end);
                 cleanup(draggingEdgeRenderer);
-                if (!vertex.equals(draggingEdgeRenderer.getStart()) || !draggingEdgeRenderer.getPoints().isEmpty()) {
+                if (!end.equals(draggingEdgeRenderer.getStart()) || !draggingEdgeRenderer.getPoints().isEmpty()) {
                     edges.add(draggingEdgeRenderer);
                     history.addEdgeInsertion(draggingEdgeRenderer);
                 }
@@ -572,15 +601,19 @@ public class GraphCanvas extends CompositeRenderer {
                 .collect(Collectors.toMap(
                     edge -> edge,
                     edge -> deepCopy(edge.getPoints())));
+            keepCleanedEdges(affectedEdges);
+            history.addElementRelocation(selection, new Point(cursor.x - dragStartPoint.x, cursor.y - dragStartPoint.y), affectedEdges);
+            mouseHandler = new DefaultMouseHandler();
+            return ComponentUpdate.REPAINT;
+        }
+
+        private void keepCleanedEdges(Map<EdgeRenderer, List<Point>> affectedEdges) {
             Iterator<EdgeRenderer> it = affectedEdges.keySet().iterator();
             while (it.hasNext()) {
                 if (!cleanup(it.next())) {
                     it.remove();
                 }
             }
-            history.addElementRelocation(selection, new Point(cursor.x - dragStartPoint.x, cursor.y - dragStartPoint.y), affectedEdges);
-            mouseHandler = new DefaultMouseHandler();
-            return ComponentUpdate.REPAINT;
         }
 
         private final Point dragStartPoint;
@@ -635,7 +668,7 @@ public class GraphCanvas extends CompositeRenderer {
 
         public VertexResizeMouseHandler(VertexRenderer draggingVertex) {
             this.draggingVertex = draggingVertex;
-            this.originalDimension = Objects.requireNonNull(draggingVertex.getDimension());
+            this.originalDimension = draggingVertex.getDimension();
         }
 
         @Override
@@ -711,34 +744,40 @@ public class GraphCanvas extends CompositeRenderer {
         MAIN(MouseEvent.BUTTON1),
         TOGGLE_SELECT(MouseEvent.BUTTON1, Keyboard.getInstance().getToggleSelectionModifiers()),
         RESET(MouseEvent.BUTTON3),
-        UNSUPPORTED(0);
+        EDIT(MouseEvent.BUTTON1, MouseEvent.ALT_DOWN_MASK),
+        UNSUPPORTED(0, 0, 0);
 
-        private Button(int buttonId, int modifiers) {
+        private Button(int buttonId, int clickCount, int modifiers) {
             this.buttonId = buttonId;
+            this.clickCount = clickCount;
             this.modifiers = modifiers;
         }
 
+        private Button(int buttonId, int modifiers) {
+            this(buttonId, 1, modifiers);
+        }
+
         private Button(int buttonId) {
-            this(buttonId, 0);
+            this(buttonId, 1, 0);
         }
 
         public static Button get(MouseEvent event) {
-            if (event.getClickCount() != 1) {
-                return UNSUPPORTED;
-            }
             return Arrays.asList(values()).stream()
                 .filter(button -> event.getButton() == button.buttonId)
+                .filter(button -> event.getClickCount() == button.clickCount)
                 .filter(button -> (event.getModifiersEx() & MASK) == button.modifiers)
                 .findAny()
                 .orElse(UNSUPPORTED);
         }
 
         private final int buttonId;
+        private final int clickCount;
         private final int modifiers;
 
         private static final int MASK = InputEvent.ALT_DOWN_MASK | InputEvent.ALT_GRAPH_DOWN_MASK | InputEvent.CTRL_DOWN_MASK | InputEvent.META_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK;
     }
 
+    private final Context context;
 
     private final Collection<VertexRenderer> vertices = new LinkedList<>();
     private final Collection<EdgeRenderer> edges = new LinkedList<>();

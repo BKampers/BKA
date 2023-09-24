@@ -5,6 +5,7 @@
 package bka.demo.graphs;
 
 
+import bka.demo.graphs.Label;
 import java.awt.*;
 import java.util.List;
 import java.util.*;
@@ -70,6 +71,10 @@ public class DrawHistory {
 
     public void addEdgeTransformation(EdgeRenderer element, List<Point> originalPoints) {
         addToHistory(new EdgeTransformation(element, originalPoints.stream().map(point -> new Point(point)).collect(Collectors.toList())));
+    }
+
+    public void addLabelInsertion(Element element, Label label) {
+        addToHistory(new LabelInsertion(element, label));
     }
 
     public boolean canUndo() {
@@ -227,6 +232,7 @@ public class DrawHistory {
 
     }
 
+
     private class ElementRelocation extends Mutation.Symmetrical {
 
         public ElementRelocation(Collection<VertexRenderer> vertices, Collection<EdgeRenderer> edges, Point vector, Map<EdgeRenderer, List<Point>> affectedEdges) {
@@ -329,6 +335,33 @@ public class DrawHistory {
         private final EdgeRenderer edge;
         private List<Point> originalPoints;
 
+    }
+
+
+    private class LabelInsertion implements Mutation {
+
+        public LabelInsertion(Element element, Label label) {
+            this.element = element;
+            this.label = label;
+        }
+
+        @Override
+        public Type getType() {
+            return Type.LABEL_INSERTION;
+        }
+
+        @Override
+        public void undo() {
+            element.removeLabel(label);
+        }
+
+        @Override
+        public void redo() {
+            element.addLabel(label);
+        }
+
+        private final Element element;
+        private final Label label;
     }
 
 

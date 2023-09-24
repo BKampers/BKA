@@ -9,7 +9,7 @@ import java.util.*;
 public interface Mutation {
 
     public enum Type {
-        INSERTION, DELETION, RELOCATION, SHAPE_CHANGE
+        INSERTION, DELETION, RELOCATION, SHAPE_CHANGE, LABEL_INSERTION
     }
 
 

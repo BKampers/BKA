@@ -12,6 +12,7 @@
         <module>Demo</module>
         <module>Clock</module>
         <module>Graphs</module>
+        <module>Swing</module>
     </modules>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

@@ -7,6 +7,7 @@ package bka.demo.graphs;
 import bka.demo.graphs.Vector;
 import java.awt.*;
 import java.util.*;
+import java.util.List;
 
 
 public class EdgeRenderer implements Element {
@@ -47,7 +48,7 @@ public class EdgeRenderer implements Element {
         return end;
     }
 
-    public java.util.List<Point> getPoints() {
+    public List<Point> getPoints() {
         return Collections.unmodifiableList(points);
     }
 
@@ -190,9 +191,13 @@ public class EdgeRenderer implements Element {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
+    @Override
+    public Collection<bka.demo.graphs.Label> getLabels() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
     private final LinkedList<Point> points = new LinkedList<>();
     private final VertexRenderer start;
     private VertexRenderer end;
-
 
 }

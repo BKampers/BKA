@@ -19,6 +19,8 @@ public class GraphCanvas extends CompositeRenderer {
     public interface Context {
 
         void editString(String input, Point location, Consumer<String> onApply);
+
+        void requestRepaint();
     }
 
     public GraphCanvas(Context context) {
@@ -284,6 +286,12 @@ public class GraphCanvas extends CompositeRenderer {
             connectorPoint = null;
             edgePoint = null;
             Point cursor = event.getPoint();
+            Label labelAtCursor = labelAt(cursor);
+            needRepaint |= Objects.equals(labelAtCursor, hoveredLabel);
+            hoveredLabel = labelAtCursor;
+            if (labelAtCursor != null) {
+                return new ComponentUpdate(Cursor.HAND_CURSOR, needRepaint);
+            }
             VertexRenderer nearestVertex = findNearestVertex(cursor);
             if (nearestVertex != null) {
                 return handleVertexHovered(nearestVertex, cursor, needRepaint);
@@ -293,6 +301,19 @@ public class GraphCanvas extends CompositeRenderer {
                 return handleEdgeHovered(nearestEdge, cursor);
             }
             return new ComponentUpdate(Cursor.DEFAULT_CURSOR, needRepaint);
+        }
+
+        private Label labelAt(Point point) {
+            return vertices.stream()
+                .flatMap(vertex -> vertex.getLabels().stream().filter(boundsContain(point)))
+                .findAny().orElse(null);
+        }
+
+        private Predicate<Label> boundsContain(Point point) {
+            return label -> {
+                Rectangle bounds = label.getBounds();
+                return bounds != null && bounds.contains(point);
+            };
         }
 
         private ComponentUpdate handleVertexHovered(VertexRenderer vertex, Point cursor, boolean needRepaint) {
@@ -427,15 +448,48 @@ public class GraphCanvas extends CompositeRenderer {
             connectorPoint = null;
             VertexRenderer vertex = findNearestVertex(cursor);
             if (vertex != null) {
-                context.editString("", cursor, text -> {
-                    if (!text.isBlank()) {
-                        Label label = new Label(vertex.distancePositioner(cursor), text);
-                        vertex.addLabel(label);
-                        history.addLabelInsertion(vertex, label);
-                    }
-                });
+                context.editString(labelText(hoveredLabel), cursor, applyLabelText(vertex, hoveredLabel, cursor));
             }
             return ComponentUpdate.NO_OPERATION;
+        }
+
+        private String labelText(Label label) {
+            return (label == null) ? "" : label.getText();
+        }
+
+        private Consumer<String> applyLabelText(VertexRenderer vertex, Label label, Point position) {
+            return text -> {
+                if (!text.isBlank()) {
+                    if (label == null) {
+                        addLabel(vertex, position, text);
+                    }
+                    else {
+                        modifyLabel(label, text);
+                    }
+                    context.requestRepaint();
+                }
+                else if (label != null) {
+                    removeLabel(vertex, label);
+                    context.requestRepaint();
+                }
+            };
+        }
+
+        private void addLabel(VertexRenderer vertex, Point cursor, String text) {
+            Label newLabel = new Label(vertex.distancePositioner(cursor), text);
+            vertex.addLabel(newLabel);
+            history.addLabelInsertion(vertex, newLabel);
+        }
+
+        private void modifyLabel(Label label, String text) {
+            label.setText(text);
+            // TODO history add label text change
+        }
+
+        private void removeLabel(VertexRenderer vertex, Label label) {
+            vertex.removeLabel(label);
+            hoveredLabel = null;
+            // TODO history add label deletion
         }
 
         @Override
@@ -463,12 +517,18 @@ public class GraphCanvas extends CompositeRenderer {
             if (connectorPoint != null) {
                 paintCircle(graphics, connectorPoint, 4, Color.RED);
             }
+            if (hoveredLabel != null) {
+                graphics.setColor(Color.GRAY);
+                Rectangle hoveredLabelBounds = hoveredLabel.getBounds();
+                graphics.drawRect(hoveredLabelBounds.x, hoveredLabelBounds.y, hoveredLabelBounds.width, hoveredLabelBounds.height);
+            }
         }
 
         private Button button;
         private Point connectorPoint;
         private Point edgePoint;
         private boolean edgeBendSelected;
+        private Label hoveredLabel;
     }
 
 

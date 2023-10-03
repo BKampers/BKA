@@ -294,6 +294,12 @@ public class GraphEditorDemo extends javax.swing.JFrame {
             );
         }
 
+        @Override
+        public void requestRepaint() {
+            graphPanel.repaint();
+            
+        }
+
         private static final int POPUP_WIDTH = 50;
         private static final int POPUP_HEIGHT = 20;
 

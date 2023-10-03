@@ -87,6 +87,11 @@ public class VertexRenderer implements Element {
     }
 
     @Override
+    public Collection<Label> getLabels() {
+        return Collections.unmodifiableCollection(labels);
+    }
+
+    @Override
     public void paint(Graphics2D graphics) {
         int radius = size / 2;
         graphics.fillOval(location.x - radius, location.y - radius, size, size);
@@ -100,5 +105,6 @@ public class VertexRenderer implements Element {
     private final Collection<Label> labels = new ArrayList<>();
     private final Point location;
     private int size = 12;
+
 
 }

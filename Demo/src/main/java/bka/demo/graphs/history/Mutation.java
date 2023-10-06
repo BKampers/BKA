@@ -2,14 +2,15 @@
 ** © Bart Kampers
 */
 
-package bka.demo.graphs;
+package bka.demo.graphs.history;
 
+import bka.demo.graphs.*;
 import java.util.*;
 
 public interface Mutation {
 
     public enum Type {
-        INSERTION, DELETION, RELOCATION, SHAPE_CHANGE, LABEL_INSERTION
+        INSERTION, DELETION, RELOCATION, SHAPE_CHANGE, LABEL_INSERTION, LABEL_DELETION, LABEL_MUTATION
     }
 
 

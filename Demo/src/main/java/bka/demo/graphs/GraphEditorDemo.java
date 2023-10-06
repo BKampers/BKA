@@ -4,6 +4,7 @@
 package bka.demo.graphs;
 
 import bka.awt.*;
+import bka.demo.graphs.history.*;
 import bka.swing.popup.*;
 import java.awt.*;
 import java.util.function.*;
@@ -40,7 +41,11 @@ public class GraphEditorDemo extends javax.swing.JFrame {
             case SHAPE_CHANGE ->
                 shapeChangeDisplayText(mutation);
             case LABEL_INSERTION ->
-                labelInsertionDisplayText();
+                "Label added";
+            case LABEL_DELETION ->
+                "Label removed";
+            case LABEL_MUTATION ->
+                "Label changed";
         });
     }
 
@@ -64,10 +69,6 @@ public class GraphEditorDemo extends javax.swing.JFrame {
 
     private static String shapeChangeDisplayText(Mutation mutation) {
         return (mutation.getVertices().isEmpty()) ? "Edge transformed" : "Vertex resized";
-    }
-
-    private static String labelInsertionDisplayText() {
-        return "Label added";
     }
 
     /**

@@ -6,6 +6,7 @@ package bka.demo.graphs;
 
 import bka.awt.*;
 import bka.demo.graphs.Label;
+import bka.demo.graphs.history.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.List;
@@ -120,7 +121,7 @@ public class GraphCanvas extends CompositeRenderer {
         });
         edges.removeAll(edgesToRemove);
         vertices.removeAll(verticesToRemove);
-        history.addElementDeletion(verticesToRemove, edgesToRemove);
+        history.addToHistory(new ElementDeletion(verticesToRemove, edgesToRemove, GraphCanvas.this));
         selection.clear();
         return ComponentUpdate.repaint(Cursor.DEFAULT_CURSOR);
     }
@@ -407,7 +408,7 @@ public class GraphCanvas extends CompositeRenderer {
             if (nearest == null) {
                 VertexRenderer vertex = new VertexRenderer(cursor);
                 vertices.add(vertex);
-                history.addVertexInsertion(vertex);
+                history.addToHistory(new ElementInsertion(vertex, GraphCanvas.this));
             }
             else {
                 selection.add(nearest);
@@ -478,18 +479,19 @@ public class GraphCanvas extends CompositeRenderer {
         private void addLabel(VertexRenderer vertex, Point cursor, String text) {
             Label newLabel = new Label(vertex.distancePositioner(cursor), text);
             vertex.addLabel(newLabel);
-            history.addLabelInsertion(vertex, newLabel);
+            history.addToHistory(new LabelInsertion(vertex, newLabel));
         }
 
         private void modifyLabel(Label label, String text) {
+            String oldText = label.getText();
             label.setText(text);
-            // TODO history add label text change
+            history.addToHistory(new LabelMutation(label, oldText));
         }
 
         private void removeLabel(VertexRenderer vertex, Label label) {
             vertex.removeLabel(label);
             hoveredLabel = null;
-            // TODO history add label deletion
+            history.addToHistory(new LabelDeletion(vertex, label));
         }
 
         @Override
@@ -592,7 +594,7 @@ public class GraphCanvas extends CompositeRenderer {
                 cleanup(draggingEdgeRenderer);
                 if (!end.equals(draggingEdgeRenderer.getStart()) || !draggingEdgeRenderer.getPoints().isEmpty()) {
                     edges.add(draggingEdgeRenderer);
-                    history.addEdgeInsertion(draggingEdgeRenderer);
+                    history.addToHistory(new ElementInsertion(draggingEdgeRenderer, GraphCanvas.this));
                 }
                 mouseHandler = new DefaultMouseHandler();
             }
@@ -662,7 +664,7 @@ public class GraphCanvas extends CompositeRenderer {
                     edge -> edge,
                     edge -> deepCopy(edge.getPoints())));
             keepCleanedEdges(affectedEdges);
-            history.addElementRelocation(selection, new Point(cursor.x - dragStartPoint.x, cursor.y - dragStartPoint.y), affectedEdges);
+            history.addToHistory(new ElementRelocation(selection, new Point(cursor.x - dragStartPoint.x, cursor.y - dragStartPoint.y), affectedEdges));
             mouseHandler = new DefaultMouseHandler();
             return ComponentUpdate.REPAINT;
         }
@@ -700,7 +702,7 @@ public class GraphCanvas extends CompositeRenderer {
         public ComponentUpdate mouseReleased(MouseEvent event) {
             cleanup(draggingEdgeRenderer);
             if (!originalEdgePoints.equals(draggingEdgeRenderer.getPoints())) {
-                history.addEdgeTransformation(draggingEdgeRenderer, originalEdgePoints);
+                history.addToHistory(new EdgeTransformation(draggingEdgeRenderer, originalEdgePoints));
             }
             mouseHandler = new DefaultMouseHandler();
             return ComponentUpdate.REPAINT;
@@ -743,7 +745,7 @@ public class GraphCanvas extends CompositeRenderer {
                 edges.stream()
                     .filter(edge -> draggingVertex.equals(edge.getStart()) || draggingVertex.equals(edge.getEnd()))
                     .forEach(edge -> cleanup(edge));
-                history.addVertexSizeChange(draggingVertex, originalDimension);
+                history.addToHistory(new SizeChange(draggingVertex, originalDimension));
             }
             mouseHandler = new DefaultMouseHandler();
             return ComponentUpdate.NO_OPERATION;
@@ -843,7 +845,7 @@ public class GraphCanvas extends CompositeRenderer {
     private final Collection<EdgeRenderer> edges = new LinkedList<>();
     private final Set<Element> selection = new HashSet<>();
 
-    private final DrawHistory history = new DrawHistory(this);
+    private final DrawHistory history = new DrawHistory();
 
     private MouseHandler mouseHandler = new DefaultMouseHandler();
 

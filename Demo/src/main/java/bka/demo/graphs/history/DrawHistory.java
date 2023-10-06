@@ -73,7 +73,7 @@ public class DrawHistory {
         }
     }
 
-    public void addToHistory(Mutation mutation) {
+    public void add(Mutation mutation) {
         while (index < history.size()) {
             history.removeLast();
         }

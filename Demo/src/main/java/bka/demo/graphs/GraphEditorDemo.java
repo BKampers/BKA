@@ -38,8 +38,10 @@ public class GraphEditorDemo extends javax.swing.JFrame {
                 deletionDisplayText(mutation);
             case RELOCATION ->
                 relocationDisplayText(mutation);
-            case SHAPE_CHANGE ->
-                shapeChangeDisplayText(mutation);
+            case EDGE_TRANSFORMATION ->
+                "Edge transformed";
+            case VERTEX_RESIZE ->
+                "Vertex resized";
             case LABEL_INSERTION ->
                 "Label added";
             case LABEL_DELETION ->
@@ -65,10 +67,6 @@ public class GraphEditorDemo extends javax.swing.JFrame {
 
     private static String relocationDisplayText(Mutation mutation) {
         return (mutation.getVertices().size() == 1) ? "Vertex relocated" : "Selection relocated";
-    }
-
-    private static String shapeChangeDisplayText(Mutation mutation) {
-        return (mutation.getVertices().isEmpty()) ? "Edge transformed" : "Vertex resized";
     }
 
     /**

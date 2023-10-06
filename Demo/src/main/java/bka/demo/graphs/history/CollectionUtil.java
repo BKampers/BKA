@@ -18,13 +18,6 @@ public class CollectionUtil {
         return Collections.unmodifiableCollection(collection);
     }
 
-    public static <T> List<T> unmodifiableList(List<T> list) {
-        if (list.isEmpty()) {
-            return Collections.emptyList();
-        }
-        return Collections.unmodifiableList(list);
-    }
-
     public static <K, V> Map<K, V> unmodifiableMap(Map<K, V> map) {
         if (map.isEmpty()) {
             return Collections.emptyMap();

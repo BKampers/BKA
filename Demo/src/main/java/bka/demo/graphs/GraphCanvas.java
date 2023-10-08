@@ -37,8 +37,8 @@ public class GraphCanvas extends CompositeRenderer {
         edges.forEach(edge -> {
             graphics.setPaint(Color.BLACK);
             edge.paint(graphics);
-            paintDot(graphics, edge.getStartConnectorPoint(), 3, Color.MAGENTA);
-            paintDot(graphics, edge.getEndConnectorPoint(), 3, Color.MAGENTA);
+            paintDot(graphics, edge.getStartConnectorPoint(), EDGE_POINT_RADIUS, CONNECTOR_POINT_PAINT);
+            paintDot(graphics, edge.getEndConnectorPoint(), EDGE_POINT_RADIUS, CONNECTOR_POINT_PAINT);
         });
         graphics.setPaint(Color.BLUE);
         selection.forEach(renderer -> renderer.paint(graphics));
@@ -134,7 +134,7 @@ public class GraphCanvas extends CompositeRenderer {
     private static int getResizeCursorType(Point cursor, Point vertexLocation) {
         int dx = cursor.x - vertexLocation.x;
         int dy = cursor.y - vertexLocation.y;
-        double angle = (dy != 0) ? Math.abs(Math.atan((double) dx / dy)) : SQUARE_ANGLE;
+        double angle = Math.abs(Math.atan((double) dx / dy));
         if (angle < VERTICAL_MARGIN) {
             return (dy < 0) ? Cursor.N_RESIZE_CURSOR : Cursor.S_RESIZE_CURSOR;
         }
@@ -283,24 +283,24 @@ public class GraphCanvas extends CompositeRenderer {
 
         @Override
         public ComponentUpdate mouseMoved(MouseEvent event) {
-            boolean needRepaint = connectorPoint != null || edgePoint != null;
-            connectorPoint = null;
-            edgePoint = null;
             Point cursor = event.getPoint();
-            Label labelAtCursor = labelAt(cursor);
-            needRepaint |= Objects.equals(labelAtCursor, hoveredLabel);
-            hoveredLabel = labelAtCursor;
-            if (labelAtCursor != null) {
-                return new ComponentUpdate(Cursor.HAND_CURSOR, needRepaint);
+            boolean needRepaint = setHoveredLabel(labelAt(cursor));
+            if (hoveredLabel != null) {
+                needRepaint |= setConnectorPoint(null);
+                needRepaint |= setEdgePoint(null);
+                return new ComponentUpdate(Cursor.TEXT_CURSOR, needRepaint);
             }
             VertexRenderer nearestVertex = findNearestVertex(cursor);
             if (nearestVertex != null) {
+                needRepaint |= setEdgePoint(null);
                 return handleVertexHovered(nearestVertex, cursor, needRepaint);
             }
+            needRepaint |= setConnectorPoint(null);
             EdgeRenderer nearestEdge = findNearestEdge(cursor);
             if (nearestEdge != null) {
-                return handleEdgeHovered(nearestEdge, cursor);
+                return handleEdgeHovered(nearestEdge, cursor, needRepaint);
             }
+            needRepaint |= setEdgePoint(null);
             return new ComponentUpdate(Cursor.DEFAULT_CURSOR, needRepaint);
         }
 
@@ -320,22 +320,24 @@ public class GraphCanvas extends CompositeRenderer {
         private ComponentUpdate handleVertexHovered(VertexRenderer vertex, Point cursor, boolean needRepaint) {
             long distance = vertex.squareDistance(cursor);
             if (isInside(distance)) {
+                needRepaint |= setConnectorPoint(null);
                 return new ComponentUpdate(Cursor.HAND_CURSOR, needRepaint);
             }
             if (isOnBorder(distance)) {
+                needRepaint |= setConnectorPoint(null);
                 return new ComponentUpdate(getResizeCursorType(cursor, vertex.getLocation()), needRepaint);
             }
             if (isNear(distance)) {
-                connectorPoint = cursor;
-                return ComponentUpdate.repaint(Cursor.DEFAULT_CURSOR);
+                needRepaint |= setConnectorPoint(cursor);
+                return new ComponentUpdate(Cursor.DEFAULT_CURSOR, needRepaint);
             }
             return (needRepaint) ? ComponentUpdate.REPAINT : ComponentUpdate.NO_OPERATION;
         }
 
-        private ComponentUpdate handleEdgeHovered(EdgeRenderer nearestEdge, Point cursor) {
-            edgeBendSelected = nearestEdge.getPoints().stream().anyMatch(p -> isNear(cursor, p));
-            edgePoint = cursor;
-            return ComponentUpdate.repaint(Cursor.HAND_CURSOR);
+        private ComponentUpdate handleEdgeHovered(EdgeRenderer nearestEdge, Point cursor, boolean needRepaint) {
+            edgeBendSelected = nearestEdge.getPoints().stream().anyMatch(point -> isNear(cursor, point));
+            needRepaint |= setEdgePoint(cursor);
+            return new ComponentUpdate(Cursor.HAND_CURSOR, needRepaint);
         }
 
         @Override
@@ -448,7 +450,10 @@ public class GraphCanvas extends CompositeRenderer {
             connectorPoint = null;
             VertexRenderer vertex = findNearestVertex(cursor);
             if (vertex != null) {
-                context.editString(labelText(hoveredLabel), cursor, applyLabelText(vertex, hoveredLabel, cursor));
+                context.editString(
+                    labelText(hoveredLabel),
+                    cursor,
+                    applyLabelText(vertex, hoveredLabel, cursor));
             }
             return ComponentUpdate.NO_OPERATION;
         }
@@ -458,13 +463,13 @@ public class GraphCanvas extends CompositeRenderer {
         }
 
         private Consumer<String> applyLabelText(VertexRenderer vertex, Label label, Point position) {
-            return text -> {
-                if (!text.isBlank()) {
+            return input -> {
+                if (!input.isBlank()) {
                     if (label == null) {
-                        addLabel(vertex, position, text);
+                        addLabel(vertex, position, input);
                     }
                     else {
-                        modifyLabel(label, text);
+                        modifyLabel(label, input);
                     }
                     context.requestRepaint();
                 }
@@ -508,22 +513,46 @@ public class GraphCanvas extends CompositeRenderer {
         @Override
         public void paint(Graphics2D graphics) {
             if (edgePoint != null) {
-                graphics.setPaint(Color.RED);
+                graphics.setPaint(EDGE_POINT_PAINT);
                 if (edgeBendSelected) {
-                    paintDot(graphics, edgePoint, 3, Color.RED);
+                    paintDot(graphics, edgePoint, EDGE_POINT_RADIUS, EDGE_POINT_PAINT);
                 }
                 else {
-                    paintCircle(graphics, edgePoint, 3, Color.RED);
+                    paintCircle(graphics, edgePoint, EDGE_POINT_RADIUS, EDGE_POINT_PAINT);
                 }
             }
             if (connectorPoint != null) {
-                paintCircle(graphics, connectorPoint, 4, Color.RED);
+                paintCircle(graphics, connectorPoint, CONNECTOR_POINT_RADIUS, CONNECTOR_POINT_PAINT);
             }
             if (hoveredLabel != null) {
                 graphics.setColor(Color.GRAY);
                 Rectangle hoveredLabelBounds = hoveredLabel.getBounds();
                 graphics.drawRect(hoveredLabelBounds.x, hoveredLabelBounds.y, hoveredLabelBounds.width, hoveredLabelBounds.height);
             }
+        }
+
+        private boolean setConnectorPoint(Point point) {
+            if (Objects.equals(connectorPoint, point)) {
+                return false;
+            }
+            connectorPoint = point;
+            return true;
+        }
+
+        private boolean setEdgePoint(Point point) {
+            if (Objects.equals(edgePoint, point)) {
+                return false;
+            }
+            edgePoint = point;
+            return true;
+        }
+
+        private boolean setHoveredLabel(Label label) {
+            if (Objects.equals(hoveredLabel, label)) {
+                return false;
+            }
+            hoveredLabel = label;
+            return true;
         }
 
         private Button button;
@@ -609,9 +638,9 @@ public class GraphCanvas extends CompositeRenderer {
         public void paint(Graphics2D graphics) {
             graphics.setPaint(Color.GRAY);
             draggingEdgeRenderer.paint(graphics);
-            paintCircle(graphics, draggingEdgeRenderer.getStartConnectorPoint(), 3, Color.MAGENTA);
+            paintCircle(graphics, draggingEdgeRenderer.getStartConnectorPoint(), CONNECTOR_POINT_RADIUS, CONNECTOR_POINT_PAINT);
             if (connectorPoint != null) {
-                paintCircle(graphics, connectorPoint, 3, Color.MAGENTA);
+                paintCircle(graphics, connectorPoint, CONNECTOR_POINT_RADIUS, CONNECTOR_POINT_PAINT);
             }
         }
 
@@ -620,8 +649,6 @@ public class GraphCanvas extends CompositeRenderer {
         private Button button;
 
     }
-
-
     private class SelectionMoveMouseHandler implements MouseHandler {
 
         public SelectionMoveMouseHandler(Point dragStartPoint) {
@@ -714,12 +741,11 @@ public class GraphCanvas extends CompositeRenderer {
 
         @Override
         public void paint(Graphics2D graphics) {
-            graphics.setPaint(Color.RED);
             if (edgeBendSelected) {
-                paintDot(graphics, dragPoint, 3, Color.RED);
+                paintDot(graphics, dragPoint, EDGE_POINT_RADIUS, EDGE_POINT_PAINT);
             }
             else {
-                paintCircle(graphics, dragPoint, 3, Color.RED);
+                paintCircle(graphics, dragPoint, EDGE_POINT_RADIUS, EDGE_POINT_PAINT);
             }
         }
 
@@ -728,7 +754,6 @@ public class GraphCanvas extends CompositeRenderer {
         private final EdgeRenderer draggingEdgeRenderer;
         private final List<Point> originalEdgePoints;
     }
-
 
     private class VertexResizeMouseHandler implements MouseHandler {
 
@@ -863,8 +888,13 @@ public class GraphCanvas extends CompositeRenderer {
     private static final double ACUTE_COSINE_LIMIT = -0.99;
     private static final double OBTUSE_COSINE_LIMIT = 0.99;
     private static final long TWIN_TOLERANCE = 3 * 3;
-    private static final double SQUARE_ANGLE = 0.5 * Math.PI;
     private static final double HORIZONTAL_MARGIN = 0.4 * Math.PI;
     private static final double VERTICAL_MARGIN = 0.1 * Math.PI;
+
+    private static final int CONNECTOR_POINT_RADIUS = 4;
+    private static final int EDGE_POINT_RADIUS = 3;
+
+    private static final Color CONNECTOR_POINT_PAINT = Color.MAGENTA;
+    private static final Color EDGE_POINT_PAINT = Color.RED;
 
 }

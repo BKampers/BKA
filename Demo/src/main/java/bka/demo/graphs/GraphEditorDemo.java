@@ -110,6 +110,9 @@ public class GraphEditorDemo extends javax.swing.JFrame {
             }
         });
         graphPanel.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                graphPanelKeyPressed(evt);
+            }
             public void keyReleased(java.awt.event.KeyEvent evt) {
                 graphPanelKeyReleased(evt);
             }
@@ -171,6 +174,10 @@ public class GraphEditorDemo extends javax.swing.JFrame {
     private void graphPanelKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_graphPanelKeyReleased
         updateGraphPanel(canvas.handleKeyReleased(evt));
     }//GEN-LAST:event_graphPanelKeyReleased
+
+    private void graphPanelKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_graphPanelKeyPressed
+        updateGraphPanel(canvas.handleKeyPressed(evt));
+    }//GEN-LAST:event_graphPanelKeyPressed
 
     /**
      * @param args the command line arguments
@@ -296,7 +303,11 @@ public class GraphEditorDemo extends javax.swing.JFrame {
         @Override
         public void requestRepaint() {
             graphPanel.repaint();
-            
+        }
+
+        @Override
+        public void setCursor(int cursorType) {
+            setGraphPanelCursor(cursorType);
         }
 
         private static final int POPUP_WIDTH = 50;

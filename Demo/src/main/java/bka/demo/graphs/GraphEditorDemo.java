@@ -7,6 +7,7 @@ import bka.awt.*;
 import bka.demo.graphs.history.*;
 import bka.swing.popup.*;
 import java.awt.*;
+import java.util.*;
 import java.util.function.*;
 
 public class GraphEditorDemo extends javax.swing.JFrame {
@@ -39,34 +40,34 @@ public class GraphEditorDemo extends javax.swing.JFrame {
             case RELOCATION ->
                 relocationDisplayText(mutation);
             case EDGE_TRANSFORMATION ->
-                "Edge transformed";
+                BUNDLE.getString("EdgeTransformed");
             case VERTEX_RESIZE ->
-                "Vertex resized";
+                BUNDLE.getString("VertexResized");
             case LABEL_INSERTION ->
-                "Label added";
+                BUNDLE.getString("LabelAdded");
             case LABEL_DELETION ->
-                "Label removed";
+                BUNDLE.getString("LabelRemoved");
             case LABEL_MUTATION ->
-                "Label changed";
+                BUNDLE.getString("LabelChanged");
         });
     }
 
     private static String insertionDisplayText(Mutation mutation) {
-        return (mutation.getEdges().isEmpty()) ? "Vertex added" : "Edge added";
+        return (mutation.getEdges().isEmpty()) ? BUNDLE.getString("VertexAdded") : BUNDLE.getString("EdgeAdded");
     }
 
     private static String deletionDisplayText(Mutation mutation) {
         if (mutation.getVertices().size() == 1) {
-            return "Vertex deleted";
+            return BUNDLE.getString("VertexDeleted");
         }
         if (mutation.getEdges().size() == 1) {
-            return "Edge deleted";
+            return BUNDLE.getString("EdgeDeleted");
         }
-        return "Selection deleted";
+        return BUNDLE.getString("SelectionDeleted");
     }
 
     private static String relocationDisplayText(Mutation mutation) {
-        return (mutation.getVertices().size() == 1) ? "Vertex relocated" : "Selection relocated";
+        return (mutation.getVertices().size() == 1) ? BUNDLE.getString("VertexRelocated") : BUNDLE.getString("SelectionRelocated");
     }
 
     /**
@@ -85,7 +86,7 @@ public class GraphEditorDemo extends javax.swing.JFrame {
         historyList.setCellRenderer(new HistoryListCellRenderer());
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("Graph editor");
+        setTitle(BUNDLE.getString("ApplicationTitle"));
 
         graphScrollPane.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
         graphScrollPane.setVerticalScrollBarPolicy(javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
@@ -324,5 +325,7 @@ public class GraphEditorDemo extends javax.swing.JFrame {
     // End of variables declaration//GEN-END:variables
 
     private final javax.swing.DefaultListModel<String> historyListModel = new javax.swing.DefaultListModel<>();
+
+    private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("GraphEditor");
 
 }

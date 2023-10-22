@@ -28,6 +28,11 @@ public class ElementInsertion implements Mutation {
     }
 
     @Override
+    public String getBundleKey() {
+        return ((edges.isEmpty()) ? "Vertex" : "Edge") + getType().getBundleKey();
+    }
+
+    @Override
     public void undo() {
         graphCanvas.removeRenderers(vertices, edges);
     }
@@ -35,16 +40,6 @@ public class ElementInsertion implements Mutation {
     @Override
     public void redo() {
         graphCanvas.insertRenderers(vertices, edges);
-    }
-
-    @Override
-    public Collection<VertexRenderer> getVertices() {
-        return vertices;
-    }
-
-    @Override
-    public Collection<EdgeRenderer> getEdges() {
-        return edges;
     }
 
     private final GraphCanvas graphCanvas;

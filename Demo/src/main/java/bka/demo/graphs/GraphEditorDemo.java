@@ -21,7 +21,7 @@ public class GraphEditorDemo extends javax.swing.JFrame {
 
     private void updateHistoryList(DrawHistory history) {
         historyListModel.removeAllElements();
-        history.getMutattions().forEach(this::displayMutation);
+        history.getMutattions().forEach(mutation -> historyListModel.addElement(BUNDLE.getString(mutation.getBundleKey())));
         if (history.getIndex() > 0) {
             int index = history.getIndex() - 1;
             historyList.setSelectedIndex(index);
@@ -29,45 +29,6 @@ public class GraphEditorDemo extends javax.swing.JFrame {
             historyScrollPane.getViewport().scrollRectToVisible(selection);
             historyScrollPane.getVerticalScrollBar().setValue(selection.y);
         }
-    }
-
-    private void displayMutation(Mutation mutation) {
-        historyListModel.addElement(switch (mutation.getType()) {
-            case INSERTION ->
-                insertionDisplayText(mutation);
-            case DELETION ->
-                deletionDisplayText(mutation);
-            case RELOCATION ->
-                relocationDisplayText(mutation);
-            case EDGE_TRANSFORMATION ->
-                BUNDLE.getString("EdgeTransformed");
-            case VERTEX_RESIZE ->
-                BUNDLE.getString("VertexResized");
-            case LABEL_INSERTION ->
-                BUNDLE.getString("LabelAdded");
-            case LABEL_DELETION ->
-                BUNDLE.getString("LabelRemoved");
-            case LABEL_MUTATION ->
-                BUNDLE.getString("LabelChanged");
-        });
-    }
-
-    private static String insertionDisplayText(Mutation mutation) {
-        return (mutation.getEdges().isEmpty()) ? BUNDLE.getString("VertexAdded") : BUNDLE.getString("EdgeAdded");
-    }
-
-    private static String deletionDisplayText(Mutation mutation) {
-        if (mutation.getVertices().size() == 1) {
-            return BUNDLE.getString("VertexDeleted");
-        }
-        if (mutation.getEdges().size() == 1) {
-            return BUNDLE.getString("EdgeDeleted");
-        }
-        return BUNDLE.getString("SelectionDeleted");
-    }
-
-    private static String relocationDisplayText(Mutation mutation) {
-        return (mutation.getVertices().size() == 1) ? BUNDLE.getString("VertexRelocated") : BUNDLE.getString("SelectionRelocated");
     }
 
     /**

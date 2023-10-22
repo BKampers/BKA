@@ -4,25 +4,39 @@
 
 package bka.demo.graphs.history;
 
-import bka.demo.graphs.*;
-import java.util.*;
-
 public interface Mutation {
 
     public enum Type {
-        INSERTION, DELETION, RELOCATION, VERTEX_RESIZE, EDGE_TRANSFORMATION, LABEL_INSERTION, LABEL_DELETION, LABEL_MUTATION
+        INSERTION("Added"),
+        DELETION("Deleted"),
+        RELOCATION("Relocated"),
+        VERTEX_RESIZE("VertexResized"),
+        EDGE_TRANSFORMATION("EdgeTransformed"),
+        LABEL_INSERTION("LabelAdded"),
+        LABEL_DELETION("LabelRemoved"),
+        LABEL_MUTATION("LabelChanged");
+
+        private Type(String bundleKey) {
+            this.bundleKey = bundleKey;
+        }
+
+        public String getBundleKey() {
+            return bundleKey;
+        }
+
+        private final String bundleKey;
     }
 
 
     public abstract class Symmetrical implements Mutation {
 
         @Override
-        public void undo() {
+        final public void undo() {
             revert();
         }
 
         @Override
-        public void redo() {
+        final public void redo() {
             revert();
         }
 
@@ -30,18 +44,14 @@ public interface Mutation {
     }
 
 
-    Type getType();
-
     void undo();
 
     void redo();
 
-    default Collection<VertexRenderer> getVertices() {
-        return Collections.emptyList();
-    }
+    Type getType();
 
-    default Collection<EdgeRenderer> getEdges() {
-        return Collections.emptyList();
+    default String getBundleKey() {
+        return getType().getBundleKey();
     }
 
 }

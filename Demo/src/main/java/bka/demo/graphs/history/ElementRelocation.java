@@ -38,13 +38,8 @@ public class ElementRelocation extends Mutation.Symmetrical {
     }
 
     @Override
-    public Collection<VertexRenderer> getVertices() {
-        return vertices;
-    }
-
-    @Override
-    public Collection<EdgeRenderer> getEdges() {
-        return edges;
+    public String getBundleKey() {
+        return ((vertices.size() == 1 && edges.isEmpty()) ? "Vertex" : "Selection") + getType().getBundleKey();
     }
 
     private final Collection<VertexRenderer> vertices;

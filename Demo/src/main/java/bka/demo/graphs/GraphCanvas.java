@@ -392,7 +392,8 @@ public class GraphCanvas extends CompositeRenderer {
         }
 
         private void handleEdgePressed(Point cursor, EdgeRenderer nearestEdge) {
-            mouseHandler = new EdgePointMoveMouseHandler(nearestEdgePoint(nearestEdge, cursor), nearestEdge, edgeBendSelected);
+            List<Point> originalEdgePoints = deepCopy(nearestEdge.getPoints());
+            mouseHandler = new EdgePointMoveMouseHandler(nearestEdgePoint(nearestEdge, cursor), nearestEdge, originalEdgePoints);
         }
 
         @Override
@@ -665,7 +666,7 @@ public class GraphCanvas extends CompositeRenderer {
 
         @Override
         public ComponentUpdate mouseReleased(MouseEvent event) {
-            if (button != Button.MAIN) {
+            if (!Button.MAIN.modifierMatch(event)) {
                 return ComponentUpdate.NO_OPERATION;
             }
             Point cursor = event.getPoint();
@@ -764,11 +765,11 @@ public class GraphCanvas extends CompositeRenderer {
 
     private class EdgePointMoveMouseHandler implements MouseHandler {
 
-        public EdgePointMoveMouseHandler(Point dragStartPoint, EdgeRenderer draggingEdgeRenderer, boolean edgeBendSelected) {
+        public EdgePointMoveMouseHandler(Point dragStartPoint, EdgeRenderer draggingEdgeRenderer, List<Point> originalEdgePoints) {
+            this.originalEdgePoints = originalEdgePoints;
             this.dragPoint = dragStartPoint;
             this.draggingEdgeRenderer = draggingEdgeRenderer;
-            this.originalEdgePoints = deepCopy(deepCopy(draggingEdgeRenderer.getPoints()));
-            this.edgeBendSelected = edgeBendSelected;
+            this.edgeBendSelected = originalEdgePoints.size() == draggingEdgeRenderer.getPoints().size();
         }
 
         @Override
@@ -930,8 +931,8 @@ public class GraphCanvas extends CompositeRenderer {
 
     private final Context context;
 
-    private final Collection<VertexRenderer> vertices = new LinkedList<>();
-    private final Collection<EdgeRenderer> edges = new LinkedList<>();
+    private final Collection<VertexRenderer> vertices = new ArrayList<>();
+    private final Collection<EdgeRenderer> edges = new ArrayList<>();
     private final Set<Element> selection = new HashSet<>();
 
     private final DrawHistory history = new DrawHistory();

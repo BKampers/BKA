@@ -21,7 +21,7 @@ public class GraphEditorDemo extends javax.swing.JFrame {
 
     private void updateHistoryList(DrawHistory history) {
         historyListModel.removeAllElements();
-        history.getMutattions().forEach(mutation -> historyListModel.addElement(BUNDLE.getString(mutation.getBundleKey())));
+        history.getMutattions().forEach(mutation -> historyListModel.addElement(getBundleText(mutation.getBundleKey())));
         if (history.getIndex() > 0) {
             int index = history.getIndex() - 1;
             historyList.setSelectedIndex(index);
@@ -183,6 +183,13 @@ public class GraphEditorDemo extends javax.swing.JFrame {
         if (graphPanel.getCursor().getType() != type) {
             graphPanel.setCursor(new java.awt.Cursor(type));
         }
+    }
+
+    private static String getBundleText(String key) {
+        if (!BUNDLE.containsKey(key)) {
+            return "<html><i>" + key + "</i></html>";
+        }
+        return BUNDLE.getString(key);
     }
 
 

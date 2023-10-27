@@ -11,9 +11,14 @@ import java.util.function.*;
 
 public class Label {
 
-    public Label(Supplier<Point> positioner, String text) {
+    public Label(VertexRenderer vertex, Supplier<Point> positioner, String text) {
+        this.vertex = Objects.requireNonNull(vertex);
         setPositioner(positioner);
         setText(text);
+    }
+
+    public VertexRenderer getVertex() {
+        return vertex;
     }
 
     public final void setText(String text) {
@@ -26,6 +31,10 @@ public class Label {
 
     public final void setPositioner(Supplier<Point> positioner) {
         this.positioner = Objects.requireNonNull(positioner);
+    }
+
+    public Supplier<Point> getPositioner() {
+        return positioner;
     }
 
     public Rectangle getBounds() {
@@ -47,6 +56,8 @@ public class Label {
         int height = metrics.getHeight();
         return new Rectangle(position.x - width / 2, position.y - height / 2, width, height);
     }
+
+    private final VertexRenderer vertex;
 
     private Supplier<Point> positioner;
     private String text;

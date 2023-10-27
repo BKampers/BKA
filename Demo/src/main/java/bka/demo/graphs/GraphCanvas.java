@@ -59,6 +59,10 @@ public class GraphCanvas extends CompositeRenderer {
         graphics.drawOval(point.x - radius, point.y - radius, size, size);
     }
 
+    public void addHistory(Mutation mutation) {
+        history.add(mutation);
+    }
+
     public ComponentUpdate handleMouseMoved(MouseEvent event) {
         return mouseHandler.mouseMoved(event);
     }
@@ -240,8 +244,11 @@ public class GraphCanvas extends CompositeRenderer {
         return history;
     }
 
+    void resetMouseHandler() {
+        mouseHandler = new DefaultMouseHandler();
+    }
 
-    private interface MouseHandler {
+    public interface MouseHandler {
 
         default void paint(Graphics2D graphics) {
         }
@@ -273,6 +280,7 @@ public class GraphCanvas extends CompositeRenderer {
         default ComponentUpdate keyReleased(KeyEvent event) {
             return ComponentUpdate.NO_OPERATION;
         }
+
     }
 
 
@@ -289,32 +297,23 @@ public class GraphCanvas extends CompositeRenderer {
         @Override
         public ComponentUpdate mouseMoved(MouseEvent event) {
             Point cursor = event.getPoint();
-            boolean needRepaint = setHoveredLabel(labelAt(cursor));
-            if (hoveredLabel != null && Button.EDIT.modifierMatch(event)) {
-                needRepaint |= setConnectorPoint(null);
-                needRepaint |= setEdgePoint(null);
-                return new ComponentUpdate(Cursor.TEXT_CURSOR, needRepaint);
-            }
             VertexRenderer nearestVertex = findNearestVertex(cursor);
             if (nearestVertex != null) {
-                needRepaint |= setEdgePoint(null);
+                return handleVertexHovered(nearestVertex, event);
+            }
+            EdgeRenderer nearestEdge = findNearestEdge(cursor);
+            if (nearestEdge != null && Button.MAIN.modifierMatch(event)) {
+                return handleEdgeHovered(nearestEdge, cursor);
+            }
+            boolean needRepaint = setEdgePoint(null);
+            needRepaint |= setConnectorPoint(null);
+            needRepaint |= setHoveredLabel(labelAt(cursor));
+            if (hoveredLabel != null) {
                 if (Button.EDIT.modifierMatch(event)) {
-                    needRepaint |= setConnectorPoint(null);
                     return new ComponentUpdate(Cursor.TEXT_CURSOR, needRepaint);
                 }
-                if (Button.MAIN.modifierMatch(event)) {
-                    return handleVertexHovered(nearestVertex, cursor, needRepaint);
-                }
-                return new ComponentUpdate(Cursor.DEFAULT_CURSOR, needRepaint);
+                return new ComponentUpdate(Cursor.HAND_CURSOR, needRepaint);
             }
-            needRepaint |= setConnectorPoint(null);
-            if (Button.MAIN.modifierMatch(event)) {
-                EdgeRenderer nearestEdge = findNearestEdge(cursor);
-                if (nearestEdge != null) {
-                    return handleEdgeHovered(nearestEdge, cursor, needRepaint);
-                }
-            }
-            needRepaint |= setEdgePoint(null);
             return new ComponentUpdate(Cursor.DEFAULT_CURSOR, needRepaint);
         }
 
@@ -331,6 +330,19 @@ public class GraphCanvas extends CompositeRenderer {
             };
         }
 
+        private ComponentUpdate handleVertexHovered(VertexRenderer vertex, MouseEvent event) {
+            boolean needRepaint = setHoveredLabel(null);
+            needRepaint |= setEdgePoint(null);
+            if (Button.EDIT.modifierMatch(event)) {
+                needRepaint |= setConnectorPoint(null);
+                return new ComponentUpdate(Cursor.TEXT_CURSOR, needRepaint);
+            }
+            if (Button.MAIN.modifierMatch(event)) {
+                return handleVertexHovered(vertex, event.getPoint(), needRepaint);
+            }
+            return new ComponentUpdate(Cursor.DEFAULT_CURSOR, needRepaint);
+        }
+
         private ComponentUpdate handleVertexHovered(VertexRenderer vertex, Point cursor, boolean needRepaint) {
             long distance = vertex.squareDistance(cursor);
             if (isInside(distance)) {
@@ -341,24 +353,29 @@ public class GraphCanvas extends CompositeRenderer {
                 needRepaint |= setConnectorPoint(null);
                 return new ComponentUpdate(getResizeCursorType(cursor, vertex.getLocation()), needRepaint);
             }
-            if (isNear(distance)) {
+            if (isNear(distance) && vertices.size() > 1) {
                 needRepaint |= setConnectorPoint(cursor);
                 return new ComponentUpdate(Cursor.DEFAULT_CURSOR, needRepaint);
             }
             return (needRepaint) ? ComponentUpdate.REPAINT : ComponentUpdate.NO_OPERATION;
         }
 
-        private ComponentUpdate handleEdgeHovered(EdgeRenderer nearestEdge, Point cursor, boolean needRepaint) {
-            edgeBendSelected = nearestEdge.getPoints().stream().anyMatch(point -> isNear(cursor, point));
+        private ComponentUpdate handleEdgeHovered(EdgeRenderer nearestEdge, Point cursor) {
+            boolean needRepaint = setHoveredLabel(null);
             needRepaint |= setEdgePoint(cursor);
+            edgeBendSelected = nearestEdge.getPoints().stream().anyMatch(point -> isNear(cursor, point));
             return new ComponentUpdate(Cursor.HAND_CURSOR, needRepaint);
         }
 
         @Override
         public ComponentUpdate mousePressed(MouseEvent event) {
             button = Button.get(event);
-            Point cursor = event.getPoint();
             if (button == Button.MAIN) {
+                if (hoveredLabel != null) {
+                    mouseHandler = new DragLabelHandler(GraphCanvas.this, hoveredLabel);
+                    return ComponentUpdate.NO_OPERATION;
+                }
+                Point cursor = event.getPoint();
                 VertexRenderer nearestVertex = findNearestVertex(cursor);
                 if (nearestVertex != null) {
                     handleVertexPressed(cursor, nearestVertex);
@@ -463,7 +480,7 @@ public class GraphCanvas extends CompositeRenderer {
 
         private ComponentUpdate editLabel(Point cursor) {
             connectorPoint = null;
-            VertexRenderer vertex = findNearestVertex(cursor);
+            VertexRenderer vertex = hoveredLabel == null ? findNearestVertex(cursor) : hoveredLabel.getVertex();
             if (vertex != null) {
                 context.editString(
                     labelText(hoveredLabel),
@@ -497,7 +514,7 @@ public class GraphCanvas extends CompositeRenderer {
         }
 
         private void addLabel(VertexRenderer vertex, Point cursor, String text) {
-            Label newLabel = new Label(vertex.distancePositioner(cursor), text);
+            Label newLabel = new Label(vertex, vertex.distancePositioner(cursor), text);
             vertex.addLabel(newLabel);
             history.add(new LabelInsertion(vertex, newLabel));
         }
@@ -547,7 +564,7 @@ public class GraphCanvas extends CompositeRenderer {
                 return historyRedo();
             }
             if (event.getKeyCode() == KeyEvent.VK_ALT) {
-                editButtonDown = true;
+                editButtonDown = false;
                 return new ComponentUpdate(Cursor.DEFAULT_CURSOR, connectorPoint != null);
             }
             return ComponentUpdate.NO_OPERATION;

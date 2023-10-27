@@ -73,9 +73,8 @@ public class VertexRenderer implements Element {
     }
 
     public Supplier<Point> distancePositioner(Point point) {
-        double dx = point.x - location.x;
         double dy = point.y - location.y;
-        double angle = Math.atan(dx / dy);
+        double angle = Math.atan((point.x - location.x) / dy);
         float sin = (float) ((dy < 0) ? -Math.sin(angle) : Math.sin(angle));
         float cos = (float) ((dy < 0) ? -Math.cos(angle) : Math.cos(angle));
         float distanceToBorder = (float) Math.sqrt(squareDistance(point));

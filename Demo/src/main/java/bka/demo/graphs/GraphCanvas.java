@@ -21,9 +21,7 @@ public class GraphCanvas extends CompositeRenderer {
 
         void editString(String input, Point location, Consumer<String> onApply);
 
-        void requestRepaint();
-
-        void setCursor(int cursorType);
+        void requestUpdate(ComponentUpdate update);
     }
 
     public GraphCanvas(Context context) {
@@ -503,13 +501,13 @@ public class GraphCanvas extends CompositeRenderer {
                     else {
                         modifyLabel(label, input);
                     }
-                    context.requestRepaint();
+                    context.requestUpdate(ComponentUpdate.REPAINT);
                 }
                 else if (label != null) {
                     removeLabel(vertex, label);
-                    context.requestRepaint();
+                    context.requestUpdate(ComponentUpdate.REPAINT);
                 }
-                context.setCursor(Cursor.DEFAULT_CURSOR);
+                context.requestUpdate(ComponentUpdate.noOperation(Cursor.DEFAULT_CURSOR));
             };
         }
 

@@ -270,13 +270,8 @@ public class GraphEditorDemo extends javax.swing.JFrame {
         }
 
         @Override
-        public void requestRepaint() {
-            graphPanel.repaint();
-        }
-
-        @Override
-        public void setCursor(int cursorType) {
-            setGraphPanelCursor(cursorType);
+        public void requestUpdate(ComponentUpdate update) {
+            updateGraphPanel(update);
         }
 
         private static final int POPUP_WIDTH = 50;

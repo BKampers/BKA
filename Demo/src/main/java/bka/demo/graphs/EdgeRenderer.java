@@ -6,19 +6,19 @@ package bka.demo.graphs;
 
 import bka.demo.graphs.Vector;
 import java.awt.*;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 
 public class EdgeRenderer implements Element {
 
     public EdgeRenderer(VertexRenderer start, VertexRenderer end) {
         this(start);
-        this.end = end;
+        this.end = Objects.requireNonNull(end);
     }
 
     public EdgeRenderer(VertexRenderer start) {
-        this.start = start;
+        this.start = Objects.requireNonNull(start);
     }
 
     @Override

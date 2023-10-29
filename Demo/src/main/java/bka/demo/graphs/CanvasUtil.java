@@ -5,9 +5,31 @@
 package bka.demo.graphs;
 
 import java.awt.*;
+import java.util.List;
+import java.util.stream.*;
 
 
 public class CanvasUtil {
+
+    public static boolean isNear(Point cursor, Point linePoint1, Point linePoint2) {
+        return isNear(squareDistance(cursor, linePoint1, linePoint2));
+    }
+
+    public static boolean isNear(Point cursor, Point point) {
+        return isNear(squareDistance(cursor, point));
+    }
+
+    public static boolean isNear(long distance) {
+        return distance < NEAR_DISTANCE;
+    }
+
+    public static boolean isOnBorder(long distance) {
+        return INSIDE_BORDER_MARGIN < distance && distance < OUTSIDE_BORDER_MARGIN;
+    }
+
+    public static boolean isInside(long distance) {
+        return distance <= INSIDE_BORDER_MARGIN;
+    }
 
     public static double distance(Point point1, Point point2) {
         return Math.sqrt(squareDistance(point1, point2));
@@ -50,7 +72,24 @@ public class CanvasUtil {
             && Math.min(corner1.y, corner2.y) <= point.y && point.y <= Math.max(corner1.y, corner2.y);
     }
 
+    public static java.util.List<Point> deepCopy(List<Point> list) {
+        return list.stream().map(point -> new Point(point)).collect(Collectors.toList());
+    }
+
+    public static boolean cleanup(EdgeRenderer edge) {
+        return edge.cleanup(TWIN_TOLERANCE, ACUTE_COSINE_LIMIT, OBTUSE_COSINE_LIMIT);
+    }
+
     private CanvasUtil() {
     }
+
+    public static final long NEAR_DISTANCE = 5 * 5;
+    private static final long INSIDE_BORDER_MARGIN = -4 * 4;
+    private static final long OUTSIDE_BORDER_MARGIN = 4 * 4;
+
+    private static final double ACUTE_COSINE_LIMIT = -0.99;
+    private static final double OBTUSE_COSINE_LIMIT = 0.99;
+    private static final long TWIN_TOLERANCE = 3 * 3;
+
 
 }

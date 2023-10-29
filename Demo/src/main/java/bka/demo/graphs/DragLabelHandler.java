@@ -12,10 +12,10 @@ import java.util.*;
 import java.util.function.*;
 
 
-public class DragLabelHandler implements GraphCanvas.MouseHandler {
+public class DragLabelHandler extends CanvasEventHandler {
 
     public DragLabelHandler(GraphCanvas canvas, Label label) {
-        this.canvas = Objects.requireNonNull(canvas);
+        super(canvas);
         this.label = Objects.requireNonNull(label);
         originalPositioner = label.getPositioner();
     }
@@ -28,9 +28,9 @@ public class DragLabelHandler implements GraphCanvas.MouseHandler {
 
     @Override
     public ComponentUpdate mouseReleased(MouseEvent event) {
-        canvas.resetMouseHandler();
+        getCanvas().resetEventHandler();
         if (!Objects.equals(originalPositioner.get(), label.getPositioner().get())) {
-            canvas.addHistory(new PositionerMutation());
+            getCanvas().addHistory(new PositionerMutation());
         }
         return ComponentUpdate.REPAINT;
     }
@@ -42,6 +42,7 @@ public class DragLabelHandler implements GraphCanvas.MouseHandler {
     private Supplier<Point> getOriginalPositioner() {
         return originalPositioner;
     }
+
 
     private class PositionerMutation extends PropertyMutation<Supplier<Point>> {
 
@@ -55,7 +56,6 @@ public class DragLabelHandler implements GraphCanvas.MouseHandler {
         }
     }
 
-    private final GraphCanvas canvas;
     private final Label label;
     private final Supplier<Point> originalPositioner;
 

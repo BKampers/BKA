@@ -5,27 +5,26 @@
 package bka.demo.graphs;
 
 import bka.awt.*;
-import bka.demo.graphs.Label;
 import bka.demo.graphs.history.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.List;
 import java.util.*;
-import java.util.function.*;
 import java.util.stream.*;
 
 
 public class GraphCanvas extends CompositeRenderer {
 
-    public interface Context {
-
-        void editString(String input, Point location, Consumer<String> onApply);
-
-        void requestUpdate(ComponentUpdate update);
+    public GraphCanvas(ApplicationContext context) {
+        this.context = context;
+        resetEventHandler();
     }
 
-    public GraphCanvas(Context context) {
-        this.context = context;
+    final void resetEventHandler() {
+        mouseHandler = new DefaultEventHandler(GraphCanvas.this);
+    }
+
+    void setEventHandler(CanvasEventHandler handler) {
+        mouseHandler = handler;
     }
 
     @Override
@@ -37,24 +36,12 @@ public class GraphCanvas extends CompositeRenderer {
         edges.forEach(edge -> {
             graphics.setPaint(Color.BLACK);
             edge.paint(graphics);
-            paintDot(graphics, edge.getStartConnectorPoint(), EDGE_POINT_RADIUS, CONNECTOR_POINT_PAINT);
-            paintDot(graphics, edge.getEndConnectorPoint(), EDGE_POINT_RADIUS, CONNECTOR_POINT_PAINT);
+            PaintUtil.paintConnectorPoint(graphics, edge.getStartConnectorPoint());
+            PaintUtil.paintConnectorPoint(graphics, edge.getEndConnectorPoint());
         });
         graphics.setPaint(Color.BLUE);
         selection.forEach(renderer -> renderer.paint(graphics));
         mouseHandler.paint(graphics);
-    }
-
-    private static void paintDot(Graphics2D graphics, Point point, int radius, Paint paint) {
-        int size = radius * 2 + 1;
-        graphics.setPaint(paint);
-        graphics.fillOval(point.x - radius, point.y - radius, size, size);
-    }
-
-    private static void paintCircle(Graphics2D graphics, Point point, int radius, Paint paint) {
-        int size = radius * 2 + 1;
-        graphics.setPaint(paint);
-        graphics.drawOval(point.x - radius, point.y - radius, size, size);
     }
 
     public void addHistory(Mutation mutation) {
@@ -89,7 +76,7 @@ public class GraphCanvas extends CompositeRenderer {
         return mouseHandler.keyReleased(event);
     }
 
-    private ComponentUpdate historyUndo() {
+    ComponentUpdate historyUndo() {
         if (!history.canUndo()) {
             return ComponentUpdate.NO_OPERATION;
         }
@@ -97,7 +84,7 @@ public class GraphCanvas extends CompositeRenderer {
         return ComponentUpdate.repaint(Cursor.DEFAULT_CURSOR);
     }
 
-    private ComponentUpdate historyRedo() {
+    ComponentUpdate historyRedo() {
         if (!history.canRedo()) {
             return ComponentUpdate.NO_OPERATION;
         }
@@ -105,7 +92,7 @@ public class GraphCanvas extends CompositeRenderer {
         return ComponentUpdate.repaint(Cursor.DEFAULT_CURSOR);
     }
 
-    private ComponentUpdate deleteSelection() {
+    ComponentUpdate deleteSelection() {
         Collection<EdgeRenderer> edgesToRemove = new HashSet<>();
         Collection<VertexRenderer> verticesToRemove = new ArrayList<>();
         selection.forEach(element -> {
@@ -125,39 +112,18 @@ public class GraphCanvas extends CompositeRenderer {
         return ComponentUpdate.repaint(Cursor.DEFAULT_CURSOR);
     }
 
-    private void selectSingleVertex(VertexRenderer vertex) {
-        selection.clear();
-        selection.add(vertex);
-    }
-
-    private static int getResizeCursorType(Point cursor, Point vertexLocation) {
-        int dx = cursor.x - vertexLocation.x;
-        int dy = cursor.y - vertexLocation.y;
-        double angle = Math.abs(Math.atan((double) dx / dy));
-        if (angle < VERTICAL_MARGIN) {
-            return (dy < 0) ? Cursor.N_RESIZE_CURSOR : Cursor.S_RESIZE_CURSOR;
-        }
-        if (angle > HORIZONTAL_MARGIN) {
-            return (dx < 0) ? Cursor.W_RESIZE_CURSOR : Cursor.E_RESIZE_CURSOR;
-        }
-        if (dx < 0) {
-            return (dy < 0) ? Cursor.NW_RESIZE_CURSOR : Cursor.SW_RESIZE_CURSOR;
-        }
-        return (dy < 0) ? Cursor.NE_RESIZE_CURSOR : Cursor.SE_RESIZE_CURSOR;
-    }
-
-    private Point nearestEdgePoint(EdgeRenderer edge, Point point) {
+    public static Point nearestEdgePoint(EdgeRenderer edge, Point point) {
         Point p0 = edge.getStartConnectorPoint();
-        if (isNear(point, p0)) {
+        if (CanvasUtil.isNear(point, p0)) {
             edge.addPoint(0, point);
             return point;
         }
         int index = 0;
         for (Point p1 : edge.getPoints()) {
-            if (isNear(point, p1)) {
+            if (CanvasUtil.isNear(point, p1)) {
                 return p1;
             }
-            if (isNear(point, p0, p1)) {
+            if (CanvasUtil.isNear(point, p0, p1)) {
                 edge.addPoint(index, point);
                 return point;
             }
@@ -168,62 +134,30 @@ public class GraphCanvas extends CompositeRenderer {
         return point;
     }
 
-    private VertexRenderer findNearestVertex(Point point) {
+    public VertexRenderer findNearestVertex(Point point) {
         TreeMap<Long, VertexRenderer> distances = new TreeMap<>();
         vertices.forEach(vertexRenderer -> distances.put(vertexRenderer.squareDistance(point), vertexRenderer));
-        Map.Entry<Long, VertexRenderer> nearest = distances.floorEntry(NEAR_DISTANCE);
+        Map.Entry<Long, VertexRenderer> nearest = distances.floorEntry(CanvasUtil.NEAR_DISTANCE);
         if (nearest == null) {
             return null;
         }
         return nearest.getValue();
     }
 
-    private EdgeRenderer findNearestEdge(Point point) {
+    public EdgeRenderer findNearestEdge(Point point) {
         TreeMap<Long, EdgeRenderer> distances = new TreeMap<>();
         edges.forEach(edgeRenderer -> distances.put(edgeRenderer.squareDistance(point), edgeRenderer));
-        Map.Entry<Long, EdgeRenderer> nearest = distances.floorEntry(NEAR_DISTANCE);
+        Map.Entry<Long, EdgeRenderer> nearest = distances.floorEntry(CanvasUtil.NEAR_DISTANCE);
         if (nearest == null) {
             return null;
         }
         return nearest.getValue();
-    }
-
-    private static boolean cleanup(EdgeRenderer edge) {
-        return edge.cleanup(TWIN_TOLERANCE, ACUTE_COSINE_LIMIT, OBTUSE_COSINE_LIMIT);
     }
 
     private Collection<EdgeRenderer> incidentEdges(VertexRenderer vertex) {
         return edges.stream()
             .filter(edge -> vertex.equals(edge.getStart()) || vertex.equals(edge.getEnd()))
             .collect(Collectors.toList());
-    }
-
-    private static List<Point> deepCopy(List<Point> list) {
-        return list.stream().map(point -> new Point(point)).collect(Collectors.toList());
-    }
-
-    private static VertexRenderer dragEndPoint(Point location) {
-        return new VertexRenderer(location);
-    }
-
-    private static boolean isNear(Point cursor, Point linePoint1, Point linePoint2) {
-        return isNear(CanvasUtil.squareDistance(cursor, linePoint1, linePoint2));
-    }
-
-    private static boolean isNear(Point cursor, Point point) {
-        return isNear(CanvasUtil.squareDistance(cursor, point));
-    }
-
-    private static boolean isNear(long distance) {
-        return distance < NEAR_DISTANCE;
-    }
-
-    private static boolean isOnBorder(long distance) {
-        return INSIDE_BORDER_MARGIN < distance && distance < OUTSIDE_BORDER_MARGIN;
-    }
-
-    private static boolean isInside(long distance) {
-        return distance <= INSIDE_BORDER_MARGIN;
     }
 
     public void removeRenderers(Collection<VertexRenderer> vertexRenderers, Collection<EdgeRenderer> edgeRenderers) {
@@ -242,709 +176,58 @@ public class GraphCanvas extends CompositeRenderer {
         return history;
     }
 
-    void resetMouseHandler() {
-        mouseHandler = new DefaultMouseHandler();
+    public Collection<VertexRenderer> getVertices() {
+        return Collections.unmodifiableCollection(vertices);
     }
 
-    public interface MouseHandler {
-
-        default void paint(Graphics2D graphics) {
-        }
-
-        default ComponentUpdate mouseMoved(MouseEvent event) {
-            throw new IllegalStateException(getClass().getSimpleName() + ": " + event.paramString());
-        }
-
-        default ComponentUpdate mousePressed(MouseEvent event) {
-            throw new IllegalStateException(getClass().getSimpleName() + ": " + event.paramString());
-        }
-
-        default ComponentUpdate mouseDragged(MouseEvent event) {
-            throw new IllegalStateException(getClass().getSimpleName() + ": " + event.paramString());
-        }
-
-        default ComponentUpdate mouseReleased(MouseEvent event) {
-            throw new IllegalStateException(getClass().getSimpleName() + ": " + event.paramString());
-        }
-
-        default ComponentUpdate mouseClicked(MouseEvent event) {
-            throw new IllegalStateException(getClass().getSimpleName() + ": " + event.paramString());
-        }
-
-        default ComponentUpdate keyPressed(KeyEvent event) {
-            return ComponentUpdate.NO_OPERATION;
-        }
-
-        default ComponentUpdate keyReleased(KeyEvent event) {
-            return ComponentUpdate.NO_OPERATION;
-        }
-
+    void addVertex(VertexRenderer vertex) {
+        vertices.add(vertex);
     }
 
+    public Collection<EdgeRenderer> getEdges() {
+        return Collections.unmodifiableCollection(edges);
+    }
 
-    private class DefaultMouseHandler implements MouseHandler {
+    void addEdge(EdgeRenderer edge) {
+        edges.add(edge);
+    }
 
-        public DefaultMouseHandler() {
-            this(null);
+    public Set<Element> getSelection() {
+        return Collections.unmodifiableSet(selection);
+    }
+
+    void select(Element element) {
+        selection.add(element);
+    }
+
+    void selectSingleVertex(VertexRenderer vertex) {
+        selection.clear();
+        selection.add(vertex);
+    }
+
+    void removeSelected(Element element) {
+        selection.remove(element);
+    }
+
+    void toggleSelected(Element element) {
+        if (selection.contains(element)) {
+            selection.remove(element);
         }
-
-        public DefaultMouseHandler(Button button) {
-            this.button = button;
+        else {
+            selection.add(element);
         }
+    }
 
-        @Override
-        public ComponentUpdate mouseMoved(MouseEvent event) {
-            Point cursor = event.getPoint();
-            VertexRenderer nearestVertex = findNearestVertex(cursor);
-            if (nearestVertex != null) {
-                return handleVertexHovered(nearestVertex, event);
-            }
-            EdgeRenderer nearestEdge = findNearestEdge(cursor);
-            if (nearestEdge != null && Button.MAIN.modifierMatch(event)) {
-                return handleEdgeHovered(nearestEdge, cursor);
-            }
-            boolean needRepaint = setEdgePoint(null);
-            needRepaint |= setConnectorPoint(null);
-            needRepaint |= setHoveredLabel(labelAt(cursor));
-            if (hoveredLabel != null) {
-                if (Button.EDIT.modifierMatch(event)) {
-                    return new ComponentUpdate(Cursor.TEXT_CURSOR, needRepaint);
-                }
-                return new ComponentUpdate(Cursor.HAND_CURSOR, needRepaint);
-            }
-            return new ComponentUpdate(Cursor.DEFAULT_CURSOR, needRepaint);
-        }
+    void clearSelection() {
+        selection.clear();
+    }
 
-        private Label labelAt(Point point) {
-            return vertices.stream()
-                .flatMap(vertex -> vertex.getLabels().stream().filter(boundsContain(point)))
-                .findAny().orElse(null);
-        }
-
-        private Predicate<Label> boundsContain(Point point) {
-            return label -> {
-                Rectangle bounds = label.getBounds();
-                return bounds != null && bounds.contains(point);
-            };
-        }
-
-        private ComponentUpdate handleVertexHovered(VertexRenderer vertex, MouseEvent event) {
-            boolean needRepaint = setHoveredLabel(null);
-            needRepaint |= setEdgePoint(null);
-            if (Button.EDIT.modifierMatch(event)) {
-                needRepaint |= setConnectorPoint(null);
-                return new ComponentUpdate(Cursor.TEXT_CURSOR, needRepaint);
-            }
-            if (Button.MAIN.modifierMatch(event)) {
-                return handleVertexHovered(vertex, event.getPoint(), needRepaint);
-            }
-            return new ComponentUpdate(Cursor.DEFAULT_CURSOR, needRepaint);
-        }
-
-        private ComponentUpdate handleVertexHovered(VertexRenderer vertex, Point cursor, boolean needRepaint) {
-            long distance = vertex.squareDistance(cursor);
-            if (isInside(distance)) {
-                needRepaint |= setConnectorPoint(null);
-                return new ComponentUpdate(Cursor.HAND_CURSOR, needRepaint);
-            }
-            if (isOnBorder(distance)) {
-                needRepaint |= setConnectorPoint(null);
-                return new ComponentUpdate(getResizeCursorType(cursor, vertex.getLocation()), needRepaint);
-            }
-            if (isNear(distance) && vertices.size() > 1) {
-                needRepaint |= setConnectorPoint(cursor);
-                return new ComponentUpdate(Cursor.DEFAULT_CURSOR, needRepaint);
-            }
-            return (needRepaint) ? ComponentUpdate.REPAINT : ComponentUpdate.NO_OPERATION;
-        }
-
-        private ComponentUpdate handleEdgeHovered(EdgeRenderer nearestEdge, Point cursor) {
-            boolean needRepaint = setHoveredLabel(null);
-            needRepaint |= setEdgePoint(cursor);
-            edgeBendSelected = nearestEdge.getPoints().stream().anyMatch(point -> isNear(cursor, point));
-            return new ComponentUpdate(Cursor.HAND_CURSOR, needRepaint);
-        }
-
-        @Override
-        public ComponentUpdate mousePressed(MouseEvent event) {
-            button = Button.get(event);
-            if (button == Button.MAIN) {
-                if (hoveredLabel != null) {
-                    mouseHandler = new DragLabelHandler(GraphCanvas.this, hoveredLabel);
-                    return ComponentUpdate.NO_OPERATION;
-                }
-                Point cursor = event.getPoint();
-                VertexRenderer nearestVertex = findNearestVertex(cursor);
-                if (nearestVertex != null) {
-                    handleVertexPressed(cursor, nearestVertex);
-                }
-                else {
-                    EdgeRenderer nearestEdge = findNearestEdge(cursor);
-                    if (nearestEdge != null) {
-                        handleEdgePressed(cursor, nearestEdge);
-                    }
-                }
-            }
-            return ComponentUpdate.NO_OPERATION;
-        }
-
-        private void handleVertexPressed(Point cursor, VertexRenderer vertex) {
-            if (connectorPoint != null) {
-                mouseHandler = new CreateEdgeMouseHandler(vertex);
-            }
-            else {
-                long distance = vertex.squareDistance(cursor);
-                if (isOnBorder(distance)) {
-                    mouseHandler = new VertexResizeMouseHandler(vertex);
-                }
-                else {
-                    if (!selection.contains(vertex)) {
-                        selectSingleVertex(vertex);
-                    }
-                    mouseHandler = new SelectionMoveMouseHandler(cursor);
-                }
-            }
-        }
-
-        private void handleEdgePressed(Point cursor, EdgeRenderer nearestEdge) {
-            List<Point> originalEdgePoints = deepCopy(nearestEdge.getPoints());
-            mouseHandler = new EdgePointMoveMouseHandler(nearestEdgePoint(nearestEdge, cursor), nearestEdge, originalEdgePoints);
-        }
-
-        @Override
-        public ComponentUpdate mouseClicked(MouseEvent event) {
-            if (button == Button.MAIN) {
-                return mainButtonClicked(event.getPoint());
-            }
-            if (button == Button.TOGGLE_SELECT) {
-                return toggleSelection(event.getPoint());
-            }
-            if (button == Button.RESET) {
-                return clearSelection();
-            }
-            if (button == Button.EDIT) {
-                return editLabel(event.getPoint());
-            }
-            return ComponentUpdate.NO_OPERATION;
-        }
-
-        private ComponentUpdate mainButtonClicked(Point cursor) {
-            selection.clear();
-            EdgeRenderer nearestEdge = findNearestEdge(cursor);
-            if (nearestEdge != null) {
-                selection.add(nearestEdge);
-                return ComponentUpdate.REPAINT;
-            }
-            VertexRenderer nearest = findNearestVertex(cursor);
-            if (nearest == null) {
-                VertexRenderer vertex = new VertexRenderer(cursor);
-                vertices.add(vertex);
-                history.add(new ElementInsertion(vertex, GraphCanvas.this));
-            }
-            else {
-                selection.add(nearest);
-            }
-            return ComponentUpdate.REPAINT;
-        }
-
-        private ComponentUpdate toggleSelection(Point cursor) {
-            VertexRenderer nearestVertex = findNearestVertex(cursor);
-            if (nearestVertex != null) {
-                if (selection.contains(nearestVertex)) {
-                    selection.remove(nearestVertex);
-                }
-                else {
-                    selection.add(nearestVertex);
-                }
-                return ComponentUpdate.REPAINT;
-            }
-            EdgeRenderer nearestEdge = findNearestEdge(cursor);
-            if (nearestEdge != null) {
-                if (selection.contains(nearestEdge)) {
-                    selection.remove(nearestEdge);
-                }
-                else {
-                    selection.add(nearestEdge);
-                }
-                return ComponentUpdate.REPAINT;
-            }
-            return ComponentUpdate.NO_OPERATION;
-        }
-
-        private ComponentUpdate clearSelection() {
-            selection.clear();
-            return ComponentUpdate.REPAINT;
-        }
-
-        private ComponentUpdate editLabel(Point cursor) {
-            connectorPoint = null;
-            VertexRenderer vertex = hoveredLabel == null ? findNearestVertex(cursor) : hoveredLabel.getVertex();
-            if (vertex != null) {
-                context.editString(
-                    labelText(hoveredLabel),
-                    cursor,
-                    applyLabelText(vertex, hoveredLabel, cursor));
-            }
-            return ComponentUpdate.NO_OPERATION;
-        }
-
-        private String labelText(Label label) {
-            return (label == null) ? "" : label.getText();
-        }
-
-        private Consumer<String> applyLabelText(VertexRenderer vertex, Label label, Point position) {
-            return input -> {
-                if (!input.isBlank()) {
-                    if (label == null) {
-                        addLabel(vertex, position, input);
-                    }
-                    else {
-                        modifyLabel(label, input);
-                    }
-                    context.requestUpdate(ComponentUpdate.REPAINT);
-                }
-                else if (label != null) {
-                    removeLabel(vertex, label);
-                    context.requestUpdate(ComponentUpdate.REPAINT);
-                }
-                context.requestUpdate(ComponentUpdate.noOperation(Cursor.DEFAULT_CURSOR));
-            };
-        }
-
-        private void addLabel(VertexRenderer vertex, Point cursor, String text) {
-            Label newLabel = new Label(vertex, vertex.distancePositioner(cursor), text);
-            vertex.addLabel(newLabel);
-            history.add(new LabelInsertion(vertex, newLabel));
-        }
-
-        private void modifyLabel(Label label, String text) {
-            if (!text.equals(label.getText())) {
-                history.add(new PropertyMutation<>(Mutation.Type.LABEL_MUTATION, label::getText, label::setText));
-                label.setText(text);
-            }
-        }
-
-        private void removeLabel(VertexRenderer vertex, Label label) {
-            vertex.removeLabel(label);
-            hoveredLabel = null;
-            history.add(new LabelDeletion(vertex, label));
-        }
-
-        @Override
-        public ComponentUpdate mouseDragged(MouseEvent event) {
-            mouseHandler = new SelectAreaMouseHandler(event.getPoint());
-            return ComponentUpdate.NO_OPERATION;
-        }
-
-        @Override
-        public ComponentUpdate mouseReleased(MouseEvent event) {
-            return ComponentUpdate.NO_OPERATION;
-        }
-
-        @Override
-        public ComponentUpdate keyPressed(KeyEvent event) {
-            if (event.getKeyCode() == KeyEvent.VK_ALT && hoveredLabel != null || connectorPoint != null) {
-                editButtonDown = true;
-                return new ComponentUpdate(Cursor.TEXT_CURSOR, connectorPoint != null);
-            }
-            return ComponentUpdate.NO_OPERATION;
-        }
-
-        @Override
-        public ComponentUpdate keyReleased(KeyEvent event) {
-            if (Keyboard.getInstance().isDelete(event)) {
-                return deleteSelection();
-            }
-            if (Keyboard.getInstance().isUndo(event)) {
-                return historyUndo();
-            }
-            if (Keyboard.getInstance().isRedo(event)) {
-                return historyRedo();
-            }
-            if (event.getKeyCode() == KeyEvent.VK_ALT) {
-                editButtonDown = false;
-                return new ComponentUpdate(Cursor.DEFAULT_CURSOR, connectorPoint != null);
-            }
-            return ComponentUpdate.NO_OPERATION;
-        }
-
-        @Override
-        public void paint(Graphics2D graphics) {
-            if (edgePoint != null) {
-                graphics.setPaint(EDGE_POINT_PAINT);
-                if (edgeBendSelected) {
-                    paintDot(graphics, edgePoint, EDGE_POINT_RADIUS, EDGE_POINT_PAINT);
-                }
-                else {
-                    paintCircle(graphics, edgePoint, EDGE_POINT_RADIUS, EDGE_POINT_PAINT);
-                }
-            }
-            if (connectorPoint != null && !editButtonDown) {
-                paintCircle(graphics, connectorPoint, CONNECTOR_POINT_RADIUS, CONNECTOR_POINT_PAINT);
-            }
-            if (hoveredLabel != null) {
-                graphics.setColor(Color.GRAY);
-                Rectangle hoveredLabelBounds = hoveredLabel.getBounds();
-                graphics.drawRect(hoveredLabelBounds.x, hoveredLabelBounds.y, hoveredLabelBounds.width, hoveredLabelBounds.height);
-            }
-        }
-
-        private boolean setConnectorPoint(Point point) {
-            if (Objects.equals(connectorPoint, point)) {
-                return false;
-            }
-            connectorPoint = point;
-            return true;
-        }
-
-        private boolean setEdgePoint(Point point) {
-            if (Objects.equals(edgePoint, point)) {
-                return false;
-            }
-            edgePoint = point;
-            return true;
-        }
-
-        private boolean setHoveredLabel(Label label) {
-            if (Objects.equals(hoveredLabel, label)) {
-                return false;
-            }
-            hoveredLabel = label;
-            return true;
-        }
-
-        private Button button;
-        private boolean editButtonDown;
-        private Point connectorPoint;
-        private Point edgePoint;
-        private boolean edgeBendSelected;
-        private Label hoveredLabel;
+    ApplicationContext getContext() {
+        return context;
     }
 
 
-    private class CreateEdgeMouseHandler implements MouseHandler {
-
-        public CreateEdgeMouseHandler(VertexRenderer vertex) {
-            draggingEdgeRenderer = new EdgeRenderer(vertex);
-        }
-
-        @Override
-        public ComponentUpdate mouseMoved(MouseEvent event) {
-            if (!Button.MAIN.modifierMatch(event)) {
-                return ComponentUpdate.NO_OPERATION;
-            }
-            Point cursor = event.getPoint();
-            Point newConnectorPoint = null;
-            VertexRenderer nearestVertex = findNearestVertex(cursor);
-            if (nearestVertex != null) {
-                newConnectorPoint = nearestVertex.getConnectorPoint(cursor);
-            }
-            if (Objects.equals(newConnectorPoint, connectorPoint)) {
-                return ComponentUpdate.NO_OPERATION;
-            }
-            connectorPoint = newConnectorPoint;
-            return ComponentUpdate.REPAINT;
-        }
-
-        @Override
-        public ComponentUpdate mousePressed(MouseEvent event) {
-            button = Button.get(event);
-            return ComponentUpdate.NO_OPERATION;
-        }
-
-        @Override
-        public ComponentUpdate mouseClicked(MouseEvent event) {
-            if (button == Button.RESET) {
-                mouseHandler = new DefaultMouseHandler();
-                return ComponentUpdate.REPAINT;
-            }
-            button = null;
-            return ComponentUpdate.NO_OPERATION;
-        }
-
-        @Override
-        public ComponentUpdate mouseDragged(MouseEvent event) {
-            if (!Button.MAIN.modifierMatch(event)) {
-                return ComponentUpdate.NO_OPERATION;
-            }
-            Point cursor = event.getPoint();
-            VertexRenderer nearestVertex = findNearestVertex(cursor);
-            if (nearestVertex == null) {
-                connectorPoint = null;
-            }
-            else if (!cursor.equals(nearestVertex.getLocation())) {
-                connectorPoint = nearestVertex.getConnectorPoint(cursor);
-            }
-            draggingEdgeRenderer.setEnd(dragEndPoint(cursor));
-            return ComponentUpdate.REPAINT;
-        }
-
-        @Override
-        public ComponentUpdate mouseReleased(MouseEvent event) {
-            if (!Button.MAIN.modifierMatch(event)) {
-                return ComponentUpdate.NO_OPERATION;
-            }
-            Point cursor = event.getPoint();
-            VertexRenderer end = findNearestVertex(cursor);
-            if (end != null) {
-                draggingEdgeRenderer.setEnd(end);
-                cleanup(draggingEdgeRenderer);
-                if (!end.equals(draggingEdgeRenderer.getStart()) || !draggingEdgeRenderer.getPoints().isEmpty()) {
-                    edges.add(draggingEdgeRenderer);
-                    history.add(new ElementInsertion(draggingEdgeRenderer, GraphCanvas.this));
-                }
-                mouseHandler = new DefaultMouseHandler();
-            }
-            else {
-                draggingEdgeRenderer.addPoint(cursor);
-                draggingEdgeRenderer.setEnd(dragEndPoint(cursor));
-            }
-            return ComponentUpdate.REPAINT;
-        }
-
-        @Override
-        public void paint(Graphics2D graphics) {
-            graphics.setPaint(Color.GRAY);
-            draggingEdgeRenderer.paint(graphics);
-            paintCircle(graphics, draggingEdgeRenderer.getStartConnectorPoint(), CONNECTOR_POINT_RADIUS, CONNECTOR_POINT_PAINT);
-            if (connectorPoint != null) {
-                paintCircle(graphics, connectorPoint, CONNECTOR_POINT_RADIUS, CONNECTOR_POINT_PAINT);
-            }
-        }
-
-        private final EdgeRenderer draggingEdgeRenderer;
-        private Point connectorPoint;
-        private Button button;
-
-    }
-    private class SelectionMoveMouseHandler implements MouseHandler {
-
-        public SelectionMoveMouseHandler(Point dragStartPoint) {
-            this.dragStartPoint = dragStartPoint;
-            this.dragPoint = dragStartPoint;
-        }
-
-        @Override
-        public ComponentUpdate mouseDragged(MouseEvent event) {
-            return moveSelection(event.getPoint());
-        }
-
-        @Override
-        public ComponentUpdate mouseReleased(MouseEvent event) {
-            if (dragStartPoint.equals(event.getPoint())) {
-                mouseHandler = new DefaultMouseHandler(Button.MAIN);
-                return ComponentUpdate.REPAINT;
-            }
-            return finishSelectionMove(event.getPoint());
-        }
-
-        private ComponentUpdate moveSelection(Point cursor) {
-            int deltaX = cursor.x - dragPoint.x;
-            int deltaY = cursor.y - dragPoint.y;
-            Point vector = new Point(deltaX, deltaY);
-            selection.forEach(element -> element.move(vector));
-            edges.stream()
-                .filter(edge -> !selection.contains(edge))
-                .filter(edge -> selection.contains(edge.getStart()))
-                .filter(edge -> selection.contains(edge.getEnd()))
-                .forEach(edge -> edge.move(vector));
-            dragPoint = cursor;
-            return ComponentUpdate.REPAINT;
-        }
-
-        private ComponentUpdate finishSelectionMove(Point cursor) {
-            Map<EdgeRenderer, List<Point>> affectedEdges = edges.stream()
-                .filter(edge -> selection.contains(edge.getStart()) != selection.contains(edge.getEnd()))
-                .collect(Collectors.toMap(
-                    edge -> edge,
-                    edge -> deepCopy(edge.getPoints())));
-            keepCleanedEdges(affectedEdges);
-            history.add(new ElementRelocation(selection, new Point(cursor.x - dragStartPoint.x, cursor.y - dragStartPoint.y), affectedEdges));
-            mouseHandler = new DefaultMouseHandler();
-            return ComponentUpdate.REPAINT;
-        }
-
-        private void keepCleanedEdges(Map<EdgeRenderer, List<Point>> affectedEdges) {
-            Iterator<EdgeRenderer> it = affectedEdges.keySet().iterator();
-            while (it.hasNext()) {
-                if (!cleanup(it.next())) {
-                    it.remove();
-                }
-            }
-        }
-
-        private final Point dragStartPoint;
-        private Point dragPoint;
-    }
-
-
-    private class EdgePointMoveMouseHandler implements MouseHandler {
-
-        public EdgePointMoveMouseHandler(Point dragStartPoint, EdgeRenderer draggingEdgeRenderer, List<Point> originalEdgePoints) {
-            this.originalEdgePoints = originalEdgePoints;
-            this.dragPoint = dragStartPoint;
-            this.draggingEdgeRenderer = draggingEdgeRenderer;
-            this.edgeBendSelected = originalEdgePoints.size() == draggingEdgeRenderer.getPoints().size();
-        }
-
-        @Override
-        public ComponentUpdate mouseDragged(MouseEvent event) {
-            dragPoint.setLocation(event.getX(), event.getY());
-            return ComponentUpdate.REPAINT;
-        }
-
-        @Override
-        public ComponentUpdate mouseReleased(MouseEvent event) {
-            cleanup(draggingEdgeRenderer);
-            if (!originalEdgePoints.equals(draggingEdgeRenderer.getPoints())) {
-                history.add(new PropertyMutation<>(
-                    Mutation.Type.EDGE_TRANSFORMATION,
-                    () -> deepCopy(draggingEdgeRenderer.getPoints()),
-                    draggingEdgeRenderer::setPoints,
-                    originalEdgePoints));
-            }
-            mouseHandler = new DefaultMouseHandler();
-            return ComponentUpdate.REPAINT;
-        }
-
-        @Override
-        public void paint(Graphics2D graphics) {
-            if (edgeBendSelected) {
-                paintDot(graphics, dragPoint, EDGE_POINT_RADIUS, EDGE_POINT_PAINT);
-            }
-            else {
-                paintCircle(graphics, dragPoint, EDGE_POINT_RADIUS, EDGE_POINT_PAINT);
-            }
-        }
-
-        private final boolean edgeBendSelected;
-        private final Point dragPoint;
-        private final EdgeRenderer draggingEdgeRenderer;
-        private final List<Point> originalEdgePoints;
-    }
-
-    private class VertexResizeMouseHandler implements MouseHandler {
-
-        public VertexResizeMouseHandler(VertexRenderer draggingVertex) {
-            this.draggingVertex = draggingVertex;
-            this.originalDimension = draggingVertex.getDimension();
-        }
-
-        @Override
-        public ComponentUpdate mouseDragged(MouseEvent event) {
-            draggingVertex.resize(event.getPoint());
-            return ComponentUpdate.REPAINT;
-        }
-
-        @Override
-        public ComponentUpdate mouseReleased(MouseEvent event) {
-            if (!originalDimension.equals(draggingVertex.getDimension())) {
-                edges.stream()
-                    .filter(edge -> draggingVertex.equals(edge.getStart()) || draggingVertex.equals(edge.getEnd()))
-                    .forEach(edge -> cleanup(edge));
-                history.add(new PropertyMutation<>(
-                    Mutation.Type.VERTEX_RESIZE,
-                    draggingVertex::getDimension,
-                    draggingVertex::setDimension,
-                    originalDimension));
-            }
-            mouseHandler = new DefaultMouseHandler();
-            return ComponentUpdate.NO_OPERATION;
-        }
-
-        private final VertexRenderer draggingVertex;
-        private final Dimension originalDimension;
-    }
-
-
-    private class SelectAreaMouseHandler implements MouseHandler {
-
-        public SelectAreaMouseHandler(Point dragStartPoint) {
-            this.dragStartPoint = dragStartPoint;
-            selectionRectangle = new Rectangle(dragStartPoint.x, dragStartPoint.y, 0, 0);
-        }
-
-        @Override
-        public ComponentUpdate mouseDragged(MouseEvent event) {
-            selectionRectangle = new Rectangle(dragStartPoint.x, dragStartPoint.y, event.getX() - dragStartPoint.x, event.getY() - dragStartPoint.y);
-            if (selectionRectangle.width < 0) {
-                selectionRectangle.x += selectionRectangle.width;
-                selectionRectangle.width = -selectionRectangle.width;
-            }
-            if (selectionRectangle.height < 0) {
-                selectionRectangle.y += selectionRectangle.height;
-                selectionRectangle.height = -selectionRectangle.height;
-            }
-            return ComponentUpdate.REPAINT;
-        }
-
-        @Override
-        public ComponentUpdate mouseReleased(MouseEvent event) {
-            selection.clear();
-            vertices.stream()
-                .filter(vertex -> selectionRectangle.contains(vertex.getLocation()))
-                .forEach(vertex -> selection.add(vertex));
-            edges.stream()
-                .filter(edge -> selection.contains(edge.getStart()))
-                .filter(edge -> selection.contains(edge.getEnd()))
-                .forEach(edge -> selection.add(edge));
-            mouseHandler = new DefaultMouseHandler();
-            return ComponentUpdate.REPAINT;
-        }
-
-        @Override
-        public void paint(Graphics2D graphics) {
-            graphics.setColor(Color.LIGHT_GRAY);
-            graphics.drawRect(selectionRectangle.x, selectionRectangle.y, selectionRectangle.width, selectionRectangle.height);
-        }
-
-        private final Point dragStartPoint;
-        private Rectangle selectionRectangle;
-    }
-
-
-    private enum Button {
-        MAIN(MouseEvent.BUTTON1),
-        TOGGLE_SELECT(MouseEvent.BUTTON1, Keyboard.getInstance().getToggleSelectionModifiers()),
-        RESET(MouseEvent.BUTTON3),
-        EDIT(MouseEvent.BUTTON1, MouseEvent.ALT_DOWN_MASK),
-        UNSUPPORTED(0, 0, 0);
-
-        private Button(int buttonId, int clickCount, int modifiers) {
-            this.buttonId = buttonId;
-            this.clickCount = clickCount;
-            this.modifiers = modifiers;
-        }
-
-        private Button(int buttonId, int modifiers) {
-            this(buttonId, 1, modifiers);
-        }
-
-        private Button(int buttonId) {
-            this(buttonId, 1, 0);
-        }
-
-        public static Button get(MouseEvent event) {
-            return Arrays.asList(values()).stream()
-                .filter(button -> event.getButton() == button.buttonId)
-                .filter(button -> event.getClickCount() == button.clickCount)
-                .filter(button -> button.modifierMatch(event))
-                .findAny()
-                .orElse(UNSUPPORTED);
-        }
-
-        public boolean modifierMatch(MouseEvent event) {
-            return (event.getModifiersEx() & MASK) == modifiers;
-        }
-
-        private final int buttonId;
-        private final int clickCount;
-        private final int modifiers;
-
-        private static final int MASK = InputEvent.ALT_DOWN_MASK | InputEvent.ALT_GRAPH_DOWN_MASK | InputEvent.CTRL_DOWN_MASK | InputEvent.META_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK;
-    }
-
-    private final Context context;
+    private final ApplicationContext context;
 
     private final Collection<VertexRenderer> vertices = new ArrayList<>();
     private final Collection<EdgeRenderer> edges = new ArrayList<>();
@@ -952,21 +235,6 @@ public class GraphCanvas extends CompositeRenderer {
 
     private final DrawHistory history = new DrawHistory();
 
-    private MouseHandler mouseHandler = new DefaultMouseHandler();
-
-    private static final long INSIDE_BORDER_MARGIN = -4 * 4;
-    private static final long OUTSIDE_BORDER_MARGIN = 4 * 4;
-    private static final long NEAR_DISTANCE = 5 * 5;
-    private static final double ACUTE_COSINE_LIMIT = -0.99;
-    private static final double OBTUSE_COSINE_LIMIT = 0.99;
-    private static final long TWIN_TOLERANCE = 3 * 3;
-    private static final double HORIZONTAL_MARGIN = 0.4 * Math.PI;
-    private static final double VERTICAL_MARGIN = 0.1 * Math.PI;
-
-    private static final int CONNECTOR_POINT_RADIUS = 4;
-    private static final int EDGE_POINT_RADIUS = 3;
-
-    private static final Color CONNECTOR_POINT_PAINT = Color.MAGENTA;
-    private static final Color EDGE_POINT_PAINT = Color.RED;
+    private CanvasEventHandler mouseHandler;
 
 }

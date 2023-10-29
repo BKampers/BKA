@@ -256,7 +256,7 @@ public class GraphEditorDemo extends javax.swing.JFrame {
     }
 
 
-    private final GraphCanvas canvas = new GraphCanvas(new GraphCanvas.Context() {
+    private final GraphCanvas canvas = new GraphCanvas(new ApplicationContext() {
 
         @Override
         public void editString(String input, Point location, Consumer<String> onApply) {

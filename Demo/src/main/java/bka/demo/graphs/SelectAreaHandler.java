@@ -41,7 +41,7 @@ public class SelectAreaHandler extends CanvasEventHandler {
         getCanvas().getEdges().stream()
             .filter(edge -> selection.contains(edge.getStart()))
             .filter(edge -> selection.contains(edge.getEnd()))
-            .forEach(edge -> selection.add(edge));
+            .forEach(edge -> getCanvas().select(edge));
         getCanvas().resetEventHandler();
         return ComponentUpdate.REPAINT;
     }

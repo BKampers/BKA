@@ -31,6 +31,31 @@ public class CanvasUtil {
         return distance <= INSIDE_BORDER_MARGIN;
     }
 
+    public static Point getPoint(Point origin, double distance, double slope) {
+        double angle = angle(slope);
+        double x = Math.sin(angle) * distance;
+        double y = Math.cos(angle) * distance;
+        return getPoint(x, y);
+    }
+
+    public static double angle(double slope) {
+        if (slope == Double.NEGATIVE_INFINITY) {
+            return 0;
+        }
+        if (slope == Double.POSITIVE_INFINITY) {
+            return Math.PI;
+        }
+        return (0.5 - slope * 0.25) * Math.PI;
+    }
+
+    public static double slope(Point point1, Point point2) {
+        return (double) (point2.y - point1.y) / (point2.x - point1.x);
+    }
+
+    public static Point getPoint(double x, double y) {
+        return new Point(Math.round((float) x), Math.round((float) y));
+    }
+
     public static double distance(Point point1, Point point2) {
         return Math.sqrt(squareDistance(point1, point2));
     }

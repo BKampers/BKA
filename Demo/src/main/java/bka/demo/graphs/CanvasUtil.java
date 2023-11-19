@@ -67,10 +67,14 @@ public class CanvasUtil {
     }
 
     public static long squareDistance(Point point, Point linePoint1, Point linePoint2) {
-        if (!pointInSquare(point, linePoint1, linePoint2)) {
+        if (!inRange(point.x, linePoint1.x, linePoint2.x) && !inRange(point.y, linePoint1.y, linePoint2.y)) {
             return Math.min(squareDistance(point, linePoint1), squareDistance(point, linePoint2));
         }
         return squareDistance(point, intersectionPoint(point, linePoint1, linePoint2));
+    }
+
+    private static boolean inRange(int i, int limit1, int limit2) {
+        return Math.min(limit1, limit2) <= i && i <= Math.max(limit1, limit2);
     }
 
     public static Point intersectionPoint(Point point, Point linePoint1, Point linePoint2) {
@@ -90,11 +94,6 @@ public class CanvasUtil {
         float xIntersection = (offset - perpendicularOffset) / (perpendicularSlope - slope);
         float yIntersection = slope * xIntersection + offset;
         return new Point(Math.round(xIntersection), Math.round(yIntersection));
-    }
-
-    public static boolean pointInSquare(Point point, Point corner1, Point corner2) {
-        return Math.min(corner1.x, corner2.x) <= point.x && point.x <= Math.max(corner1.x, corner2.x)
-            && Math.min(corner1.y, corner2.y) <= point.y && point.y <= Math.max(corner1.y, corner2.y);
     }
 
     public static java.util.List<Point> deepCopy(List<Point> list) {

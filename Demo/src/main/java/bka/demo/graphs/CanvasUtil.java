@@ -5,6 +5,7 @@
 package bka.demo.graphs;
 
 import java.awt.*;
+import java.awt.geom.*;
 import java.util.List;
 import java.util.stream.*;
 
@@ -31,11 +32,11 @@ public class CanvasUtil {
         return distance <= INSIDE_BORDER_MARGIN;
     }
 
-    public static Point getPoint(Point origin, double distance, double slope) {
+    public static Point2D getPointOnLine(Point2D origin, double distance, double slope) {
         double angle = angle(slope);
         double x = Math.sin(angle) * distance;
         double y = Math.cos(angle) * distance;
-        return getPoint(x, y);
+        return getPoint(origin.getX() + x, origin.getY() + y);
     }
 
     public static double angle(double slope) {
@@ -56,6 +57,10 @@ public class CanvasUtil {
         return new Point(Math.round((float) x), Math.round((float) y));
     }
 
+    public static Point getPoint(Point2D point2d) {
+        return getPoint(point2d.getX(), point2d.getY());
+    }
+
     public static double distance(Point point1, Point point2) {
         return Math.sqrt(squareDistance(point1, point2));
     }
@@ -66,18 +71,24 @@ public class CanvasUtil {
         return deltaX * deltaX + deltaY * deltaY;
     }
 
+    public static double distance(Point2D point1, Point2D point2) {
+        double deltaX = point1.getX() - point2.getX();
+        double deltaY = point1.getY() - point2.getY();
+        return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    }
+
     public static long squareDistance(Point point, Point linePoint1, Point linePoint2) {
         if (!inRange(point.x, linePoint1.x, linePoint2.x) && !inRange(point.y, linePoint1.y, linePoint2.y)) {
             return Math.min(squareDistance(point, linePoint1), squareDistance(point, linePoint2));
         }
-        return squareDistance(point, intersectionPoint(point, linePoint1, linePoint2));
+        return squareDistance(point, getPoint(intersectionPoint(point, linePoint1, linePoint2)));
     }
 
     private static boolean inRange(int i, int limit1, int limit2) {
         return Math.min(limit1, limit2) <= i && i <= Math.max(limit1, limit2);
     }
 
-    public static Point intersectionPoint(Point point, Point linePoint1, Point linePoint2) {
+    public static Point2D intersectionPoint(Point point, Point linePoint1, Point linePoint2) {
         if (linePoint1.x == linePoint2.x) {
             if (linePoint1.y == linePoint2.y) {
                 return linePoint1;
@@ -87,13 +98,12 @@ public class CanvasUtil {
         if (linePoint1.y == linePoint2.y) {
             return new Point(point.x, linePoint1.y);
         }
-        float slope = (float) (linePoint1.y - linePoint2.y) / (linePoint1.x - linePoint2.x);
-        float offset = -slope * linePoint1.x + linePoint1.y;
-        float perpendicularSlope = -1 / slope;
-        float perpendicularOffset = point.y - perpendicularSlope * point.x;
-        float xIntersection = (offset - perpendicularOffset) / (perpendicularSlope - slope);
-        float yIntersection = slope * xIntersection + offset;
-        return new Point(Math.round(xIntersection), Math.round(yIntersection));
+        double slope = (double) (linePoint1.y - linePoint2.y) / (linePoint1.x - linePoint2.x);
+        double offset = -slope * linePoint1.x + linePoint1.y;
+        double perpendicularSlope = -1 / slope;
+        double perpendicularOffset = point.y - perpendicularSlope * point.x;
+        double x = (offset - perpendicularOffset) / (perpendicularSlope - slope);
+        return new Point2D.Double(x, slope * x + offset);
     }
 
     public static java.util.List<Point> deepCopy(List<Point> list) {

@@ -5,6 +5,7 @@
 package bka.demo.graphs;
 
 import java.awt.*;
+import java.awt.geom.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import org.junit.*;
@@ -56,13 +57,22 @@ public class CanvasUtilTest {
     }
 
     @Test
-    public void testGetPoint() {
-        assertEquals(new Point(1, 1), CanvasUtil.getPoint(new Point(0, 0), Math.sqrt(2.0), 1.0));
-        assertEquals(new Point(-1, -1), CanvasUtil.getPoint(new Point(0, 0), -Math.sqrt(2.0), 1.0));
-        assertEquals(new Point(1, -1), CanvasUtil.getPoint(new Point(0, 0), Math.sqrt(2.0), -1.0));
-        assertEquals(new Point(-1, 1), CanvasUtil.getPoint(new Point(0, 0), -Math.sqrt(2.0), -1.0));
+    public void testGetPointOnLine() {
+        assertEquals(new Point(1, 1), CanvasUtil.getPointOnLine(new Point(0, 0), SQRT_2, 1.0));
+        assertEquals(new Point(-1, -1), CanvasUtil.getPointOnLine(new Point(0, 0), -SQRT_2, 1.0));
+        assertEquals(new Point(1, -1), CanvasUtil.getPointOnLine(new Point(0, 0), SQRT_2, -1.0));
+        assertEquals(new Point(-1, 1), CanvasUtil.getPointOnLine(new Point(0, 0), -SQRT_2, -1.0));
+        assertEquals(new Point(2, 2), CanvasUtil.getPointOnLine(new Point(0, 0), 2 * SQRT_2, 1.0));
+        assertEquals(new Point(2, 2), CanvasUtil.getPointOnLine(new Point(1, 1), SQRT_2, 1.0));
     }
 
+    @Test
+    public void testIntersectionPoint() {
+        assertEquals(new Point2D.Double(1.0, 1.0), CanvasUtil.intersectionPoint(new Point(0, 0), new Point(2, 0), new Point(0, 2)));
+        assertEquals(new Point2D.Double(0.5, 0.5), CanvasUtil.intersectionPoint(new Point(0, 0), new Point(1, 0), new Point(0, 1)));
+    }
+
+    private static final double SQRT_2 = Math.sqrt(2);
     private static final double PRECISION = 0.000001;
 
 }

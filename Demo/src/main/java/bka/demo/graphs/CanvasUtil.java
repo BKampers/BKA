@@ -32,37 +32,12 @@ public class CanvasUtil {
         return distance <= INSIDE_BORDER_MARGIN;
     }
 
-    public static Point2D getPointOnLine(Point2D origin, double distance, double slope) {
-        double angle = angle(slope);
-        double x = Math.sin(angle) * distance;
-        double y = Math.cos(angle) * distance;
-        return getPoint(origin.getX() + x, origin.getY() + y);
-    }
-
-    public static double angle(double slope) {
-        if (slope == Double.NEGATIVE_INFINITY) {
-            return 0;
-        }
-        if (slope == Double.POSITIVE_INFINITY) {
-            return Math.PI;
-        }
-        return (0.5 - slope * 0.25) * Math.PI;
-    }
-
-    public static double slope(Point point1, Point point2) {
-        return (double) (point2.y - point1.y) / (point2.x - point1.x);
-    }
-
     public static Point getPoint(double x, double y) {
         return new Point(Math.round((float) x), Math.round((float) y));
     }
 
-    public static Point getPoint(Point2D point2d) {
+    public static Point round(Point2D point2d) {
         return getPoint(point2d.getX(), point2d.getY());
-    }
-
-    public static double distance(Point point1, Point point2) {
-        return Math.sqrt(squareDistance(point1, point2));
     }
 
     public static long squareDistance(Point point1, Point point2) {
@@ -71,17 +46,11 @@ public class CanvasUtil {
         return deltaX * deltaX + deltaY * deltaY;
     }
 
-    public static double distance(Point2D point1, Point2D point2) {
-        double deltaX = point1.getX() - point2.getX();
-        double deltaY = point1.getY() - point2.getY();
-        return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-    }
-
     public static long squareDistance(Point point, Point linePoint1, Point linePoint2) {
         if (!inRange(point.x, linePoint1.x, linePoint2.x) && !inRange(point.y, linePoint1.y, linePoint2.y)) {
             return Math.min(squareDistance(point, linePoint1), squareDistance(point, linePoint2));
         }
-        return squareDistance(point, getPoint(intersectionPoint(point, linePoint1, linePoint2)));
+        return squareDistance(point, round(intersectionPoint(point, linePoint1, linePoint2)));
     }
 
     private static boolean inRange(int i, int limit1, int limit2) {

@@ -7,18 +7,17 @@ package bka.demo.graphs;
 import bka.demo.graphs.history.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.List;
 import java.util.*;
 
 
 public class EdgePointMoveHandler extends CanvasEventHandler {
 
-    public EdgePointMoveHandler(GraphCanvas canvas, Point dragStartPoint, EdgeRenderer draggingEdgeRenderer, List<Point> originalEdgePoints) {
+    public EdgePointMoveHandler(GraphCanvas canvas, Point dragStartPoint, EdgeRenderer draggingEdgeRenderer, EdgeRenderer.Excerpt excerpt) {
         super(canvas);
         this.dragPoint = Objects.requireNonNull(dragStartPoint);
         this.draggingEdgeRenderer = draggingEdgeRenderer;
-        this.originalEdgePoints = originalEdgePoints;
-        edgeBendSelected = originalEdgePoints.size() == draggingEdgeRenderer.getPoints().size();
+        this.excerpt = excerpt;
+        edgeBendSelected = excerpt.getPoints().size() == draggingEdgeRenderer.getPoints().size();
     }
 
     @Override
@@ -30,12 +29,12 @@ public class EdgePointMoveHandler extends CanvasEventHandler {
     @Override
     public ComponentUpdate mouseReleased(MouseEvent event) {
         CanvasUtil.cleanup(draggingEdgeRenderer);
-        if (!originalEdgePoints.equals(draggingEdgeRenderer.getPoints())) {
+        if (!excerpt.equals(draggingEdgeRenderer.getExcerpt())) {
             getCanvas().addHistory(new PropertyMutation<>(
                 Mutation.Type.EDGE_TRANSFORMATION,
-                () -> CanvasUtil.deepCopy(draggingEdgeRenderer.getPoints()),
-                draggingEdgeRenderer::setPoints,
-                originalEdgePoints));
+                () -> draggingEdgeRenderer.getExcerpt(),
+                draggingEdgeRenderer::set,
+                excerpt));
         }
         getCanvas().resetEventHandler();
         return ComponentUpdate.REPAINT;
@@ -54,6 +53,6 @@ public class EdgePointMoveHandler extends CanvasEventHandler {
     private final boolean edgeBendSelected;
     private final Point dragPoint;
     private final EdgeRenderer draggingEdgeRenderer;
-    private final List<Point> originalEdgePoints;
+    private final EdgeRenderer.Excerpt excerpt;
 
 }

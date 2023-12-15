@@ -8,19 +8,30 @@ import bka.awt.*;
 import bka.demo.graphs.Label;
 import java.awt.*;
 import java.util.*;
+import java.util.function.*;
 
-public interface Element extends Renderer {
+public abstract class Element implements Renderer {
 
-    Point getLocation();
+    public abstract void paintHighlight(Graphics2D graphics, Color color, Stroke stroke);
 
-    Dimension getDimension();
+    public abstract Point getLocation();
 
-    void move(Point vector);
+    public abstract void move(Point vector);
 
-    void addLabel(Label label);
+    public abstract Supplier<Point> distancePositioner(Point point);
 
-    Collection<Label> getLabels();
+    public void addLabel(Label label) {
+        labels.add(label);
+    }
 
-    void removeLabel(Label label);
+    public void removeLabel(Label label) {
+        labels.remove(label);
+    }
+
+    public Collection<Label> getLabels() {
+        return Collections.unmodifiableCollection(labels);
+    }
+
+    private final Collection<Label> labels = new ArrayList<>();
 
 }

@@ -134,6 +134,16 @@ public class GraphCanvas extends CompositeRenderer {
         return point;
     }
 
+    public Element findNearestElement(Point point) {
+        if (vertices.isEmpty()) {
+            return null;
+        }
+        TreeMap<Long, Element> distances = new TreeMap<>();
+        vertices.forEach(vertexRenderer -> distances.put(vertexRenderer.squareDistance(point), vertexRenderer));
+        edges.forEach(edgeRenderer -> distances.put(edgeRenderer.squareDistance(point), edgeRenderer));
+        return distances.firstEntry().getValue();
+    }
+
     public VertexRenderer findNearestVertex(Point point) {
         TreeMap<Long, VertexRenderer> distances = new TreeMap<>();
         vertices.forEach(vertexRenderer -> distances.put(vertexRenderer.squareDistance(point), vertexRenderer));

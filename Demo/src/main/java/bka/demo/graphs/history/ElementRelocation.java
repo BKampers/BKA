@@ -6,13 +6,12 @@ package bka.demo.graphs.history;
 
 import bka.demo.graphs.*;
 import java.awt.*;
-import java.util.List;
 import java.util.*;
 
 
 public class ElementRelocation extends Mutation.Symmetrical {
 
-    public ElementRelocation(Collection<Element> elements, Point vector, Map<EdgeRenderer, java.util.List<Point>> affectedEdges) {
+    public ElementRelocation(Collection<Element> elements, Point vector, Map<EdgeRenderer, EdgeRenderer.Excerpt> affectedEdges) {
         this.vertices = CollectionUtil.getVertices(elements);
         this.edges = CollectionUtil.getEdges(elements);
         this.vector = Objects.requireNonNull(vector);
@@ -29,11 +28,10 @@ public class ElementRelocation extends Mutation.Symmetrical {
         vector.move(-vector.x, -vector.y);
         vertices.forEach(element -> element.move(vector));
         edges.forEach(element -> element.move(vector));
-        affectedEdges.forEach((edge, points) -> {
-            List<Point> edgePoints = new ArrayList<>(edge.getPoints());
-            edge.setPoints(points);
-            points.clear();
-            points.addAll(edgePoints);
+        affectedEdges.forEach((edge, excerpt) -> {
+            EdgeRenderer.Excerpt newExcerpt = edge.getExcerpt();
+            edge.set(excerpt);
+            excerpt.set(newExcerpt);
         });
     }
 
@@ -45,6 +43,6 @@ public class ElementRelocation extends Mutation.Symmetrical {
     private final Collection<VertexRenderer> vertices;
     private final Collection<EdgeRenderer> edges;
     private final Point vector;
-    private final Map<EdgeRenderer, java.util.List<Point>> affectedEdges;
+    private final Map<EdgeRenderer, EdgeRenderer.Excerpt> affectedEdges;
 
 }

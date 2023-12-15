@@ -33,7 +33,7 @@ public class CanvasUtil {
     }
 
     public static Point getPoint(double x, double y) {
-        return new Point(Math.round((float) x), Math.round((float) y));
+        return new Point((int) Math.round(x), (int) Math.round(y));
     }
 
     public static Point round(Point2D point2d) {

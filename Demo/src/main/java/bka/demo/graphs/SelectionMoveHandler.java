@@ -6,7 +6,6 @@ package bka.demo.graphs;
 import bka.demo.graphs.history.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.List;
 import java.util.*;
 import java.util.stream.*;
 
@@ -50,18 +49,18 @@ public class SelectionMoveHandler extends CanvasEventHandler {
 
     private ComponentUpdate finishSelectionMove(Point cursor) {
         Set<Element> selection = getCanvas().getSelection();
-        Map<EdgeRenderer, List<Point>> affectedEdges = getCanvas().getEdges().stream()
+        Map<EdgeRenderer, EdgeRenderer.Excerpt> affectedEdges = getCanvas().getEdges().stream()
             .filter(edge -> selection.contains(edge.getStart()) != selection.contains(edge.getEnd()))
             .collect(Collectors.toMap(
                 edge -> edge,
-                edge -> CanvasUtil.deepCopy(edge.getPoints())));
-        keepCleanedEdges(affectedEdges);
+                edge -> edge.getExcerpt()));
+        cleanup(affectedEdges);
         getCanvas().addHistory(new ElementRelocation(selection, new Point(cursor.x - dragStartPoint.x, cursor.y - dragStartPoint.y), affectedEdges));
         getCanvas().resetEventHandler();
         return ComponentUpdate.REPAINT;
     }
 
-    private void keepCleanedEdges(Map<EdgeRenderer, List<Point>> affectedEdges) {
+    private void cleanup(Map<EdgeRenderer, EdgeRenderer.Excerpt> affectedEdges) {
         Iterator<EdgeRenderer> it = affectedEdges.keySet().iterator();
         while (it.hasNext()) {
             if (!CanvasUtil.cleanup(it.next())) {

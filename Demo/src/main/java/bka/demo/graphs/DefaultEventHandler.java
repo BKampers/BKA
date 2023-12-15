@@ -32,14 +32,20 @@ public class DefaultEventHandler extends CanvasEventHandler {
             return handleVertexHovered(nearestVertex, event);
         }
         EdgeRenderer nearestEdge = getCanvas().findNearestEdge(cursor);
-        if (nearestEdge != null && MouseButton.MAIN.modifierMatch(event)) {
+        if (nearestEdge != null && MouseButton.MAIN.matchesModifier(event)) {
             return handleEdgeHovered(nearestEdge, cursor);
         }
         boolean needRepaint = setEdgePoint(null);
         needRepaint |= setConnectorPoint(null);
         needRepaint |= setHoveredLabel(labelAt(cursor));
+        Element nearestElement = getCanvas().findNearestElement(cursor);
+        if (nearestElement != null && MouseButton.EDIT.matchesModifier(event)) {
+            needRepaint |= setHighlightedElement(nearestElement);
+            return new ComponentUpdate(Cursor.TEXT_CURSOR, needRepaint);
+        }
+        needRepaint |= setHighlightedElement(null);
         if (hoveredLabel != null) {
-            if (MouseButton.EDIT.modifierMatch(event)) {
+            if (MouseButton.EDIT.matchesModifier(event)) {
                 return new ComponentUpdate(Cursor.TEXT_CURSOR, needRepaint);
             }
             return new ComponentUpdate(Cursor.HAND_CURSOR, needRepaint);
@@ -63,11 +69,11 @@ public class DefaultEventHandler extends CanvasEventHandler {
     private ComponentUpdate handleVertexHovered(VertexRenderer vertex, MouseEvent event) {
         boolean needRepaint = setHoveredLabel(null);
         needRepaint |= setEdgePoint(null);
-        if (MouseButton.EDIT.modifierMatch(event)) {
+        if (MouseButton.EDIT.matchesModifier(event)) {
             needRepaint |= setConnectorPoint(null);
             return new ComponentUpdate(Cursor.TEXT_CURSOR, needRepaint);
         }
-        if (MouseButton.MAIN.modifierMatch(event)) {
+        if (MouseButton.MAIN.matchesModifier(event)) {
             return handleVertexHovered(vertex, event.getPoint(), needRepaint);
         }
         return new ComponentUpdate(Cursor.DEFAULT_CURSOR, needRepaint);
@@ -108,6 +114,7 @@ public class DefaultEventHandler extends CanvasEventHandler {
 
     private ComponentUpdate handleEdgeHovered(EdgeRenderer nearestEdge, Point cursor) {
         boolean needRepaint = setHoveredLabel(null);
+        needRepaint |= setConnectorPoint(null);
         needRepaint |= setEdgePoint(cursor);
         edgeBendSelected = nearestEdge.getPoints().stream().anyMatch(point -> CanvasUtil.isNear(cursor, point));
         return new ComponentUpdate(Cursor.HAND_CURSOR, needRepaint);
@@ -116,21 +123,22 @@ public class DefaultEventHandler extends CanvasEventHandler {
     @Override
     public ComponentUpdate mousePressed(MouseEvent event) {
         button = MouseButton.get(event);
-        if (button == MouseButton.MAIN) {
-            if (hoveredLabel != null) {
-                getCanvas().setEventHandler(new DragLabelHandler(getCanvas(), hoveredLabel));
-                return ComponentUpdate.NO_OPERATION;
-            }
-            Point cursor = event.getPoint();
-            VertexRenderer nearestVertex = getCanvas().findNearestVertex(cursor);
-            if (nearestVertex != null) {
-                handleVertexPressed(cursor, nearestVertex);
-            }
-            else {
-                EdgeRenderer nearestEdge = getCanvas().findNearestEdge(cursor);
-                if (nearestEdge != null) {
-                    handleEdgePressed(cursor, nearestEdge);
-                }
+        if (button != MouseButton.MAIN) {
+            return ComponentUpdate.NO_OPERATION;
+        }
+        if (hoveredLabel != null) {
+            getCanvas().setEventHandler(new DragLabelHandler(getCanvas(), hoveredLabel));
+            return ComponentUpdate.NO_OPERATION;
+        }
+        Point cursor = event.getPoint();
+        VertexRenderer nearestVertex = getCanvas().findNearestVertex(cursor);
+        if (nearestVertex != null) {
+            handleVertexPressed(cursor, nearestVertex);
+        }
+        else {
+            EdgeRenderer nearestEdge = getCanvas().findNearestEdge(cursor);
+            if (nearestEdge != null) {
+                handleEdgePressed(cursor, nearestEdge);
             }
         }
         return ComponentUpdate.NO_OPERATION;
@@ -155,8 +163,8 @@ public class DefaultEventHandler extends CanvasEventHandler {
     }
 
     private void handleEdgePressed(Point cursor, EdgeRenderer nearestEdge) {
-        java.util.List<Point> originalEdgePoints = CanvasUtil.deepCopy(nearestEdge.getPoints());
-        getCanvas().setEventHandler(new EdgePointMoveHandler(getCanvas(), getCanvas().nearestEdgePoint(nearestEdge, cursor), nearestEdge, originalEdgePoints));
+        EdgeRenderer.Excerpt excerpt = nearestEdge.getExcerpt();
+        getCanvas().setEventHandler(new EdgePointMoveHandler(getCanvas(), GraphCanvas.nearestEdgePoint(nearestEdge, cursor), nearestEdge, excerpt));
     }
 
     @Override
@@ -221,12 +229,12 @@ public class DefaultEventHandler extends CanvasEventHandler {
 
     private ComponentUpdate editLabel(Point cursor) {
         connectorPoint = null;
-        VertexRenderer vertex = hoveredLabel == null ? getCanvas().findNearestVertex(cursor) : hoveredLabel.getVertex();
-        if (vertex != null) {
+        Element element = hoveredLabel == null ? highlightedElement : hoveredLabel.getElement();
+        if (element != null) {
             getCanvas().getContext().editString(
                 labelText(hoveredLabel),
                 cursor,
-                applyLabelText(vertex, hoveredLabel, cursor));
+                applyLabelText(element, hoveredLabel, cursor));
         }
         return ComponentUpdate.NO_OPERATION;
     }
@@ -235,11 +243,11 @@ public class DefaultEventHandler extends CanvasEventHandler {
         return (label == null) ? "" : label.getText();
     }
 
-    private Consumer<String> applyLabelText(VertexRenderer vertex, Label label, Point position) {
+    private Consumer<String> applyLabelText(Element element, Label label, Point position) {
         return input -> {
             if (!input.isBlank()) {
                 if (label == null) {
-                    addLabel(vertex, position, input);
+                    addLabel(element, position, input);
                 }
                 else {
                     modifyLabel(label, input);
@@ -247,17 +255,17 @@ public class DefaultEventHandler extends CanvasEventHandler {
                 getCanvas().getContext().requestUpdate(ComponentUpdate.REPAINT);
             }
             else if (label != null) {
-                removeLabel(vertex, label);
+                removeLabel(element, label);
                 getCanvas().getContext().requestUpdate(ComponentUpdate.REPAINT);
             }
             getCanvas().getContext().requestUpdate(ComponentUpdate.noOperation(Cursor.DEFAULT_CURSOR));
         };
     }
 
-    private void addLabel(VertexRenderer vertex, Point cursor, String text) {
-        Label newLabel = new Label(vertex, vertex.distancePositioner(cursor), text);
-        vertex.addLabel(newLabel);
-        getCanvas().addHistory(new LabelInsertion(vertex, newLabel));
+    private void addLabel(Element element, Point cursor, String text) {
+        Label newLabel = new Label(element, element.distancePositioner(cursor), text);
+        element.addLabel(newLabel);
+        getCanvas().addHistory(new LabelInsertion(element, newLabel));
     }
 
     private void modifyLabel(Label label, String text) {
@@ -267,10 +275,10 @@ public class DefaultEventHandler extends CanvasEventHandler {
         }
     }
 
-    private void removeLabel(VertexRenderer vertex, Label label) {
-        vertex.removeLabel(label);
+    private void removeLabel(Element element, Label label) {
+        element.removeLabel(label);
         hoveredLabel = null;
-        getCanvas().addHistory(new LabelDeletion(vertex, label));
+        getCanvas().addHistory(new LabelDeletion(element, label));
     }
 
     @Override
@@ -335,6 +343,14 @@ public class DefaultEventHandler extends CanvasEventHandler {
         return true;
     }
 
+    private boolean setHighlightedElement(Element element) {
+        if (Objects.equals(highlightedElement, element)) {
+            return false;
+        }
+        highlightedElement = element;
+        return true;
+    }
+
     @Override
     public void paint(Graphics2D graphics) {
         if (edgePoint != null) {
@@ -353,6 +369,9 @@ public class DefaultEventHandler extends CanvasEventHandler {
             Rectangle hoveredLabelBounds = hoveredLabel.getBounds();
             graphics.drawRect(hoveredLabelBounds.x, hoveredLabelBounds.y, hoveredLabelBounds.width, hoveredLabelBounds.height);
         }
+        if (highlightedElement != null) {
+            highlightedElement.paintHighlight(graphics, new Color(0, 0, 128, 128), new BasicStroke(3));
+        }
     }
 
     private MouseButton button;
@@ -361,6 +380,7 @@ public class DefaultEventHandler extends CanvasEventHandler {
     private Point edgePoint;
     private boolean edgeBendSelected;
     private Label hoveredLabel;
+    private Element highlightedElement;
 
     private static final double HORIZONTAL_MARGIN = 0.4 * Math.PI;
     private static final double VERTICAL_MARGIN = 0.1 * Math.PI;

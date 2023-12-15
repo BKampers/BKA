@@ -11,14 +11,14 @@ import java.util.function.*;
 
 public class Label {
 
-    public Label(VertexRenderer vertex, Supplier<Point> positioner, String text) {
-        this.vertex = Objects.requireNonNull(vertex);
+    public Label(Element element, Supplier<Point> positioner, String text) {
+        this.element = Objects.requireNonNull(element);
         setPositioner(positioner);
         setText(text);
     }
 
-    public VertexRenderer getVertex() {
-        return vertex;
+    public Element getElement() {
+        return element;
     }
 
     public final void setText(String text) {
@@ -57,7 +57,7 @@ public class Label {
         return new Rectangle(position.x - width / 2, position.y - height / 2, width, height);
     }
 
-    private final VertexRenderer vertex;
+    private final Element element;
 
     private Supplier<Point> positioner;
     private String text;

@@ -36,12 +36,12 @@ public enum MouseButton {
         return Arrays.asList(values()).stream()
             .filter(button -> event.getButton() == button.buttonId)
             .filter(button -> event.getClickCount() == button.clickCount)
-            .filter(button -> button.modifierMatch(event))
+            .filter(button -> button.matchesModifier(event))
             .findAny()
             .orElse(UNSUPPORTED);
     }
 
-    public boolean modifierMatch(MouseEvent event) {
+    public boolean matchesModifier(MouseEvent event) {
         return (event.getModifiersEx() & MASK) == modifiers;
     }
 

@@ -22,7 +22,7 @@ public class DragLabelHandler extends CanvasEventHandler {
 
     @Override
     public ComponentUpdate mouseDragged(MouseEvent event) {
-        label.setPositioner(label.getVertex().distancePositioner(event.getPoint()));
+        label.setPositioner(label.getElement().distancePositioner(event.getPoint()));
         return ComponentUpdate.REPAINT;
     }
 

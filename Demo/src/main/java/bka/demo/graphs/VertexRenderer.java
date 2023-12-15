@@ -4,13 +4,11 @@
 
 package bka.demo.graphs;
 
-import bka.demo.graphs.Label;
 import java.awt.*;
-import java.util.*;
 import java.util.function.*;
 
 
-public class VertexRenderer implements Element {
+public class VertexRenderer extends Element {
 
     public VertexRenderer(Point point) {
         this.location = new Point(point);
@@ -25,7 +23,7 @@ public class VertexRenderer implements Element {
         this.location.move(location.x, location.y);
     }
 
-    @Override
+//    @Override
     public Dimension getDimension() {
         return new Dimension(size, size);
     }
@@ -59,19 +57,10 @@ public class VertexRenderer implements Element {
     }
 
     private double distance(Point point) {
-        return CanvasUtil.distance(point, location) - size / 2d;
+        return location.distance(point) - size / 2d;
     }
 
     @Override
-    public void addLabel(Label label) {
-        labels.add(label);
-    }
-
-    @Override
-    public void removeLabel(Label label) {
-        labels.remove(label);
-    }
-
     public Supplier<Point> distancePositioner(Point point) {
         double dy = point.y - location.y;
         double angle = Math.atan((point.x - location.x) / dy);
@@ -85,22 +74,24 @@ public class VertexRenderer implements Element {
     }
 
     @Override
-    public Collection<Label> getLabels() {
-        return Collections.unmodifiableCollection(labels);
-    }
-
-    @Override
     public void paint(Graphics2D graphics) {
         int radius = size / 2;
         graphics.fillOval(location.x - radius, location.y - radius, size, size);
-        labels.forEach(label -> label.paint(graphics));
+        getLabels().forEach(label -> label.paint(graphics));
+    }
+
+    @Override
+    public void paintHighlight(Graphics2D graphics, Color color, Stroke stroke) {
+        graphics.setPaint(color);
+        graphics.setStroke(stroke);
+        int radius = size / 2;
+        graphics.drawOval(location.x - radius, location.y - radius, size, size);
     }
 
     public void resize(Point target) {
-        size = Math.abs((int) Math.round(CanvasUtil.distance(location, target) * 2));
+        size = Math.abs((int) Math.round(location.distance(target) * 2));
     }
 
-    private final Collection<Label> labels = new ArrayList<>();
     private final Point location;
     private int size = 12;
 

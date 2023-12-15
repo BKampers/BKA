@@ -18,7 +18,7 @@ public class CreateEdgeHandler extends CanvasEventHandler {
 
     @Override
     public ComponentUpdate mouseMoved(MouseEvent event) {
-        if (!MouseButton.MAIN.modifierMatch(event)) {
+        if (!MouseButton.MAIN.matchesModifier(event)) {
             return ComponentUpdate.NO_OPERATION;
         }
         Point cursor = event.getPoint();
@@ -52,7 +52,7 @@ public class CreateEdgeHandler extends CanvasEventHandler {
 
     @Override
     public ComponentUpdate mouseDragged(MouseEvent event) {
-        if (!MouseButton.MAIN.modifierMatch(event)) {
+        if (!MouseButton.MAIN.matchesModifier(event)) {
             return ComponentUpdate.NO_OPERATION;
         }
         Point cursor = event.getPoint();
@@ -69,7 +69,7 @@ public class CreateEdgeHandler extends CanvasEventHandler {
 
     @Override
     public ComponentUpdate mouseReleased(MouseEvent event) {
-        if (!MouseButton.MAIN.modifierMatch(event)) {
+        if (!MouseButton.MAIN.matchesModifier(event)) {
             return ComponentUpdate.NO_OPERATION;
         }
         Point cursor = event.getPoint();

@@ -11,6 +11,7 @@ import java.awt.geom.*;
 import java.util.List;
 import java.util.*;
 import java.util.function.*;
+import java.util.stream.*;
 
 
 public class EdgeRenderer extends Element {
@@ -20,18 +21,25 @@ public class EdgeRenderer extends Element {
 
         private Excerpt() {
             this.points = CanvasUtil.deepCopy(EdgeRenderer.this.points);
-            this.labelIndices = new HashMap<>(EdgeRenderer.this.labelIndices);
+            this.labelIndices = collectLabelIndices();
+        }
+
+        private Map<Label, Integer> collectLabelIndices() {
+            if (getLabels().isEmpty()) {
+                return Collections.emptyMap();
+            }
+            return getLabels().stream().collect(Collectors.toMap(
+                Function.identity(),
+                label -> ((DistancePositioner) label.getPositioner()).getIndex()));
         }
 
         public void set(Excerpt excerpt) {
-            this.points.clear();
-            this.labelIndices.clear();
-            this.points.addAll(CanvasUtil.deepCopy(excerpt.points));
-            this.labelIndices.putAll(excerpt.labelIndices);
+            this.points = excerpt.points;
+            this.labelIndices = excerpt.labelIndices;
         }
 
         public List<Point> getPoints() {
-            return CanvasUtil.deepCopy(this.points);
+            return Collections.unmodifiableList(this.points);
         }
 
         public Map<Label, Integer> getLabelIndices() {
@@ -40,10 +48,11 @@ public class EdgeRenderer extends Element {
 
         @Override
         public boolean equals(Object object) {
-            if (!(object instanceof Excerpt)) {
+            if (!object.getClass().equals(Excerpt.class)) {
                 return false;
             }
-            return points.equals(((Excerpt) object).points) && labelIndices.equals(((Excerpt) object).labelIndices);
+            Excerpt excerpt = (Excerpt) object;
+            return points.equals(excerpt.points) && labelIndices.equals(excerpt.labelIndices);
         }
 
         @Override
@@ -51,8 +60,8 @@ public class EdgeRenderer extends Element {
             return Objects.hash(points, labelIndices);
         }
 
-        private final List<Point> points;
-        private final Map<Label, Integer> labelIndices;
+        private List<Point> points;
+        private Map<Label, Integer> labelIndices;
     }
 
 
@@ -71,9 +80,8 @@ public class EdgeRenderer extends Element {
 
     public void set(Excerpt excerpt) {
         points.clear();
-        labelIndices.clear();
         points.addAll(excerpt.getPoints());
-        labelIndices.putAll(excerpt.getLabelIndices());
+        excerpt.getLabelIndices().forEach((label, index) -> ((DistancePositioner) label.getPositioner()).setIndex(index));
     }
 
     @Override
@@ -89,7 +97,6 @@ public class EdgeRenderer extends Element {
     @Override
     public void addLabel(Label label) {
         super.addLabel(label);
-        labelIndices.put(label, ((DistancePositioner) label.getPositioner()).getIndex());
     }
 
     @Override
@@ -128,7 +135,6 @@ public class EdgeRenderer extends Element {
         points.add(index, point);
         getLabels().forEach(label -> {
             ((DistancePositioner) label.getPositioner()).pointInserted(index, point);
-            labelIndices.put(label, ((DistancePositioner) label.getPositioner()).getIndex());
         });
     }
 
@@ -247,7 +253,6 @@ public class EdgeRenderer extends Element {
                 final int j = i;
                 getLabels().forEach(label -> {
                     ((DistancePositioner) label.getPositioner()).pointRemoved(j);
-                    labelIndices.put(label, ((DistancePositioner) label.getPositioner()).getIndex());
                 });
                 removed = true;
             }
@@ -276,7 +281,6 @@ public class EdgeRenderer extends Element {
                 final int j = i;
                 getLabels().forEach(label -> {
                     ((DistancePositioner) label.getPositioner()).pointRemoved(j);
-                    labelIndices.put(label, ((DistancePositioner) label.getPositioner()).getIndex());
                 });
                 removed = true;
             }
@@ -314,11 +318,15 @@ public class EdgeRenderer extends Element {
             return CanvasUtil.getPoint(x, y);
         }
 
-        int getIndex() {
+        public void setIndex(int index) {
+            this.index = index;
+        }
+
+        public int getIndex() {
             return index;
         }
 
-        void pointInserted(int insertIndex, Point point) {
+        public void pointInserted(int insertIndex, Point point) {
             if (insertIndex < index) {
                 index++;
             }
@@ -329,7 +337,7 @@ public class EdgeRenderer extends Element {
             }
         }
 
-        void pointRemoved(int removeIndex) {
+        public void pointRemoved(int removeIndex) {
             if (removeIndex < index) {
                 index--;
             }
@@ -343,7 +351,6 @@ public class EdgeRenderer extends Element {
 
 
     private final List<Point> points = new ArrayList<>();
-    private final Map<Label, Integer> labelIndices = new HashMap<>();
     private final VertexRenderer start;
     private VertexRenderer end;
 

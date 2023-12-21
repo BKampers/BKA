@@ -7,6 +7,7 @@ import bka.demo.graphs.history.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
+import java.util.function.*;
 import java.util.stream.*;
 
 
@@ -52,7 +53,7 @@ public class SelectionMoveHandler extends CanvasEventHandler {
         Map<EdgeRenderer, EdgeRenderer.Excerpt> affectedEdges = getCanvas().getEdges().stream()
             .filter(edge -> selection.contains(edge.getStart()) != selection.contains(edge.getEnd()))
             .collect(Collectors.toMap(
-                edge -> edge,
+                Function.identity(),
                 edge -> edge.getExcerpt()));
         cleanup(affectedEdges);
         getCanvas().addHistory(new ElementRelocation(selection, new Point(cursor.x - dragStartPoint.x, cursor.y - dragStartPoint.y), affectedEdges));

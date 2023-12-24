@@ -163,8 +163,30 @@ public class DefaultEventHandler extends CanvasEventHandler {
     }
 
     private void handleEdgePressed(Point cursor, EdgeRenderer nearestEdge) {
-        EdgeRenderer.Excerpt excerpt = nearestEdge.getExcerpt();
-        getCanvas().setEventHandler(new EdgePointMoveHandler(getCanvas(), GraphCanvas.nearestEdgePoint(nearestEdge, cursor), nearestEdge, excerpt));
+        EdgeRenderer.Excerpt originalShape = nearestEdge.getExcerpt();
+        getCanvas().setEventHandler(new EdgePointMoveHandler(getCanvas(), dragPoint(nearestEdge, cursor), nearestEdge, originalShape));
+    }
+
+    private static Point dragPoint(EdgeRenderer edge, Point point) {
+        Point p0 = edge.getStartConnectorPoint();
+        if (CanvasUtil.isNear(point, p0)) {
+            edge.addPoint(0, point);
+            return point;
+        }
+        int index = 0;
+        for (Point p1 : edge.getPoints()) {
+            if (CanvasUtil.isNear(point, p1)) {
+                return p1;
+            }
+            if (CanvasUtil.isNear(point, p0, p1)) {
+                edge.addPoint(index, point);
+                return point;
+            }
+            p0 = p1;
+            index++;
+        }
+        edge.addPoint(point);
+        return point;
     }
 
     @Override

@@ -112,28 +112,6 @@ public class GraphCanvas extends CompositeRenderer {
         return ComponentUpdate.repaint(Cursor.DEFAULT_CURSOR);
     }
 
-    public static Point nearestEdgePoint(EdgeRenderer edge, Point point) {
-        Point p0 = edge.getStartConnectorPoint();
-        if (CanvasUtil.isNear(point, p0)) {
-            edge.addPoint(0, point);
-            return point;
-        }
-        int index = 0;
-        for (Point p1 : edge.getPoints()) {
-            if (CanvasUtil.isNear(point, p1)) {
-                return p1;
-            }
-            if (CanvasUtil.isNear(point, p0, p1)) {
-                edge.addPoint(index, point);
-                return point;
-            }
-            p0 = p1;
-            ++index;
-        }
-        edge.addPoint(point);
-        return point;
-    }
-
     public Element findNearestElement(Point point) {
         if (vertices.isEmpty()) {
             return null;

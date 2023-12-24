@@ -12,12 +12,12 @@ import java.util.*;
 
 public class EdgePointMoveHandler extends CanvasEventHandler {
 
-    public EdgePointMoveHandler(GraphCanvas canvas, Point dragStartPoint, EdgeRenderer draggingEdgeRenderer, EdgeRenderer.Excerpt excerpt) {
+    public EdgePointMoveHandler(GraphCanvas canvas, Point dragStartPoint, EdgeRenderer draggingEdgeRenderer, EdgeRenderer.Excerpt originalShape) {
         super(canvas);
         this.dragPoint = Objects.requireNonNull(dragStartPoint);
         this.draggingEdgeRenderer = draggingEdgeRenderer;
-        this.excerpt = excerpt;
-        edgeBendSelected = excerpt.getPoints().size() == draggingEdgeRenderer.getPoints().size();
+        this.originalShape = originalShape;
+        edgeBendSelected = originalShape.getPoints().size() == draggingEdgeRenderer.getPoints().size();
     }
 
     @Override
@@ -29,12 +29,12 @@ public class EdgePointMoveHandler extends CanvasEventHandler {
     @Override
     public ComponentUpdate mouseReleased(MouseEvent event) {
         CanvasUtil.cleanup(draggingEdgeRenderer);
-        if (!excerpt.equals(draggingEdgeRenderer.getExcerpt())) {
+        if (!originalShape.equals(draggingEdgeRenderer.getExcerpt())) {
             getCanvas().addHistory(new PropertyMutation<>(
                 Mutation.Type.EDGE_TRANSFORMATION,
                 () -> draggingEdgeRenderer.getExcerpt(),
                 draggingEdgeRenderer::set,
-                excerpt));
+                originalShape));
         }
         getCanvas().resetEventHandler();
         return ComponentUpdate.REPAINT;
@@ -53,6 +53,6 @@ public class EdgePointMoveHandler extends CanvasEventHandler {
     private final boolean edgeBendSelected;
     private final Point dragPoint;
     private final EdgeRenderer draggingEdgeRenderer;
-    private final EdgeRenderer.Excerpt excerpt;
+    private final EdgeRenderer.Excerpt originalShape;
 
 }

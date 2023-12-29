@@ -75,8 +75,8 @@ public class CanvasUtil {
         return new Point2D.Double(x, slope * x + offset);
     }
 
-    public static java.util.List<Point> deepCopy(List<Point> list) {
-        return list.stream().map(point -> new Point(point)).collect(Collectors.toList());
+    public static List<Point> deepCopy(List<Point> list) {
+        return list.stream().map(Point::new).collect(Collectors.toList());
     }
 
     public static boolean cleanup(EdgeRenderer edge) {

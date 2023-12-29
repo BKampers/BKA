@@ -22,7 +22,10 @@ public class DragLabelHandler extends CanvasEventHandler {
 
     @Override
     public ComponentUpdate mouseDragged(MouseEvent event) {
-        label.setPositioner(label.getElement().distancePositioner(event.getPoint()));
+        Point cursor = event.getPoint();
+        label.setPositioner(label.getElement().distancePositioner(cursor));
+        nearestElement = getCanvas().findNearestElement(cursor);
+        nearestIndex = (nearestElement instanceof EdgeRenderer) ? ((EdgeRenderer) nearestElement).nearestLineIndex(cursor) : -1;
         return ComponentUpdate.REPAINT;
     }
 
@@ -43,6 +46,21 @@ public class DragLabelHandler extends CanvasEventHandler {
         return originalPositioner;
     }
 
+    @Override
+    public void paint(Graphics2D graphics) {
+        if (nearestElement != null) {
+            if (nearestIndex >= 0) {
+                graphics.setPaint(new Color(Color.YELLOW.getRGB() | 0x7F000000, true));
+                graphics.setStroke(new BasicStroke(2));
+                Point p1 = ((EdgeRenderer) nearestElement).getPoint(nearestIndex);
+                Point p2 = ((EdgeRenderer) nearestElement).getPoint(nearestIndex + 1);
+                graphics.drawLine(p1.x, p1.y, p2.x, p2.y);
+            }
+            else {
+                nearestElement.paintHighlight(graphics, new Color(Color.YELLOW.getRGB() | 0x7F000000, true), new BasicStroke(2));
+            }
+        }
+    }
 
     private class PositionerMutation extends PropertyMutation<Supplier<Point>> {
 
@@ -58,5 +76,7 @@ public class DragLabelHandler extends CanvasEventHandler {
 
     private final Label label;
     private final Supplier<Point> originalPositioner;
+    private Element nearestElement;
+    private int nearestIndex = -1;
 
 }

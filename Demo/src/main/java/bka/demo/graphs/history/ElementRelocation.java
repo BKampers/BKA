@@ -28,10 +28,10 @@ public class ElementRelocation extends Mutation.Symmetrical {
         vector.move(-vector.x, -vector.y);
         vertices.forEach(element -> element.move(vector));
         edges.forEach(element -> element.move(vector));
-        affectedEdges.forEach((edge, excerpt) -> {
-            EdgeRenderer.Excerpt newExcerpt = edge.getExcerpt();
-            edge.set(excerpt);
-            excerpt.set(newExcerpt);
+        affectedEdges.forEach((edge, historyShape) -> {
+            EdgeRenderer.Excerpt currentShape = edge.getExcerpt();
+            edge.set(historyShape);
+            historyShape.set(currentShape);
         });
     }
 

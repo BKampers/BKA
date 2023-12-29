@@ -11,6 +11,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
 import java.util.function.*;
+import java.util.stream.*;
 
 
 public class DefaultEventHandler extends CanvasEventHandler {
@@ -54,8 +55,8 @@ public class DefaultEventHandler extends CanvasEventHandler {
     }
 
     private Label labelAt(Point point) {
-        return getCanvas().getVertices().stream()
-            .flatMap(vertex -> vertex.getLabels().stream().filter(boundsContain(point)))
+        return Stream.concat(getCanvas().getVertices().stream(), getCanvas().getEdges().stream())
+            .flatMap(element -> element.getLabels().stream().filter(boundsContain(point)))
             .findAny().orElse(null);
     }
 

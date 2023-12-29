@@ -20,30 +20,30 @@ public class EdgeRenderer extends Element {
     public class Excerpt {
 
         private Excerpt() {
-            this.points = CanvasUtil.deepCopy(EdgeRenderer.this.points);
-            this.labelIndices = collectLabelIndices();
+            edgePoints = Collections.unmodifiableList(CanvasUtil.deepCopy(points));
+            labelIndices = collectLabelIndices();
         }
 
         private Map<Label, Integer> collectLabelIndices() {
             if (getLabels().isEmpty()) {
                 return Collections.emptyMap();
             }
-            return getLabels().stream().collect(Collectors.toMap(
+            return Collections.unmodifiableMap(getLabels().stream().collect(Collectors.toMap(
                 Function.identity(),
-                label -> ((DistancePositioner) label.getPositioner()).getIndex()));
+                label -> ((DistancePositioner) label.getPositioner()).getIndex())));
         }
 
         public void set(Excerpt excerpt) {
-            this.points = excerpt.points;
-            this.labelIndices = excerpt.labelIndices;
+            edgePoints = excerpt.edgePoints;
+            labelIndices = excerpt.labelIndices;
         }
 
         public List<Point> getPoints() {
-            return Collections.unmodifiableList(this.points);
+            return edgePoints;
         }
 
         public Map<Label, Integer> getLabelIndices() {
-            return Collections.unmodifiableMap(this.labelIndices);
+            return labelIndices;
         }
 
         @Override
@@ -52,15 +52,15 @@ public class EdgeRenderer extends Element {
                 return false;
             }
             Excerpt excerpt = (Excerpt) object;
-            return points.equals(excerpt.points) && labelIndices.equals(excerpt.labelIndices);
+            return edgePoints.equals(excerpt.edgePoints) && labelIndices.equals(excerpt.labelIndices);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(points, labelIndices);
+            return Objects.hash(edgePoints, labelIndices);
         }
 
-        private List<Point> points;
+        private List<Point> edgePoints;
         private Map<Label, Integer> labelIndices;
     }
 
@@ -99,16 +99,33 @@ public class EdgeRenderer extends Element {
         super.addLabel(label);
     }
 
+//    private Point ints;
+
     @Override
     public Supplier<Point> distancePositioner(Point point) {
         int index = nearestLineIndex(point);
         Point linePoint1 = getPoint(index);
         Point linePoint2 = getPoint(index + 1);
-        double lineLength = linePoint1.distance(linePoint2);
         Point2D intersection = CanvasUtil.intersectionPoint(point, linePoint1, linePoint2);
-        double distanceToLine = point.distance(intersection);
-        double ratio = intersection.distance(linePoint1) / lineLength;
-        return new DistancePositioner(index, distanceToLine, ratio);
+//        ints = CanvasUtil.round(intersection);
+        return new DistancePositioner(index, directedDistance(point, intersection), directedRatio(point, linePoint1, linePoint2, intersection));
+    }
+
+    private static double directedDistance(Point2D point1, Point2D point2) {
+        if (point1.getY() < point2.getY()) {
+            return -point1.distance(point2);
+        }
+        return point1.distance(point2);
+    }
+
+    private static double directedRatio(Point2D point, Point2D linePoint1, Point2D linePoint2, Point2D intersection) {
+        double ratio = intersection.distance(linePoint1) / linePoint1.distance(linePoint2);
+        double x1 = linePoint1.getX();
+        double x2 = linePoint2.getX();
+        if (x1 < x2 && point.getX() < Math.min(x1, x2) || x2 < x1 && Math.max(x1, x2) < point.getX()) {
+            return -ratio;
+        }
+        return ratio;
     }
 
     public VertexRenderer getStart() {
@@ -160,6 +177,9 @@ public class EdgeRenderer extends Element {
         graphics.setStroke(new BasicStroke());
         graphics.drawPolyline(x, y, count);
         getLabels().forEach(label -> label.paint(graphics));
+//        if (ints != null) {
+//            PaintUtil.paintDot(graphics, ints, 5, Color.YELLOW);
+//        }
     }
 
     @Override
@@ -185,7 +205,7 @@ public class EdgeRenderer extends Element {
         return distance;
     }
 
-    private int nearestLineIndex(Point point) {
+    public int nearestLineIndex(Point point) {
         int index = -1;
         long shortestDistance = Long.MAX_VALUE;
         Point startPoint = getStartConnectorPoint();
@@ -204,7 +224,7 @@ public class EdgeRenderer extends Element {
         return index;
     }
 
-    private Point getPoint(int index) {
+    public Point getPoint(int index) {
         if (index == 0) {
             return getStartConnectorPoint();
         }

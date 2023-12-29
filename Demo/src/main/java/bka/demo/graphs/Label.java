@@ -47,6 +47,7 @@ public class Label {
     public void paint(Graphics2D graphics) {
         FontMetrics metrics = graphics.getFontMetrics();
         bounds = computeBounds(metrics);
+        graphics.setPaint(Color.BLACK);
         graphics.drawString(text, bounds.x, bounds.y + bounds.height - metrics.getDescent());
     }
 

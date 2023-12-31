@@ -99,7 +99,7 @@ public class EdgeRenderer extends Element {
         super.addLabel(label);
     }
 
-//    private Point ints;
+    private Point ints;
 
     @Override
     public Supplier<Point> distancePositioner(Point point) {
@@ -107,13 +107,27 @@ public class EdgeRenderer extends Element {
         Point linePoint1 = getPoint(index);
         Point linePoint2 = getPoint(index + 1);
         Point2D intersection = CanvasUtil.intersectionPoint(point, linePoint1, linePoint2);
-//        ints = CanvasUtil.round(intersection);
-        return new DistancePositioner(index, directedDistance(point, intersection), directedRatio(point, linePoint1, linePoint2, intersection));
+        ints = CanvasUtil.round(intersection);
+        double slope = (linePoint1.getY() - linePoint2.getY()) / (linePoint1.getX() - linePoint2.getX());
+        System.out.printf("d = %f; r =  %f; s = %f\n", directedDistance(point, intersection, slope), directedRatio(point, linePoint1, linePoint2, intersection), slope);
+        return new DistancePositioner(index, directedDistance(point, intersection, slope), directedRatio(point, linePoint1, linePoint2, intersection));
     }
 
-    private static double directedDistance(Point2D point1, Point2D point2) {
-        if (point1.getY() < point2.getY()) {
-            return -point1.distance(point2);
+    private static double directedDistance(Point2D point1, Point2D point2, double slope) {
+        if (-1 < slope && slope < 1) {
+            if (point1.getY() < point2.getY()) {
+                return -point1.distance(point2);
+            }
+        }
+        else if (slope <= -1) {
+            if (point1.getX() < point2.getX()) {
+                return -point1.distance(point2);
+            }
+        }
+        else if (slope >= 1) {
+            if (point1.getX() > point2.getX()) {
+                return -point1.distance(point2);
+            }
         }
         return point1.distance(point2);
     }
@@ -122,8 +136,18 @@ public class EdgeRenderer extends Element {
         double ratio = intersection.distance(linePoint1) / linePoint1.distance(linePoint2);
         double x1 = linePoint1.getX();
         double x2 = linePoint2.getX();
-        if (x1 < x2 && point.getX() < Math.min(x1, x2) || x2 < x1 && Math.max(x1, x2) < point.getX()) {
-            return -ratio;
+        double y1 = linePoint1.getY();
+        double y2 = linePoint2.getY();
+        double slope = (linePoint1.getY() - linePoint2.getY()) / (linePoint1.getX() - linePoint2.getX());
+        if (-1 < slope && slope < 1) {
+            if (x1 < x2 && intersection.getX() < Math.min(x1, x2) || x2 < x1 && Math.max(x1, x2) < intersection.getX()) {
+                return -ratio;
+            }
+        }
+        else {
+            if (y1 < y2 && intersection.getY() < Math.min(y1, y2) || y2 < y1 && Math.max(y1, y2) < intersection.getY()) {
+                return -ratio;
+            }
         }
         return ratio;
     }
@@ -177,9 +201,9 @@ public class EdgeRenderer extends Element {
         graphics.setStroke(new BasicStroke());
         graphics.drawPolyline(x, y, count);
         getLabels().forEach(label -> label.paint(graphics));
-//        if (ints != null) {
-//            PaintUtil.paintDot(graphics, ints, 5, Color.YELLOW);
-//        }
+        if (ints != null) {
+            PaintUtil.paintDot(graphics, ints, 5, Color.YELLOW);
+        }
     }
 
     @Override
@@ -187,6 +211,17 @@ public class EdgeRenderer extends Element {
         graphics.setPaint(color);
         graphics.setStroke(stroke);
         paint(graphics);
+    }
+
+    public void paintHighlight(Graphics2D graphics, Color color, Stroke stroke, int index) {
+        graphics.setPaint(color);
+        graphics.setStroke(stroke);
+        Point p1 = getPoint(index);
+        Point p2 = getPoint(index + 1);
+        graphics.drawLine(p1.x, p1.y, p2.x, p2.y);
+        graphics.setPaint(Color.LIGHT_GRAY);
+        graphics.setStroke(new BasicStroke(1));
+        graphics.drawRect(Math.min(p1.x, p2.x), Math.min(p1.y, p2.y), Math.abs(p1.x - p2.x), Math.abs(p1.y - p2.y));
     }
 
     public long squareDistance(Point point) {

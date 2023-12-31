@@ -50,14 +50,10 @@ public class DragLabelHandler extends CanvasEventHandler {
     public void paint(Graphics2D graphics) {
         if (nearestElement != null) {
             if (nearestIndex >= 0) {
-                graphics.setPaint(new Color(Color.YELLOW.getRGB() | 0x7F000000, true));
-                graphics.setStroke(new BasicStroke(2));
-                Point p1 = ((EdgeRenderer) nearestElement).getPoint(nearestIndex);
-                Point p2 = ((EdgeRenderer) nearestElement).getPoint(nearestIndex + 1);
-                graphics.drawLine(p1.x, p1.y, p2.x, p2.y);
+                ((EdgeRenderer) nearestElement).paintHighlight(graphics, HIGHLIGHT_COLOR, HIGHLIGHT_STROKE, nearestIndex);
             }
             else {
-                nearestElement.paintHighlight(graphics, new Color(Color.YELLOW.getRGB() | 0x7F000000, true), new BasicStroke(2));
+                nearestElement.paintHighlight(graphics, HIGHLIGHT_COLOR, HIGHLIGHT_STROKE);
             }
         }
     }
@@ -78,5 +74,9 @@ public class DragLabelHandler extends CanvasEventHandler {
     private final Supplier<Point> originalPositioner;
     private Element nearestElement;
     private int nearestIndex = -1;
+
+    private static final Color HIGHLIGHT_COLOR = new Color(Color.YELLOW.getRGB() | 0x7F000000, true);
+    private static final BasicStroke HIGHLIGHT_STROKE = new BasicStroke(2f);
+
 
 }

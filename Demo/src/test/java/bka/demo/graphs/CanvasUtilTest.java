@@ -38,4 +38,22 @@ public class CanvasUtilTest {
         assertEquals(new Point2D.Double(2.0, 1.0), CanvasUtil.intersectionPoint(new Point(1, 3), new Point(0, 0), new Point(4, 2)));
     }
 
+    @Test
+    public void testSlope() {
+        final double PRECISION = 0;
+        assertEquals(2.0, CanvasUtil.slope(new Point(0, 0), new Point(1, 2)), PRECISION);
+        assertEquals(0.5, CanvasUtil.slope(new Point(0, 0), new Point(2, 1)), PRECISION);
+        assertEquals(-2.0, CanvasUtil.slope(new Point(0, 0), new Point(-1, 2)), PRECISION);
+        assertEquals(-0.5, CanvasUtil.slope(new Point(0, 0), new Point(-2, 1)), PRECISION);
+        assertEquals(-2.0, CanvasUtil.slope(new Point(0, 0), new Point(1, -2)), PRECISION);
+        assertEquals(-0.5, CanvasUtil.slope(new Point(0, 0), new Point(2, -1)), PRECISION);
+        assertEquals(2.0, CanvasUtil.slope(new Point(0, 0), new Point(-1, -2)), PRECISION);
+        assertEquals(0.5, CanvasUtil.slope(new Point(0, 0), new Point(-2, -1)), PRECISION);
+        assertEquals(0.0, CanvasUtil.slope(new Point(0, 0), new Point(2, 0)), PRECISION);
+        assertEquals(0.0, CanvasUtil.slope(new Point(0, 0), new Point(-2, 0)), PRECISION);
+        assertEquals(Double.POSITIVE_INFINITY, CanvasUtil.slope(new Point(0, 0), new Point(0, 2)), PRECISION);
+        assertEquals(Double.NEGATIVE_INFINITY, CanvasUtil.slope(new Point(0, 0), new Point(0, -2)), PRECISION);
+        assertEquals(Double.NaN, CanvasUtil.slope(new Point(0, 0), new Point(0, 0)), PRECISION);
+    }
+
 }

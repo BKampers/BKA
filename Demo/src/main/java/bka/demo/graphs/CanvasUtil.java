@@ -67,12 +67,16 @@ public class CanvasUtil {
         if (linePoint1.y == linePoint2.y) {
             return new Point(point.x, linePoint1.y);
         }
-        double slope = (double) (linePoint1.y - linePoint2.y) / (linePoint1.x - linePoint2.x);
+        double slope = slope(linePoint1, linePoint2);
         double offset = -slope * linePoint1.x + linePoint1.y;
         double perpendicularSlope = -1 / slope;
         double perpendicularOffset = point.y - perpendicularSlope * point.x;
         double x = (offset - perpendicularOffset) / (perpendicularSlope - slope);
         return new Point2D.Double(x, slope * x + offset);
+    }
+
+    public static double slope(Point2D point1, Point2D point2) {
+        return (point2.getY() - point1.getY()) / (point2.getX() - point1.getX());
     }
 
     public static List<Point> deepCopy(List<Point> list) {

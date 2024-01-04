@@ -99,18 +99,16 @@ public class EdgeRenderer extends Element {
         super.addLabel(label);
     }
 
-    private Point ints;
-
     @Override
     public Supplier<Point> distancePositioner(Point point) {
         int index = nearestLineIndex(point);
         Point linePoint1 = getPoint(index);
         Point linePoint2 = getPoint(index + 1);
         Point2D intersection = CanvasUtil.intersectionPoint(point, linePoint1, linePoint2);
-        ints = CanvasUtil.round(intersection);
-        double slope = (linePoint1.getY() - linePoint2.getY()) / (linePoint1.getX() - linePoint2.getX());
-        System.out.printf("d = %f; r =  %f; s = %f\n", directedDistance(point, intersection, slope), directedRatio(point, linePoint1, linePoint2, intersection), slope);
-        return new DistancePositioner(index, directedDistance(point, intersection, slope), directedRatio(point, linePoint1, linePoint2, intersection));
+        double slope = CanvasUtil.slope(linePoint1, linePoint2);
+        double yDistance = directedDistance(point, intersection, slope);
+        double xDistance = (linePoint1.x > linePoint2.x) ? -yDistance : yDistance;
+        return new DistancePositioner(index, xDistance, yDistance, directedRatio(linePoint1, linePoint2, intersection));
     }
 
     private static double directedDistance(Point2D point1, Point2D point2, double slope) {
@@ -132,13 +130,13 @@ public class EdgeRenderer extends Element {
         return point1.distance(point2);
     }
 
-    private static double directedRatio(Point2D point, Point2D linePoint1, Point2D linePoint2, Point2D intersection) {
+    private static double directedRatio(Point2D linePoint1, Point2D linePoint2, Point2D intersection) {
         double ratio = intersection.distance(linePoint1) / linePoint1.distance(linePoint2);
         double x1 = linePoint1.getX();
         double x2 = linePoint2.getX();
         double y1 = linePoint1.getY();
         double y2 = linePoint2.getY();
-        double slope = (linePoint1.getY() - linePoint2.getY()) / (linePoint1.getX() - linePoint2.getX());
+        double slope = CanvasUtil.slope(linePoint1, linePoint2);
         if (-1 < slope && slope < 1) {
             if (x1 < x2 && intersection.getX() < Math.min(x1, x2) || x2 < x1 && Math.max(x1, x2) < intersection.getX()) {
                 return -ratio;
@@ -201,9 +199,6 @@ public class EdgeRenderer extends Element {
         graphics.setStroke(new BasicStroke());
         graphics.drawPolyline(x, y, count);
         getLabels().forEach(label -> label.paint(graphics));
-        if (ints != null) {
-            PaintUtil.paintDot(graphics, ints, 5, Color.YELLOW);
-        }
     }
 
     @Override
@@ -219,9 +214,6 @@ public class EdgeRenderer extends Element {
         Point p1 = getPoint(index);
         Point p2 = getPoint(index + 1);
         graphics.drawLine(p1.x, p1.y, p2.x, p2.y);
-        graphics.setPaint(Color.LIGHT_GRAY);
-        graphics.setStroke(new BasicStroke(1));
-        graphics.drawRect(Math.min(p1.x, p2.x), Math.min(p1.y, p2.y), Math.abs(p1.x - p2.x), Math.abs(p1.y - p2.y));
     }
 
     public long squareDistance(Point point) {
@@ -304,11 +296,9 @@ public class EdgeRenderer extends Element {
         while (i <= points.size()) {
             Point pi = (i < points.size()) ? points.get(i) : getEndConnectorPoint();
             if (CanvasUtil.squareDistance(p0, pi) < twinTolerance) {
-                points.remove(i);
-                final int j = i;
-                getLabels().forEach(label -> {
-                    ((DistancePositioner) label.getPositioner()).pointRemoved(j);
-                });
+                int removeIndex = (i < points.size()) ? i : i - 1;
+                points.remove(removeIndex);
+                getLabels().forEach(label -> ((DistancePositioner) label.getPositioner()).pointRemoved(removeIndex));
                 removed = true;
             }
             else {
@@ -355,8 +345,9 @@ public class EdgeRenderer extends Element {
 
     private class DistancePositioner implements Supplier<Point> {
 
-        public DistancePositioner(int index, double distance, double ratio) {
-            this.distance = distance;
+        public DistancePositioner(int index, double xDistance, double yDistance, double ratio) {
+            this.xDistance = xDistance;
+            this.yDistance = yDistance;
             this.ratio = ratio;
             this.index = index;
         }
@@ -368,8 +359,8 @@ public class EdgeRenderer extends Element {
             double xi = linePoint1.x + (linePoint2.x - linePoint1.x) * ratio;
             double yi = linePoint1.y + (linePoint2.y - linePoint1.y) * ratio;
             double angle = Math.acos((linePoint1.y - linePoint2.y) / linePoint1.distance(linePoint2));
-            double x = Math.cos(angle) * distance + xi;
-            double y = Math.sin(angle) * distance + yi;
+            double x = Math.cos(angle) * xDistance + xi;
+            double y = Math.sin(angle) * yDistance + yi;
             return CanvasUtil.getPoint(x, y);
         }
 
@@ -398,7 +389,8 @@ public class EdgeRenderer extends Element {
             }
         }
 
-        private final double distance;
+        private final double xDistance;
+        private final double yDistance;
         private final double ratio;
         private int index;
 

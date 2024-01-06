@@ -14,8 +14,6 @@ public abstract class Element implements Renderer {
 
     public abstract void paintHighlight(Graphics2D graphics, Color color, Stroke stroke);
 
-    public abstract Point getLocation();
-
     public abstract void move(Point vector);
 
     public abstract Supplier<Point> distancePositioner(Point point);

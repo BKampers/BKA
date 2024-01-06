@@ -84,72 +84,6 @@ public class EdgeRenderer extends Element {
         excerpt.getLabelIndices().forEach((label, index) -> ((DistancePositioner) label.getPositioner()).setIndex(index));
     }
 
-    @Override
-    public Point getLocation() {
-        return start.getLocation();
-    }
-
-    @Override
-    public void move(Point vector) {
-        points.forEach(point -> point.move(point.x + vector.x, point.y + vector.y));
-    }
-
-    @Override
-    public void addLabel(Label label) {
-        super.addLabel(label);
-    }
-
-    @Override
-    public Supplier<Point> distancePositioner(Point point) {
-        int index = nearestLineIndex(point);
-        Point linePoint1 = getPoint(index);
-        Point linePoint2 = getPoint(index + 1);
-        Point2D intersection = CanvasUtil.intersectionPoint(point, linePoint1, linePoint2);
-        double slope = CanvasUtil.slope(linePoint1, linePoint2);
-        double yDistance = directedDistance(point, intersection, slope);
-        double xDistance = (linePoint1.x > linePoint2.x) ? -yDistance : yDistance;
-        return new DistancePositioner(index, xDistance, yDistance, directedRatio(linePoint1, linePoint2, intersection));
-    }
-
-    private static double directedDistance(Point2D point1, Point2D point2, double slope) {
-        if (-1 < slope && slope < 1) {
-            if (point1.getY() < point2.getY()) {
-                return -point1.distance(point2);
-            }
-        }
-        else if (slope <= -1) {
-            if (point1.getX() < point2.getX()) {
-                return -point1.distance(point2);
-            }
-        }
-        else if (slope >= 1) {
-            if (point1.getX() > point2.getX()) {
-                return -point1.distance(point2);
-            }
-        }
-        return point1.distance(point2);
-    }
-
-    private static double directedRatio(Point2D linePoint1, Point2D linePoint2, Point2D intersection) {
-        double ratio = intersection.distance(linePoint1) / linePoint1.distance(linePoint2);
-        double x1 = linePoint1.getX();
-        double x2 = linePoint2.getX();
-        double y1 = linePoint1.getY();
-        double y2 = linePoint2.getY();
-        double slope = CanvasUtil.slope(linePoint1, linePoint2);
-        if (-1 < slope && slope < 1) {
-            if (x1 < x2 && intersection.getX() < Math.min(x1, x2) || x2 < x1 && Math.max(x1, x2) < intersection.getX()) {
-                return -ratio;
-            }
-        }
-        else {
-            if (y1 < y2 && intersection.getY() < Math.min(y1, y2) || y2 < y1 && Math.max(y1, y2) < intersection.getY()) {
-                return -ratio;
-            }
-        }
-        return ratio;
-    }
-
     public VertexRenderer getStart() {
         return start;
     }
@@ -175,6 +109,59 @@ public class EdgeRenderer extends Element {
         getLabels().forEach(label -> {
             ((DistancePositioner) label.getPositioner()).pointInserted(index, point);
         });
+    }
+
+
+
+    @Override
+    public void move(Point vector) {
+        points.forEach(point -> point.move(point.x + vector.x, point.y + vector.y));
+    }
+
+    @Override
+    public void addLabel(Label label) {
+        super.addLabel(label);
+    }
+
+    @Override
+    public Supplier<Point> distancePositioner(Point point) {
+        int index = nearestLineIndex(point);
+        Point linePoint1 = getPoint(index);
+        Point linePoint2 = getPoint(index + 1);
+        Point2D intersection = CanvasUtil.intersectionPoint(point, linePoint1, linePoint2);
+        double yDistance = directedDistance(point, intersection, CanvasUtil.slope(linePoint1, linePoint2));
+        double xDistance = (linePoint1.x > linePoint2.x) ? -yDistance : yDistance;
+        return new DistancePositioner(index, xDistance, yDistance, directedRatio(linePoint1, linePoint2, intersection));
+    }
+
+    private static double directedDistance(Point2D distantPoint, Point2D intersection, double slope) {
+        double distance = distantPoint.distance(intersection);
+        if (slope <= -1) {
+            return (distantPoint.getX() < intersection.getX()) ? -distance : distance;
+        }
+        if (1 <= slope) {
+            return (distantPoint.getX() > intersection.getX()) ? -distance : distance;
+        }
+        return (distantPoint.getY() < intersection.getY()) ? -distance : distance;
+    }
+
+    private static double directedRatio(Point2D linePoint1, Point2D linePoint2, Point2D intersection) {
+        double ratio = intersection.distance(linePoint1) / linePoint1.distance(linePoint2);
+        double x1 = linePoint1.getX();
+        double x2 = linePoint2.getX();
+        double y1 = linePoint1.getY();
+        double y2 = linePoint2.getY();
+        if (Math.abs(CanvasUtil.slope(linePoint1, linePoint2)) < 1) {
+            if (intersection.getX() < x1 && x1 < x2 || x2 < x1 && x1 < intersection.getX()) {
+                return -ratio;
+            }
+        }
+        else {
+            if (intersection.getY() < y1 && y1 < y2 || y2 < y1 && y1 < intersection.getY()) {
+                return -ratio;
+            }
+        }
+        return ratio;
     }
 
     @Override

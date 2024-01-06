@@ -14,7 +14,6 @@ public class VertexRenderer extends Element {
         this.location = new Point(point);
     }
 
-    @Override
     public Point getLocation() {
         return new Point(location);
     }
@@ -23,7 +22,6 @@ public class VertexRenderer extends Element {
         this.location.move(location.x, location.y);
     }
 
-//    @Override
     public Dimension getDimension() {
         return new Dimension(size, size);
     }

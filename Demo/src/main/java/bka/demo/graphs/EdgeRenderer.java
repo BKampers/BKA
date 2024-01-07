@@ -128,36 +128,36 @@ public class EdgeRenderer extends Element {
         int index = nearestLineIndex(point);
         Point linePoint1 = getPoint(index);
         Point linePoint2 = getPoint(index + 1);
-        Point2D intersection = CanvasUtil.intersectionPoint(point, linePoint1, linePoint2);
-        double yDistance = directedDistance(point, intersection, CanvasUtil.slope(linePoint1, linePoint2));
+        Point2D anchor = CanvasUtil.intersectionPoint(point, linePoint1, linePoint2);
+        double yDistance = directedDistance(point, anchor, CanvasUtil.slope(linePoint1, linePoint2));
         double xDistance = (linePoint1.x > linePoint2.x) ? -yDistance : yDistance;
-        return new DistancePositioner(index, xDistance, yDistance, directedRatio(linePoint1, linePoint2, intersection));
+        return new DistancePositioner(index, xDistance, yDistance, directedRatio(linePoint1, linePoint2, anchor));
     }
 
-    private static double directedDistance(Point2D distantPoint, Point2D intersection, double slope) {
-        double distance = distantPoint.distance(intersection);
+    private static double directedDistance(Point2D distantPoint, Point2D anchor, double slope) {
+        double distance = distantPoint.distance(anchor);
         if (slope <= -1) {
-            return (distantPoint.getX() < intersection.getX()) ? -distance : distance;
+            return (distantPoint.getX() < anchor.getX()) ? -distance : distance;
         }
         if (1 <= slope) {
-            return (distantPoint.getX() > intersection.getX()) ? -distance : distance;
+            return (distantPoint.getX() > anchor.getX()) ? -distance : distance;
         }
-        return (distantPoint.getY() < intersection.getY()) ? -distance : distance;
+        return (distantPoint.getY() < anchor.getY()) ? -distance : distance;
     }
 
-    private static double directedRatio(Point2D linePoint1, Point2D linePoint2, Point2D intersection) {
-        double ratio = intersection.distance(linePoint1) / linePoint1.distance(linePoint2);
+    private static double directedRatio(Point2D linePoint1, Point2D linePoint2, Point2D anchor) {
+        double ratio = anchor.distance(linePoint1) / linePoint1.distance(linePoint2);
         double x1 = linePoint1.getX();
         double x2 = linePoint2.getX();
         double y1 = linePoint1.getY();
         double y2 = linePoint2.getY();
         if (Math.abs(CanvasUtil.slope(linePoint1, linePoint2)) < 1) {
-            if (intersection.getX() < x1 && x1 < x2 || x2 < x1 && x1 < intersection.getX()) {
+            if (anchor.getX() < x1 && x1 < x2 || x2 < x1 && x1 < anchor.getX()) {
                 return -ratio;
             }
         }
         else {
-            if (intersection.getY() < y1 && y1 < y2 || y2 < y1 && y1 < intersection.getY()) {
+            if (anchor.getY() < y1 && y1 < y2 || y2 < y1 && y1 < anchor.getY()) {
                 return -ratio;
             }
         }
@@ -343,12 +343,10 @@ public class EdgeRenderer extends Element {
         public Point get() {
             Point linePoint1 = getPoint(index);
             Point linePoint2 = getPoint(index + 1);
-            double xi = linePoint1.x + (linePoint2.x - linePoint1.x) * ratio;
-            double yi = linePoint1.y + (linePoint2.y - linePoint1.y) * ratio;
-            double angle = Math.acos((linePoint1.y - linePoint2.y) / linePoint1.distance(linePoint2));
-            double x = Math.cos(angle) * xDistance + xi;
-            double y = Math.sin(angle) * yDistance + yi;
-            return CanvasUtil.getPoint(x, y);
+            double xAnchor = linePoint1.x + (linePoint2.x - linePoint1.x) * ratio;
+            double yAnchor = linePoint1.y + (linePoint2.y - linePoint1.y) * ratio;
+            double cos = (linePoint1.y - linePoint2.y) / linePoint1.distance(linePoint2);
+            return CanvasUtil.getPoint(cos * xDistance + xAnchor, Math.sin(Math.acos(cos)) * yDistance + yAnchor);
         }
 
         public void setIndex(int index) {

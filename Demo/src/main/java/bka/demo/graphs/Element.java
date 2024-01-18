@@ -19,17 +19,21 @@ public abstract class Element implements Renderer {
     public abstract Supplier<Point> distancePositioner(Point point);
 
     public void addLabel(Label label) {
-        labels.add(label);
+        if (!labels.add(label)) {
+            throw new IllegalArgumentException("Element already owns label " + label.getText());
+        }
     }
 
     public void removeLabel(Label label) {
-        labels.remove(label);
+        if (!labels.remove(label)) {
+            throw new IllegalArgumentException("Element does not own label " + label.getText());
+        }
     }
 
     public Collection<Label> getLabels() {
         return Collections.unmodifiableCollection(labels);
     }
 
-    private final Collection<Label> labels = new ArrayList<>();
+    private final Collection<Label> labels = new HashSet<>();
 
 }

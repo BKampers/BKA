@@ -17,6 +17,13 @@ public class Label {
         setText(text);
     }
 
+    public void moveTo(Element element, Supplier<Point> positioner) {
+        this.element.removeLabel(this);
+        this.element = Objects.requireNonNull(element);
+        this.element.addLabel(this);
+        setPositioner(positioner);
+    }
+
     public Element getElement() {
         return element;
     }
@@ -58,7 +65,7 @@ public class Label {
         return new Rectangle(position.x - width / 2, position.y - height / 2, width, height);
     }
 
-    private final Element element;
+    private Element element;
 
     private Supplier<Point> positioner;
     private String text;

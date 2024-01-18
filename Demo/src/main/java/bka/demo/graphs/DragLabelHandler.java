@@ -17,6 +17,8 @@ public class DragLabelHandler extends CanvasEventHandler {
     public DragLabelHandler(GraphCanvas canvas, Label label) {
         super(canvas);
         this.label = Objects.requireNonNull(label);
+        this.originalElement = label.getElement();
+        nearestElement = originalElement;
         originalPositioner = label.getPositioner();
     }
 
@@ -24,7 +26,10 @@ public class DragLabelHandler extends CanvasEventHandler {
     public ComponentUpdate mouseDragged(MouseEvent event) {
         Point cursor = event.getPoint();
         label.setPositioner(label.getElement().distancePositioner(cursor));
-        nearestElement = getCanvas().findNearestElement(cursor);
+        Element nearest = getCanvas().findNearestElement(cursor);
+        if (!nearest.equals(nearestElement)) {
+            nearestElement = nearest;
+        }
         nearestIndex = (nearestElement instanceof EdgeRenderer) ? ((EdgeRenderer) nearestElement).nearestLineIndex(cursor) : -1;
         return ComponentUpdate.REPAINT;
     }
@@ -33,7 +38,13 @@ public class DragLabelHandler extends CanvasEventHandler {
     public ComponentUpdate mouseReleased(MouseEvent event) {
         getCanvas().resetEventHandler();
         if (!Objects.equals(originalPositioner.get(), label.getPositioner().get())) {
-            getCanvas().addHistory(new PositionerMutation());
+            if (label.getElement().equals(nearestElement)) {
+                getCanvas().addHistory(new PositionerMutation());
+            }
+            else {
+                label.moveTo(nearestElement, nearestElement.distancePositioner(event.getPoint()));
+                getCanvas().addHistory(new LabelReallocationMutation());
+            }
         }
         return ComponentUpdate.REPAINT;
     }
@@ -58,6 +69,7 @@ public class DragLabelHandler extends CanvasEventHandler {
         }
     }
 
+
     private class PositionerMutation extends PropertyMutation<Supplier<Point>> {
 
         public PositionerMutation() {
@@ -70,8 +82,44 @@ public class DragLabelHandler extends CanvasEventHandler {
         }
     }
 
+
+    private class LabelReallocationMutation extends Mutation.Symmetrical {
+
+        public LabelReallocationMutation() {
+            this.reallocatedLabel = label;
+            historyElement = originalElement;
+            historyPositioner = originalPositioner;
+        }
+
+        @Override
+        public void revert() {
+            Element oldElement = reallocatedLabel.getElement();
+            Supplier<Point> oldPositioner = reallocatedLabel.getPositioner();
+            reallocatedLabel.moveTo(historyElement, historyElement.distancePositioner(historyPositioner.get()));
+            historyElement = oldElement;
+            historyPositioner = oldPositioner;
+        }
+
+        @Override
+        public Mutation.Type getType() {
+            return Mutation.Type.RELOCATION;
+        }
+
+        @Override
+        public String getBundleKey() {
+            return "Label" + getType().getBundleKey();
+        }
+
+        private final Label reallocatedLabel;
+        private Element historyElement;
+        private Supplier<Point> historyPositioner;
+    }
+
+
     private final Label label;
     private final Supplier<Point> originalPositioner;
+    private final Element originalElement;
+
     private Element nearestElement;
     private int nearestIndex = -1;
 

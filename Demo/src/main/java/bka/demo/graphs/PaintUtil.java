@@ -26,13 +26,13 @@ public class PaintUtil {
     }
 
     public static void paintDot(Graphics2D graphics, Point location, int radius, Paint paint) {
-        int size = radius * 2 + 1;
+        int size = radius * 2;
         graphics.setPaint(paint);
         graphics.fillOval(location.x - radius, location.y - radius, size, size);
     }
 
     public static void paintCircle(Graphics2D graphics, Point location, int radius, Paint paint) {
-        int size = radius * 2 + 1;
+        int size = radius * 2;
         graphics.setPaint(paint);
         graphics.drawOval(location.x - radius, location.y - radius, size, size);
     }

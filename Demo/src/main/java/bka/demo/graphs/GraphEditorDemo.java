@@ -39,12 +39,16 @@ public class GraphEditorDemo extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        edgeSelector = new javax.swing.ButtonGroup();
         javax.swing.JScrollPane graphScrollPane = new javax.swing.JScrollPane();
         graphPanel = new GraphPanel();
         historyPanel = new javax.swing.JPanel();
         historyScrollPane = new javax.swing.JScrollPane();
         historyList = new javax.swing.JList<>();
         historyList.setCellRenderer(new HistoryListCellRenderer());
+        elementPanel = new javax.swing.JPanel();
+        undirectedEdgeRadioButton = new javax.swing.JRadioButton();
+        directedEdgeRadioButton = new javax.swing.JRadioButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle(BUNDLE.getString("ApplicationTitle"));
@@ -84,11 +88,11 @@ public class GraphEditorDemo extends javax.swing.JFrame {
         graphPanel.setLayout(graphPanelLayout);
         graphPanelLayout.setHorizontalGroup(
             graphPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 400, Short.MAX_VALUE)
+            .addGap(0, 444, Short.MAX_VALUE)
         );
         graphPanelLayout.setVerticalGroup(
             graphPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 381, Short.MAX_VALUE)
+            .addGap(0, 413, Short.MAX_VALUE)
         );
 
         graphScrollPane.setViewportView(graphPanel);
@@ -108,6 +112,36 @@ public class GraphEditorDemo extends javax.swing.JFrame {
         historyPanel.add(historyScrollPane);
 
         getContentPane().add(historyPanel, java.awt.BorderLayout.EAST);
+
+        edgeSelector.add(undirectedEdgeRadioButton);
+        undirectedEdgeRadioButton.setSelected(true);
+        undirectedEdgeRadioButton.setText(BUNDLE.getString("UndirectedEdge"));
+
+        edgeSelector.add(directedEdgeRadioButton);
+        directedEdgeRadioButton.setText(BUNDLE.getString("DirectedEdge"));
+
+        javax.swing.GroupLayout elementPanelLayout = new javax.swing.GroupLayout(elementPanel);
+        elementPanel.setLayout(elementPanelLayout);
+        elementPanelLayout.setHorizontalGroup(
+            elementPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, elementPanelLayout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGroup(elementPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(directedEdgeRadioButton)
+                    .addComponent(undirectedEdgeRadioButton))
+                .addContainerGap())
+        );
+        elementPanelLayout.setVerticalGroup(
+            elementPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(elementPanelLayout.createSequentialGroup()
+                .addGap(122, 122, 122)
+                .addComponent(undirectedEdgeRadioButton)
+                .addGap(18, 18, 18)
+                .addComponent(directedEdgeRadioButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGap(246, 246, 246))
+        );
+
+        getContentPane().add(elementPanel, java.awt.BorderLayout.WEST);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -274,6 +308,13 @@ public class GraphEditorDemo extends javax.swing.JFrame {
             updateGraphPanel(update);
         }
 
+        @Override
+        public EdgeRenderer createEdgeRenderer(VertexRenderer origin) {
+            EdgeRenderer edgeRenderer = new EdgeRenderer(origin);
+            edgeRenderer.setDirected(directedEdgeRadioButton.isSelected());
+            return edgeRenderer;
+        }
+
         private static final int POPUP_WIDTH = 50;
         private static final int POPUP_HEIGHT = 20;
 
@@ -281,10 +322,14 @@ public class GraphEditorDemo extends javax.swing.JFrame {
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JRadioButton directedEdgeRadioButton;
+    private javax.swing.ButtonGroup edgeSelector;
+    private javax.swing.JPanel elementPanel;
     private javax.swing.JPanel graphPanel;
     private javax.swing.JList<String> historyList;
     private javax.swing.JPanel historyPanel;
     private javax.swing.JScrollPane historyScrollPane;
+    private javax.swing.JRadioButton undirectedEdgeRadioButton;
     // End of variables declaration//GEN-END:variables
 
     private final javax.swing.DefaultListModel<String> historyListModel = new javax.swing.DefaultListModel<>();

@@ -13,7 +13,7 @@ public class CreateEdgeHandler extends CanvasEventHandler {
 
     public CreateEdgeHandler(GraphCanvas canvas, VertexRenderer vertex) {
         super(canvas);
-        draggingEdgeRenderer = new EdgeRenderer(vertex);
+        draggingEdgeRenderer = getCanvas().getContext().createEdgeRenderer(vertex);
     }
 
     @Override

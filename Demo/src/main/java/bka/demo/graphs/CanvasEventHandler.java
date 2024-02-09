@@ -50,7 +50,7 @@ public abstract class CanvasEventHandler {
         return ComponentUpdate.NO_OPERATION;
     }
 
-    protected GraphCanvas getCanvas() {
+    protected final GraphCanvas getCanvas() {
         return canvas;
     }
 

@@ -192,52 +192,50 @@ public class EdgeRenderer extends Element {
         graphics.setStroke(new BasicStroke());
         graphics.drawPolyline(x, y, count);
         if (directed) {
-            int index = arrowHeadLineIndex();
-            Point lineStart = getPoint(index);
-            Point lineEnd = getPoint(index + 1);
-            double angle = arrowheadRotation(lineStart, lineEnd);
-            Point location = arrowheadLocation(lineStart, lineEnd);
-            if (location != null) {
-                graphics.translate(location.x, location.y);
-                graphics.rotate(angle);
-                paintArrowhead(graphics);
-                graphics.rotate(-angle);
-                graphics.translate(-location.x, -location.y);
-            }
+            paintArrowhead(graphics);
         }
         getLabels().forEach(label -> label.paint(graphics));
     }
 
-    private void paintArrowhead(Graphics2D g2d) {
-        g2d.fillPolygon(ARROWHEAD_X_COORDINATES, ARROWHEAD_Y_COORDINATES, ARROWHEAD_X_COORDINATES.length);
+    private void paintArrowhead(Graphics2D graphics) {
+        int index = arrowHeadLineIndex();
+        Point lineStart = getPoint(index);
+        Point lineEnd = getPoint(index + 1);
+        double angle = arrowheadRotation(lineStart, lineEnd);
+        Point location = arrowheadLocation(lineStart, lineEnd);
+        graphics.translate(location.x, location.y);
+        graphics.rotate(angle);
+        graphics.fillPolygon(ARROWHEAD_X_COORDINATES, ARROWHEAD_Y_COORDINATES, ARROWHEAD_X_COORDINATES.length);
+        graphics.rotate(-angle);
+        graphics.translate(-location.x, -location.y);
     }
 
     private int arrowHeadLineIndex() {
         return points.size() / 2;
     }
 
+    /**
+     *
+     * @param start point
+     * @param end point
+     * @return angle to rotate an arrowhead pointing from left to right so that it points from the start point to the end point
+     */
+    private double arrowheadRotation(Point start, Point end) {
+        double angle = Math.atan(CanvasUtil.slope(start, end));
+        if (end.x < start.x) {
+            return angle + Math.PI;
+        }
+        return angle;
+    }
 
     private Point arrowheadLocation(Point start, Point end) {
         return coordinateOnLine(start, end, 0.5f);
     }
 
-    /**
-     * @param index: index start point the line in xPoints, yPoints
-     * @param position: [0..1] relative position on vector; 0 = start point, 1 = end point
-     * @return Coordinate of the relative position on the line from point at index to point at index+1
-     */
     private Point coordinateOnLine(Point start, Point end, float position) {
         return new Point(
             Math.round(start.x + (end.x - start.x) * position),
             Math.round(start.y + (end.y - start.y) * position));
-    }
-
-    private double arrowheadRotation(Point start, Point end) {
-        double angle = -Math.atan(1 / CanvasUtil.slope(start, end));
-        if (end.y < start.y) {
-            return angle + Math.PI;
-        }
-        return angle;
     }
 
     @Override
@@ -438,6 +436,6 @@ public class EdgeRenderer extends Element {
     private VertexRenderer end;
     private boolean directed;
 
-    private static final int[] ARROWHEAD_X_COORDINATES = { -5, 0, 5 };
-    private static final int[] ARROWHEAD_Y_COORDINATES = { -5, 5, -5 };
+    private static final int[] ARROWHEAD_X_COORDINATES = { -5, 5, -5 };
+    private static final int[] ARROWHEAD_Y_COORDINATES = { -5, 0, 5 };
 }

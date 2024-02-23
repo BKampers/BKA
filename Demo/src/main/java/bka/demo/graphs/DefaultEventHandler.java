@@ -198,8 +198,8 @@ public class DefaultEventHandler extends CanvasEventHandler {
         if (button == MouseButton.TOGGLE_SELECT) {
             return toggleSelection(event.getPoint());
         }
-        if (button == MouseButton.RESET) {
-            return clearSelection();
+        if (button == MouseButton.CONTEXT) {
+            return contextButtonClicked(event);
         }
         if (button == MouseButton.EDIT) {
             return editLabel(event.getPoint());
@@ -245,7 +245,13 @@ public class DefaultEventHandler extends CanvasEventHandler {
         return ComponentUpdate.NO_OPERATION;
     }
 
-    private ComponentUpdate clearSelection() {
+    private ComponentUpdate contextButtonClicked(MouseEvent event) {
+        Point cursor = event.getPoint();
+        EdgeRenderer nearestEdge = getCanvas().findNearestEdge(cursor);
+        if (nearestEdge != null) {
+            getCanvas().getContext().showEdgeMenu(nearestEdge, cursor);
+            return ComponentUpdate.NO_OPERATION;
+        }
         getCanvas().clearSelection();
         return ComponentUpdate.REPAINT;
     }

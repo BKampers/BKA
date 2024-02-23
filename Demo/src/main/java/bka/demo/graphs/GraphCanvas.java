@@ -112,6 +112,14 @@ public class GraphCanvas extends CompositeRenderer {
         return ComponentUpdate.repaint(Cursor.DEFAULT_CURSOR);
     }
 
+    public void setDirected(EdgeRenderer edge, boolean directed) {
+        if (edge.isDirected() != directed) {
+            history.add(new EdgeDirectedMutation(edge));
+            edge.setDirected(directed);
+            getContext().requestUpdate(ComponentUpdate.REPAINT);
+        }
+    }
+
     public Element findNearestElement(Point point) {
         if (vertices.isEmpty()) {
             return null;
@@ -212,6 +220,22 @@ public class GraphCanvas extends CompositeRenderer {
 
     ApplicationContext getContext() {
         return context;
+    }
+
+
+    private class EdgeDirectedMutation extends PropertyMutation<Boolean> {
+
+        public EdgeDirectedMutation(EdgeRenderer edge) {
+            super(Mutation.Type.EDGE_DIRECTED_TOGGLE, edge::isDirected, edge::setDirected);
+            bundleKey = edge.isDirected() ? "EdgeUndirected" : "EdgeDirected";
+        }
+
+        @Override
+        public String getBundleKey() {
+            return bundleKey;
+        }
+
+        private final String bundleKey;
     }
 
 

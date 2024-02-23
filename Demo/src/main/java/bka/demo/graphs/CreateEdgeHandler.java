@@ -42,7 +42,7 @@ public class CreateEdgeHandler extends CanvasEventHandler {
 
     @Override
     public ComponentUpdate mouseClicked(MouseEvent event) {
-        if (button == MouseButton.RESET) {
+        if (button == MouseButton.CONTEXT) {
             getCanvas().resetEventHandler();
             return ComponentUpdate.REPAINT;
         }

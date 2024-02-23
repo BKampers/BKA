@@ -71,6 +71,7 @@ public class EdgeRenderer extends Element {
     }
 
     public EdgeRenderer(VertexRenderer start) {
+        polygonPaintable.setPaint("color", Color.BLACK);
         this.start = Objects.requireNonNull(start);
     }
 
@@ -172,25 +173,7 @@ public class EdgeRenderer extends Element {
 
     @Override
     public void paint(Graphics2D graphics) {
-        int count = points.size() + ((end == null) ? 1 : 2);
-        int[] x = new int[count];
-        int[] y = new int[count];
-        Point startPoint = getStartConnectorPoint();
-        x[0] = startPoint.x;
-        y[0] = startPoint.y;
-        int i = 1;
-        for (Point point : points) {
-            x[i] = point.x;
-            y[i] = point.y;
-            ++i;
-        }
-        if (end != null) {
-            Point endPoint = getEndConnectorPoint();
-            x[count - 1] = endPoint.x;
-            y[count - 1] = endPoint.y;
-        }
-        graphics.setStroke(new BasicStroke());
-        graphics.drawPolyline(x, y, count);
+        polygonPaintable.paint(graphics);
         if (directed) {
             paintArrowhead(graphics);
         }
@@ -435,6 +418,33 @@ public class EdgeRenderer extends Element {
     private final VertexRenderer start;
     private VertexRenderer end;
     private boolean directed;
+
+
+    private final Paintable polygonPaintable = new Paintable() {
+        @Override
+        public void paint(Graphics2D graphics) {
+            int count = points.size() + ((end == null) ? 1 : 2);
+            int[] x = new int[count];
+            int[] y = new int[count];
+            Point startPoint = getStartConnectorPoint();
+            x[0] = startPoint.x;
+            y[0] = startPoint.y;
+            int i = 1;
+            for (Point point : points) {
+                x[i] = point.x;
+                y[i] = point.y;
+                ++i;
+            }
+            if (end != null) {
+                Point endPoint = getEndConnectorPoint();
+                x[count - 1] = endPoint.x;
+                y[count - 1] = endPoint.y;
+            }
+            graphics.setStroke(new BasicStroke());
+            graphics.setPaint(getPaint("color"));
+            graphics.drawPolyline(x, y, count);
+        }
+    };
 
     private static final int[] ARROWHEAD_X_COORDINATES = { -5, 5, -5 };
     private static final int[] ARROWHEAD_Y_COORDINATES = { -5, 0, 5 };

@@ -9,6 +9,7 @@ import bka.swing.popup.*;
 import java.awt.*;
 import java.util.*;
 import java.util.function.*;
+import javax.swing.*;
 
 public class GraphEditorDemo extends javax.swing.JFrame {
 
@@ -25,7 +26,7 @@ public class GraphEditorDemo extends javax.swing.JFrame {
         if (history.getIndex() > 0) {
             int index = history.getIndex() - 1;
             historyList.setSelectedIndex(index);
-            java.awt.Rectangle selection = historyList.getCellBounds(index, index);
+            Rectangle selection = historyList.getCellBounds(index, index);
             historyScrollPane.getViewport().scrollRectToVisible(selection);
             historyScrollPane.getVerticalScrollBar().setValue(selection.y);
         }
@@ -40,6 +41,8 @@ public class GraphEditorDemo extends javax.swing.JFrame {
     private void initComponents() {
 
         edgeSelector = new javax.swing.ButtonGroup();
+        edgeMenu = new javax.swing.JMenu();
+        directedCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         javax.swing.JScrollPane graphScrollPane = new javax.swing.JScrollPane();
         graphPanel = new GraphPanel();
         historyPanel = new javax.swing.JPanel();
@@ -49,6 +52,12 @@ public class GraphEditorDemo extends javax.swing.JFrame {
         elementPanel = new javax.swing.JPanel();
         undirectedEdgeRadioButton = new javax.swing.JRadioButton();
         directedEdgeRadioButton = new javax.swing.JRadioButton();
+
+        edgeMenu.setText("jMenu1");
+
+        directedCheckBoxMenuItem.setSelected(true);
+        directedCheckBoxMenuItem.setText("jCheckBoxMenuItem1");
+        edgeMenu.add(directedCheckBoxMenuItem);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle(BUNDLE.getString("ApplicationTitle"));
@@ -289,8 +298,21 @@ public class GraphEditorDemo extends javax.swing.JFrame {
         }
     }
 
+    private GraphCanvas getCanvas() {
+        return canvas;
+    }
+
 
     private final GraphCanvas canvas = new GraphCanvas(new ApplicationContext() {
+
+        @Override
+        public void showEdgeMenu(EdgeRenderer edge, Point location) {
+            JPopupMenu menu = new JPopupMenu();
+            JCheckBoxMenuItem directedMenuItem = new JCheckBoxMenuItem(getBundleText("Directed"), edge.isDirected());
+            directedMenuItem.addActionListener(evt -> getCanvas().setDirected(edge, directedMenuItem.getState()));
+            menu.add(directedMenuItem, edge.isDirected());
+            menu.show(graphPanel, location.x, location.y);
+        }
 
         @Override
         public void editString(String input, Point location, Consumer<String> onApply) {
@@ -322,7 +344,9 @@ public class GraphEditorDemo extends javax.swing.JFrame {
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JCheckBoxMenuItem directedCheckBoxMenuItem;
     private javax.swing.JRadioButton directedEdgeRadioButton;
+    private javax.swing.JMenu edgeMenu;
     private javax.swing.ButtonGroup edgeSelector;
     private javax.swing.JPanel elementPanel;
     private javax.swing.JPanel graphPanel;

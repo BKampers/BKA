@@ -14,7 +14,7 @@ public enum MouseButton {
 
     MAIN(MouseEvent.BUTTON1),
     TOGGLE_SELECT(MouseEvent.BUTTON1, Keyboard.getInstance().getToggleSelectionModifiers()),
-    RESET(MouseEvent.BUTTON3),
+    CONTEXT(MouseEvent.BUTTON3),
     EDIT(MouseEvent.BUTTON1, MouseEvent.ALT_DOWN_MASK),
     UNSUPPORTED(0, 0, 0);
 

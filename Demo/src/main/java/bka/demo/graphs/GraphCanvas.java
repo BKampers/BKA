@@ -120,6 +120,12 @@ public class GraphCanvas extends CompositeRenderer {
         }
     }
 
+    public void revert(EdgeRenderer edge) {
+        history.add(new RevertEdgeMutation(edge));
+        edge.revert();
+        getContext().requestUpdate(ComponentUpdate.REPAINT);
+    }
+
     public Element findNearestElement(Point point) {
         if (vertices.isEmpty()) {
             return null;
@@ -236,6 +242,27 @@ public class GraphCanvas extends CompositeRenderer {
         }
 
         private final String bundleKey;
+    }
+
+
+    private class RevertEdgeMutation extends Mutation.Symmetrical {
+
+        private RevertEdgeMutation(EdgeRenderer edge) {
+            this.edge = edge;
+        }
+
+        @Override
+        protected void revert() {
+            edge.revert();
+        }
+
+        @Override
+        public Type getType() {
+            return Mutation.Type.EDGE_REVERT;
+        }
+
+        private final EdgeRenderer edge;
+
     }
 
 

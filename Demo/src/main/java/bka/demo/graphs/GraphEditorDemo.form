@@ -4,23 +4,6 @@
   <NonVisualComponents>
     <Component class="javax.swing.ButtonGroup" name="edgeSelector">
     </Component>
-    <Container class="javax.swing.JMenu" name="edgeMenu">
-      <Properties>
-        <Property name="text" type="java.lang.String" value="jMenu1"/>
-      </Properties>
-
-      <Layout class="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout">
-        <Property name="useNullLayout" type="boolean" value="true"/>
-      </Layout>
-      <SubComponents>
-        <MenuItem class="javax.swing.JCheckBoxMenuItem" name="directedCheckBoxMenuItem">
-          <Properties>
-            <Property name="selected" type="boolean" value="true"/>
-            <Property name="text" type="java.lang.String" value="jCheckBoxMenuItem1"/>
-          </Properties>
-        </MenuItem>
-      </SubComponents>
-    </Container>
   </NonVisualComponents>
   <Properties>
     <Property name="defaultCloseOperation" type="int" value="3"/>

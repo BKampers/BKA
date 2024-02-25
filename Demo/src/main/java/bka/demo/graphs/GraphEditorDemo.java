@@ -41,8 +41,6 @@ public class GraphEditorDemo extends javax.swing.JFrame {
     private void initComponents() {
 
         edgeSelector = new javax.swing.ButtonGroup();
-        edgeMenu = new javax.swing.JMenu();
-        directedCheckBoxMenuItem = new javax.swing.JCheckBoxMenuItem();
         javax.swing.JScrollPane graphScrollPane = new javax.swing.JScrollPane();
         graphPanel = new GraphPanel();
         historyPanel = new javax.swing.JPanel();
@@ -52,12 +50,6 @@ public class GraphEditorDemo extends javax.swing.JFrame {
         elementPanel = new javax.swing.JPanel();
         undirectedEdgeRadioButton = new javax.swing.JRadioButton();
         directedEdgeRadioButton = new javax.swing.JRadioButton();
-
-        edgeMenu.setText("jMenu1");
-
-        directedCheckBoxMenuItem.setSelected(true);
-        directedCheckBoxMenuItem.setText("jCheckBoxMenuItem1");
-        edgeMenu.add(directedCheckBoxMenuItem);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle(BUNDLE.getString("ApplicationTitle"));
@@ -311,6 +303,11 @@ public class GraphEditorDemo extends javax.swing.JFrame {
             JCheckBoxMenuItem directedMenuItem = new JCheckBoxMenuItem(getBundleText("Directed"), edge.isDirected());
             directedMenuItem.addActionListener(evt -> getCanvas().setDirected(edge, directedMenuItem.getState()));
             menu.add(directedMenuItem, edge.isDirected());
+            if (edge.isDirected()) {
+                JMenuItem revertMenuItem = new JMenuItem(getBundleText("Revert"));
+                revertMenuItem.addActionListener(evt -> getCanvas().revert(edge));
+                menu.add(revertMenuItem);
+            }
             menu.show(graphPanel, location.x, location.y);
         }
 
@@ -344,9 +341,7 @@ public class GraphEditorDemo extends javax.swing.JFrame {
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JCheckBoxMenuItem directedCheckBoxMenuItem;
     private javax.swing.JRadioButton directedEdgeRadioButton;
-    private javax.swing.JMenu edgeMenu;
     private javax.swing.ButtonGroup edgeSelector;
     private javax.swing.JPanel elementPanel;
     private javax.swing.JPanel graphPanel;

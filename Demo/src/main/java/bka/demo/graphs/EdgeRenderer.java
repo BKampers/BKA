@@ -130,6 +130,15 @@ public class EdgeRenderer extends Element {
         super.addLabel(label);
     }
 
+    public void revert() {
+        Map<Label, Point> labelPoints = getLabels().stream().collect(Collectors.toMap(Function.identity(), label -> label.getPositioner().get()));
+        VertexRenderer newEnd = start;
+        start = end;
+        end = newEnd;
+        Collections.reverse(points);
+        labelPoints.forEach((label, point) -> label.setPositioner(distancePositioner(point)));
+    }
+
     @Override
     public Supplier<Point> distancePositioner(Point point) {
         int index = nearestLineIndex(point);
@@ -415,7 +424,7 @@ public class EdgeRenderer extends Element {
     }
 
     private final List<Point> points = new ArrayList<>();
-    private final VertexRenderer start;
+    private VertexRenderer start;
     private VertexRenderer end;
     private boolean directed;
 

@@ -13,6 +13,7 @@ public interface Mutation {
         VERTEX_RESIZE("VertexResized"),
         EDGE_TRANSFORMATION("EdgeTransformed"),
         EDGE_DIRECTED_TOGGLE("EdgeDirectedToggle"),
+        EDGE_REVERT("EdgeReverted"),
         LABEL_INSERTION("LabelAdded"),
         LABEL_DELETION("LabelRemoved"),
         LABEL_MUTATION("LabelChanged");

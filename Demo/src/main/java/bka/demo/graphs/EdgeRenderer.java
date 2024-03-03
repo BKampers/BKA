@@ -71,7 +71,7 @@ public class EdgeRenderer extends Element {
     }
 
     public EdgeRenderer(VertexRenderer start) {
-        polygonPaintable.setPaint("color", Color.BLACK);
+        polygonPaintable.setPaint(COLOR_KEY, Color.BLACK);
         this.start = Objects.requireNonNull(start);
     }
 
@@ -371,6 +371,10 @@ public class EdgeRenderer extends Element {
         return new Vector(point.getX(), point.getY());
     }
 
+    public Collection<Paintable> getPaintables() {
+        return List.of(polygonPaintable);
+    }
+
 
     private class DistancePositioner implements Supplier<Point> {
 
@@ -450,11 +454,13 @@ public class EdgeRenderer extends Element {
                 y[count - 1] = endPoint.y;
             }
             graphics.setStroke(new BasicStroke());
-            graphics.setPaint(getPaint("color"));
+            graphics.setPaint(getPaint(COLOR_KEY));
             graphics.drawPolyline(x, y, count);
         }
     };
 
     private static final int[] ARROWHEAD_X_COORDINATES = { -5, 5, -5 };
     private static final int[] ARROWHEAD_Y_COORDINATES = { -5, 0, 5 };
+
+    private static final Object COLOR_KEY = "Color";
 }

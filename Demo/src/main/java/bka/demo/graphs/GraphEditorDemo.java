@@ -294,6 +294,17 @@ public class GraphEditorDemo extends javax.swing.JFrame {
         return canvas;
     }
 
+    private static Rectangle colorChooserBounds(Point location) {
+        return new Rectangle(location.x, location.y, 600, 300);
+    }
+
+    private static Color castToColor(Paint paint, Color defaultColor) {
+        if (paint instanceof Color) {
+            return (Color) paint;
+        }
+        return defaultColor;
+    }
+
 
     private final GraphCanvas canvas = new GraphCanvas(new ApplicationContext() {
 
@@ -308,7 +319,28 @@ public class GraphEditorDemo extends javax.swing.JFrame {
                 revertMenuItem.addActionListener(evt -> getCanvas().revert(edge));
                 menu.add(revertMenuItem);
             }
+            addPaintMenus(edge, location, menu);
             menu.show(graphPanel, location.x, location.y);
+        }
+
+        private void addPaintMenus(EdgeRenderer edge, Point location, JPopupMenu menu) {
+            edge.getPaintables().forEach(paintable -> {
+                paintable.getPaintKeys().forEach(paintKey -> {
+                    JMenuItem paintItem = new JMenuItem(getBundleText(paintKey.toString()));
+                    paintItem.addActionListener(evt -> pickColor(location, paintable, edge, paintKey));
+                    menu.add(paintItem);
+                });
+            });
+        }
+
+        public final void pickColor(Point location, Paintable paintable, EdgeRenderer edge, Object key) {
+            Color oldColor = castToColor(paintable.getPaint(key), Color.BLACK);
+            PopupControl.show(graphPanel, new ColorChooserPopupModel(COLOR_PICKER_KEY, colorChooserBounds(location), oldColor, (newColor) -> {
+                if (!Objects.equals(oldColor, newColor)) {
+                    paintable.setPaint(key, newColor);
+                    requestUpdate(ComponentUpdate.REPAINT);
+                }
+            }));
         }
 
         @Override
@@ -354,5 +386,7 @@ public class GraphEditorDemo extends javax.swing.JFrame {
     private final javax.swing.DefaultListModel<String> historyListModel = new javax.swing.DefaultListModel<>();
 
     private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("GraphEditor");
+
+    private static final Object COLOR_PICKER_KEY = new Object();
 
 }

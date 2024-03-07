@@ -4,7 +4,8 @@
 package bka.demo.graphs;
 
 import bka.awt.*;
-import bka.demo.graphs.history.*;
+import bka.awt.graphcanvas.*;
+import bka.awt.graphcanvas.history.*;
 import bka.swing.popup.*;
 import java.awt.*;
 import java.util.*;
@@ -310,6 +311,8 @@ public class GraphEditorDemo extends javax.swing.JFrame {
 
         @Override
         public void showEdgeMenu(EdgeRenderer edge, Point location) {
+            getCanvas().resetEventHandler();
+            requestUpdate(ComponentUpdate.repaint(java.awt.Cursor.DEFAULT_CURSOR));
             JPopupMenu menu = new JPopupMenu();
             JCheckBoxMenuItem directedMenuItem = new JCheckBoxMenuItem(getBundleText("Directed"), edge.isDirected());
             directedMenuItem.addActionListener(evt -> getCanvas().setDirected(edge, directedMenuItem.getState()));

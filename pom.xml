@@ -13,6 +13,7 @@
         <module>Clock</module>
         <module>Graphs</module>
         <module>Swing</module>
+        <module>GraphCanvas</module>
     </modules>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

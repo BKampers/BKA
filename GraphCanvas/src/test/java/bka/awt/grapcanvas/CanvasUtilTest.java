@@ -4,7 +4,7 @@
 
 package bka.awt.grapcanvas;
 
-import bka.awt.graphcanvas.CanvasUtil;
+import bka.awt.graphcanvas.*;
 import java.awt.*;
 import java.awt.geom.*;
 import static org.junit.Assert.assertEquals;

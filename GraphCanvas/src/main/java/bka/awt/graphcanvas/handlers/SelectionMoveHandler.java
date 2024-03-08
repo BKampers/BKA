@@ -1,14 +1,13 @@
 /*
 ** © Bart Kampers
-*/
+** This code may not be used for any purpose that harms humans (including
+** exploitation and discrimination), humanity, the environment or the
+** universe.
+ */
 package bka.awt.graphcanvas.handlers;
 
-import bka.awt.graphcanvas.CanvasUtil;
-import bka.awt.graphcanvas.ComponentUpdate;
-import bka.awt.graphcanvas.EdgeRenderer;
-import bka.awt.graphcanvas.Element;
-import bka.awt.graphcanvas.GraphCanvas;
-import bka.awt.graphcanvas.history.ElementRelocation;
+import bka.awt.graphcanvas.*;
+import bka.awt.graphcanvas.history.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;

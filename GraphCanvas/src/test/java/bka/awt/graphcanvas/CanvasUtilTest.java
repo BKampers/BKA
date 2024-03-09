@@ -2,9 +2,8 @@
 ** © Bart Kampers
 */
 
-package bka.awt.grapcanvas;
+package bka.awt.graphcanvas;
 
-import bka.awt.graphcanvas.*;
 import java.awt.*;
 import java.awt.geom.*;
 import static org.junit.Assert.assertEquals;

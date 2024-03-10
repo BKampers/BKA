@@ -346,27 +346,29 @@ public class EdgeRenderer extends Element {
         }
         boolean removed = false;
         Vector point = vector(points.get(0));
-        Vector segment1 = point.subtract(vector(getStartConnectorPoint()));
-        int i = 0;
-        while (i < points.size()) {
-            Vector nextPoint = vector((i + 1 < points.size()) ? points.get(i + 1) : getEndConnectorPoint());
-            Vector segment2 = nextPoint.subtract(point);
-            double cosine = Vector.cosine(segment1, segment2);
+        Vector line = point.subtract(vector(getStartConnectorPoint()));
+        int index = 0;
+        while (index < points.size()) {
+            int nextIndex = index + 1;
+            Vector nextPoint = vector((nextIndex < points.size()) ? points.get(nextIndex) : getEndConnectorPoint());
+            Vector nextLine = nextPoint.subtract(point);
+            double cosine = Vector.cosine(line, nextLine);
             if (cosine < acuteCosineLimit || obtuseCosineLimit < cosine) {
-                points.remove(i);
-                final int j = i;
-                getLabels().forEach(label -> {
-                    ((DistancePositioner) label.getPositioner()).pointRemoved(j);
-                });
+                removeExtremeAngle(index);
                 removed = true;
             }
             else {
+                index = nextIndex;
                 point = nextPoint;
-                segment1 = segment2;
-                i++;
+                line = nextLine;
             }
         }
         return removed;
+    }
+
+    private void removeExtremeAngle(int index) {
+        points.remove(index);
+        getLabels().forEach(label -> ((DistancePositioner) label.getPositioner()).pointRemoved(index));
     }
 
     private static Vector vector(Point point) {

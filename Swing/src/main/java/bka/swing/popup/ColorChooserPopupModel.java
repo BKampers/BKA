@@ -32,7 +32,7 @@ public class ColorChooserPopupModel extends DefaultPopupModel<Color> {
      * @param onApply call back to perform when a color is chosen
      */
     public ColorChooserPopupModel(Object key, Rectangle bounds, Color initialValue, Consumer<Color> onApply) {
-        this(bounds, initialValue, onApply, CHOOSERS.computeIfAbsent(Objects.requireNonNull(key), chooser -> new JColorChooser()));
+        this(bounds, initialValue, onApply, choosers.computeIfAbsent(Objects.requireNonNull(key), chooser -> new JColorChooser()));
     }
 
     private ColorChooserPopupModel(Rectangle bounds, Color initialValue, Consumer<Color> onApply, JColorChooser colorChooser) {
@@ -49,11 +49,13 @@ public class ColorChooserPopupModel extends DefaultPopupModel<Color> {
 
     @Override
     public void bindListener(Runnable whenReady) {
-        colorChooser.getSelectionModel().addChangeListener(new ColorChangeListener(whenReady));
+        colorChangeListener = new ColorChangeListener(whenReady);
+        colorChooser.getSelectionModel().addChangeListener(colorChangeListener);
     }
 
     @Override
     protected Color getNewValue() {
+        colorChooser.getSelectionModel().removeChangeListener(colorChangeListener);
         return colorChooser.getColor();
     }
 
@@ -79,7 +81,8 @@ public class ColorChooserPopupModel extends DefaultPopupModel<Color> {
 
 
     private final JColorChooser colorChooser;
+    private ColorChangeListener colorChangeListener;
 
-    private static final Map<Object, JColorChooser> CHOOSERS = new HashMap<>();
+    private static final Map<Object, JColorChooser> choosers = new HashMap<>();
 
 }

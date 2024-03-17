@@ -12,7 +12,7 @@ import java.util.*;
 import java.util.function.*;
 import javax.swing.*;
 
-public class GraphEditorDemo extends javax.swing.JFrame {
+public class GraphEditorDemo extends JFrame {
 
     public GraphEditorDemo() {
         initComponents();
@@ -340,6 +340,16 @@ public class GraphEditorDemo extends javax.swing.JFrame {
             Color oldColor = castToColor(paintable.getPaint(key), Color.BLACK);
             PopupControl.show(graphPanel, new ColorChooserPopupModel(COLOR_PICKER_KEY, colorChooserBounds(location), oldColor, (newColor) -> {
                 if (!Objects.equals(oldColor, newColor)) {
+                    Mutation mutation = new PropertyMutation<>(
+                        Mutation.Type.PAINT_MUTATION,
+                        () -> paintable.getPaint(key),
+                        paint -> paintable.setPaint(key, paint)) {
+                        @Override
+                        public String getBundleKey() {
+                            return key.toString() + "Changed";
+                        }
+                    };
+                    getCanvas().addHistory(mutation);
                     paintable.setPaint(key, newColor);
                     requestUpdate(ComponentUpdate.REPAINT);
                 }

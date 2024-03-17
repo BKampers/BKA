@@ -74,6 +74,7 @@ public class EdgeRenderer extends Element {
 
     public EdgeRenderer(VertexRenderer start) {
         polygonPaintable.setPaint(COLOR_KEY, Color.BLACK);
+        arrowheadPaintable.setPaint(ARROWHEAD_COLOR_KEY, Color.BLACK);
         this.start = Objects.requireNonNull(start);
     }
 
@@ -186,22 +187,9 @@ public class EdgeRenderer extends Element {
     public void paint(Graphics2D graphics) {
         polygonPaintable.paint(graphics);
         if (directed) {
-            paintArrowhead(graphics);
+            arrowheadPaintable.paint(graphics);
         }
         getLabels().forEach(label -> label.paint(graphics));
-    }
-
-    private void paintArrowhead(Graphics2D graphics) {
-        int index = arrowHeadLineIndex();
-        Point lineStart = getPoint(index);
-        Point lineEnd = getPoint(index + 1);
-        double angle = arrowheadRotation(lineStart, lineEnd);
-        Point location = arrowheadLocation(lineStart, lineEnd);
-        graphics.translate(location.x, location.y);
-        graphics.rotate(angle);
-        graphics.fillPolygon(ARROWHEAD_X_COORDINATES, ARROWHEAD_Y_COORDINATES, ARROWHEAD_X_COORDINATES.length);
-        graphics.rotate(-angle);
-        graphics.translate(-location.x, -location.y);
     }
 
     private int arrowHeadLineIndex() {
@@ -322,19 +310,17 @@ public class EdgeRenderer extends Element {
             return false;
         }
         boolean removed = false;
-        Point p0 = getStartConnectorPoint();
-        int i = 0;
-        while (i <= points.size()) {
-            Point pi = (i < points.size()) ? points.get(i) : getEndConnectorPoint();
-            if (CanvasUtil.squareDistance(p0, pi) < twinTolerance) {
-                int removeIndex = (i < points.size()) ? i : i - 1;
-                points.remove(removeIndex);
-                getLabels().forEach(label -> ((DistancePositioner) label.getPositioner()).pointRemoved(removeIndex));
+        Point point = getStartConnectorPoint();
+        int index = 0;
+        while (index <= points.size()) {
+            Point nextPoint = (index < points.size()) ? points.get(index) : getEndConnectorPoint();
+            if (CanvasUtil.squareDistance(point, nextPoint) < twinTolerance) {
+                removePoint((index < points.size()) ? index : index - 1);
                 removed = true;
             }
             else {
-                p0 = pi;
-                i++;
+                point = nextPoint;
+                index++;
             }
         }
         return removed;
@@ -354,7 +340,7 @@ public class EdgeRenderer extends Element {
             Vector nextLine = nextPoint.subtract(point);
             double cosine = Vector.cosine(line, nextLine);
             if (cosine < acuteCosineLimit || obtuseCosineLimit < cosine) {
-                removeExtremeAngle(index);
+                removePoint(index);
                 removed = true;
             }
             else {
@@ -366,7 +352,7 @@ public class EdgeRenderer extends Element {
         return removed;
     }
 
-    private void removeExtremeAngle(int index) {
+    private void removePoint(int index) {
         points.remove(index);
         getLabels().forEach(label -> ((DistancePositioner) label.getPositioner()).pointRemoved(index));
     }
@@ -376,6 +362,9 @@ public class EdgeRenderer extends Element {
     }
 
     public Collection<Paintable> getPaintables() {
+        if (directed) {
+            return List.of(polygonPaintable, arrowheadPaintable);
+        }
         return List.of(polygonPaintable);
     }
 
@@ -461,10 +450,38 @@ public class EdgeRenderer extends Element {
             graphics.setPaint(getPaint(COLOR_KEY));
             graphics.drawPolyline(x, y, count);
         }
+
+        @Override
+        public String toString() {
+            return "polygon ";
+        }
+    };
+
+
+    private final Paintable arrowheadPaintable = new Paintable() {
+        @Override
+        public void paint(Graphics2D graphics) {
+            int index = arrowHeadLineIndex();
+            Point lineStart = getPoint(index);
+            Point lineEnd = getPoint(index + 1);
+            double angle = arrowheadRotation(lineStart, lineEnd);
+            Point location = arrowheadLocation(lineStart, lineEnd);
+            graphics.translate(location.x, location.y);
+            graphics.rotate(angle);
+            graphics.setPaint(getPaint(ARROWHEAD_COLOR_KEY));
+            graphics.fillPolygon(ARROWHEAD_X_COORDINATES, ARROWHEAD_Y_COORDINATES, ARROWHEAD_X_COORDINATES.length);
+            graphics.rotate(-angle);
+            graphics.translate(-location.x, -location.y);
+        }
+        @Override
+        public String toString() {
+            return "arrowhead ";
+        }
     };
 
     private static final int[] ARROWHEAD_X_COORDINATES = { -5, 5, -5 };
     private static final int[] ARROWHEAD_Y_COORDINATES = { -5, 0, 5 };
 
     private static final Object COLOR_KEY = "Color";
+    private static final Object ARROWHEAD_COLOR_KEY = "ArrowheadColor";
 }

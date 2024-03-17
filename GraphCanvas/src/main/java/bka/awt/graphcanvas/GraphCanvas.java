@@ -129,6 +129,14 @@ public class GraphCanvas extends CompositeRenderer {
         getContext().requestUpdate(ComponentUpdate.REPAINT);
     }
 
+    public void changePaint(Paintable paintable, Object key, Paint oldPaint, Paint newPaint) {
+        if (!Objects.equals(oldPaint, newPaint)) {
+            addHistory(new PaintMutation(paintable, key));
+            paintable.setPaint(key, newPaint);
+            getContext().requestUpdate(ComponentUpdate.REPAINT);
+        }
+    }
+
     public Element findNearestElement(Point point) {
         if (vertices.isEmpty()) {
             return null;
@@ -266,6 +274,22 @@ public class GraphCanvas extends CompositeRenderer {
 
         private final EdgeRenderer edge;
 
+    }
+
+
+    private class PaintMutation extends PropertyMutation<Paint> {
+
+        private PaintMutation(Paintable paintable, Object key) {
+            super(Mutation.Type.PAINT_MUTATION, () -> paintable.getPaint(key), paint -> paintable.setPaint(key, paint));
+            bundleKey = key.toString() + "Changed";
+        }
+
+        @Override
+        public String getBundleKey() {
+            return bundleKey;
+        }
+
+        private final String bundleKey;
     }
 
 

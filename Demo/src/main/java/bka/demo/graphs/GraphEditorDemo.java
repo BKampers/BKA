@@ -337,23 +337,15 @@ public class GraphEditorDemo extends JFrame {
         }
 
         public final void pickColor(Point location, Paintable paintable, EdgeRenderer edge, Object key) {
-            Color oldColor = castToColor(paintable.getPaint(key), Color.BLACK);
-            PopupControl.show(graphPanel, new ColorChooserPopupModel(COLOR_PICKER_KEY, colorChooserBounds(location), oldColor, (newColor) -> {
-                if (!Objects.equals(oldColor, newColor)) {
-                    Mutation mutation = new PropertyMutation<>(
-                        Mutation.Type.PAINT_MUTATION,
-                        () -> paintable.getPaint(key),
-                        paint -> paintable.setPaint(key, paint)) {
-                        @Override
-                        public String getBundleKey() {
-                            return key.toString() + "Changed";
-                        }
-                    };
-                    getCanvas().addHistory(mutation);
-                    paintable.setPaint(key, newColor);
-                    requestUpdate(ComponentUpdate.REPAINT);
-                }
-            }));
+            PopupControl.show(graphPanel, colorChooserPopupModel(location, paintable, castToColor(paintable.getPaint(key), Color.BLACK), key));
+        }
+
+        private ColorChooserPopupModel colorChooserPopupModel(Point location, Paintable paintable, Color oldColor, Object key) {
+            return new ColorChooserPopupModel(
+                COLOR_PICKER_KEY,
+                colorChooserBounds(location),
+                oldColor,
+                (newColor) -> getCanvas().changePaint(paintable, key, oldColor, newColor));
         }
 
         @Override

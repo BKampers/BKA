@@ -73,8 +73,8 @@ public class EdgeRenderer extends Element {
     }
 
     public EdgeRenderer(VertexRenderer start) {
-        polygonPaintable.setPaint(COLOR_KEY, Color.BLACK);
-        arrowheadPaintable.setPaint(ARROWHEAD_COLOR_KEY, Color.BLACK);
+        polygonPaintable.setPaint(LINE_PAINT_KEY, Color.BLACK);
+        arrowheadPaintable.setPaint(ARROWHEAD_PAINT_KEY, Color.BLACK);
         this.start = Objects.requireNonNull(start);
     }
 
@@ -447,7 +447,7 @@ public class EdgeRenderer extends Element {
                 y[count - 1] = endPoint.y;
             }
             graphics.setStroke(new BasicStroke());
-            graphics.setPaint(getPaint(COLOR_KEY));
+            graphics.setPaint(getPaint(LINE_PAINT_KEY));
             graphics.drawPolyline(x, y, count);
         }
 
@@ -468,7 +468,7 @@ public class EdgeRenderer extends Element {
             Point location = arrowheadLocation(lineStart, lineEnd);
             graphics.translate(location.x, location.y);
             graphics.rotate(angle);
-            graphics.setPaint(getPaint(ARROWHEAD_COLOR_KEY));
+            graphics.setPaint(getPaint(ARROWHEAD_PAINT_KEY));
             graphics.fillPolygon(ARROWHEAD_X_COORDINATES, ARROWHEAD_Y_COORDINATES, ARROWHEAD_X_COORDINATES.length);
             graphics.rotate(-angle);
             graphics.translate(-location.x, -location.y);
@@ -482,6 +482,6 @@ public class EdgeRenderer extends Element {
     private static final int[] ARROWHEAD_X_COORDINATES = { -5, 5, -5 };
     private static final int[] ARROWHEAD_Y_COORDINATES = { -5, 0, 5 };
 
-    private static final Object COLOR_KEY = "Color";
-    private static final Object ARROWHEAD_COLOR_KEY = "ArrowheadColor";
+    private static final Object LINE_PAINT_KEY = "LinePaint";
+    private static final Object ARROWHEAD_PAINT_KEY = "ArrowheadPaint";
 }

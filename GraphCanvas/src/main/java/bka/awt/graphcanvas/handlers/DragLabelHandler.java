@@ -81,7 +81,7 @@ public class DragLabelHandler extends CanvasEventHandler {
 
         @Override
         public String getBundleKey() {
-            return "Label" + getType().getBundleKey();
+            return "Label" + super.getBundleKey();
         }
     }
 

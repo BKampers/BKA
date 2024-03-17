@@ -18,7 +18,8 @@ public interface Mutation {
         EDGE_REVERT("EdgeReverted"),
         LABEL_INSERTION("LabelAdded"),
         LABEL_DELETION("LabelRemoved"),
-        LABEL_MUTATION("LabelChanged");
+        LABEL_MUTATION("LabelChanged"),
+        PAINT_MUTATION("PaintChanged");
 
         private Type(String bundleKey) {
             this.bundleKey = bundleKey;

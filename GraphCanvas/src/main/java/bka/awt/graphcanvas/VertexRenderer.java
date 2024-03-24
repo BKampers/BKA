@@ -14,11 +14,15 @@ import java.util.function.*;
 
 public class VertexRenderer extends Element {
 
+    public static final Object BORDER_PAINT_KEY = "BorderPaint";
+    public static final Object BORDER_STROKE_KEY = "BorderStroke";
     public static final Object FILL_PAINT_KEY = "FillPaint";
     public static final Object FILL_STROKE_KEY = "FillStroke";
 
     public VertexRenderer(Point point) {
         this.location = new Point(point);
+        shapePaintable.setPaint(BORDER_PAINT_KEY, Color.BLACK);
+        shapePaintable.setStroke(BORDER_STROKE_KEY, new BasicStroke());
         shapePaintable.setPaint(FILL_PAINT_KEY, Color.BLACK);
         shapePaintable.setStroke(FILL_STROKE_KEY, new BasicStroke());
     }
@@ -103,13 +107,21 @@ public class VertexRenderer extends Element {
     private final Paintable shapePaintable = new Paintable() {
         @Override
         public void paint(Graphics2D graphics) {
-            paint(graphics, getPaint(FILL_PAINT_KEY), getStroke(FILL_STROKE_KEY));
+            fill(graphics);
+            paint(graphics, getPaint(BORDER_PAINT_KEY), getStroke(BORDER_STROKE_KEY));
         }
 
         @Override
         public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
             graphics.setPaint(paint);
             graphics.setStroke(stroke);
+            int radius = size / 2;
+            graphics.drawOval(location.x - radius, location.y - radius, size, size);
+        }
+
+        private void fill(Graphics2D graphics) {
+            graphics.setPaint(getPaint(FILL_PAINT_KEY));
+            graphics.setStroke(getStroke(FILL_STROKE_KEY));
             int radius = size / 2;
             graphics.fillOval(location.x - radius, location.y - radius, size, size);
         }

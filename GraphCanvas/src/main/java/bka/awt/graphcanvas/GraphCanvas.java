@@ -311,8 +311,8 @@ public class GraphCanvas extends CompositeRenderer {
     private CanvasEventHandler mouseHandler;
 
     private static final Color SELECTION_HIGHLIGHT_COLOR = new Color(0x7fffff00, true);
-    private static final Color LABEL_HIGHLIGHT_COLOR = new Color(0x7f00ffff, true);
-    private static final BasicStroke HIGHLIGHT_STROKE = new BasicStroke(2f);
+    private static final Color LABEL_HIGHLIGHT_COLOR = new Color(0x7f6699ff, true);
+    private static final Stroke HIGHLIGHT_STROKE = new BasicStroke(4f);
 
 
 }

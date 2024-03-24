@@ -299,20 +299,27 @@ public class GraphEditorDemo extends JFrame {
         return new Rectangle(location.x, location.y, 600, 300);
     }
 
-    private static Color castToColor(Paint paint, Color defaultColor) {
+    private static Color castToColor(Paint paint) {
         if (paint instanceof Color) {
             return (Color) paint;
         }
-        return defaultColor;
+        return null;
     }
 
 
     private final GraphCanvas canvas = new GraphCanvas(new ApplicationContext() {
 
         @Override
+        public void showVertexMenu(VertexRenderer vertex, Point location) {
+            JPopupMenu menu = new JPopupMenu();
+            addPaintMenus(vertex, location, menu);
+            if (menu.getComponentCount() > 0) {
+                menu.show(graphPanel, location.x, location.y);
+            }
+        }
+        
+        @Override
         public void showEdgeMenu(EdgeRenderer edge, Point location) {
-            getCanvas().resetEventHandler();
-            requestUpdate(ComponentUpdate.repaint(java.awt.Cursor.DEFAULT_CURSOR));
             JPopupMenu menu = new JPopupMenu();
             JCheckBoxMenuItem directedMenuItem = new JCheckBoxMenuItem(getBundleText("Directed"), edge.isDirected());
             directedMenuItem.addActionListener(evt -> getCanvas().setDirected(edge, directedMenuItem.getState()));
@@ -326,26 +333,24 @@ public class GraphEditorDemo extends JFrame {
             menu.show(graphPanel, location.x, location.y);
         }
 
-        private void addPaintMenus(EdgeRenderer edge, Point location, JPopupMenu menu) {
-            edge.getPaintables().forEach(paintable -> {
+        private void addPaintMenus(Element element, Point location, JPopupMenu menu) {
+            element.getCustomizablePaintables().forEach(paintable -> {
                 paintable.getPaintKeys().forEach(paintKey -> {
                     JMenuItem paintItem = new JMenuItem(getBundleText(paintKey.toString()));
-                    paintItem.addActionListener(evt -> pickColor(location, paintable, edge, paintKey));
+                    paintItem.addActionListener(evt -> pickColor(location, paintable, paintKey));
                     menu.add(paintItem);
                 });
             });
         }
 
-        public final void pickColor(Point location, Paintable paintable, EdgeRenderer edge, Object key) {
-            PopupControl.show(graphPanel, colorChooserPopupModel(location, paintable, castToColor(paintable.getPaint(key), Color.BLACK), key));
-        }
-
-        private ColorChooserPopupModel colorChooserPopupModel(Point location, Paintable paintable, Color oldColor, Object key) {
-            return new ColorChooserPopupModel(
-                COLOR_PICKER_KEY,
-                colorChooserBounds(location),
-                oldColor,
-                (newColor) -> getCanvas().changePaint(paintable, key, oldColor, newColor));
+        public final void pickColor(Point location, Paintable paintable, Object key) {
+            PopupControl.show(
+                graphPanel,
+                new ColorChooserPopupModel(
+                    graphPanel,
+                    colorChooserBounds(location),
+                    castToColor(paintable.getPaint(key)),
+                    newColor -> getCanvas().changePaint(paintable, key, newColor)));
         }
 
         @Override
@@ -391,7 +396,5 @@ public class GraphEditorDemo extends JFrame {
     private final javax.swing.DefaultListModel<String> historyListModel = new javax.swing.DefaultListModel<>();
 
     private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("GraphEditor");
-
-    private static final Object COLOR_PICKER_KEY = new Object();
 
 }

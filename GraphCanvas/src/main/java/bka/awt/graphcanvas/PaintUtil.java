@@ -30,12 +30,14 @@ public class PaintUtil {
     public static void paintDot(Graphics2D graphics, Point location, int radius, Paint paint) {
         int size = radius * 2;
         graphics.setPaint(paint);
+        graphics.setStroke(DEFAULT_STROKE);
         graphics.fillOval(location.x - radius, location.y - radius, size, size);
     }
 
     public static void paintCircle(Graphics2D graphics, Point location, int radius, Paint paint) {
         int size = radius * 2;
         graphics.setPaint(paint);
+        graphics.setStroke(DEFAULT_STROKE);
         graphics.drawOval(location.x - radius, location.y - radius, size, size);
     }
 
@@ -47,5 +49,7 @@ public class PaintUtil {
 
     private static final Color EDGE_POINT_PAINT = Color.RED;
     private static final Color CONNECTOR_POINT_PAINT = Color.MAGENTA;
+
+    private static final Stroke DEFAULT_STROKE = new BasicStroke();
 
 }

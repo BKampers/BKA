@@ -18,6 +18,10 @@ import java.util.stream.*;
 
 public class EdgeRenderer extends Element {
 
+    public static final Object LINE_PAINT_KEY = "LinePaint";
+    public static final Object LINE_STROKE_KEY = "LineStroke";
+    public static final Object ARROWHEAD_PAINT_KEY = "ArrowheadPaint";
+    public static final Object ARROWHEAD_STROKE_KEY = "ArrowheadStroke";
 
     public class Excerpt {
 
@@ -74,7 +78,9 @@ public class EdgeRenderer extends Element {
 
     public EdgeRenderer(VertexRenderer start) {
         polygonPaintable.setPaint(LINE_PAINT_KEY, Color.BLACK);
+        polygonPaintable.setStroke(LINE_STROKE_KEY, new BasicStroke());
         arrowheadPaintable.setPaint(ARROWHEAD_PAINT_KEY, Color.BLACK);
+        arrowheadPaintable.setStroke(ARROWHEAD_STROKE_KEY, new BasicStroke());
         this.start = Objects.requireNonNull(start);
     }
 
@@ -222,9 +228,10 @@ public class EdgeRenderer extends Element {
 
     @Override
     public void paintHighlight(Graphics2D graphics, Color color, Stroke stroke) {
-        graphics.setPaint(color);
-        graphics.setStroke(stroke);
-        paint(graphics);
+        polygonPaintable.paint(graphics, color, stroke);
+        if (directed) {
+            arrowheadPaintable.paint(graphics, color, stroke);
+        }
     }
 
     public void paintHighlight(Graphics2D graphics, Color color, Stroke stroke, int index) {
@@ -361,7 +368,8 @@ public class EdgeRenderer extends Element {
         return new Vector(point.getX(), point.getY());
     }
 
-    public Collection<Paintable> getPaintables() {
+    @Override
+    public Collection<Paintable> getCustomizablePaintables() {
         if (directed) {
             return List.of(polygonPaintable, arrowheadPaintable);
         }
@@ -429,6 +437,11 @@ public class EdgeRenderer extends Element {
     private final Paintable polygonPaintable = new Paintable() {
         @Override
         public void paint(Graphics2D graphics) {
+            paint(graphics, getPaint(LINE_PAINT_KEY), getStroke(LINE_STROKE_KEY));
+        }
+
+        @Override
+        public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
             int count = points.size() + ((end == null) ? 1 : 2);
             int[] x = new int[count];
             int[] y = new int[count];
@@ -446,8 +459,8 @@ public class EdgeRenderer extends Element {
                 x[count - 1] = endPoint.x;
                 y[count - 1] = endPoint.y;
             }
-            graphics.setStroke(new BasicStroke());
-            graphics.setPaint(getPaint(LINE_PAINT_KEY));
+            graphics.setPaint(paint);
+            graphics.setStroke(stroke);
             graphics.drawPolyline(x, y, count);
         }
 
@@ -461,6 +474,11 @@ public class EdgeRenderer extends Element {
     private final Paintable arrowheadPaintable = new Paintable() {
         @Override
         public void paint(Graphics2D graphics) {
+            paint(graphics, getPaint(ARROWHEAD_PAINT_KEY), getStroke(ARROWHEAD_STROKE_KEY));
+        }
+
+        @Override
+        public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
             int index = arrowHeadLineIndex();
             Point lineStart = getPoint(index);
             Point lineEnd = getPoint(index + 1);
@@ -468,11 +486,13 @@ public class EdgeRenderer extends Element {
             Point location = arrowheadLocation(lineStart, lineEnd);
             graphics.translate(location.x, location.y);
             graphics.rotate(angle);
-            graphics.setPaint(getPaint(ARROWHEAD_PAINT_KEY));
+            graphics.setPaint(paint);
+            graphics.setStroke(stroke);
             graphics.fillPolygon(ARROWHEAD_X_COORDINATES, ARROWHEAD_Y_COORDINATES, ARROWHEAD_X_COORDINATES.length);
             graphics.rotate(-angle);
             graphics.translate(-location.x, -location.y);
         }
+
         @Override
         public String toString() {
             return "arrowhead ";
@@ -482,6 +502,4 @@ public class EdgeRenderer extends Element {
     private static final int[] ARROWHEAD_X_COORDINATES = { -5, 5, -5 };
     private static final int[] ARROWHEAD_Y_COORDINATES = { -5, 0, 5 };
 
-    private static final Object LINE_PAINT_KEY = "LinePaint";
-    private static final Object ARROWHEAD_PAINT_KEY = "ArrowheadPaint";
 }

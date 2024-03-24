@@ -14,6 +14,8 @@ public abstract class Paintable {
 
     public abstract void paint(Graphics2D graphics);
 
+    public abstract void paint(Graphics2D graphics, Paint paint, Stroke stroke);
+
     public void setPaint(Object key, Paint paint) {
         paints.put(key, paint);
     }

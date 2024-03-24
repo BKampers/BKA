@@ -34,16 +34,13 @@ public class GraphCanvas extends CompositeRenderer {
     public void paint(Graphics2D graphics) {
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         super.paint(graphics);
-        graphics.setPaint(Color.BLACK);
         vertices.forEach(renderer -> renderer.paint(graphics));
         edges.forEach(edge -> {
-            graphics.setPaint(Color.BLACK);
             edge.paint(graphics);
             PaintUtil.paintConnectorPoint(graphics, edge.getStartConnectorPoint());
             PaintUtil.paintConnectorPoint(graphics, edge.getEndConnectorPoint());
         });
-        graphics.setPaint(Color.BLUE);
-        selection.forEach(renderer -> renderer.paint(graphics));
+        selection.forEach(renderer -> renderer.paintHighlight(graphics, SELECTION_HIGHLIGHT_COLOR, new BasicStroke(3f)));
         mouseHandler.paint(graphics);
     }
 
@@ -96,6 +93,9 @@ public class GraphCanvas extends CompositeRenderer {
     }
 
     public ComponentUpdate deleteSelection() {
+        if (selection.isEmpty()) {
+            return ComponentUpdate.NO_OPERATION;
+        }
         Collection<EdgeRenderer> edgesToRemove = new HashSet<>();
         Collection<VertexRenderer> verticesToRemove = new ArrayList<>();
         selection.forEach(element -> {
@@ -129,8 +129,8 @@ public class GraphCanvas extends CompositeRenderer {
         getContext().requestUpdate(ComponentUpdate.REPAINT);
     }
 
-    public void changePaint(Paintable paintable, Object key, Paint oldPaint, Paint newPaint) {
-        if (!Objects.equals(oldPaint, newPaint)) {
+    public void changePaint(Paintable paintable, Object key, Paint newPaint) {
+        if (!Objects.equals(paintable.getPaint(key), newPaint)) {
             addHistory(new PaintMutation(paintable, key));
             paintable.setPaint(key, newPaint);
             getContext().requestUpdate(ComponentUpdate.REPAINT);
@@ -239,6 +239,13 @@ public class GraphCanvas extends CompositeRenderer {
         return context;
     }
 
+    public static Color getLabelHighlightColor() {
+        return LABEL_HIGHLIGHT_COLOR;
+    }
+
+    public static Stroke getHighlightStroke() {
+        return HIGHLIGHT_STROKE;
+    }
 
     private class EdgeDirectedMutation extends PropertyMutation<Boolean> {
 
@@ -302,5 +309,10 @@ public class GraphCanvas extends CompositeRenderer {
     private final DrawHistory history = new DrawHistory();
 
     private CanvasEventHandler mouseHandler;
+
+    private static final Color SELECTION_HIGHLIGHT_COLOR = new Color(0x7fffff00, true);
+    private static final Color LABEL_HIGHLIGHT_COLOR = new Color(0x7f00ffff, true);
+    private static final BasicStroke HIGHLIGHT_STROKE = new BasicStroke(2f);
+
 
 }

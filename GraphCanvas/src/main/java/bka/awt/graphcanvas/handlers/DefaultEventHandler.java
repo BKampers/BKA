@@ -253,7 +253,14 @@ public class DefaultEventHandler extends CanvasEventHandler {
         EdgeRenderer nearestEdge = getCanvas().findNearestEdge(cursor);
         if (nearestEdge != null) {
             getCanvas().getContext().showEdgeMenu(nearestEdge, cursor);
-            return ComponentUpdate.NO_OPERATION;
+            getCanvas().resetEventHandler();
+            return ComponentUpdate.repaint(java.awt.Cursor.DEFAULT_CURSOR);
+        }
+        VertexRenderer nearestVertex = getCanvas().findNearestVertex(cursor);
+        if (nearestVertex != null) {
+            getCanvas().getContext().showVertexMenu(nearestVertex, cursor);
+            getCanvas().resetEventHandler();
+            return ComponentUpdate.repaint(java.awt.Cursor.DEFAULT_CURSOR);
         }
         getCanvas().clearSelection();
         return ComponentUpdate.REPAINT;
@@ -402,7 +409,7 @@ public class DefaultEventHandler extends CanvasEventHandler {
             graphics.drawRect(hoveredLabelBounds.x, hoveredLabelBounds.y, hoveredLabelBounds.width, hoveredLabelBounds.height);
         }
         if (highlightedElement != null) {
-            highlightedElement.paintHighlight(graphics, new Color(0, 0, 128, 128), new BasicStroke(3));
+            highlightedElement.paintHighlight(graphics, GraphCanvas.getLabelHighlightColor(), GraphCanvas.getHighlightStroke());
         }
     }
 

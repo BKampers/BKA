@@ -20,6 +20,10 @@ public abstract class Element implements Renderer {
 
     public abstract Supplier<Point> distancePositioner(Point point);
 
+    public Collection<Paintable> getCustomizablePaintables() {
+        return Collections.emptyList();
+    }
+
     public void addLabel(Label label) {
         if (!labels.add(label)) {
             throw new IllegalArgumentException("Element already owns label " + label.getText());

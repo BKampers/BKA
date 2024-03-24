@@ -12,6 +12,7 @@ import java.util.function.*;
 
 public interface ApplicationContext {
 
+    void showVertexMenu(VertexRenderer vertex, Point location);
     void showEdgeMenu(EdgeRenderer edge, Point location);
     void editString(String input, Point location, Consumer<String> onApply);
     void requestUpdate(ComponentUpdate update);

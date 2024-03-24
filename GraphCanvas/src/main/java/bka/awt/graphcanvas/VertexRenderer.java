@@ -7,13 +7,20 @@
 package bka.awt.graphcanvas;
 
 import java.awt.*;
+import java.util.*;
+import java.util.List;
 import java.util.function.*;
 
 
 public class VertexRenderer extends Element {
 
+    public static final Object FILL_PAINT_KEY = "FillPaint";
+    public static final Object FILL_STROKE_KEY = "FillStroke";
+
     public VertexRenderer(Point point) {
         this.location = new Point(point);
+        shapePaintable.setPaint(FILL_PAINT_KEY, Color.BLACK);
+        shapePaintable.setStroke(FILL_STROKE_KEY, new BasicStroke());
     }
 
     public Point getLocation() {
@@ -75,25 +82,41 @@ public class VertexRenderer extends Element {
 
     @Override
     public void paint(Graphics2D graphics) {
-        int radius = size / 2;
-        graphics.fillOval(location.x - radius, location.y - radius, size, size);
+        shapePaintable.paint(graphics);
         getLabels().forEach(label -> label.paint(graphics));
     }
 
     @Override
     public void paintHighlight(Graphics2D graphics, Color color, Stroke stroke) {
-        graphics.setPaint(color);
-        graphics.setStroke(stroke);
-        int radius = size / 2;
-        graphics.drawOval(location.x - radius, location.y - radius, size, size);
+        shapePaintable.paint(graphics, color, stroke);
     }
 
     public void resize(Point target) {
         size = Math.abs((int) Math.round(location.distance(target) * 2));
     }
 
+    @Override
+    public Collection<Paintable> getCustomizablePaintables() {
+        return List.of(shapePaintable);
+    }
+
+    private final Paintable shapePaintable = new Paintable() {
+        @Override
+        public void paint(Graphics2D graphics) {
+            paint(graphics, getPaint(FILL_PAINT_KEY), getStroke(FILL_STROKE_KEY));
+        }
+
+        @Override
+        public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
+            graphics.setPaint(paint);
+            graphics.setStroke(stroke);
+            int radius = size / 2;
+            graphics.fillOval(location.x - radius, location.y - radius, size, size);
+        }
+
+    };
+
     private final Point location;
     private int size = 12;
-
 
 }

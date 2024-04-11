@@ -8,14 +8,26 @@ import bka.awt.graphcanvas.*;
 import bka.awt.graphcanvas.history.*;
 import bka.swing.popup.*;
 import java.awt.*;
+import java.awt.geom.*;
+import java.awt.image.*;
+import java.util.List;
 import java.util.*;
 import java.util.function.*;
+import java.util.stream.*;
 import javax.swing.*;
 
 public class GraphEditorDemo extends JFrame {
 
     public GraphEditorDemo() {
         initComponents();
+        BasicStroke solidStroke = new BasicStroke();
+        ellipsPaintable.setStroke(BORDER_STROKE_KEY, solidStroke);
+        ellipsPaintable.setPaint(BORDER_PAINT_KEY, Color.BLACK);
+        ellipsPaintable.setPaint(FILL_PAINT_KEY, Color.BLACK);
+        rectanglePaintable.setStroke(BORDER_STROKE_KEY, solidStroke);
+        rectanglePaintable.setPaint(BORDER_PAINT_KEY, Color.BLACK);
+        rectanglePaintable.setPaint(FILL_PAINT_KEY, Color.WHITE);
+        populateVertexSelectorPanel(List.of(ellipsPaintable, rectanglePaintable));
         canvas.getDrawHistory().addListener(this::updateHistoryList);
         historyList.addMouseListener(new HistoryListMouseAdapter());
         historyList.addKeyListener(new HistoryListKeyAdapter());
@@ -48,7 +60,8 @@ public class GraphEditorDemo extends JFrame {
         historyScrollPane = new javax.swing.JScrollPane();
         historyList = new javax.swing.JList<>();
         historyList.setCellRenderer(new HistoryListCellRenderer());
-        elementPanel = new javax.swing.JPanel();
+        componentPanel = new javax.swing.JPanel();
+        vertexSelectorPanel = new javax.swing.JPanel();
         undirectedEdgeRadioButton = new javax.swing.JRadioButton();
         directedEdgeRadioButton = new javax.swing.JRadioButton();
 
@@ -94,7 +107,7 @@ public class GraphEditorDemo extends JFrame {
         );
         graphPanelLayout.setVerticalGroup(
             graphPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 413, Short.MAX_VALUE)
+            .addGap(0, 442, Short.MAX_VALUE)
         );
 
         graphScrollPane.setViewportView(graphPanel);
@@ -115,6 +128,9 @@ public class GraphEditorDemo extends JFrame {
 
         getContentPane().add(historyPanel, java.awt.BorderLayout.EAST);
 
+        vertexSelectorPanel.setLocation(new java.awt.Point(0, 5));
+        vertexSelectorPanel.setLayout(new javax.swing.BoxLayout(vertexSelectorPanel, javax.swing.BoxLayout.Y_AXIS));
+
         edgeSelector.add(undirectedEdgeRadioButton);
         undirectedEdgeRadioButton.setSelected(true);
         undirectedEdgeRadioButton.setText(BUNDLE.getString("UndirectedEdge"));
@@ -122,28 +138,38 @@ public class GraphEditorDemo extends JFrame {
         edgeSelector.add(directedEdgeRadioButton);
         directedEdgeRadioButton.setText(BUNDLE.getString("DirectedEdge"));
 
-        javax.swing.GroupLayout elementPanelLayout = new javax.swing.GroupLayout(elementPanel);
-        elementPanel.setLayout(elementPanelLayout);
-        elementPanelLayout.setHorizontalGroup(
-            elementPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, elementPanelLayout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(elementPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        javax.swing.GroupLayout componentPanelLayout = new javax.swing.GroupLayout(componentPanel);
+        componentPanel.setLayout(componentPanelLayout);
+        componentPanelLayout.setHorizontalGroup(
+            componentPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(componentPanelLayout.createSequentialGroup()
+                .addContainerGap(30, Short.MAX_VALUE)
+                .addGroup(componentPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(directedEdgeRadioButton)
                     .addComponent(undirectedEdgeRadioButton))
                 .addContainerGap())
+            .addGroup(componentPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, componentPanelLayout.createSequentialGroup()
+                    .addContainerGap(76, Short.MAX_VALUE)
+                    .addComponent(vertexSelectorPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addContainerGap(76, Short.MAX_VALUE)))
         );
-        elementPanelLayout.setVerticalGroup(
-            elementPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(elementPanelLayout.createSequentialGroup()
-                .addGap(122, 122, 122)
+        componentPanelLayout.setVerticalGroup(
+            componentPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(componentPanelLayout.createSequentialGroup()
+                .addGap(151, 151, 151)
                 .addComponent(undirectedEdgeRadioButton)
                 .addGap(18, 18, 18)
                 .addComponent(directedEdgeRadioButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGap(246, 246, 246))
+            .addGroup(componentPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, componentPanelLayout.createSequentialGroup()
+                    .addContainerGap(236, Short.MAX_VALUE)
+                    .addComponent(vertexSelectorPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 171, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addContainerGap(54, Short.MAX_VALUE)))
         );
 
-        getContentPane().add(elementPanel, java.awt.BorderLayout.WEST);
+        getContentPane().add(componentPanel, java.awt.BorderLayout.WEST);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -177,33 +203,43 @@ public class GraphEditorDemo extends JFrame {
         updateGraphPanel(canvas.handleKeyPressed(evt));
     }//GEN-LAST:event_graphPanelKeyPressed
 
+    private void populateVertexSelectorPanel(List<VertexPaintable> renderers) {
+        renderers.forEach(renderer -> {
+            JToggleButton button = new JToggleButton();
+            vertexButtons.put(button, renderer);
+            button.setIcon(createIcon(renderer));
+            button.addActionListener(event -> {
+                if (((JToggleButton) event.getSource()).isSelected()) {
+                    vertexButtons.keySet().stream()
+                        .filter(vertexButton -> !vertexButton.equals(event.getSource()))
+                        .forEach(vertexButton -> vertexButton.setSelected(false));
+                }
+            });
+            vertexSelectorPanel.add(button);
+        });
+    }
+
     /**
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
+        SelectNimbusLookAndFeel();
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(() -> new GraphEditorDemo().setVisible(true));
+    }
+
+    private static void SelectNimbusLookAndFeel() {
         try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
                     javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
+                    return;
                 }
             }
         }
         catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
             java.util.logging.Logger.getLogger(GraphEditorDemo.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
-        //</editor-fold>
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> {
-            new GraphEditorDemo().setVisible(true);
-        });
     }
 
     private void updateGraphPanel(ComponentUpdate update){
@@ -306,6 +342,19 @@ public class GraphEditorDemo extends JFrame {
         return null;
     }
 
+    private static Icon createIcon(Paintable paintable) {
+        return createIcon(paintable, null);
+    }
+
+    private static Icon createIcon(Paintable paintable, Color highlight) {
+        BufferedImage image = new BufferedImage(15, 15, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = image.createGraphics();
+        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        graphics.translate(image.getWidth() / 2, image.getHeight() / 2);
+        paintable.paint(graphics);
+        ImageIcon icon = new ImageIcon(image);
+        return icon;
+    }
 
     private final GraphCanvas canvas = new GraphCanvas(new ApplicationContext() {
 
@@ -370,6 +419,24 @@ public class GraphEditorDemo extends JFrame {
         }
 
         @Override
+        public VertexRenderer createVertexRenderer(Point location) {
+            JToggleButton vertexButton = vertexButtons.keySet().stream()
+                .filter(toggleButton -> toggleButton.isSelected())
+                .findAny().orElse(null);
+            if (vertexButton == null) {
+                return null;
+            }
+            VertexPaintable vertexPaintable = vertexButtons.get(vertexButton);
+            if (vertexPaintable instanceof RoundVertexPaintable) {
+                return new VertexRenderer(new RoundVertexPaintable(vertexPaintable), location);
+            }
+            if (vertexPaintable instanceof SquareVertexPaintable) {
+                return new VertexRenderer(new SquareVertexPaintable(vertexPaintable), location);
+            }
+            throw new IllegalStateException();
+        }
+
+        @Override
         public EdgeRenderer createEdgeRenderer(VertexRenderer origin) {
             EdgeRenderer edgeRenderer = new EdgeRenderer(origin);
             edgeRenderer.setDirected(directedEdgeRadioButton.isSelected());
@@ -382,19 +449,247 @@ public class GraphEditorDemo extends JFrame {
     });
 
 
+    private class RoundVertexPaintable extends VertexPaintable {
+
+        public RoundVertexPaintable(Dimension size) {
+            super(size);
+        }
+
+        public RoundVertexPaintable(VertexPaintable vertexPaintable) {
+            super(vertexPaintable);
+        }
+
+        @Override
+        public void paint(Graphics2D graphics) {
+            fill(graphics);
+            paint(graphics, getPaint(BORDER_PAINT_KEY), getStroke(BORDER_STROKE_KEY));
+        }
+
+        @Override
+        public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
+            graphics.setPaint(paint);
+            graphics.setStroke(stroke);
+            graphics.drawOval(-widthRadius(), -heightRadius(), getSize().width, getSize().height);
+        }
+
+        private void fill(Graphics2D graphics) {
+            graphics.setPaint(getPaint(FILL_PAINT_KEY));
+            graphics.fillOval(-widthRadius(), -heightRadius(), getSize().width, getSize().height);
+        }
+
+        private int widthRadius() {
+            return getSize().width / 2;
+        }
+
+        private int heightRadius() {
+            return getSize().height / 2;
+        }
+    };
+
+
+    private class SquareVertexPaintable extends VertexPaintable {
+
+        public SquareVertexPaintable(Dimension size) {
+            super(size);
+        }
+
+        public SquareVertexPaintable(VertexPaintable vertexPaintable) {
+            super(vertexPaintable);
+        }
+
+        @Override
+        public void paint(Graphics2D graphics) {
+            fill(graphics);
+            paint(graphics, getPaint(BORDER_PAINT_KEY), getStroke(BORDER_STROKE_KEY));
+        }
+
+        @Override
+        public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
+            graphics.setPaint(paint);
+            graphics.setStroke(stroke);
+            graphics.drawRect(-widthRadius(), -heightRadius(), getSize().width, getSize().height);
+        }
+
+        private void fill(Graphics2D graphics) {
+            graphics.setPaint(getPaint(FILL_PAINT_KEY));
+            graphics.fillRect(-widthRadius(), -heightRadius(), getSize().width, getSize().height);
+        }
+
+
+        @Override
+        public double distance(Point location, Point point) {
+            double distance = Math.sqrt(
+                countour2D(location).stream()
+                    .map(line -> squareDistance(point, line))
+                    .sorted()
+                    .findFirst().get());
+            return (new Rectangle(topLeft(location), getSize()).contains(point)) ? -distance : distance;
+        }
+
+        public long squareDistance(Point2D point, Line2D line) {
+            return CanvasUtil.squareDistance(CanvasUtil.round(point), CanvasUtil.round(line.getP1()), CanvasUtil.round(line.getP2()));
+        }
+
+//        @Override
+//        public Supplier<Point> distancePositioner(Point location, Point point) {
+////            double dy = point.y - location.y;
+////            double angle = Math.atan((point.x - location.x) / dy);
+////            float sin = (float) ((dy < 0) ? -Math.sin(angle) : Math.sin(angle));
+////            float cos = (float) ((dy < 0) ? -Math.cos(angle) : Math.cos(angle));
+////            float distanceToBorder = (float) distance(location, point);
+////            return () -> {
+////                float distanceToLocation = getSize().width / 2f + distanceToBorder;
+////                return new Point(location.x + Math.round(sin * distanceToLocation), location.y + Math.round(cos * distanceToLocation));
+////            };
+//            long distance = Long.MAX_VALUE;
+//            int index = -1;
+//            List<Line2D> contour = countour2D(location);
+//            for (int i = 0; i < contour.size(); ++i) {
+//                if (squareDistance(point, contour.get(i)) < distance) {
+//                    index = i;
+//                    distance = squareDistance(point, contour.get(i));
+//                }
+//            }
+//            Function<Integer, Point> pointAt = idx -> {
+//                if (idx < contour.size()) {
+//                    return CanvasUtil.round(contour.get(idx).getP1());
+//                }
+//                return CanvasUtil.round(contour.get(0).getP1());
+//            };
+//            Point linePoint1 = pointAt.apply(index);
+//            Point linePoint2 = pointAt.apply(index + 1);
+//            Point2D anchor = CanvasUtil.intersectionPoint(point, linePoint1, linePoint2);
+//            double yDistance = directedDistance(point, anchor, CanvasUtil.slope(linePoint1, linePoint2));
+//            double xDistance = (linePoint1.x > linePoint2.x) ? -yDistance : yDistance;
+////            contour.stream().forEach((Line2D line) -> {
+////                line.getP1().setLocation(line.getX1() + location.x, line.getY1() + location.y);
+////                line.getP2().setLocation(line.getX2() + location.x, line.getY2() + location.y);
+////            });
+//            return new DistanceToLinePositioner(index, xDistance, yDistance, directedRatio(linePoint1, linePoint2, anchor), pointAt);
+//        }
+
+//        private double directedDistance(Point2D distantPoint, Point2D anchor, double slope) {
+//            double distance = distantPoint.distance(anchor);
+//            if (slope <= -1) {
+//                return (distantPoint.getX() < anchor.getX()) ? -distance : distance;
+//            }
+//            if (1 <= slope) {
+//                return (distantPoint.getX() > anchor.getX()) ? -distance : distance;
+//            }
+//            return (distantPoint.getY() < anchor.getY()) ? -distance : distance;
+//        }
+//
+//        private double directedRatio(Point2D linePoint1, Point2D linePoint2, Point2D anchor) {
+//            double ratio = anchor.distance(linePoint1) / linePoint1.distance(linePoint2);
+//            double x1 = linePoint1.getX();
+//            double x2 = linePoint2.getX();
+//            double y1 = linePoint1.getY();
+//            double y2 = linePoint2.getY();
+//            if (Math.abs(CanvasUtil.slope(linePoint1, linePoint2)) < 1) {
+//                if (anchor.getX() < x1 && x1 < x2 || x2 < x1 && x1 < anchor.getX()) {
+//                    return -ratio;
+//                }
+//            }
+//            else {
+//                if (anchor.getY() < y1 && y1 < y2 || y2 < y1 && y1 < anchor.getY()) {
+//                    return -ratio;
+//                }
+//            }
+//            return ratio;
+//        }
+
+        @Override
+        public Point getConnectorPoint(Point location, Point point) {
+            if (location.equals(point)) {
+                return point;
+            }
+            Point2D nearest = null;
+            for (Point2D intersectionPoint : intersectionPoints(location, Line.through(location, point))) {
+                if (nearest == null || Math.abs(nearest.distance(point)) > Math.abs(intersectionPoint.distance(point))) {
+                    nearest = intersectionPoint;
+                }
+            }
+            return (nearest == null) ? location : CanvasUtil.round(nearest);
+        }
+
+        private List<Point2D> intersectionPoints(Point location, Line incomming) {
+            return contour(location).stream()
+                .map(contourLine -> contourLine.intersection(incomming))
+                .flatMap(optional -> optional.isPresent() ? Stream.of(optional.get()) : Stream.empty())
+                .filter(intersectionPoint -> inBounds(intersectionPoint, location))
+                .collect(Collectors.toList());
+        }
+
+        private boolean inBounds(Point2D intersectionPoint, Point location) {
+            return location.x - widthRadius() <= intersectionPoint.getX() && intersectionPoint.getX() <= location.x + widthRadius()
+                && location.y - heightRadius() <= intersectionPoint.getY() && intersectionPoint.getY() <= location.y + heightRadius();
+        }
+
+        private List<Line> contour(Point location) {
+            return countour2D(location).stream().map(line -> Line.through(line.getP1(), line.getP2())).collect(Collectors.toList());
+        }
+
+        private List<Line2D> countour2D(Point location) {
+            return List.of(
+                new Line2D.Double(topLeft(location), bottomLeft(location)),
+                new Line2D.Double(bottomLeft(location), bottomRight(location)),
+                new Line2D.Double(bottomRight(location), topRight(location)),
+                new Line2D.Double(topRight(location), topLeft(location))
+            );
+        }
+
+        private Point topLeft(Point location) {
+            return new Point(location.x - widthRadius(), location.y - heightRadius());
+        }
+
+        private Point topRight(Point location) {
+            return new Point(location.x + widthRadius(), location.y - heightRadius());
+        }
+
+        private Point bottomLeft(Point location) {
+            return new Point(location.x - widthRadius(), location.y + heightRadius());
+        }
+
+        private Point bottomRight(Point location) {
+            return new Point(location.x + widthRadius(), location.y + heightRadius());
+        }
+
+        private int widthRadius() {
+            return getSize().width / 2;
+        }
+
+        private int heightRadius() {
+            return getSize().height / 2;
+        }
+
+    };
+
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JPanel componentPanel;
     private javax.swing.JRadioButton directedEdgeRadioButton;
     private javax.swing.ButtonGroup edgeSelector;
-    private javax.swing.JPanel elementPanel;
     private javax.swing.JPanel graphPanel;
     private javax.swing.JList<String> historyList;
     private javax.swing.JPanel historyPanel;
     private javax.swing.JScrollPane historyScrollPane;
     private javax.swing.JRadioButton undirectedEdgeRadioButton;
+    private javax.swing.JPanel vertexSelectorPanel;
     // End of variables declaration//GEN-END:variables
+
+    private final Map<JToggleButton, VertexPaintable> vertexButtons = new HashMap<>();
 
     private final javax.swing.DefaultListModel<String> historyListModel = new javax.swing.DefaultListModel<>();
 
     private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("GraphEditor");
+
+    private static final Dimension VERTEX_ICON_DIMENSION = new Dimension(12, 12);
+
+    private final static Object BORDER_PAINT_KEY = "BorderPaint";
+    private final static Object BORDER_STROKE_KEY = "BorderStroke";
+    private final static Object FILL_PAINT_KEY = "FillPaint";
+
+    private final RoundVertexPaintable ellipsPaintable = new RoundVertexPaintable(VERTEX_ICON_DIMENSION);
+    private final SquareVertexPaintable rectanglePaintable = new SquareVertexPaintable(VERTEX_ICON_DIMENSION);
 
 }

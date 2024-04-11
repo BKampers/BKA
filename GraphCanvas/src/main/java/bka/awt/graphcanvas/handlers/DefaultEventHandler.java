@@ -3,7 +3,7 @@
 ** This code may not be used for any purpose that harms humans (including
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
- */
+*/
 package bka.awt.graphcanvas.handlers;
 
 import bka.awt.*;
@@ -212,20 +212,24 @@ public class DefaultEventHandler extends CanvasEventHandler {
 
     private ComponentUpdate mainButtonClicked(Point cursor) {
         getCanvas().clearSelection();
-        EdgeRenderer nearestEdge = getCanvas().findNearestEdge(cursor);
-        if (nearestEdge != null) {
-            getCanvas().select(nearestEdge);
+        Element nearest = getCanvas().findNearestEdge(cursor);
+        if (nearest == null) {
+            nearest = getCanvas().findNearestVertex(cursor);
+        }
+        if (nearest != null) {
+            getCanvas().select(nearest);
             return ComponentUpdate.REPAINT;
         }
-        VertexRenderer nearest = getCanvas().findNearestVertex(cursor);
-        if (nearest == null) {
-            VertexRenderer vertex = new VertexRenderer(cursor);
-            getCanvas().addVertex(vertex);
-            getCanvas().addHistory(new ElementInsertion(vertex, getCanvas()));
+        return addNewVertex(cursor);
+    }
+
+    private ComponentUpdate addNewVertex(Point cursor) {
+        VertexRenderer vertex = getCanvas().getContext().createVertexRenderer(cursor);
+        if (vertex == null) {
+            return ComponentUpdate.NO_OPERATION;
         }
-        else {
-            getCanvas().select(nearest);
-        }
+        getCanvas().addVertex(vertex);
+        getCanvas().addHistory(new ElementInsertion(vertex, getCanvas()));
         return ComponentUpdate.REPAINT;
     }
 

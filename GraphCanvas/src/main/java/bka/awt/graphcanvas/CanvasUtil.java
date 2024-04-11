@@ -3,7 +3,7 @@
 ** This code may not be used for any purpose that harms humans (including
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
- */
+*/
 package bka.awt.graphcanvas;
 
 import java.awt.*;
@@ -42,12 +42,6 @@ public class CanvasUtil {
         return getPoint(point2d.getX(), point2d.getY());
     }
 
-    public static long squareDistance(Point point1, Point point2) {
-        long deltaX = point1.x - point2.x;
-        long deltaY = point1.y - point2.y;
-        return deltaX * deltaX + deltaY * deltaY;
-    }
-
     public static long squareDistance(Point point, Point linePoint1, Point linePoint2) {
         if (!inRange(point.x, linePoint1.x, linePoint2.x) && !inRange(point.y, linePoint1.y, linePoint2.y)) {
             return Math.min(squareDistance(point, linePoint1), squareDistance(point, linePoint2));
@@ -55,10 +49,22 @@ public class CanvasUtil {
         return squareDistance(point, round(intersectionPoint(point, linePoint1, linePoint2)));
     }
 
+    public static long squareDistance(Point point1, Point point2) {
+        long deltaX = point1.x - point2.x;
+        long deltaY = point1.y - point2.y;
+        return deltaX * deltaX + deltaY * deltaY;
+    }
+
     private static boolean inRange(int i, int limit1, int limit2) {
         return Math.min(limit1, limit2) <= i && i <= Math.max(limit1, limit2);
     }
 
+    /**
+     * @param point
+     * @param linePoint1 point 1 on line
+     * @param linePoint2 point 2 on line
+     * @return the intersection of the given line with the line perpendicular to it and through the given point.
+     */
     public static Point2D intersectionPoint(Point point, Point linePoint1, Point linePoint2) {
         if (linePoint1.x == linePoint2.x) {
             if (linePoint1.y == linePoint2.y) {

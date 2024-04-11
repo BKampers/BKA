@@ -3,7 +3,7 @@
 ** This code may not be used for any purpose that harms humans (including
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
- */
+*/
 package bka.awt.graphcanvas;
 
 import bka.awt.graphcanvas.Label;
@@ -36,7 +36,7 @@ public class EdgeRenderer extends Element {
             }
             return Collections.unmodifiableMap(getLabels().stream().collect(Collectors.toMap(
                 Function.identity(),
-                label -> ((DistancePositioner) label.getPositioner()).getIndex())));
+                label -> ((DistanceToLinePositioner) label.getPositioner()).getIndex())));
         }
 
         public void set(Excerpt excerpt) {
@@ -91,7 +91,7 @@ public class EdgeRenderer extends Element {
     public void set(Excerpt excerpt) {
         points.clear();
         points.addAll(excerpt.getPoints());
-        excerpt.getLabelIndices().forEach((label, index) -> ((DistancePositioner) label.getPositioner()).setIndex(index));
+        excerpt.getLabelIndices().forEach((label, index) -> ((DistanceToLinePositioner) label.getPositioner()).setIndex(index));
     }
 
     public VertexRenderer getStart() {
@@ -125,7 +125,7 @@ public class EdgeRenderer extends Element {
     public void addPoint(int index, Point point) {
         points.add(index, point);
         getLabels().forEach(label -> {
-            ((DistancePositioner) label.getPositioner()).pointInserted(index, point);
+            ((DistanceToLinePositioner) label.getPositioner()).pointInserted(index, point);
         });
     }
 
@@ -156,7 +156,7 @@ public class EdgeRenderer extends Element {
         Point2D anchor = CanvasUtil.intersectionPoint(point, linePoint1, linePoint2);
         double yDistance = directedDistance(point, anchor, CanvasUtil.slope(linePoint1, linePoint2));
         double xDistance = (linePoint1.x > linePoint2.x) ? -yDistance : yDistance;
-        return new DistancePositioner(index, xDistance, yDistance, directedRatio(linePoint1, linePoint2, anchor));
+        return new DistanceToLinePositioner(index, xDistance, yDistance, directedRatio(linePoint1, linePoint2, anchor), this::getPoint);
     }
 
     private static double directedDistance(Point2D distantPoint, Point2D anchor, double slope) {
@@ -361,7 +361,7 @@ public class EdgeRenderer extends Element {
 
     private void removePoint(int index) {
         points.remove(index);
-        getLabels().forEach(label -> ((DistancePositioner) label.getPositioner()).pointRemoved(index));
+        getLabels().forEach(label -> ((DistanceToLinePositioner) label.getPositioner()).pointRemoved(index));
     }
 
     private static Vector vector(Point point) {
@@ -377,64 +377,60 @@ public class EdgeRenderer extends Element {
     }
 
 
-    private class DistancePositioner implements Supplier<Point> {
-
-        public DistancePositioner(int index, double xDistance, double yDistance, double ratio) {
-            this.xDistance = xDistance;
-            this.yDistance = yDistance;
-            this.ratio = ratio;
-            this.index = index;
-        }
-
-        @Override
-        public Point get() {
-            Point linePoint1 = getPoint(index);
-            Point linePoint2 = getPoint(index + 1);
-            double xAnchor = linePoint1.x + (linePoint2.x - linePoint1.x) * ratio;
-            double yAnchor = linePoint1.y + (linePoint2.y - linePoint1.y) * ratio;
-            double cos = (linePoint1.y - linePoint2.y) / linePoint1.distance(linePoint2);
-            return CanvasUtil.getPoint(cos * xDistance + xAnchor, Math.sin(Math.acos(cos)) * yDistance + yAnchor);
-        }
-
-        public void setIndex(int index) {
-            this.index = index;
-        }
-
-        public int getIndex() {
-            return index;
-        }
-
-        public void pointInserted(int insertIndex, Point point) {
-            if (insertIndex < index) {
-                index++;
-            }
-            else if (insertIndex == index) {
-                if (CanvasUtil.squareDistance(getPoint(index), point) < CanvasUtil.squareDistance(getPoint(index + 2), point)) {
-                    index++;
-                }
-            }
-        }
-
-        public void pointRemoved(int removeIndex) {
-            if (removeIndex < index) {
-                index--;
-            }
-        }
-
-        private final double xDistance;
-        private final double yDistance;
-        private final double ratio;
-        private int index;
-
-    }
-
-    private final List<Point> points = new ArrayList<>();
-    private VertexRenderer start;
-    private VertexRenderer end;
-    private boolean directed;
+//    private class DistancePositioner implements Supplier<Point> {
+//
+//        public DistancePositioner(int index, double xDistance, double yDistance, double ratio) {
+//            this.xDistance = xDistance;
+//            this.yDistance = yDistance;
+//            this.ratio = ratio;
+//            this.index = index;
+//        }
+//
+//        @Override
+//        public Point get() {
+//            Point linePoint1 = getPoint(index);
+//            Point linePoint2 = getPoint(index + 1);
+//            double xAnchor = linePoint1.x + (linePoint2.x - linePoint1.x) * ratio;
+//            double yAnchor = linePoint1.y + (linePoint2.y - linePoint1.y) * ratio;
+//            double cos = (linePoint1.y - linePoint2.y) / linePoint1.distance(linePoint2);
+//            return CanvasUtil.getPoint(cos * xDistance + xAnchor, Math.sin(Math.acos(cos)) * yDistance + yAnchor);
+//        }
+//
+//        public void setIndex(int index) {
+//            this.index = index;
+//        }
+//
+//        public int getIndex() {
+//            return index;
+//        }
+//
+//        public void pointInserted(int insertIndex, Point point) {
+//            if (insertIndex < index) {
+//                index++;
+//            }
+//            else if (insertIndex == index) {
+//                if (CanvasUtil.squareDistance(getPoint(index), point) < CanvasUtil.squareDistance(getPoint(index + 2), point)) {
+//                    index++;
+//                }
+//            }
+//        }
+//
+//        public void pointRemoved(int removeIndex) {
+//            if (removeIndex < index) {
+//                index--;
+//            }
+//        }
+//
+//        private final double xDistance;
+//        private final double yDistance;
+//        private final double ratio;
+//        private int index;
+//
+//    }
 
 
     private final Paintable polygonPaintable = new Paintable() {
+
         @Override
         public void paint(Graphics2D graphics) {
             paint(graphics, getPaint(LINE_PAINT_KEY), getStroke(LINE_STROKE_KEY));
@@ -464,14 +460,11 @@ public class EdgeRenderer extends Element {
             graphics.drawPolyline(x, y, count);
         }
 
-        @Override
-        public String toString() {
-            return "polygon ";
-        }
     };
 
 
     private final Paintable arrowheadPaintable = new Paintable() {
+
         @Override
         public void paint(Graphics2D graphics) {
             paint(graphics, getPaint(ARROWHEAD_PAINT_KEY), getStroke(ARROWHEAD_STROKE_KEY));
@@ -493,11 +486,12 @@ public class EdgeRenderer extends Element {
             graphics.translate(-location.x, -location.y);
         }
 
-        @Override
-        public String toString() {
-            return "arrowhead ";
-        }
     };
+
+    private final List<Point> points = new ArrayList<>();
+    private VertexRenderer start;
+    private VertexRenderer end;
+    private boolean directed;
 
     private static final int[] ARROWHEAD_X_COORDINATES = { -5, 5, -5 };
     private static final int[] ARROWHEAD_Y_COORDINATES = { -5, 0, 5 };

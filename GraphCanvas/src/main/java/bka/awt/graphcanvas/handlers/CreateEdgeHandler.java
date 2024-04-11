@@ -3,7 +3,7 @@
 ** This code may not be used for any purpose that harms humans (including
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
- */
+*/
 package bka.awt.graphcanvas.handlers;
 
 import bka.awt.graphcanvas.*;
@@ -67,7 +67,7 @@ public class CreateEdgeHandler extends CanvasEventHandler {
         else if (!cursor.equals(nearestVertex.getLocation())) {
             connectorPoint = nearestVertex.getConnectorPoint(cursor);
         }
-        draggingEdgeRenderer.setEnd(new VertexRenderer(cursor));
+        draggingEdgeRenderer.setEnd(new VertexRenderer(new InvisibleVertexPaintable(), cursor));
         return ComponentUpdate.REPAINT;
     }
 
@@ -89,7 +89,7 @@ public class CreateEdgeHandler extends CanvasEventHandler {
         }
         else {
             draggingEdgeRenderer.addPoint(cursor);
-            draggingEdgeRenderer.setEnd(new VertexRenderer(cursor));
+            draggingEdgeRenderer.setEnd(new VertexRenderer(new InvisibleVertexPaintable(), cursor));
         }
         return ComponentUpdate.REPAINT;
     }
@@ -103,6 +103,24 @@ public class CreateEdgeHandler extends CanvasEventHandler {
             PaintUtil.paintNewConnectorPoint(graphics, connectorPoint);
         }
     }
+
+
+    private class InvisibleVertexPaintable extends VertexPaintable {
+
+        InvisibleVertexPaintable() {
+            super(new Dimension());
+        }
+
+        @Override
+        public void paint(Graphics2D graphics) {
+        }
+
+        @Override
+        public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
+        }
+
+    }
+
 
     private final EdgeRenderer draggingEdgeRenderer;
     private Point connectorPoint;

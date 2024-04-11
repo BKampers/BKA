@@ -3,7 +3,7 @@
 ** This code may not be used for any purpose that harms humans (including
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
- */
+*/
 package bka.awt.graphcanvas;
 
 import java.awt.*;
@@ -11,6 +11,14 @@ import java.util.*;
 
 
 public abstract class Paintable {
+
+    public Paintable() {
+    }
+
+    public Paintable(Paintable paintable) {
+        paints.putAll(paintable.paints);
+        strokes.putAll(paintable.strokes);
+    }
 
     public abstract void paint(Graphics2D graphics);
 

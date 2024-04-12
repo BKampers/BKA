@@ -242,7 +242,7 @@ public class GraphEditorDemo extends JFrame {
         }
     }
 
-    private void updateGraphPanel(ComponentUpdate update){
+    private void updateGraphPanel(CanvasUpdate update){
         if (java.awt.Cursor.DEFAULT_CURSOR <= update.getCursorType() && update.getCursorType() <= java.awt.Cursor.MOVE_CURSOR) {
             setGraphPanelCursor(update.getCursorType());
         }
@@ -359,7 +359,7 @@ public class GraphEditorDemo extends JFrame {
     private final GraphCanvas canvas = new GraphCanvas(new ApplicationContext() {
 
         @Override
-        public void showVertexMenu(VertexRenderer vertex, Point location) {
+        public void showVertexMenu(VertexComponent vertex, Point location) {
             JPopupMenu menu = new JPopupMenu();
             addPaintMenus(vertex, location, menu);
             if (menu.getComponentCount() > 0) {
@@ -368,7 +368,7 @@ public class GraphEditorDemo extends JFrame {
         }
         
         @Override
-        public void showEdgeMenu(EdgeRenderer edge, Point location) {
+        public void showEdgeMenu(EdgeComponent edge, Point location) {
             JPopupMenu menu = new JPopupMenu();
             JCheckBoxMenuItem directedMenuItem = new JCheckBoxMenuItem(getBundleText("Directed"), edge.isDirected());
             directedMenuItem.addActionListener(evt -> getCanvas().setDirected(edge, directedMenuItem.getState()));
@@ -382,7 +382,7 @@ public class GraphEditorDemo extends JFrame {
             menu.show(graphPanel, location.x, location.y);
         }
 
-        private void addPaintMenus(Element element, Point location, JPopupMenu menu) {
+        private void addPaintMenus(GraphComponent element, Point location, JPopupMenu menu) {
             element.getCustomizablePaintables().forEach(paintable -> {
                 paintable.getPaintKeys().forEach(paintKey -> {
                     JMenuItem paintItem = new JMenuItem(getBundleText(paintKey.toString()));
@@ -414,12 +414,12 @@ public class GraphEditorDemo extends JFrame {
         }
 
         @Override
-        public void requestUpdate(ComponentUpdate update) {
+        public void requestUpdate(CanvasUpdate update) {
             updateGraphPanel(update);
         }
 
         @Override
-        public VertexRenderer createVertexRenderer(Point location) {
+        public VertexComponent createVertexRenderer(Point location) {
             JToggleButton vertexButton = vertexButtons.keySet().stream()
                 .filter(toggleButton -> toggleButton.isSelected())
                 .findAny().orElse(null);
@@ -428,17 +428,17 @@ public class GraphEditorDemo extends JFrame {
             }
             VertexPaintable vertexPaintable = vertexButtons.get(vertexButton);
             if (vertexPaintable instanceof RoundVertexPaintable) {
-                return new VertexRenderer(new RoundVertexPaintable(vertexPaintable), location);
+                return new VertexComponent(new RoundVertexPaintable(vertexPaintable), location);
             }
             if (vertexPaintable instanceof SquareVertexPaintable) {
-                return new VertexRenderer(new SquareVertexPaintable(vertexPaintable), location);
+                return new VertexComponent(new SquareVertexPaintable(vertexPaintable), location);
             }
             throw new IllegalStateException();
         }
 
         @Override
-        public EdgeRenderer createEdgeRenderer(VertexRenderer origin) {
-            EdgeRenderer edgeRenderer = new EdgeRenderer(origin);
+        public EdgeComponent createEdgeRenderer(VertexComponent origin, VertexComponent terminus) {
+            EdgeComponent edgeRenderer = new EdgeComponent(origin, terminus);
             edgeRenderer.setDirected(directedEdgeRadioButton.isSelected());
             return edgeRenderer;
         }

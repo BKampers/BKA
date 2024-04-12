@@ -12,9 +12,9 @@ import java.util.*;
 import java.util.function.*;
 
 
-public class VertexRenderer extends Element {
+public class VertexComponent extends GraphComponent {
 
-    public VertexRenderer(VertexPaintable shapePaintable, Point location) {
+    public VertexComponent(VertexPaintable shapePaintable, Point location) {
         this.shapePaintable = Objects.requireNonNull(shapePaintable);
         this.location = new Point(location);
     }

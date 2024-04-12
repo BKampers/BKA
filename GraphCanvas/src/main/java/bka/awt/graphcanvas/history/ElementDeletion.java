@@ -3,7 +3,7 @@
 ** This code may not be used for any purpose that harms humans (including
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
- */
+*/
 package bka.awt.graphcanvas.history;
 
 import bka.awt.graphcanvas.*;
@@ -12,7 +12,7 @@ import java.util.*;
 
 public class ElementDeletion implements Mutation {
 
-    public ElementDeletion(Collection<VertexRenderer> vertices, Collection<EdgeRenderer> edges, GraphCanvas graphCanvas) {
+    public ElementDeletion(Collection<VertexComponent> vertices, Collection<EdgeComponent> edges, GraphCanvas graphCanvas) {
         this.graphCanvas = Objects.requireNonNull(graphCanvas);
         this.vertices = CollectionUtil.unmodifiableCollection(vertices);
         this.edges = CollectionUtil.unmodifiableCollection(edges);
@@ -46,7 +46,7 @@ public class ElementDeletion implements Mutation {
 
     private final GraphCanvas graphCanvas;
 
-    private final Collection<VertexRenderer> vertices;
-    private final Collection<EdgeRenderer> edges;
+    private final Collection<VertexComponent> vertices;
+    private final Collection<EdgeComponent> edges;
 
 }

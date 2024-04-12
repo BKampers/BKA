@@ -3,27 +3,27 @@
 ** This code may not be used for any purpose that harms humans (including
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
- */
+*/
 package bka.awt.graphcanvas;
 
 
-public class ComponentUpdate {
+public class CanvasUpdate {
 
     private static final int NO_CURSOR_CHANGE = -1;
-    public static final ComponentUpdate NO_OPERATION = ComponentUpdate.noOperation(NO_CURSOR_CHANGE);
-    public static final ComponentUpdate REPAINT = ComponentUpdate.repaint(NO_CURSOR_CHANGE);
+    public static final CanvasUpdate NO_OPERATION = CanvasUpdate.noOperation(NO_CURSOR_CHANGE);
+    public static final CanvasUpdate REPAINT = CanvasUpdate.repaint(NO_CURSOR_CHANGE);
 
-    public ComponentUpdate(int cursorType, boolean needRepeaint) {
+    public CanvasUpdate(int cursorType, boolean needRepeaint) {
         this.cursorType = cursorType;
         this.needRepeaint = needRepeaint;
     }
 
-    public static ComponentUpdate noOperation(int cursorType) {
-        return new ComponentUpdate(cursorType, false);
+    public static CanvasUpdate noOperation(int cursorType) {
+        return new CanvasUpdate(cursorType, false);
     }
 
-    public static ComponentUpdate repaint(int cursorType) {
-        return new ComponentUpdate(cursorType, true);
+    public static CanvasUpdate repaint(int cursorType) {
+        return new CanvasUpdate(cursorType, true);
     }
 
     public int getCursorType() {

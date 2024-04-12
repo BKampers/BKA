@@ -3,7 +3,7 @@
 ** This code may not be used for any purpose that harms humans (including
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
- */
+*/
 package bka.awt.graphcanvas.history;
 
 import bka.awt.graphcanvas.*;
@@ -27,17 +27,17 @@ public class CollectionUtil {
         return Collections.unmodifiableMap(map);
     }
 
-    public static Collection<VertexRenderer> getVertices(Collection<Element> elements) {
+    public static Collection<VertexComponent> getVertices(Collection<GraphComponent> elements) {
         return unmodifiableCollection(elements.stream()
-            .filter(element -> element instanceof VertexRenderer)
-            .map(element -> (VertexRenderer) element)
+            .filter(element -> element instanceof VertexComponent)
+            .map(element -> (VertexComponent) element)
             .collect(Collectors.toList()));
     }
 
-    public static Collection<EdgeRenderer> getEdges(Collection<Element> elements) {
+    public static Collection<EdgeComponent> getEdges(Collection<GraphComponent> elements) {
         return unmodifiableCollection(elements.stream()
-            .filter(element -> element instanceof EdgeRenderer)
-            .map(element -> (EdgeRenderer) element)
+            .filter(element -> element instanceof EdgeComponent)
+            .map(element -> (EdgeComponent) element)
             .collect(Collectors.toList()));
     }
 

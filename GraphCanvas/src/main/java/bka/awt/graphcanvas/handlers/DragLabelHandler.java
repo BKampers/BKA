@@ -3,7 +3,7 @@
 ** This code may not be used for any purpose that harms humans (including
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
- */
+*/
 package bka.awt.graphcanvas.handlers;
 
 import bka.awt.graphcanvas.*;
@@ -26,19 +26,19 @@ public class DragLabelHandler extends CanvasEventHandler {
     }
 
     @Override
-    public ComponentUpdate mouseDragged(MouseEvent event) {
+    public CanvasUpdate mouseDragged(MouseEvent event) {
         Point cursor = event.getPoint();
         label.setPositioner(label.getElement().distancePositioner(cursor));
-        Element nearest = getCanvas().findNearestElement(cursor);
+        GraphComponent nearest = getCanvas().findNearestElement(cursor);
         if (!nearest.equals(nearestElement)) {
             nearestElement = nearest;
         }
-        nearestIndex = (nearestElement instanceof EdgeRenderer) ? ((EdgeRenderer) nearestElement).nearestLineIndex(cursor) : -1;
-        return ComponentUpdate.REPAINT;
+        nearestIndex = (nearestElement instanceof EdgeComponent) ? ((EdgeComponent) nearestElement).nearestLineIndex(cursor) : -1;
+        return CanvasUpdate.REPAINT;
     }
 
     @Override
-    public ComponentUpdate mouseReleased(MouseEvent event) {
+    public CanvasUpdate mouseReleased(MouseEvent event) {
         getCanvas().resetEventHandler();
         if (!Objects.equals(originalPositioner.get(), label.getPositioner().get())) {
             if (label.getElement().equals(nearestElement)) {
@@ -49,7 +49,7 @@ public class DragLabelHandler extends CanvasEventHandler {
                 getCanvas().addHistory(new LabelReallocationMutation());
             }
         }
-        return ComponentUpdate.REPAINT;
+        return CanvasUpdate.REPAINT;
     }
 
     private Label getLabel() {
@@ -64,7 +64,7 @@ public class DragLabelHandler extends CanvasEventHandler {
     public void paint(Graphics2D graphics) {
         if (nearestElement != null) {
             if (nearestIndex >= 0) {
-                ((EdgeRenderer) nearestElement).paintHighlight(graphics, GraphCanvas.getLabelHighlightColor(), GraphCanvas.getHighlightStroke(), nearestIndex);
+                ((EdgeComponent) nearestElement).paintHighlight(graphics, GraphCanvas.getLabelHighlightColor(), GraphCanvas.getHighlightStroke(), nearestIndex);
             }
             else {
                 nearestElement.paintHighlight(graphics, GraphCanvas.getLabelHighlightColor(), GraphCanvas.getHighlightStroke());
@@ -96,7 +96,7 @@ public class DragLabelHandler extends CanvasEventHandler {
 
         @Override
         public void revert() {
-            Element oldElement = reallocatedLabel.getElement();
+            GraphComponent oldElement = reallocatedLabel.getElement();
             Supplier<Point> oldPositioner = reallocatedLabel.getPositioner();
             reallocatedLabel.moveTo(historyElement, historyElement.distancePositioner(historyPositioner.get()));
             historyElement = oldElement;
@@ -114,16 +114,16 @@ public class DragLabelHandler extends CanvasEventHandler {
         }
 
         private final Label reallocatedLabel;
-        private Element historyElement;
+        private GraphComponent historyElement;
         private Supplier<Point> historyPositioner;
     }
 
 
     private final Label label;
     private final Supplier<Point> originalPositioner;
-    private final Element originalElement;
+    private final GraphComponent originalElement;
 
-    private Element nearestElement;
+    private GraphComponent nearestElement;
     private int nearestIndex = -1;
 
 }

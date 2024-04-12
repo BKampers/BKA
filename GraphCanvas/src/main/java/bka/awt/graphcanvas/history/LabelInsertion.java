@@ -3,7 +3,7 @@
 ** This code may not be used for any purpose that harms humans (including
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
- */
+*/
 package bka.awt.graphcanvas.history;
 
 import bka.awt.graphcanvas.*;
@@ -12,7 +12,7 @@ import java.util.*;
 
 public class LabelInsertion implements Mutation {
 
-    public LabelInsertion(Element element, Label label) {
+    public LabelInsertion(GraphComponent element, Label label) {
         this.element = Objects.requireNonNull(element);
         this.label = Objects.requireNonNull(label);
     }
@@ -32,6 +32,6 @@ public class LabelInsertion implements Mutation {
         element.addLabel(label);
     }
 
-    private final Element element;
+    private final GraphComponent element;
     private final Label label;
 }

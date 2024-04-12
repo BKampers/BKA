@@ -3,7 +3,7 @@
 ** This code may not be used for any purpose that harms humans (including
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
- */
+*/
 package bka.awt.graphcanvas.history;
 
 import bka.awt.graphcanvas.*;
@@ -12,13 +12,13 @@ import java.util.*;
 
 public class ElementInsertion implements Mutation {
 
-    public ElementInsertion(VertexRenderer vertex, GraphCanvas graphCanvas) {
+    public ElementInsertion(VertexComponent vertex, GraphCanvas graphCanvas) {
         this.graphCanvas = Objects.requireNonNull(graphCanvas);
         vertices = List.of(vertex);
         edges = Collections.emptyList();
     }
 
-    public ElementInsertion(EdgeRenderer edge, GraphCanvas graphCanvas) {
+    public ElementInsertion(EdgeComponent edge, GraphCanvas graphCanvas) {
         this.graphCanvas = Objects.requireNonNull(graphCanvas);
         vertices = Collections.emptyList();
         edges = List.of(edge);
@@ -46,7 +46,7 @@ public class ElementInsertion implements Mutation {
 
     private final GraphCanvas graphCanvas;
 
-    private final Collection<VertexRenderer> vertices;
-    private final Collection<EdgeRenderer> edges;
+    private final Collection<VertexComponent> vertices;
+    private final Collection<EdgeComponent> edges;
 
 }

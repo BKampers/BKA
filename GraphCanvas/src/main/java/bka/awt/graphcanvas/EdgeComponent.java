@@ -16,7 +16,7 @@ import java.util.function.*;
 import java.util.stream.*;
 
 
-public class EdgeRenderer extends Element {
+public class EdgeComponent extends GraphComponent {
 
     public static final Object LINE_PAINT_KEY = "LinePaint";
     public static final Object LINE_STROKE_KEY = "LineStroke";
@@ -70,18 +70,17 @@ public class EdgeRenderer extends Element {
         private Map<Label, Integer> labelIndices;
     }
 
-
-    public EdgeRenderer(VertexRenderer start, VertexRenderer end) {
-        this(start);
-        this.end = Objects.requireNonNull(end);
-    }
-
-    public EdgeRenderer(VertexRenderer start) {
+    public EdgeComponent(VertexComponent start, VertexComponent end) {
         polygonPaintable.setPaint(LINE_PAINT_KEY, Color.BLACK);
         polygonPaintable.setStroke(LINE_STROKE_KEY, new BasicStroke());
         arrowheadPaintable.setPaint(ARROWHEAD_PAINT_KEY, Color.BLACK);
         arrowheadPaintable.setStroke(ARROWHEAD_STROKE_KEY, new BasicStroke());
         this.start = Objects.requireNonNull(start);
+        setEnd(end);
+    }
+
+    public final void setEnd(VertexComponent end) {
+        this.end = Objects.requireNonNull(end);
     }
 
     public Excerpt getExcerpt() {
@@ -94,15 +93,11 @@ public class EdgeRenderer extends Element {
         excerpt.getLabelIndices().forEach((label, index) -> ((DistanceToLinePositioner) label.getPositioner()).setIndex(index));
     }
 
-    public VertexRenderer getStart() {
+    public VertexComponent getStart() {
         return start;
     }
 
-    public void setEnd(VertexRenderer end) {
-        this.end = end;
-    }
-
-    public VertexRenderer getEnd() {
+    public VertexComponent getEnd() {
         return end;
     }
 
@@ -141,7 +136,7 @@ public class EdgeRenderer extends Element {
 
     public void revert() {
         Map<Label, Point> labelPoints = getLabels().stream().collect(Collectors.toMap(Function.identity(), label -> label.getPositioner().get()));
-        VertexRenderer newEnd = start;
+        VertexComponent newEnd = start;
         start = end;
         end = newEnd;
         Collections.reverse(points);
@@ -249,13 +244,7 @@ public class EdgeRenderer extends Element {
             distance = Math.min(distance, CanvasUtil.squareDistance(point, startPoint, endPoint));
             startPoint = endPoint;
         }
-        if (end != null) {
-            return Math.min(distance, CanvasUtil.squareDistance(point, startPoint, getEndConnectorPoint()));
-        }
-        if (distance == Long.MAX_VALUE) {
-            return CanvasUtil.squareDistance(point, startPoint);
-        }
-        return distance;
+        return Math.min(distance, CanvasUtil.squareDistance(point, startPoint, getEndConnectorPoint()));
     }
 
     public int nearestLineIndex(Point point) {
@@ -377,58 +366,6 @@ public class EdgeRenderer extends Element {
     }
 
 
-//    private class DistancePositioner implements Supplier<Point> {
-//
-//        public DistancePositioner(int index, double xDistance, double yDistance, double ratio) {
-//            this.xDistance = xDistance;
-//            this.yDistance = yDistance;
-//            this.ratio = ratio;
-//            this.index = index;
-//        }
-//
-//        @Override
-//        public Point get() {
-//            Point linePoint1 = getPoint(index);
-//            Point linePoint2 = getPoint(index + 1);
-//            double xAnchor = linePoint1.x + (linePoint2.x - linePoint1.x) * ratio;
-//            double yAnchor = linePoint1.y + (linePoint2.y - linePoint1.y) * ratio;
-//            double cos = (linePoint1.y - linePoint2.y) / linePoint1.distance(linePoint2);
-//            return CanvasUtil.getPoint(cos * xDistance + xAnchor, Math.sin(Math.acos(cos)) * yDistance + yAnchor);
-//        }
-//
-//        public void setIndex(int index) {
-//            this.index = index;
-//        }
-//
-//        public int getIndex() {
-//            return index;
-//        }
-//
-//        public void pointInserted(int insertIndex, Point point) {
-//            if (insertIndex < index) {
-//                index++;
-//            }
-//            else if (insertIndex == index) {
-//                if (CanvasUtil.squareDistance(getPoint(index), point) < CanvasUtil.squareDistance(getPoint(index + 2), point)) {
-//                    index++;
-//                }
-//            }
-//        }
-//
-//        public void pointRemoved(int removeIndex) {
-//            if (removeIndex < index) {
-//                index--;
-//            }
-//        }
-//
-//        private final double xDistance;
-//        private final double yDistance;
-//        private final double ratio;
-//        private int index;
-//
-//    }
-
-
     private final Paintable polygonPaintable = new Paintable() {
 
         @Override
@@ -438,7 +375,7 @@ public class EdgeRenderer extends Element {
 
         @Override
         public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
-            int count = points.size() + ((end == null) ? 1 : 2);
+            int count = points.size() + ENDPOINT_COUNT;
             int[] x = new int[count];
             int[] y = new int[count];
             Point startPoint = getStartConnectorPoint();
@@ -450,11 +387,9 @@ public class EdgeRenderer extends Element {
                 y[i] = point.y;
                 ++i;
             }
-            if (end != null) {
-                Point endPoint = getEndConnectorPoint();
-                x[count - 1] = endPoint.x;
-                y[count - 1] = endPoint.y;
-            }
+            Point endPoint = getEndConnectorPoint();
+            x[count - 1] = endPoint.x;
+            y[count - 1] = endPoint.y;
             graphics.setPaint(paint);
             graphics.setStroke(stroke);
             graphics.drawPolyline(x, y, count);
@@ -489,11 +424,13 @@ public class EdgeRenderer extends Element {
     };
 
     private final List<Point> points = new ArrayList<>();
-    private VertexRenderer start;
-    private VertexRenderer end;
+    private VertexComponent start;
+    private VertexComponent end;
     private boolean directed;
 
     private static final int[] ARROWHEAD_X_COORDINATES = { -5, 5, -5 };
     private static final int[] ARROWHEAD_Y_COORDINATES = { -5, 0, 5 };
+
+    private static final int ENDPOINT_COUNT = 2;
 
 }

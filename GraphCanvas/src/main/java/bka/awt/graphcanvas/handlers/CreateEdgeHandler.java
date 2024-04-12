@@ -15,69 +15,69 @@ import java.util.*;
 
 public class CreateEdgeHandler extends CanvasEventHandler {
 
-    public CreateEdgeHandler(GraphCanvas canvas, VertexRenderer vertex) {
+    public CreateEdgeHandler(GraphCanvas canvas, VertexComponent vertex, Point cursor) {
         super(canvas);
-        draggingEdgeRenderer = getCanvas().getContext().createEdgeRenderer(vertex);
+        draggingEdgeRenderer = getCanvas().getContext().createEdgeRenderer(vertex, new VertexComponent(UNPAINTABLE_VERTEX, cursor));
     }
 
     @Override
-    public ComponentUpdate mouseMoved(MouseEvent event) {
+    public CanvasUpdate mouseMoved(MouseEvent event) {
         if (!MouseButton.MAIN.matchesModifier(event)) {
-            return ComponentUpdate.NO_OPERATION;
+            return CanvasUpdate.NO_OPERATION;
         }
         Point cursor = event.getPoint();
         Point newConnectorPoint = null;
-        VertexRenderer nearestVertex = getCanvas().findNearestVertex(cursor);
+        VertexComponent nearestVertex = getCanvas().findNearestVertex(cursor);
         if (nearestVertex != null) {
             newConnectorPoint = nearestVertex.getConnectorPoint(cursor);
         }
         if (Objects.equals(newConnectorPoint, connectorPoint)) {
-            return ComponentUpdate.NO_OPERATION;
+            return CanvasUpdate.NO_OPERATION;
         }
         connectorPoint = newConnectorPoint;
-        return ComponentUpdate.REPAINT;
+        return CanvasUpdate.REPAINT;
     }
 
     @Override
-    public ComponentUpdate mousePressed(MouseEvent event) {
+    public CanvasUpdate mousePressed(MouseEvent event) {
         button = MouseButton.get(event);
-        return ComponentUpdate.NO_OPERATION;
+        return CanvasUpdate.NO_OPERATION;
     }
 
     @Override
-    public ComponentUpdate mouseClicked(MouseEvent event) {
+    public CanvasUpdate mouseClicked(MouseEvent event) {
         if (button == MouseButton.CONTEXT) {
             getCanvas().resetEventHandler();
-            return ComponentUpdate.REPAINT;
+            return CanvasUpdate.REPAINT;
         }
         button = null;
-        return ComponentUpdate.NO_OPERATION;
+        return CanvasUpdate.NO_OPERATION;
     }
 
     @Override
-    public ComponentUpdate mouseDragged(MouseEvent event) {
+    public CanvasUpdate mouseDragged(MouseEvent event) {
         if (!MouseButton.MAIN.matchesModifier(event)) {
-            return ComponentUpdate.NO_OPERATION;
+            return CanvasUpdate.NO_OPERATION;
         }
         Point cursor = event.getPoint();
-        VertexRenderer nearestVertex = getCanvas().findNearestVertex(cursor);
+        VertexComponent nearestVertex = getCanvas().findNearestVertex(cursor);
         if (nearestVertex == null) {
             connectorPoint = null;
         }
         else if (!cursor.equals(nearestVertex.getLocation())) {
             connectorPoint = nearestVertex.getConnectorPoint(cursor);
         }
-        draggingEdgeRenderer.setEnd(new VertexRenderer(new InvisibleVertexPaintable(), cursor));
-        return ComponentUpdate.REPAINT;
+        draggingEdgeRenderer.getEnd().setLocation(cursor);
+        return CanvasUpdate.REPAINT;
     }
 
     @Override
-    public ComponentUpdate mouseReleased(MouseEvent event) {
+    public CanvasUpdate mouseReleased(MouseEvent event) {
         if (!MouseButton.MAIN.matchesModifier(event)) {
-            return ComponentUpdate.NO_OPERATION;
+            return CanvasUpdate.NO_OPERATION;
         }
         Point cursor = event.getPoint();
-        VertexRenderer end = getCanvas().findNearestVertex(cursor);
+        VertexComponent end = getCanvas().findNearestVertex(cursor);
         if (end != null) {
             draggingEdgeRenderer.setEnd(end);
             CanvasUtil.cleanup(draggingEdgeRenderer);
@@ -89,9 +89,9 @@ public class CreateEdgeHandler extends CanvasEventHandler {
         }
         else {
             draggingEdgeRenderer.addPoint(cursor);
-            draggingEdgeRenderer.setEnd(new VertexRenderer(new InvisibleVertexPaintable(), cursor));
+            draggingEdgeRenderer.getEnd().setLocation(cursor);
         }
-        return ComponentUpdate.REPAINT;
+        return CanvasUpdate.REPAINT;
     }
 
     @Override
@@ -104,25 +104,19 @@ public class CreateEdgeHandler extends CanvasEventHandler {
         }
     }
 
-
-    private class InvisibleVertexPaintable extends VertexPaintable {
-
-        InvisibleVertexPaintable() {
-            super(new Dimension());
-        }
-
+    private static final VertexPaintable UNPAINTABLE_VERTEX = new VertexPaintable(new Dimension()) {
         @Override
         public void paint(Graphics2D graphics) {
+            throw new IllegalStateException();
         }
 
         @Override
         public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
+            throw new IllegalStateException();
         }
+    };
 
-    }
-
-
-    private final EdgeRenderer draggingEdgeRenderer;
+    private final EdgeComponent draggingEdgeRenderer;
     private Point connectorPoint;
     private MouseButton button;
 

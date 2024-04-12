@@ -91,7 +91,7 @@ public class CanvasUtil {
         return list.stream().map(Point::new).collect(Collectors.toList());
     }
 
-    public static boolean cleanup(EdgeRenderer edge) {
+    public static boolean cleanup(EdgeComponent edge) {
         return edge.cleanup(TWIN_TOLERANCE, ACUTE_COSINE_LIMIT, OBTUSE_COSINE_LIMIT);
     }
 

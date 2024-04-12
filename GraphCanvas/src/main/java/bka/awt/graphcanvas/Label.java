@@ -3,7 +3,7 @@
 ** This code may not be used for any purpose that harms humans (including
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
- */
+*/
 package bka.awt.graphcanvas;
 
 import java.awt.*;
@@ -13,20 +13,20 @@ import java.util.function.*;
 
 public class Label {
 
-    public Label(Element element, Supplier<Point> positioner, String text) {
+    public Label(GraphComponent element, Supplier<Point> positioner, String text) {
         this.element = Objects.requireNonNull(element);
         setPositioner(positioner);
         setText(text);
     }
 
-    public void moveTo(Element element, Supplier<Point> positioner) {
+    public void moveTo(GraphComponent element, Supplier<Point> positioner) {
         this.element.removeLabel(this);
         this.element = Objects.requireNonNull(element);
         this.element.addLabel(this);
         setPositioner(positioner);
     }
 
-    public Element getElement() {
+    public GraphComponent getElement() {
         return element;
     }
 
@@ -67,7 +67,7 @@ public class Label {
         return new Rectangle(position.x - width / 2, position.y - height / 2, width, height);
     }
 
-    private Element element;
+    private GraphComponent element;
 
     private Supplier<Point> positioner;
     private String text;

@@ -3,7 +3,7 @@
 ** This code may not be used for any purpose that harms humans (including
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
- */
+*/
 package bka.awt.graphcanvas.handlers;
 
 import bka.awt.graphcanvas.*;
@@ -14,20 +14,20 @@ import java.awt.event.*;
 
 public class VertexResizeHandler extends CanvasEventHandler {
 
-    public VertexResizeHandler(GraphCanvas canvas, VertexRenderer draggingVertex) {
+    public VertexResizeHandler(GraphCanvas canvas, VertexComponent draggingVertex) {
         super(canvas);
         this.draggingVertex = draggingVertex;
         this.originalDimension = draggingVertex.getDimension();
     }
 
     @Override
-    public ComponentUpdate mouseDragged(MouseEvent event) {
+    public CanvasUpdate mouseDragged(MouseEvent event) {
         draggingVertex.resize(event.getPoint());
-        return ComponentUpdate.REPAINT;
+        return CanvasUpdate.REPAINT;
     }
 
     @Override
-    public ComponentUpdate mouseReleased(MouseEvent event) {
+    public CanvasUpdate mouseReleased(MouseEvent event) {
         if (!originalDimension.equals(draggingVertex.getDimension())) {
             getCanvas().getEdges().stream()
                 .filter(edge -> draggingVertex.equals(edge.getStart()) || draggingVertex.equals(edge.getEnd()))
@@ -39,10 +39,10 @@ public class VertexResizeHandler extends CanvasEventHandler {
                 originalDimension));
         }
         getCanvas().resetEventHandler();
-        return ComponentUpdate.NO_OPERATION;
+        return CanvasUpdate.NO_OPERATION;
     }
 
-    private final VertexRenderer draggingVertex;
+    private final VertexComponent draggingVertex;
     private final Dimension originalDimension;
 
 }

@@ -3,7 +3,7 @@
 ** This code may not be used for any purpose that harms humans (including
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
- */
+*/
 package bka.awt.graphcanvas.handlers;
 
 import bka.awt.graphcanvas.*;
@@ -15,7 +15,7 @@ import java.util.*;
 
 public class EdgePointMoveHandler extends CanvasEventHandler {
 
-    public EdgePointMoveHandler(GraphCanvas canvas, Point dragStartPoint, EdgeRenderer draggingEdgeRenderer, EdgeRenderer.Excerpt originalShape) {
+    public EdgePointMoveHandler(GraphCanvas canvas, Point dragStartPoint, EdgeComponent draggingEdgeRenderer, EdgeComponent.Excerpt originalShape) {
         super(canvas);
         this.dragPoint = Objects.requireNonNull(dragStartPoint);
         this.draggingEdgeRenderer = draggingEdgeRenderer;
@@ -24,13 +24,13 @@ public class EdgePointMoveHandler extends CanvasEventHandler {
     }
 
     @Override
-    public ComponentUpdate mouseDragged(MouseEvent event) {
+    public CanvasUpdate mouseDragged(MouseEvent event) {
         dragPoint.setLocation(event.getX(), event.getY());
-        return ComponentUpdate.REPAINT;
+        return CanvasUpdate.REPAINT;
     }
 
     @Override
-    public ComponentUpdate mouseReleased(MouseEvent event) {
+    public CanvasUpdate mouseReleased(MouseEvent event) {
         CanvasUtil.cleanup(draggingEdgeRenderer);
         if (!originalShape.equals(draggingEdgeRenderer.getExcerpt())) {
             getCanvas().addHistory(new PropertyMutation<>(
@@ -40,7 +40,7 @@ public class EdgePointMoveHandler extends CanvasEventHandler {
                 originalShape));
         }
         getCanvas().resetEventHandler();
-        return ComponentUpdate.REPAINT;
+        return CanvasUpdate.REPAINT;
     }
 
     @Override
@@ -55,7 +55,7 @@ public class EdgePointMoveHandler extends CanvasEventHandler {
 
     private final boolean edgeBendSelected;
     private final Point dragPoint;
-    private final EdgeRenderer draggingEdgeRenderer;
-    private final EdgeRenderer.Excerpt originalShape;
+    private final EdgeComponent draggingEdgeRenderer;
+    private final EdgeComponent.Excerpt originalShape;
 
 }

@@ -12,12 +12,12 @@ import java.util.function.*;
 
 public interface ApplicationContext {
 
-    void showVertexMenu(VertexRenderer vertex, Point location);
-    void showEdgeMenu(EdgeRenderer edge, Point location);
+    void showVertexMenu(VertexComponent vertex, Point location);
+    void showEdgeMenu(EdgeComponent edge, Point location);
     void editString(String input, Point location, Consumer<String> onApply);
-    void requestUpdate(ComponentUpdate update);
+    void requestUpdate(CanvasUpdate update);
 
-    VertexRenderer createVertexRenderer(Point location);
-    EdgeRenderer createEdgeRenderer(VertexRenderer origin);
+    VertexComponent createVertexRenderer(Point location);
+    EdgeComponent createEdgeRenderer(VertexComponent origin, VertexComponent terminus);
 
 }

@@ -3,7 +3,7 @@
 ** This code may not be used for any purpose that harms humans (including
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
- */
+*/
 package bka.awt.graphcanvas.handlers;
 
 import bka.awt.graphcanvas.*;
@@ -21,23 +21,23 @@ public abstract class CanvasEventHandler {
     public void paint(Graphics2D graphics) {
     }
 
-    public ComponentUpdate mouseMoved(MouseEvent event) {
+    public CanvasUpdate mouseMoved(MouseEvent event) {
         throw unexpectedEventException(event);
     }
 
-    public ComponentUpdate mousePressed(MouseEvent event) {
+    public CanvasUpdate mousePressed(MouseEvent event) {
         throw unexpectedEventException(event);
     }
 
-    public ComponentUpdate mouseDragged(MouseEvent event) {
+    public CanvasUpdate mouseDragged(MouseEvent event) {
         throw unexpectedEventException(event);
     }
 
-    public ComponentUpdate mouseReleased(MouseEvent event) {
+    public CanvasUpdate mouseReleased(MouseEvent event) {
         throw unexpectedEventException(event);
     }
 
-    public ComponentUpdate mouseClicked(MouseEvent event) {
+    public CanvasUpdate mouseClicked(MouseEvent event) {
         throw unexpectedEventException(event);
     }
 
@@ -45,12 +45,12 @@ public abstract class CanvasEventHandler {
         return new IllegalStateException(getClass().getSimpleName() + ": " + event.paramString());
     }
 
-    public ComponentUpdate keyPressed(KeyEvent event) {
-        return ComponentUpdate.NO_OPERATION;
+    public CanvasUpdate keyPressed(KeyEvent event) {
+        return CanvasUpdate.NO_OPERATION;
     }
 
-    public ComponentUpdate keyReleased(KeyEvent event) {
-        return ComponentUpdate.NO_OPERATION;
+    public CanvasUpdate keyReleased(KeyEvent event) {
+        return CanvasUpdate.NO_OPERATION;
     }
 
     protected final GraphCanvas getCanvas() {

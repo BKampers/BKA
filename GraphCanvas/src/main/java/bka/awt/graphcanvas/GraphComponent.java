@@ -3,7 +3,7 @@
 ** This code may not be used for any purpose that harms humans (including
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
- */
+*/
 package bka.awt.graphcanvas;
 
 import bka.awt.*;
@@ -12,7 +12,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.function.*;
 
-public abstract class Element implements Renderer {
+public abstract class GraphComponent implements Renderer {
 
     public abstract void paintHighlight(Graphics2D graphics, Color color, Stroke stroke);
 

@@ -7,6 +7,7 @@
 package bka.awt.graphcanvas;
 
 import java.awt.*;
+import java.util.List;
 import java.util.function.*;
 
 
@@ -20,14 +21,6 @@ public abstract class VertexPaintable extends Paintable {
     public VertexPaintable(VertexPaintable vertexPaintable) {
         super(vertexPaintable);
         setSize(vertexPaintable.size);
-    }
-
-    public void setLocation(Point location) {
-        this.location = new Point(location);
-    }
-
-    protected Point getLocation() {
-        return location;
     }
 
     public final void setSize(Dimension size) {
@@ -67,6 +60,9 @@ public abstract class VertexPaintable extends Paintable {
         return new Point(Math.round(location.x + cx), Math.round(location.y + cy));
     }
 
-    private Point location = new Point(0, 0);
+    public List<Point> getContour(Point location) {
+        return null;
+    }
+
     private Dimension size;
 }

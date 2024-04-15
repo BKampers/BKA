@@ -519,7 +519,7 @@ public class GraphEditorDemo extends JFrame {
         @Override
         public double distance(Point location, Point point) {
             double distance = Math.sqrt(
-                countour2D(location).stream()
+                contour2D(location).stream()
                     .map(line -> squareDistance(point, line))
                     .sorted()
                     .findFirst().get());
@@ -529,74 +529,6 @@ public class GraphEditorDemo extends JFrame {
         public long squareDistance(Point2D point, Line2D line) {
             return CanvasUtil.squareDistance(CanvasUtil.round(point), CanvasUtil.round(line.getP1()), CanvasUtil.round(line.getP2()));
         }
-
-//        @Override
-//        public Supplier<Point> distancePositioner(Point location, Point point) {
-////            double dy = point.y - location.y;
-////            double angle = Math.atan((point.x - location.x) / dy);
-////            float sin = (float) ((dy < 0) ? -Math.sin(angle) : Math.sin(angle));
-////            float cos = (float) ((dy < 0) ? -Math.cos(angle) : Math.cos(angle));
-////            float distanceToBorder = (float) distance(location, point);
-////            return () -> {
-////                float distanceToLocation = getSize().width / 2f + distanceToBorder;
-////                return new Point(location.x + Math.round(sin * distanceToLocation), location.y + Math.round(cos * distanceToLocation));
-////            };
-//            long distance = Long.MAX_VALUE;
-//            int index = -1;
-//            List<Line2D> contour = countour2D(location);
-//            for (int i = 0; i < contour.size(); ++i) {
-//                if (squareDistance(point, contour.get(i)) < distance) {
-//                    index = i;
-//                    distance = squareDistance(point, contour.get(i));
-//                }
-//            }
-//            Function<Integer, Point> pointAt = idx -> {
-//                if (idx < contour.size()) {
-//                    return CanvasUtil.round(contour.get(idx).getP1());
-//                }
-//                return CanvasUtil.round(contour.get(0).getP1());
-//            };
-//            Point linePoint1 = pointAt.apply(index);
-//            Point linePoint2 = pointAt.apply(index + 1);
-//            Point2D anchor = CanvasUtil.intersectionPoint(point, linePoint1, linePoint2);
-//            double yDistance = directedDistance(point, anchor, CanvasUtil.slope(linePoint1, linePoint2));
-//            double xDistance = (linePoint1.x > linePoint2.x) ? -yDistance : yDistance;
-////            contour.stream().forEach((Line2D line) -> {
-////                line.getP1().setLocation(line.getX1() + location.x, line.getY1() + location.y);
-////                line.getP2().setLocation(line.getX2() + location.x, line.getY2() + location.y);
-////            });
-//            return new DistanceToLinePositioner(index, xDistance, yDistance, directedRatio(linePoint1, linePoint2, anchor), pointAt);
-//        }
-
-//        private double directedDistance(Point2D distantPoint, Point2D anchor, double slope) {
-//            double distance = distantPoint.distance(anchor);
-//            if (slope <= -1) {
-//                return (distantPoint.getX() < anchor.getX()) ? -distance : distance;
-//            }
-//            if (1 <= slope) {
-//                return (distantPoint.getX() > anchor.getX()) ? -distance : distance;
-//            }
-//            return (distantPoint.getY() < anchor.getY()) ? -distance : distance;
-//        }
-//
-//        private double directedRatio(Point2D linePoint1, Point2D linePoint2, Point2D anchor) {
-//            double ratio = anchor.distance(linePoint1) / linePoint1.distance(linePoint2);
-//            double x1 = linePoint1.getX();
-//            double x2 = linePoint2.getX();
-//            double y1 = linePoint1.getY();
-//            double y2 = linePoint2.getY();
-//            if (Math.abs(CanvasUtil.slope(linePoint1, linePoint2)) < 1) {
-//                if (anchor.getX() < x1 && x1 < x2 || x2 < x1 && x1 < anchor.getX()) {
-//                    return -ratio;
-//                }
-//            }
-//            else {
-//                if (anchor.getY() < y1 && y1 < y2 || y2 < y1 && y1 < anchor.getY()) {
-//                    return -ratio;
-//                }
-//            }
-//            return ratio;
-//        }
 
         @Override
         public Point getConnectorPoint(Point location, Point point) {
@@ -626,16 +558,25 @@ public class GraphEditorDemo extends JFrame {
         }
 
         private List<Line> contour(Point location) {
-            return countour2D(location).stream().map(line -> Line.through(line.getP1(), line.getP2())).collect(Collectors.toList());
+            return contour2D(location).stream().map(line -> Line.through(line.getP1(), line.getP2())).collect(Collectors.toList());
         }
 
-        private List<Line2D> countour2D(Point location) {
+        private List<Line2D> contour2D(Point location) {
             return List.of(
                 new Line2D.Double(topLeft(location), bottomLeft(location)),
                 new Line2D.Double(bottomLeft(location), bottomRight(location)),
                 new Line2D.Double(bottomRight(location), topRight(location)),
                 new Line2D.Double(topRight(location), topLeft(location))
             );
+        }
+
+        @Override
+        public List<Point> getContour(Point location) {
+            return List.of(
+                topLeft(location),
+                bottomLeft(location),
+                bottomRight(location),
+                topRight(location));
         }
 
         private Point topLeft(Point location) {

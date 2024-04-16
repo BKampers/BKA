@@ -7,7 +7,6 @@
 package bka.awt.graphcanvas;
 
 import java.awt.*;
-import java.awt.geom.*;
 import java.util.List;
 import java.util.*;
 import java.util.function.*;
@@ -64,13 +63,7 @@ public class VertexComponent extends GraphComponent {
     }
 
     public Supplier<Point> lineDistancePositioner(Point point) {
-        int index = nearestLineIndex(point);
-        Point linePoint1 = getPoint(index);
-        Point linePoint2 = getPoint(index + 1);
-        Point2D anchor = CanvasUtil.intersectionPoint(point, linePoint1, linePoint2);
-        double yDistance = directedDistance(point, anchor, CanvasUtil.slope(linePoint1, linePoint2));
-        double xDistance = (linePoint1.x > linePoint2.x) ? -yDistance : yDistance;
-        return new DistanceToLinePositioner(index, xDistance, yDistance, directedRatio(linePoint1, linePoint2, anchor), this::getPoint);
+        return DistanceToLinePositioner.create(point, nearestLineIndex(point), this::getPoint);
     }
 
     private int nearestLineIndex(Point point) {
@@ -99,36 +92,6 @@ public class VertexComponent extends GraphComponent {
 
     private List<Point> points() {
         return shapePaintable.getContour(location);
-    }
-
-    private static double directedDistance(Point2D distantPoint, Point2D anchor, double slope) {
-        double distance = distantPoint.distance(anchor);
-        if (slope <= -1) {
-            return (distantPoint.getX() < anchor.getX()) ? -distance : distance;
-        }
-        if (1 <= slope) {
-            return (distantPoint.getX() > anchor.getX()) ? -distance : distance;
-        }
-        return (distantPoint.getY() < anchor.getY()) ? -distance : distance;
-    }
-
-    private static double directedRatio(Point2D linePoint1, Point2D linePoint2, Point2D anchor) {
-        double ratio = anchor.distance(linePoint1) / linePoint1.distance(linePoint2);
-        double x1 = linePoint1.getX();
-        double x2 = linePoint2.getX();
-        double y1 = linePoint1.getY();
-        double y2 = linePoint2.getY();
-        if (Math.abs(CanvasUtil.slope(linePoint1, linePoint2)) < 1) {
-            if (anchor.getX() < x1 && x1 < x2 || x2 < x1 && x1 < anchor.getX()) {
-                return -ratio;
-            }
-        }
-        else {
-            if (anchor.getY() < y1 && y1 < y2 || y2 < y1 && y1 < anchor.getY()) {
-                return -ratio;
-            }
-        }
-        return ratio;
     }
 
     @Override

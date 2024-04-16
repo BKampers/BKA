@@ -7,6 +7,7 @@
 package bka.awt.graphcanvas;
 
 import java.awt.*;
+import java.awt.geom.*;
 import java.util.*;
 import java.util.function.*;
 
@@ -19,6 +20,45 @@ public class DistanceToLinePositioner implements Supplier<Point> {
         this.ratio = ratio;
         this.index = index;
         this.pointAt = Objects.requireNonNull(pointAt);
+    }
+
+    public static DistanceToLinePositioner create(Point point, int index, Function<Integer, Point> pointAt) {
+        Point linePoint1 = pointAt.apply(index);
+        Point linePoint2 = pointAt.apply(index + 1);
+        Point2D anchor = CanvasUtil.intersectionPoint(point, linePoint1, linePoint2);
+        double yDistance = directedDistance(point, anchor, CanvasUtil.slope(linePoint1, linePoint2));
+        double xDistance = (linePoint1.x > linePoint2.x) ? -yDistance : yDistance;
+        return new DistanceToLinePositioner(index, xDistance, yDistance, directedRatio(linePoint1, linePoint2, anchor), pointAt);
+    }
+
+    public static double directedDistance(Point2D distantPoint, Point2D anchor, double slope) {
+        double distance = distantPoint.distance(anchor);
+        if (slope <= -1) {
+            return (distantPoint.getX() < anchor.getX()) ? -distance : distance;
+        }
+        if (1 <= slope) {
+            return (distantPoint.getX() > anchor.getX()) ? -distance : distance;
+        }
+        return (distantPoint.getY() < anchor.getY()) ? -distance : distance;
+    }
+
+    public static double directedRatio(Point2D linePoint1, Point2D linePoint2, Point2D anchor) {
+        double ratio = anchor.distance(linePoint1) / linePoint1.distance(linePoint2);
+        if (Math.abs(CanvasUtil.slope(linePoint1, linePoint2)) < 1) {
+            if (ordered(anchor.getX(), linePoint1.getX(), linePoint2.getX())) {
+                return -ratio;
+            }
+        }
+        else {
+            if (ordered(anchor.getY(), linePoint1.getY(), linePoint2.getY())) {
+                return -ratio;
+            }
+        }
+        return ratio;
+    }
+
+    private static boolean ordered(double d1, double d2, double d3) {
+        return d1 < d2 && d2 < d3 || d3 < d2 && d2 < d1;
     }
 
     @Override

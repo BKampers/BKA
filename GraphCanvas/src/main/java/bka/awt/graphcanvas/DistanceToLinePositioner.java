@@ -27,11 +27,11 @@ public class DistanceToLinePositioner implements Supplier<Point> {
         Point linePoint2 = pointAt.apply(index + 1);
         Point2D anchor = CanvasUtil.intersectionPoint(point, linePoint1, linePoint2);
         double yDistance = directedDistance(point, anchor, CanvasUtil.slope(linePoint1, linePoint2));
-        double xDistance = (linePoint1.x > linePoint2.x) ? -yDistance : yDistance;
+        double xDistance = (linePoint2.x < linePoint1.x) ? -yDistance : yDistance;
         return new DistanceToLinePositioner(index, xDistance, yDistance, directedRatio(linePoint1, linePoint2, anchor), pointAt);
     }
 
-    public static double directedDistance(Point2D distantPoint, Point2D anchor, double slope) {
+    private static double directedDistance(Point2D distantPoint, Point2D anchor, double slope) {
         double distance = distantPoint.distance(anchor);
         if (slope <= -1) {
             return (distantPoint.getX() < anchor.getX()) ? -distance : distance;
@@ -42,19 +42,12 @@ public class DistanceToLinePositioner implements Supplier<Point> {
         return (distantPoint.getY() < anchor.getY()) ? -distance : distance;
     }
 
-    public static double directedRatio(Point2D linePoint1, Point2D linePoint2, Point2D anchor) {
+    private static double directedRatio(Point2D linePoint1, Point2D linePoint2, Point2D anchor) {
         double ratio = anchor.distance(linePoint1) / linePoint1.distance(linePoint2);
         if (Math.abs(CanvasUtil.slope(linePoint1, linePoint2)) < 1) {
-            if (ordered(anchor.getX(), linePoint1.getX(), linePoint2.getX())) {
-                return -ratio;
-            }
+            return (ordered(anchor.getX(), linePoint1.getX(), linePoint2.getX())) ? -ratio : ratio;
         }
-        else {
-            if (ordered(anchor.getY(), linePoint1.getY(), linePoint2.getY())) {
-                return -ratio;
-            }
-        }
-        return ratio;
+        return (ordered(anchor.getY(), linePoint1.getY(), linePoint2.getY())) ? -ratio : ratio;
     }
 
     private static boolean ordered(double d1, double d2, double d3) {
@@ -63,8 +56,8 @@ public class DistanceToLinePositioner implements Supplier<Point> {
 
     @Override
     public Point get() {
-        Point linePoint1 = getPoint(index);
-        Point linePoint2 = getPoint(index + 1);
+        Point linePoint1 = pointAt.apply(index);
+        Point linePoint2 = pointAt.apply(index + 1);
         double xAnchor = linePoint1.x + (linePoint2.x - linePoint1.x) * ratio;
         double yAnchor = linePoint1.y + (linePoint2.y - linePoint1.y) * ratio;
         double cos = (linePoint1.y - linePoint2.y) / linePoint1.distance(linePoint2);
@@ -80,13 +73,8 @@ public class DistanceToLinePositioner implements Supplier<Point> {
     }
 
     public void pointInserted(int insertIndex, Point point) {
-        if (insertIndex < index) {
+        if (insertIndex < index || insertIndex == index && CanvasUtil.squareDistance(pointAt.apply(index), point) < CanvasUtil.squareDistance(pointAt.apply(index + 2), point)) {
             index++;
-        }
-        else if (insertIndex == index) {
-            if (CanvasUtil.squareDistance(getPoint(index), point) < CanvasUtil.squareDistance(getPoint(index + 2), point)) {
-                index++;
-            }
         }
     }
 
@@ -94,10 +82,6 @@ public class DistanceToLinePositioner implements Supplier<Point> {
         if (removeIndex < index) {
             index--;
         }
-    }
-
-    private Point getPoint(int index) {
-        return pointAt.apply(index);
     }
 
     private final Function<Integer, Point> pointAt;

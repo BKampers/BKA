@@ -11,13 +11,14 @@ import bka.awt.graphcanvas.history.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
+import java.util.function.*;
 
 
 public class CreateEdgeHandler extends CanvasEventHandler {
 
     public CreateEdgeHandler(GraphCanvas canvas, VertexComponent vertex, Point cursor) {
         super(canvas);
-        draggingEdgeRenderer = getCanvas().getContext().createEdgeRenderer(vertex, new VertexComponent(UNPAINTABLE_VERTEX, cursor));
+        draggingEdgeRenderer = getCanvas().getContext().createEdgeRenderer(vertex, new VertexComponent(VERTEX_PLACEHOLDER, cursor));
     }
 
     @Override
@@ -104,7 +105,12 @@ public class CreateEdgeHandler extends CanvasEventHandler {
         }
     }
 
-    private static final VertexPaintable UNPAINTABLE_VERTEX = new VertexPaintable(new Dimension()) {
+    private static final VertexPaintable VERTEX_PLACEHOLDER = new VertexPaintable(new Dimension()) {
+        @Override
+        public Point getConnectorPoint(Point location, Point point) {
+            return location;
+        }
+
         @Override
         public void paint(Graphics2D graphics) {
             throw new IllegalStateException();
@@ -112,6 +118,16 @@ public class CreateEdgeHandler extends CanvasEventHandler {
 
         @Override
         public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        public void resize(Point location, Point target, ResizeDirection direction) {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        public Supplier<Point> distancePositioner(Point location, Point point) {
             throw new IllegalStateException();
         }
     };

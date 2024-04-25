@@ -91,29 +91,13 @@ public class DefaultEventHandler extends CanvasEventHandler {
         }
         if (CanvasUtil.isOnBorder(distance)) {
             needRepaint |= setConnectorPoint(null);
-            return new CanvasUpdate(getResizeCursorType(cursor, vertex.getLocation()), needRepaint);
+            return new CanvasUpdate(getResizeDirection(cursor, vertex.getLocation()).getCursorType(), needRepaint);
         }
         if (CanvasUtil.isNear(distance) && getCanvas().getVertices().size() > 1) {
             needRepaint |= setConnectorPoint(cursor);
             return new CanvasUpdate(Cursor.DEFAULT_CURSOR, needRepaint);
         }
         return (needRepaint) ? CanvasUpdate.REPAINT : CanvasUpdate.NO_OPERATION;
-    }
-
-    private static int getResizeCursorType(Point cursor, Point vertexLocation) {
-        int dx = cursor.x - vertexLocation.x;
-        int dy = cursor.y - vertexLocation.y;
-        double angle = Math.abs(Math.atan((double) dx / dy));
-        if (angle < VERTICAL_MARGIN) {
-            return (dy < 0) ? Cursor.N_RESIZE_CURSOR : Cursor.S_RESIZE_CURSOR;
-        }
-        if (angle > HORIZONTAL_MARGIN) {
-            return (dx < 0) ? Cursor.W_RESIZE_CURSOR : Cursor.E_RESIZE_CURSOR;
-        }
-        if (dx < 0) {
-            return (dy < 0) ? Cursor.NW_RESIZE_CURSOR : Cursor.SW_RESIZE_CURSOR;
-        }
-        return (dy < 0) ? Cursor.NE_RESIZE_CURSOR : Cursor.SE_RESIZE_CURSOR;
     }
 
     private CanvasUpdate handleEdgeHovered(EdgeComponent nearestEdge, Point cursor) {
@@ -155,7 +139,7 @@ public class DefaultEventHandler extends CanvasEventHandler {
         else {
             long distance = vertex.squareDistance(cursor);
             if (CanvasUtil.isOnBorder(distance)) {
-                getCanvas().setEventHandler(new VertexResizeHandler(getCanvas(), vertex));
+                getCanvas().setEventHandler(new VertexResizeHandler(getCanvas(), vertex, getResizeDirection(cursor, vertex.getLocation())));
             }
             else {
                 if (!getCanvas().getSelection().contains(vertex)) {
@@ -191,6 +175,22 @@ public class DefaultEventHandler extends CanvasEventHandler {
         }
         edge.addPoint(point);
         return point;
+    }
+
+    private static ResizeDirection getResizeDirection(Point cursor, Point vertexLocation) {
+        int dx = cursor.x - vertexLocation.x;
+        int dy = cursor.y - vertexLocation.y;
+        double angle = Math.abs(Math.atan((double) dx / dy));
+        if (angle < VERTICAL_MARGIN) {
+            return (dy < 0) ? ResizeDirection.NORTH : ResizeDirection.SOUTH;
+        }
+        if (angle > HORIZONTAL_MARGIN) {
+            return (dx < 0) ? ResizeDirection.WEST : ResizeDirection.EAST;
+        }
+        if (dx < 0) {
+            return (dy < 0) ? ResizeDirection.NORTH_WEST : ResizeDirection.SOUTH_WEST;
+        }
+        return (dy < 0) ? ResizeDirection.NORTH_EAST : ResizeDirection.SOUTH_EAST;
     }
 
     @Override

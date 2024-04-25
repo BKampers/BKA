@@ -10,19 +10,21 @@ import bka.awt.graphcanvas.*;
 import bka.awt.graphcanvas.history.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.*;
 
 
 public class VertexResizeHandler extends CanvasEventHandler {
 
-    public VertexResizeHandler(GraphCanvas canvas, VertexComponent draggingVertex) {
+    public VertexResizeHandler(GraphCanvas canvas, VertexComponent draggingVertex, ResizeDirection direction) {
         super(canvas);
         this.draggingVertex = draggingVertex;
         this.originalDimension = draggingVertex.getDimension();
+        this.direction = Objects.requireNonNull(direction);
     }
 
     @Override
     public CanvasUpdate mouseDragged(MouseEvent event) {
-        draggingVertex.resize(event.getPoint());
+        draggingVertex.resize(event.getPoint(), direction);
         return CanvasUpdate.REPAINT;
     }
 
@@ -44,5 +46,6 @@ public class VertexResizeHandler extends CanvasEventHandler {
 
     private final VertexComponent draggingVertex;
     private final Dimension originalDimension;
+    private final ResizeDirection direction;
 
 }

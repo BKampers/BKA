@@ -8,12 +8,10 @@ import bka.awt.graphcanvas.*;
 import bka.awt.graphcanvas.history.*;
 import bka.swing.popup.*;
 import java.awt.*;
-import java.awt.geom.*;
 import java.awt.image.*;
 import java.util.List;
 import java.util.*;
 import java.util.function.*;
-import java.util.stream.*;
 import javax.swing.*;
 
 public class GraphEditorDemo extends JFrame {
@@ -21,12 +19,12 @@ public class GraphEditorDemo extends JFrame {
     public GraphEditorDemo() {
         initComponents();
         BasicStroke solidStroke = new BasicStroke();
-        ellipsPaintable.setStroke(BORDER_STROKE_KEY, solidStroke);
-        ellipsPaintable.setPaint(BORDER_PAINT_KEY, Color.BLACK);
-        ellipsPaintable.setPaint(FILL_PAINT_KEY, Color.BLACK);
-        rectanglePaintable.setStroke(BORDER_STROKE_KEY, solidStroke);
-        rectanglePaintable.setPaint(BORDER_PAINT_KEY, Color.BLACK);
-        rectanglePaintable.setPaint(FILL_PAINT_KEY, Color.WHITE);
+        ellipsPaintable.setStroke(VertexPaintable.BORDER_STROKE_KEY, solidStroke);
+        ellipsPaintable.setPaint(VertexPaintable.BORDER_PAINT_KEY, Color.BLACK);
+        ellipsPaintable.setPaint(VertexPaintable.FILL_PAINT_KEY, Color.BLACK);
+        rectanglePaintable.setStroke(VertexPaintable.BORDER_STROKE_KEY, solidStroke);
+        rectanglePaintable.setPaint(VertexPaintable.BORDER_PAINT_KEY, Color.BLACK);
+        rectanglePaintable.setPaint(VertexPaintable.FILL_PAINT_KEY, Color.WHITE);
         populateVertexSelectorPanel(List.of(ellipsPaintable, rectanglePaintable));
         canvas.getDrawHistory().addListener(this::updateHistoryList);
         historyList.addMouseListener(new HistoryListMouseAdapter());
@@ -433,6 +431,9 @@ public class GraphEditorDemo extends JFrame {
             if (vertexPaintable instanceof SquareVertexPaintable) {
                 return new VertexComponent(new SquareVertexPaintable(vertexPaintable), location);
             }
+            if (vertexPaintable instanceof ShapePaintable) {
+                return new VertexComponent(new ShapePaintable((ShapePaintable) vertexPaintable), location);
+            }
             throw new IllegalStateException();
         }
 
@@ -447,163 +448,6 @@ public class GraphEditorDemo extends JFrame {
         private static final int POPUP_HEIGHT = 20;
 
     });
-
-
-    private class RoundVertexPaintable extends VertexPaintable {
-
-        public RoundVertexPaintable(Dimension size) {
-            super(size);
-        }
-
-        public RoundVertexPaintable(VertexPaintable vertexPaintable) {
-            super(vertexPaintable);
-        }
-
-        @Override
-        public void paint(Graphics2D graphics) {
-            fill(graphics);
-            paint(graphics, getPaint(BORDER_PAINT_KEY), getStroke(BORDER_STROKE_KEY));
-        }
-
-        @Override
-        public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
-            graphics.setPaint(paint);
-            graphics.setStroke(stroke);
-            graphics.drawOval(-widthRadius(), -heightRadius(), getSize().width, getSize().height);
-        }
-
-        private void fill(Graphics2D graphics) {
-            graphics.setPaint(getPaint(FILL_PAINT_KEY));
-            graphics.fillOval(-widthRadius(), -heightRadius(), getSize().width, getSize().height);
-        }
-
-        private int widthRadius() {
-            return getSize().width / 2;
-        }
-
-        private int heightRadius() {
-            return getSize().height / 2;
-        }
-    };
-
-
-    private class SquareVertexPaintable extends VertexPaintable {
-
-        public SquareVertexPaintable(Dimension size) {
-            super(size);
-        }
-
-        public SquareVertexPaintable(VertexPaintable vertexPaintable) {
-            super(vertexPaintable);
-        }
-
-        @Override
-        public void paint(Graphics2D graphics) {
-            fill(graphics);
-            paint(graphics, getPaint(BORDER_PAINT_KEY), getStroke(BORDER_STROKE_KEY));
-        }
-
-        @Override
-        public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
-            graphics.setPaint(paint);
-            graphics.setStroke(stroke);
-            graphics.drawRect(-widthRadius(), -heightRadius(), getSize().width, getSize().height);
-        }
-
-        private void fill(Graphics2D graphics) {
-            graphics.setPaint(getPaint(FILL_PAINT_KEY));
-            graphics.fillRect(-widthRadius(), -heightRadius(), getSize().width, getSize().height);
-        }
-
-
-        @Override
-        public double distance(Point location, Point point) {
-            double distance = Math.sqrt(
-                contour2D(location).stream()
-                    .map(line -> squareDistance(point, line))
-                    .sorted()
-                    .findFirst().get());
-            return (new Rectangle(topLeft(location), getSize()).contains(point)) ? -distance : distance;
-        }
-
-        public long squareDistance(Point2D point, Line2D line) {
-            return CanvasUtil.squareDistance(CanvasUtil.round(point), CanvasUtil.round(line.getP1()), CanvasUtil.round(line.getP2()));
-        }
-
-        @Override
-        public Point getConnectorPoint(Point location, Point point) {
-            if (location.equals(point)) {
-                return point;
-            }
-            Point2D nearest = null;
-            for (Point2D intersectionPoint : intersectionPoints(location, Line.through(location, point))) {
-                if (nearest == null || Math.abs(nearest.distance(point)) > Math.abs(intersectionPoint.distance(point))) {
-                    nearest = intersectionPoint;
-                }
-            }
-            return (nearest == null) ? location : CanvasUtil.round(nearest);
-        }
-
-        private List<Point2D> intersectionPoints(Point location, Line incomming) {
-            return contour(location).stream()
-                .map(contourLine -> contourLine.intersection(incomming))
-                .flatMap(optional -> optional.isPresent() ? Stream.of(optional.get()) : Stream.empty())
-                .filter(intersectionPoint -> inBounds(intersectionPoint, location))
-                .collect(Collectors.toList());
-        }
-
-        private boolean inBounds(Point2D intersectionPoint, Point location) {
-            return location.x - widthRadius() <= intersectionPoint.getX() && intersectionPoint.getX() <= location.x + widthRadius()
-                && location.y - heightRadius() <= intersectionPoint.getY() && intersectionPoint.getY() <= location.y + heightRadius();
-        }
-
-        private List<Line> contour(Point location) {
-            return contour2D(location).stream().map(line -> Line.through(line.getP1(), line.getP2())).collect(Collectors.toList());
-        }
-
-        private List<Line2D> contour2D(Point location) {
-            return List.of(
-                new Line2D.Double(topLeft(location), bottomLeft(location)),
-                new Line2D.Double(bottomLeft(location), bottomRight(location)),
-                new Line2D.Double(bottomRight(location), topRight(location)),
-                new Line2D.Double(topRight(location), topLeft(location))
-            );
-        }
-
-        @Override
-        public List<Point> getContour(Point location) {
-            return List.of(
-                topLeft(location),
-                bottomLeft(location),
-                bottomRight(location),
-                topRight(location));
-        }
-
-        private Point topLeft(Point location) {
-            return new Point(location.x - widthRadius(), location.y - heightRadius());
-        }
-
-        private Point topRight(Point location) {
-            return new Point(location.x + widthRadius(), location.y - heightRadius());
-        }
-
-        private Point bottomLeft(Point location) {
-            return new Point(location.x - widthRadius(), location.y + heightRadius());
-        }
-
-        private Point bottomRight(Point location) {
-            return new Point(location.x + widthRadius(), location.y + heightRadius());
-        }
-
-        private int widthRadius() {
-            return getSize().width / 2;
-        }
-
-        private int heightRadius() {
-            return getSize().height / 2;
-        }
-
-    };
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -625,10 +469,6 @@ public class GraphEditorDemo extends JFrame {
     private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("GraphEditor");
 
     private static final Dimension VERTEX_ICON_DIMENSION = new Dimension(12, 12);
-
-    private final static Object BORDER_PAINT_KEY = "BorderPaint";
-    private final static Object BORDER_STROKE_KEY = "BorderStroke";
-    private final static Object FILL_PAINT_KEY = "FillPaint";
 
     private final RoundVertexPaintable ellipsPaintable = new RoundVertexPaintable(VERTEX_ICON_DIMENSION);
     private final SquareVertexPaintable rectanglePaintable = new SquareVertexPaintable(VERTEX_ICON_DIMENSION);

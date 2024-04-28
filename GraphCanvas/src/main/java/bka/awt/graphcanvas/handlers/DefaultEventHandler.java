@@ -224,7 +224,7 @@ public class DefaultEventHandler extends CanvasEventHandler {
     }
 
     private CanvasUpdate addNewVertex(Point cursor) {
-        VertexComponent vertex = getCanvas().getContext().createVertexRenderer(cursor);
+        VertexComponent vertex = getCanvas().getContext().createVertexComponent(cursor);
         if (vertex == null) {
             return CanvasUpdate.NO_OPERATION;
         }

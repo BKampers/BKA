@@ -19,10 +19,6 @@ public class SquareVertexPaintable extends VertexPaintable {
         super(size);
     }
 
-    public SquareVertexPaintable(VertexPaintable vertexPaintable) {
-        super(vertexPaintable);
-    }
-
     @Override
     public void paint(Graphics2D graphics) {
         fill(graphics);

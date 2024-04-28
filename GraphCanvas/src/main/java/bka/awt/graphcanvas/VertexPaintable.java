@@ -21,11 +21,6 @@ public abstract class VertexPaintable extends Paintable {
         setSize(size);
     }
 
-    public VertexPaintable(VertexPaintable vertexPaintable) {
-        super(vertexPaintable);
-        setSize(vertexPaintable.size);
-    }
-
     public final void setSize(Dimension size) {
         setSize(size.width, size.height);
     }

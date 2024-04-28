@@ -17,7 +17,7 @@ public interface ApplicationContext {
     void editString(String input, Point location, Consumer<String> onApply);
     void requestUpdate(CanvasUpdate update);
 
-    VertexComponent createVertexRenderer(Point location);
-    EdgeComponent createEdgeRenderer(VertexComponent origin, VertexComponent terminus);
+    VertexComponent createVertexComponent(Point location);
+    EdgeComponent createEdgeComponent(VertexComponent origin, VertexComponent terminus);
 
 }

@@ -16,10 +16,6 @@ public class RoundVertexPaintable extends VertexPaintable {
         super(size);
     }
 
-    public RoundVertexPaintable(VertexPaintable vertexPaintable) {
-        super(vertexPaintable);
-    }
-
     @Override
     public void paint(Graphics2D graphics) {
         fill(graphics);

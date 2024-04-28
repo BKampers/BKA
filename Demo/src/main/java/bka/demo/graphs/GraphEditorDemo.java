@@ -18,17 +18,48 @@ public class GraphEditorDemo extends JFrame {
 
     public GraphEditorDemo() {
         initComponents();
-        BasicStroke solidStroke = new BasicStroke();
-        ellipsPaintable.setStroke(VertexPaintable.BORDER_STROKE_KEY, solidStroke);
-        ellipsPaintable.setPaint(VertexPaintable.BORDER_PAINT_KEY, Color.BLACK);
-        ellipsPaintable.setPaint(VertexPaintable.FILL_PAINT_KEY, Color.BLACK);
-        rectanglePaintable.setStroke(VertexPaintable.BORDER_STROKE_KEY, solidStroke);
-        rectanglePaintable.setPaint(VertexPaintable.BORDER_PAINT_KEY, Color.BLACK);
-        rectanglePaintable.setPaint(VertexPaintable.FILL_PAINT_KEY, Color.WHITE);
-        populateVertexSelectorPanel(List.of(ellipsPaintable, rectanglePaintable));
+        populateVertexSelectorPanel(List.of(roundPaintable(), rectanglePaintable()));
         canvas.getDrawHistory().addListener(this::updateHistoryList);
         historyList.addMouseListener(new HistoryListMouseAdapter());
         historyList.addKeyListener(new HistoryListKeyAdapter());
+    }
+
+    private Supplier<VertexPaintable> roundPaintable() {
+        return () -> {
+            VertexPaintable paintable = new RoundVertexPaintable(VERTEX_ICON_DIMENSION);
+            Paintable palette = paintables.get(RoundVertexPaintable.class);
+            if (palette == null) {
+                paintable.setStroke(VertexPaintable.BORDER_STROKE_KEY, SOLID_STROKE);
+                paintable.setPaint(VertexPaintable.BORDER_PAINT_KEY, Color.BLACK);
+                paintable.setPaint(VertexPaintable.FILL_PAINT_KEY, Color.BLACK);
+                paintables.put(RoundVertexPaintable.class, paintable);
+            }
+            else {
+                paintable.setStroke(VertexPaintable.BORDER_STROKE_KEY, palette.getStroke(VertexPaintable.BORDER_STROKE_KEY));
+                paintable.setPaint(VertexPaintable.BORDER_PAINT_KEY, palette.getPaint(VertexPaintable.BORDER_PAINT_KEY));
+                paintable.setPaint(VertexPaintable.FILL_PAINT_KEY, palette.getPaint(VertexPaintable.FILL_PAINT_KEY));
+            }
+            return paintable;
+        };
+    }
+
+    private Supplier<VertexPaintable> rectanglePaintable() {
+        return () -> {
+            VertexPaintable paintable = new SquareVertexPaintable(VERTEX_ICON_DIMENSION);
+            Paintable palette = paintables.get(SquareVertexPaintable.class);
+            if (palette == null) {
+                paintable.setStroke(VertexPaintable.BORDER_STROKE_KEY, SOLID_STROKE);
+                paintable.setPaint(VertexPaintable.BORDER_PAINT_KEY, Color.BLACK);
+                paintable.setPaint(VertexPaintable.FILL_PAINT_KEY, Color.WHITE);
+                paintables.put(SquareVertexPaintable.class, paintable);
+            }
+            else {
+                paintable.setStroke(VertexPaintable.BORDER_STROKE_KEY, palette.getStroke(VertexPaintable.BORDER_STROKE_KEY));
+                paintable.setPaint(VertexPaintable.BORDER_PAINT_KEY, palette.getPaint(VertexPaintable.BORDER_PAINT_KEY));
+                paintable.setPaint(VertexPaintable.FILL_PAINT_KEY, palette.getPaint(VertexPaintable.FILL_PAINT_KEY));
+            }
+            return paintable;
+        };
     }
 
     private void updateHistoryList(DrawHistory history) {
@@ -201,11 +232,20 @@ public class GraphEditorDemo extends JFrame {
         updateGraphPanel(canvas.handleKeyPressed(evt));
     }//GEN-LAST:event_graphPanelKeyPressed
 
-    private void populateVertexSelectorPanel(List<VertexPaintable> renderers) {
-        renderers.forEach(renderer -> {
+    private void populateVertexSelectorPanel(List<Supplier<VertexPaintable>> factories) {
+        factories.forEach(factory -> {
             JToggleButton button = new JToggleButton();
-            vertexButtons.put(button, renderer);
-            button.setIcon(createIcon(renderer));
+            vertexButtons.put(button, factory);
+            VertexPaintable paintable = factory.get();
+            button.setIcon(createIcon(paintable));
+            button.addMouseListener(new java.awt.event.MouseAdapter() {
+                @Override
+                public void mouseClicked(java.awt.event.MouseEvent evt) {
+                    if (evt.getButton() == java.awt.event.MouseEvent.BUTTON3) {
+                        showVertexContextMenu(evt, paintable);
+                    }
+                }
+            });
             button.addActionListener(event -> {
                 if (((JToggleButton) event.getSource()).isSelected()) {
                     vertexButtons.keySet().stream()
@@ -215,6 +255,18 @@ public class GraphEditorDemo extends JFrame {
             });
             vertexSelectorPanel.add(button);
         });
+    }
+
+    private void showVertexContextMenu(java.awt.event.MouseEvent evt, Paintable paintable) {
+        JPopupMenu menu = new JPopupMenu();
+        addColorMenuItems(paintable, evt.getPoint(), menu, (key, color) -> {
+            paintable.setPaint(key, color);
+            ((JToggleButton) evt.getSource()).setIcon(createIcon(paintable));
+//            ((Component) evt.getSource()).revalidate();
+        });
+        if (menu.getComponentCount() > 0) {
+            menu.show((Component) evt.getSource(), evt.getX(), evt.getY());
+        }
     }
 
     /**
@@ -253,6 +305,24 @@ public class GraphEditorDemo extends JFrame {
         if (graphPanel.getCursor().getType() != type) {
             graphPanel.setCursor(new java.awt.Cursor(type));
         }
+    }
+
+    private void addColorMenuItems(Paintable paintable, Point location, JPopupMenu menu, BiConsumer<Object, Color> onApply) {
+        paintable.getPaintKeys().forEach(paintKey -> {
+            JMenuItem paintItem = new JMenuItem(getBundleText(paintKey.toString()));
+            paintItem.addActionListener(evt -> pickColor(location, paintable, paintKey, onApply));
+            menu.add(paintItem);
+        });
+    }
+
+    private void pickColor(Point location, Paintable paintable, Object key, BiConsumer<Object, Color> onApply) {
+        PopupControl.show(
+            graphPanel,
+            new ColorChooserPopupModel(
+                graphPanel,
+                colorChooserBounds(location),
+                castToColor(paintable.getPaint(key)),
+                color -> onApply.accept(key, color)));
     }
 
     private static String getBundleText(String key) {
@@ -381,23 +451,7 @@ public class GraphEditorDemo extends JFrame {
         }
 
         private void addPaintMenus(GraphComponent element, Point location, JPopupMenu menu) {
-            element.getCustomizablePaintables().forEach(paintable -> {
-                paintable.getPaintKeys().forEach(paintKey -> {
-                    JMenuItem paintItem = new JMenuItem(getBundleText(paintKey.toString()));
-                    paintItem.addActionListener(evt -> pickColor(location, paintable, paintKey));
-                    menu.add(paintItem);
-                });
-            });
-        }
-
-        public final void pickColor(Point location, Paintable paintable, Object key) {
-            PopupControl.show(
-                graphPanel,
-                new ColorChooserPopupModel(
-                    graphPanel,
-                    colorChooserBounds(location),
-                    castToColor(paintable.getPaint(key)),
-                    newColor -> getCanvas().changePaint(paintable, key, newColor)));
+            element.getCustomizablePaintables().forEach(paintable -> addColorMenuItems(paintable, location, menu, (key, newColor) -> getCanvas().changePaint(paintable, key, newColor)));
         }
 
         @Override
@@ -417,28 +471,18 @@ public class GraphEditorDemo extends JFrame {
         }
 
         @Override
-        public VertexComponent createVertexRenderer(Point location) {
+        public VertexComponent createVertexComponent(Point location) {
             JToggleButton vertexButton = vertexButtons.keySet().stream()
                 .filter(toggleButton -> toggleButton.isSelected())
                 .findAny().orElse(null);
             if (vertexButton == null) {
                 return null;
             }
-            VertexPaintable vertexPaintable = vertexButtons.get(vertexButton);
-            if (vertexPaintable instanceof RoundVertexPaintable) {
-                return new VertexComponent(new RoundVertexPaintable(vertexPaintable), location);
-            }
-            if (vertexPaintable instanceof SquareVertexPaintable) {
-                return new VertexComponent(new SquareVertexPaintable(vertexPaintable), location);
-            }
-            if (vertexPaintable instanceof ShapePaintable) {
-                return new VertexComponent(new ShapePaintable((ShapePaintable) vertexPaintable), location);
-            }
-            throw new IllegalStateException();
+            return new VertexComponent(vertexButtons.get(vertexButton).get(), location);
         }
 
         @Override
-        public EdgeComponent createEdgeRenderer(VertexComponent origin, VertexComponent terminus) {
+        public EdgeComponent createEdgeComponent(VertexComponent origin, VertexComponent terminus) {
             EdgeComponent edgeRenderer = new EdgeComponent(origin, terminus);
             edgeRenderer.setDirected(directedEdgeRadioButton.isSelected());
             return edgeRenderer;
@@ -449,7 +493,7 @@ public class GraphEditorDemo extends JFrame {
 
     });
 
-
+    
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel componentPanel;
     private javax.swing.JRadioButton directedEdgeRadioButton;
@@ -462,15 +506,15 @@ public class GraphEditorDemo extends JFrame {
     private javax.swing.JPanel vertexSelectorPanel;
     // End of variables declaration//GEN-END:variables
 
-    private final Map<JToggleButton, VertexPaintable> vertexButtons = new HashMap<>();
+    private final Map<Class, Paintable> paintables = new HashMap<>();
+
+    private final Map<JToggleButton, Supplier<VertexPaintable>> vertexButtons = new HashMap<>();
 
     private final javax.swing.DefaultListModel<String> historyListModel = new javax.swing.DefaultListModel<>();
 
     private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("GraphEditor");
 
+    private static final BasicStroke SOLID_STROKE = new BasicStroke();
     private static final Dimension VERTEX_ICON_DIMENSION = new Dimension(12, 12);
-
-    private final RoundVertexPaintable ellipsPaintable = new RoundVertexPaintable(VERTEX_ICON_DIMENSION);
-    private final SquareVertexPaintable rectanglePaintable = new SquareVertexPaintable(VERTEX_ICON_DIMENSION);
 
 }

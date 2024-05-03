@@ -12,14 +12,6 @@ import java.util.*;
 
 public abstract class Paintable {
 
-    public Paintable() {
-    }
-
-    public Paintable(Paintable paintable) {
-        paints.putAll(paintable.paints);
-        strokes.putAll(paintable.strokes);
-    }
-
     public abstract void paint(Graphics2D graphics);
 
     public abstract void paint(Graphics2D graphics, Paint paint, Stroke stroke);
@@ -42,6 +34,10 @@ public abstract class Paintable {
 
     public Collection<Object> getPaintKeys() {
         return paints.keySet();
+    }
+
+    public Collection<Object> getStrokeKeys() {
+        return strokes.keySet();
     }
 
     private final Map<Object, Paint> paints = new HashMap<>();

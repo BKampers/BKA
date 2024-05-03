@@ -8,58 +8,33 @@ import bka.awt.graphcanvas.*;
 import bka.awt.graphcanvas.history.*;
 import bka.swing.popup.*;
 import java.awt.*;
+import java.awt.event.*;
 import java.awt.image.*;
 import java.util.List;
 import java.util.*;
 import java.util.function.*;
+import java.util.stream.*;
 import javax.swing.*;
 
 public class GraphEditorDemo extends JFrame {
 
     public GraphEditorDemo() {
         initComponents();
-        populateVertexSelectorPanel(List.of(roundPaintable(), rectanglePaintable()));
+        Map<Object, Stroke> defaultStrokes = Map.of(VertexPaintable.BORDER_STROKE_KEY, new BasicStroke());
+        defaultStrokes.entrySet().stream().collect(Collectors.toCollection(ArrayList::new));
+        populateVertexSelectorPanel(List.of(
+            new VertexFactory(RoundVertexPaintable::new, defaultStrokes, paints(Color.BLACK, Color.BLACK)),
+            new VertexFactory(SquareVertexPaintable::new, defaultStrokes, paints(Color.BLACK, Color.WHITE))
+        ));
         canvas.getDrawHistory().addListener(this::updateHistoryList);
         historyList.addMouseListener(new HistoryListMouseAdapter());
         historyList.addKeyListener(new HistoryListKeyAdapter());
     }
 
-    private Supplier<VertexPaintable> roundPaintable() {
-        return () -> {
-            VertexPaintable paintable = new RoundVertexPaintable(VERTEX_ICON_DIMENSION);
-            Paintable palette = paintables.get(RoundVertexPaintable.class);
-            if (palette == null) {
-                paintable.setStroke(VertexPaintable.BORDER_STROKE_KEY, SOLID_STROKE);
-                paintable.setPaint(VertexPaintable.BORDER_PAINT_KEY, Color.BLACK);
-                paintable.setPaint(VertexPaintable.FILL_PAINT_KEY, Color.BLACK);
-                paintables.put(RoundVertexPaintable.class, paintable);
-            }
-            else {
-                paintable.setStroke(VertexPaintable.BORDER_STROKE_KEY, palette.getStroke(VertexPaintable.BORDER_STROKE_KEY));
-                paintable.setPaint(VertexPaintable.BORDER_PAINT_KEY, palette.getPaint(VertexPaintable.BORDER_PAINT_KEY));
-                paintable.setPaint(VertexPaintable.FILL_PAINT_KEY, palette.getPaint(VertexPaintable.FILL_PAINT_KEY));
-            }
-            return paintable;
-        };
-    }
-
-    private Supplier<VertexPaintable> rectanglePaintable() {
-        return () -> {
-            VertexPaintable paintable = new SquareVertexPaintable(VERTEX_ICON_DIMENSION);
-            Paintable palette = paintables.get(SquareVertexPaintable.class);
-            if (palette == null) {
-                paintable.setStroke(VertexPaintable.BORDER_STROKE_KEY, SOLID_STROKE);
-                paintable.setPaint(VertexPaintable.BORDER_PAINT_KEY, Color.BLACK);
-                paintable.setPaint(VertexPaintable.FILL_PAINT_KEY, Color.WHITE);
-                paintables.put(SquareVertexPaintable.class, paintable);
-            }
-            else {
-                paintable.setStroke(VertexPaintable.BORDER_STROKE_KEY, palette.getStroke(VertexPaintable.BORDER_STROKE_KEY));
-                paintable.setPaint(VertexPaintable.BORDER_PAINT_KEY, palette.getPaint(VertexPaintable.BORDER_PAINT_KEY));
-                paintable.setPaint(VertexPaintable.FILL_PAINT_KEY, palette.getPaint(VertexPaintable.FILL_PAINT_KEY));
-            }
-            return paintable;
-        };
+    private static Map<Object, Paint> paints(Paint borderPaint, Paint fillPaint) {
+        return Map.of(
+            VertexPaintable.BORDER_PAINT_KEY, borderPaint,
+            VertexPaintable.FILL_PAINT_KEY, fillPaint);
     }
 
     private void updateHistoryList(DrawHistory history) {
@@ -232,37 +207,29 @@ public class GraphEditorDemo extends JFrame {
         updateGraphPanel(canvas.handleKeyPressed(evt));
     }//GEN-LAST:event_graphPanelKeyPressed
 
-    private void populateVertexSelectorPanel(List<Supplier<VertexPaintable>> factories) {
+    private void populateVertexSelectorPanel(List<VertexFactory> factories) {
         factories.forEach(factory -> {
             JToggleButton button = new JToggleButton();
             vertexButtons.put(button, factory);
-            VertexPaintable paintable = factory.get();
-            button.setIcon(createIcon(paintable));
-            button.addMouseListener(new java.awt.event.MouseAdapter() {
-                @Override
-                public void mouseClicked(java.awt.event.MouseEvent evt) {
-                    if (evt.getButton() == java.awt.event.MouseEvent.BUTTON3) {
-                        showVertexContextMenu(evt, paintable);
-                    }
-                }
-            });
-            button.addActionListener(event -> {
-                if (((JToggleButton) event.getSource()).isSelected()) {
-                    vertexButtons.keySet().stream()
-                        .filter(vertexButton -> !vertexButton.equals(event.getSource()))
-                        .forEach(vertexButton -> vertexButton.setSelected(false));
-                }
-            });
+            button.setIcon(createIcon(factory.getDefaultInstance()));
+            button.addMouseListener(new VertexButtonMouseAdapter(factory.getDefaultInstance()));
             vertexSelectorPanel.add(button);
         });
     }
 
-    private void showVertexContextMenu(java.awt.event.MouseEvent evt, Paintable paintable) {
+    private void ensureSingleSelection(MouseEvent event) {
+        if (((JToggleButton) event.getSource()).isSelected()) {
+            vertexButtons.keySet().stream()
+                .filter(vertexButton -> !vertexButton.equals(event.getSource()))
+                .forEach(vertexButton -> vertexButton.setSelected(false));
+        }
+    }
+
+    private void showVertexContextMenu(MouseEvent evt, Paintable paintable) {
         JPopupMenu menu = new JPopupMenu();
         addColorMenuItems(paintable, evt.getPoint(), menu, (key, color) -> {
             paintable.setPaint(key, color);
             ((JToggleButton) evt.getSource()).setIcon(createIcon(paintable));
-//            ((Component) evt.getSource()).revalidate();
         });
         if (menu.getComponentCount() > 0) {
             menu.show((Component) evt.getSource(), evt.getX(), evt.getY());
@@ -275,7 +242,7 @@ public class GraphEditorDemo extends JFrame {
     public static void main(String args[]) {
         SelectNimbusLookAndFeel();
         /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new GraphEditorDemo().setVisible(true));
+        EventQueue.invokeLater(() -> new GraphEditorDemo().setVisible(true));
     }
 
     private static void SelectNimbusLookAndFeel() {
@@ -293,7 +260,7 @@ public class GraphEditorDemo extends JFrame {
     }
 
     private void updateGraphPanel(CanvasUpdate update){
-        if (java.awt.Cursor.DEFAULT_CURSOR <= update.getCursorType() && update.getCursorType() <= java.awt.Cursor.MOVE_CURSOR) {
+        if (Cursor.DEFAULT_CURSOR <= update.getCursorType() && update.getCursorType() <= Cursor.MOVE_CURSOR) {
             setGraphPanelCursor(update.getCursorType());
         }
         if (update.needsRepeaint()) {
@@ -303,7 +270,7 @@ public class GraphEditorDemo extends JFrame {
 
     private void setGraphPanelCursor(int type) {
         if (graphPanel.getCursor().getType() != type) {
-            graphPanel.setCursor(new java.awt.Cursor(type));
+            graphPanel.setCursor(new Cursor(type));
         }
     }
 
@@ -333,39 +300,94 @@ public class GraphEditorDemo extends JFrame {
     }
 
 
+    private class VertexFactory {
+
+        public VertexFactory(Function<Dimension, VertexPaintable> newInstance, Map<Object, Stroke> defaultStrokes, Map<Object, Paint> defaultPaints) {
+            this.newInstance = newInstance;
+            defaultInstance = newInstance.apply(VERTEX_ICON_DIMENSION);
+            defaultStrokes.forEach(defaultInstance::setStroke);
+            defaultPaints.forEach(defaultInstance::setPaint);
+        }
+
+        public VertexPaintable getDefaultInstance() {
+            return defaultInstance;
+        }
+
+        public VertexPaintable getCopyInstance() {
+            VertexPaintable copyInstance = newInstance.apply(VERTEX_ICON_DIMENSION);
+            copy(defaultInstance, copyInstance);
+            return copyInstance;
+        }
+
+        private void copy(Paintable source, Paintable target) {
+            copy(source.getPaintKeys(), target::setPaint, source::getPaint);
+            copy(source.getStrokeKeys(), target::setStroke, source::getStroke);
+        }
+
+        private <T> void copy(Collection<Object> keys, BiConsumer<Object, T> setter, Function<Object, T> getter) {
+            keys.forEach(key -> setter.accept(key, getter.apply(key)));
+        }
+
+        private final Function<Dimension, VertexPaintable> newInstance;
+        private final VertexPaintable defaultInstance;
+
+    }
+
+
     private class GraphPanel extends javax.swing.JPanel {
 
         @Override
-        public void paint(java.awt.Graphics graphics) {
+        public void paint(Graphics graphics) {
             super.paint(graphics);
-            canvas.paint((java.awt.Graphics2D) graphics);
+            canvas.paint((Graphics2D) graphics);
         }
+    }
+
+
+    private class VertexButtonMouseAdapter extends MouseAdapter {
+
+        VertexButtonMouseAdapter(VertexPaintable paintable) {
+            this.paintable = paintable;
+        }
+
+        @Override
+        public void mouseClicked(MouseEvent event) {
+            switch (event.getButton()) {
+                case MouseEvent.BUTTON1 ->
+                    ensureSingleSelection(event);
+                case MouseEvent.BUTTON3 ->
+                    showVertexContextMenu(event, paintable);
+            }
+        }
+
+        private final VertexPaintable paintable;
+
     }
 
 
     private class HistoryListCellRenderer extends javax.swing.DefaultListCellRenderer {
 
         @Override
-        public java.awt.Component getListCellRendererComponent(javax.swing.JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-            java.awt.Component renderer = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+        public Component getListCellRendererComponent(javax.swing.JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+            Component renderer = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
             if (isSelected) {
-                renderer.setForeground(java.awt.Color.BLACK);
+                renderer.setForeground(Color.BLACK);
             }
             else if (index < canvas.getDrawHistory().getIndex()) {
-                renderer.setForeground(java.awt.Color.BLACK);
+                renderer.setForeground(Color.BLACK);
             }
             else {
-                renderer.setForeground(java.awt.Color.GRAY);
+                renderer.setForeground(Color.GRAY);
             }
             return renderer;
         }
     }
 
 
-    private class HistoryListMouseAdapter extends java.awt.event.MouseAdapter {
+    private class HistoryListMouseAdapter extends MouseAdapter {
 
         @Override
-        public void mouseReleased(java.awt.event.MouseEvent event) {
+        public void mouseReleased(MouseEvent event) {
             int target = historyList.getSelectedIndex() + 1;
             if (canvas.getDrawHistory().getIndex() != target) {
                 while (canvas.getDrawHistory().getIndex() < target) {
@@ -380,10 +402,10 @@ public class GraphEditorDemo extends JFrame {
     }
 
 
-    private class HistoryListKeyAdapter extends java.awt.event.KeyAdapter {
+    private class HistoryListKeyAdapter extends KeyAdapter {
 
         @Override
-        public void keyReleased(java.awt.event.KeyEvent event) {
+        public void keyReleased(KeyEvent event) {
             if (Keyboard.getInstance().isUndo(event)) {
                 canvas.getDrawHistory().undo();
                 graphPanel.repaint();
@@ -472,13 +494,13 @@ public class GraphEditorDemo extends JFrame {
 
         @Override
         public VertexComponent createVertexComponent(Point location) {
-            JToggleButton vertexButton = vertexButtons.keySet().stream()
+            Optional<JToggleButton> vertexButton = vertexButtons.keySet().stream()
                 .filter(toggleButton -> toggleButton.isSelected())
-                .findAny().orElse(null);
-            if (vertexButton == null) {
+                .findAny();
+            if (vertexButton.isEmpty()) {
                 return null;
             }
-            return new VertexComponent(vertexButtons.get(vertexButton).get(), location);
+            return new VertexComponent(vertexButtons.get(vertexButton.get()).getCopyInstance(), location);
         }
 
         @Override
@@ -506,15 +528,12 @@ public class GraphEditorDemo extends JFrame {
     private javax.swing.JPanel vertexSelectorPanel;
     // End of variables declaration//GEN-END:variables
 
-    private final Map<Class, Paintable> paintables = new HashMap<>();
-
-    private final Map<JToggleButton, Supplier<VertexPaintable>> vertexButtons = new HashMap<>();
+    private final Map<JToggleButton, VertexFactory> vertexButtons = new HashMap<>();
 
     private final javax.swing.DefaultListModel<String> historyListModel = new javax.swing.DefaultListModel<>();
 
     private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("GraphEditor");
 
-    private static final BasicStroke SOLID_STROKE = new BasicStroke();
     private static final Dimension VERTEX_ICON_DIMENSION = new Dimension(12, 12);
 
 }

@@ -13,15 +13,13 @@ import java.awt.image.*;
 import java.util.List;
 import java.util.*;
 import java.util.function.*;
-import java.util.stream.*;
 import javax.swing.*;
 
 public class GraphEditorDemo extends JFrame {
 
     public GraphEditorDemo() {
         initComponents();
-        Map<Object, Stroke> defaultStrokes = Map.of(VertexPaintable.BORDER_STROKE_KEY, new BasicStroke());
-        defaultStrokes.entrySet().stream().collect(Collectors.toCollection(ArrayList::new));
+        Map<Object, Stroke> defaultStrokes = Map.of(VertexPaintable.BORDER_STROKE_KEY, SOLID_STROKE);
         populateVertexSelectorPanel(List.of(
             new VertexFactory(RoundVertexPaintable::new, defaultStrokes, paints(Color.BLACK, Color.BLACK)),
             new VertexFactory(SquareVertexPaintable::new, defaultStrokes, paints(Color.BLACK, Color.WHITE))
@@ -212,28 +210,9 @@ public class GraphEditorDemo extends JFrame {
             JToggleButton button = new JToggleButton();
             vertexButtons.put(button, factory);
             button.setIcon(createIcon(factory.getDefaultInstance()));
-            button.addMouseListener(new VertexButtonMouseAdapter(factory.getDefaultInstance()));
+            button.addMouseListener(new VertexButtonMouseAdapter(factory));
             vertexSelectorPanel.add(button);
         });
-    }
-
-    private void ensureSingleSelection(MouseEvent event) {
-        if (((JToggleButton) event.getSource()).isSelected()) {
-            vertexButtons.keySet().stream()
-                .filter(vertexButton -> !vertexButton.equals(event.getSource()))
-                .forEach(vertexButton -> vertexButton.setSelected(false));
-        }
-    }
-
-    private void showVertexContextMenu(MouseEvent evt, Paintable paintable) {
-        JPopupMenu menu = new JPopupMenu();
-        addColorMenuItems(paintable, evt.getPoint(), menu, (key, color) -> {
-            paintable.setPaint(key, color);
-            ((JToggleButton) evt.getSource()).setIcon(createIcon(paintable));
-        });
-        if (menu.getComponentCount() > 0) {
-            menu.show((Component) evt.getSource(), evt.getX(), evt.getY());
-        }
     }
 
     /**
@@ -275,11 +254,69 @@ public class GraphEditorDemo extends JFrame {
     }
 
     private void addColorMenuItems(Paintable paintable, Point location, JPopupMenu menu, BiConsumer<Object, Color> onApply) {
-        paintable.getPaintKeys().forEach(paintKey -> {
-            JMenuItem paintItem = new JMenuItem(getBundleText(paintKey.toString()));
-            paintItem.addActionListener(evt -> pickColor(location, paintable, paintKey, onApply));
-            menu.add(paintItem);
-        });
+        paintable.getPaintKeys().forEach(paintKey -> menu.add(createColorMenuItem(paintKey, paintable, location, onApply)));
+    }
+
+    private JMenuItem createColorMenuItem(Object paintKey, Paintable paintable, Point location, BiConsumer<Object, Color> onApply) {
+        JMenuItem paintItem = new JMenuItem(getBundleText(paintKey.toString()));
+        paintItem.addActionListener(event -> pickColor(location, paintable, paintKey, onApply));
+        return paintItem;
+    }
+
+    private void addColorMenuItems(VertexFactory factory, Point location, JPopupMenu menu, BiConsumer<Object, Color> onApply) {
+        Paintable paintable = factory.getDefaultInstance();
+        paintable.getPaintKeys().forEach(paintKey -> menu.add(createPaintItem(factory, paintKey, paintable, location, onApply)));
+    }
+
+    private JMenuItem createPaintItem(VertexFactory factory, Object paintKey, Paintable paintable, Point location, BiConsumer<Object, Color> onApply) {
+        JMenuItem paintItem = new JMenuItem(getBundleText(paintKey.toString()));
+        Paintable iconPaintable = factory.getCopyInstance();
+        iconPaintable.getPaintKeys().stream()
+            .filter(key -> !key.equals(paintKey))
+            .forEach(key -> iconPaintable.setPaint(key, TRANSPARENT));
+        iconPaintable.getStrokeKeys().stream().forEach(key -> iconPaintable.setStroke(key, SOLID_STROKE));
+        paintItem.setIcon(createIcon(iconPaintable));
+        paintItem.addActionListener(event -> pickColor(location, paintable, paintKey, onApply));
+        return paintItem;
+    }
+
+    private void addStrokesMenus(VertexFactory factory, JPopupMenu menu, BiConsumer<Object, Stroke> onApply) {
+        factory.getDefaultInstance().getStrokeKeys().forEach(strokeKey -> menu.add(createStrokesMenu(factory, strokeKey, onApply)));
+    }
+
+    private JMenu createStrokesMenu(VertexFactory factory, Object strokeKey, BiConsumer<Object, Stroke> onApply) {
+        JMenu strokesMenu = new JMenu(getBundleText(strokeKey.toString()));
+        Paintable iconPaintable = factory.getCopyInstance();
+        iconPaintable.setPaint(VertexPaintable.BORDER_PAINT_KEY, Color.BLACK);
+        iconPaintable.setPaint(VertexPaintable.FILL_PAINT_KEY, TRANSPARENT);
+        strokesMenu.setIcon(createIcon(iconPaintable));
+        strokes().forEach(stroke -> strokesMenu.add(createSrokeItem(factory, strokeKey, stroke, onApply)));
+        return strokesMenu;
+    }
+
+    private static List<Stroke> strokes() {
+        return List.of(
+            new BasicStroke(),
+            dashedStroke(new float[]{ 1f, 2f }),
+            dashedStroke(new float[]{ 3f }),
+            new BasicStroke(2f),
+            new BasicStroke(4f)
+        );
+    }
+
+    private static Stroke dashedStroke(float[] dash) {
+        return new BasicStroke(1f, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER, 10f, dash, 0f);
+    }
+
+    private JMenuItem createSrokeItem(VertexFactory factory, Object strokeKey, Stroke stroke, BiConsumer<Object, Stroke> onApply) {
+        Paintable strokePaintable = factory.getCopyInstance();
+        strokePaintable.setPaint(VertexPaintable.BORDER_PAINT_KEY, Color.BLACK);
+        strokePaintable.setPaint(VertexPaintable.FILL_PAINT_KEY, TRANSPARENT);
+        strokePaintable.setStroke(VertexPaintable.BORDER_STROKE_KEY, stroke);
+        JMenuItem strokeItem = new JMenuItem();
+        strokeItem.setIcon(createIcon(strokePaintable));
+        strokeItem.addActionListener(event -> onApply.accept(strokeKey, stroke));
+        return strokeItem;
     }
 
     private void pickColor(Point location, Paintable paintable, Object key, BiConsumer<Object, Color> onApply) {
@@ -346,21 +383,53 @@ public class GraphEditorDemo extends JFrame {
 
     private class VertexButtonMouseAdapter extends MouseAdapter {
 
-        VertexButtonMouseAdapter(VertexPaintable paintable) {
-            this.paintable = paintable;
+        VertexButtonMouseAdapter(VertexFactory factory) {
+            this.factory = factory;
         }
 
         @Override
         public void mouseClicked(MouseEvent event) {
             switch (event.getButton()) {
                 case MouseEvent.BUTTON1 ->
-                    ensureSingleSelection(event);
+                    ensureSingleSelection((JToggleButton) event.getSource());
                 case MouseEvent.BUTTON3 ->
-                    showVertexContextMenu(event, paintable);
+                    showVertexContextMenu(event, factory.getDefaultInstance());
             }
         }
 
-        private final VertexPaintable paintable;
+        private void ensureSingleSelection(JToggleButton button) {
+            if (button.isSelected()) {
+                vertexButtons.keySet().stream()
+                    .filter(vertexButton -> !vertexButton.equals(button))
+                    .forEach(vertexButton -> vertexButton.setSelected(false));
+            }
+        }
+
+        private void showVertexContextMenu(MouseEvent event, Paintable paintable) {
+            JToggleButton button = (JToggleButton) event.getSource();
+            JPopupMenu menu = new JPopupMenu();
+            addColorMenuItems(factory, event.getPoint(), menu, applyColorChange(button, paintable));
+            addStrokesMenus(factory, menu, applyStrokeChange(button, paintable));
+            if (menu.getComponentCount() > 0) {
+                menu.show(button, event.getX(), event.getY());
+            }
+        }
+
+        private BiConsumer<Object, Color> applyColorChange(JToggleButton button, Paintable paintable) {
+            return (key, color) -> {
+                paintable.setPaint(key, color);
+                button.setIcon(createIcon(paintable));
+            };
+        }
+
+        private BiConsumer<Object, Stroke> applyStrokeChange(JToggleButton button, Paintable paintable) {
+            return (key, color) -> {
+                paintable.setStroke(key, color);
+                button.setIcon(createIcon(paintable));
+            };
+        }
+
+        private final VertexFactory factory;
 
     }
 
@@ -433,18 +502,20 @@ public class GraphEditorDemo extends JFrame {
     }
 
     private static Icon createIcon(Paintable paintable) {
-        return createIcon(paintable, null);
+        return createIcon(paintable::paint);
     }
 
-    private static Icon createIcon(Paintable paintable, Color highlight) {
-        BufferedImage image = new BufferedImage(15, 15, BufferedImage.TYPE_INT_ARGB);
+    private static Icon createIcon(Consumer<Graphics2D> canvas) {
+        BufferedImage image = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = image.createGraphics();
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         graphics.translate(image.getWidth() / 2, image.getHeight() / 2);
-        paintable.paint(graphics);
+        canvas.accept(graphics);
         ImageIcon icon = new ImageIcon(image);
+        graphics.dispose();
         return icon;
     }
+
 
     private final GraphCanvas canvas = new GraphCanvas(new ApplicationContext() {
 
@@ -535,5 +606,8 @@ public class GraphEditorDemo extends JFrame {
     private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("GraphEditor");
 
     private static final Dimension VERTEX_ICON_DIMENSION = new Dimension(12, 12);
+
+    private static final Color TRANSPARENT = new Color(0, true);
+    private static final BasicStroke SOLID_STROKE = new BasicStroke();
 
 }

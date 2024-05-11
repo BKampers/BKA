@@ -129,6 +129,14 @@ public class GraphCanvas extends CompositeRenderer {
         getContext().requestUpdate(CanvasUpdate.REPAINT);
     }
 
+    public void changeStroke(Paintable paintable, Object key, Stroke newStroke) {
+        if (!Objects.equals(paintable.getStroke(key), newStroke)) {
+            addHistory(new StrokeMutation(paintable, key));
+            paintable.setStroke(key, newStroke);
+            getContext().requestUpdate(CanvasUpdate.REPAINT);
+        }
+    }
+
     public void changePaint(Paintable paintable, Object key, Paint newPaint) {
         if (!Objects.equals(paintable.getPaint(key), newPaint)) {
             addHistory(new PaintMutation(paintable, key));
@@ -281,6 +289,22 @@ public class GraphCanvas extends CompositeRenderer {
 
         private final EdgeComponent edge;
 
+    }
+
+
+    private class StrokeMutation extends PropertyMutation<Stroke> {
+
+        private StrokeMutation(Paintable paintable, Object key) {
+            super(Mutation.Type.STROKE_MUTATION, () -> paintable.getStroke(key), stroke -> paintable.setStroke(key, stroke));
+            bundleKey = key.toString() + "Changed";
+        }
+
+        @Override
+        public String getBundleKey() {
+            return bundleKey;
+        }
+
+        private final String bundleKey;
     }
 
 

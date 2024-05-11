@@ -83,6 +83,10 @@ public class VertexComponent extends GraphComponent {
         return List.of(vertexPaintable);
     }
 
+    public Paintable getPaintable() {
+        return vertexPaintable;
+    }
+
     private final VertexPaintable vertexPaintable;
     private final Point location;
 

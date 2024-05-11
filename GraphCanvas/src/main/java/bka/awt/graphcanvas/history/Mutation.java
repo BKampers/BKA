@@ -9,17 +9,18 @@ package bka.awt.graphcanvas.history;
 public interface Mutation {
 
     public enum Type {
-        INSERTION("Added"),
         DELETION("Deleted"),
-        RELOCATION("Relocated"),
-        VERTEX_RESIZE("VertexResized"),
-        EDGE_TRANSFORMATION("EdgeTransformed"),
         EDGE_DIRECTED_TOGGLE("EdgeDirectedToggle"),
         EDGE_REVERT("EdgeReverted"),
-        LABEL_INSERTION("LabelAdded"),
+        EDGE_TRANSFORMATION("EdgeTransformed"),
+        INSERTION("Added"),
         LABEL_DELETION("LabelRemoved"),
+        LABEL_INSERTION("LabelAdded"),
         LABEL_MUTATION("LabelChanged"),
-        PAINT_MUTATION("PaintChanged");
+        PAINT_MUTATION("PaintChanged"),
+        RELOCATION("Relocated"),
+        STROKE_MUTATION("StrokeChanged"),
+        VERTEX_RESIZE("VertexResized");
 
         private Type(String bundleKey) {
             this.bundleKey = bundleKey;

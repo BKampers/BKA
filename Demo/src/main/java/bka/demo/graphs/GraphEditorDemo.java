@@ -13,6 +13,7 @@ import java.awt.image.*;
 import java.util.List;
 import java.util.*;
 import java.util.function.*;
+import java.util.stream.*;
 import javax.swing.*;
 
 public class GraphEditorDemo extends JFrame {
@@ -319,6 +320,12 @@ public class GraphEditorDemo extends JFrame {
         return strokeItem;
     }
 
+    private void addPaintsMenus(VertexFactory factory, JPopupMenu menu, Point location, BiConsumer<Object, Color> onApply) {
+        factory.getDefaultInstance().getPaintKeys().forEach(paintKey -> {
+            menu.add(createPaintItem(factory, paintKey, factory.getDefaultInstance(), location, onApply));
+        });
+    }
+
     private void pickColor(Point location, Paintable paintable, Object key, BiConsumer<Object, Color> onApply) {
         PopupControl.show(
             graphPanel,
@@ -336,6 +343,21 @@ public class GraphEditorDemo extends JFrame {
         return BUNDLE.getString(key);
     }
 
+    private VertexFactory createVertexFactory(VertexComponent component) {
+        Paintable paintable = component.getPaintable();
+        if (paintable instanceof RoundVertexPaintable) {
+            return new VertexFactory(RoundVertexPaintable::new, paintable);
+        }
+        if (paintable instanceof SquareVertexPaintable) {
+            return new VertexFactory(SquareVertexPaintable::new, paintable);
+        }
+        throw new IllegalStateException("Unsupported component");
+    }
+
+    private <K, V> Map<K, V> toMap(Collection<K> keys, Function<K, V> getter) {
+        return keys.stream().collect(Collectors.toMap(Function.identity(), getter::apply));
+    }
+
 
     private class VertexFactory {
 
@@ -344,6 +366,10 @@ public class GraphEditorDemo extends JFrame {
             defaultInstance = newInstance.apply(VERTEX_ICON_DIMENSION);
             defaultStrokes.forEach(defaultInstance::setStroke);
             defaultPaints.forEach(defaultInstance::setPaint);
+        }
+
+        public VertexFactory(Function<Dimension, VertexPaintable> newInstance, Paintable paintable) {
+            this(newInstance, toMap(paintable.getStrokeKeys(), paintable::getStroke), toMap(paintable.getPaintKeys(), paintable::getPaint));
         }
 
         public VertexPaintable getDefaultInstance() {
@@ -522,7 +548,8 @@ public class GraphEditorDemo extends JFrame {
         @Override
         public void showVertexMenu(VertexComponent vertex, Point location) {
             JPopupMenu menu = new JPopupMenu();
-            addPaintMenus(vertex, location, menu);
+            addPaintsMenus(createVertexFactory(vertex), menu, location, (key, paint) -> getCanvas().changePaint(vertex.getPaintable(), key, paint));
+            addStrokesMenus(createVertexFactory(vertex), menu, (key, stroke) -> getCanvas().changeStroke(vertex.getPaintable(), key, stroke));
             if (menu.getComponentCount() > 0) {
                 menu.show(graphPanel, location.x, location.y);
             }
@@ -543,8 +570,8 @@ public class GraphEditorDemo extends JFrame {
             menu.show(graphPanel, location.x, location.y);
         }
 
-        private void addPaintMenus(GraphComponent element, Point location, JPopupMenu menu) {
-            element.getCustomizablePaintables().forEach(paintable -> addColorMenuItems(paintable, location, menu, (key, newColor) -> getCanvas().changePaint(paintable, key, newColor)));
+        private void addPaintMenus(GraphComponent component, Point location, JPopupMenu menu) {
+            component.getCustomizablePaintables().forEach(paintable -> addColorMenuItems(paintable, location, menu, (key, newPaint) -> getCanvas().changePaint(paintable, key, newPaint)));
         }
 
         @Override

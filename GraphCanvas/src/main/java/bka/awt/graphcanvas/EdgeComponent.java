@@ -53,7 +53,7 @@ public class EdgeComponent extends GraphComponent {
 
         @Override
         public boolean equals(Object object) {
-            if (!object.getClass().equals(Excerpt.class)) {
+            if (!(object instanceof Excerpt)) {
                 return false;
             }
             Excerpt excerpt = (Excerpt) object;

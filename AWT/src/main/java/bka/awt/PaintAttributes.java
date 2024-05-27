@@ -14,8 +14,8 @@ import java.util.*;
 public class PaintAttributes {
     
     public PaintAttributes(Map<Object, Paint> paints, Map<Object, Stroke> strokes) {
-        this.paints.putAll(paints);
-        this.strokes.putAll(strokes);
+        this.paints = new HashMap<>(paints);
+        this.strokes = new HashMap<>(strokes);
     }
     
     public PaintAttributes(PaintAttributes attributes) {
@@ -23,7 +23,7 @@ public class PaintAttributes {
     }
  
     public void setPaint(Object key, Paint paint) {
-        paints.put(key, Objects.requireNonNull(paint));
+        paints.put(key, paint);
     }
     
     public Paint getPaint(Object key) {
@@ -31,13 +31,13 @@ public class PaintAttributes {
     }
     
     public void setStroke(Object key, Stroke stroke) {
-        strokes.put(key, Objects.requireNonNull(stroke));
+        strokes.put(key, stroke);
     }
     
     public Stroke getStroke(Object key) {
         return strokes.get(key);
     }
     
-    private final Map<Object, Paint> paints = new HashMap<>();
-    private final Map<Object, Stroke> strokes = new HashMap<>();
+    private final Map<Object, Paint> paints;
+    private final Map<Object, Stroke> strokes;
 }

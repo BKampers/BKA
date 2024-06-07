@@ -1,4 +1,3 @@
-
 /*
 ** © Bart Kampers
 ** This code may not be used for any purpose that harms humans (including
@@ -12,7 +11,11 @@ import java.util.*;
 
 
 public class PaintAttributes {
-    
+
+    public PaintAttributes() {
+        this(Collections.emptyMap(), Collections.emptyMap());
+    }
+
     public PaintAttributes(Map<Object, Paint> paints, Map<Object, Stroke> strokes) {
         this.paints = new HashMap<>(paints);
         this.strokes = new HashMap<>(strokes);

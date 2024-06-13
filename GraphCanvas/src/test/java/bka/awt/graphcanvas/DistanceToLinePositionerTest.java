@@ -3,38 +3,12 @@ package bka.awt.graphcanvas;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-/**
- *
- * @author bartkampers
- */
+
 public class DistanceToLinePositionerTest {
     
-    public DistanceToLinePositionerTest() {
-    }
-    
-    @BeforeClass
-    public static void setUpClass() {
-    }
-    
-    @AfterClass
-    public static void tearDownClass() {
-    }
-    
-    @Before
-    public void setUp() {
-    }
-    
-    @After
-    public void tearDown() {
-    }
-
     @Test
     public void testMovingLine() {
         // Horizontal line
@@ -45,7 +19,7 @@ public class DistanceToLinePositionerTest {
         // Line has not been changed, so positioner must supply the original point
         assertEquals(point, positioner.get());
         // Shorten line
-        line[0].setLocation(50, 0);
+        line[0].move(50, 0);
         // positioner must still supply a point 5 pixels above the center of the shortened line
         assertEquals(new Point(75, 5), positioner.get());
         // Move line down
@@ -65,19 +39,19 @@ public class DistanceToLinePositionerTest {
         // Line has not been changed, so positioner must supply the original point
         assertEquals(point, positioner.get());
         // Tilt to -45 degrees 
-        line[0].setLocation(0, 100);
-        line[1].setLocation(100, 0);
+        line[0].move(0, 100);
+        line[1].move(100, 0);
         // positioner now must supply a point on the line perpendicular to the tilted line 
         // at a distance of 5 pixels below the center of the tilted line
         // That is Point 50 + sqrt(5^2 / 2), 50 + sqrt(5^2 / 2), rounded to whole pixels.
         assertEquals(new Point(54, 54), positioner.get());
         // Tilt line to vertical
-        line[0].setLocation(0, 0);
-        line[1].setLocation(0, 100);
+        line[0].move(0, 0);
+        line[1].move(0, 100);
         // positioner now must supply a point 5 pixels left to the center of the vertical line
         assertEquals(new Point(-5, 50), positioner.get());
         // Tilt line to 45 degrees
-        line[0].setLocation(100, 0);
+        line[0].move(100, 0);
         // positioner now must supply a point on the line perpendicular to the tilted line 
         // at a distance of 5 pixels below the center of the tilted line
         // That is Point 50 - sqrt(5^2 / 2), 50 + sqrt(5^2 / 2), rounded to whole pixels.
@@ -87,7 +61,7 @@ public class DistanceToLinePositionerTest {
     @Test
     public void testMovingIndex() {
         // Horizontal line
-        List<Point> line = new ArrayList(List.of(new Point(0, 100), new Point(200, 100)));
+        List<Point> line = new ArrayList<>(List.of(new Point(0, 100), new Point(200, 100)));
         // Point 5 pixels above the left quarter of line
         Point point = new Point(50, 5);
         DistanceToLinePositioner positioner = DistanceToLinePositioner.create(point, 0, i -> line.get(i));

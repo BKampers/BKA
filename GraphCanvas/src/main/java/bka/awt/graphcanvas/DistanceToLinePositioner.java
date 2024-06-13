@@ -14,7 +14,7 @@ import java.util.function.*;
 
 public class DistanceToLinePositioner implements Supplier<Point> {
 
-    public DistanceToLinePositioner(int index, double xDistance, double yDistance, double ratio, Function<Integer, Point> pointAt) {
+    private DistanceToLinePositioner(int index, double xDistance, double yDistance, double ratio, Function<Integer, Point> pointAt) {
         this.xDistance = xDistance;
         this.yDistance = yDistance;
         this.ratio = ratio;

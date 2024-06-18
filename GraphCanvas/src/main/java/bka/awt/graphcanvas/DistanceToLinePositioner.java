@@ -14,7 +14,7 @@ import java.util.function.*;
 
 public class DistanceToLinePositioner implements Supplier<Point> {
 
-    private DistanceToLinePositioner(int index, double xDistance, double yDistance, double ratio, Function<Integer, Point> pointAt) {
+    private DistanceToLinePositioner(int index, double xDistance, double yDistance, double ratio, IntFunction<Point> pointAt) {
         this.xDistance = xDistance;
         this.yDistance = yDistance;
         this.ratio = ratio;
@@ -22,7 +22,7 @@ public class DistanceToLinePositioner implements Supplier<Point> {
         this.pointAt = Objects.requireNonNull(pointAt);
     }
 
-    public static DistanceToLinePositioner create(Point point, int index, Function<Integer, Point> pointAt) {
+    public static DistanceToLinePositioner create(Point point, int index, IntFunction<Point> pointAt) {
         Point linePoint1 = pointAt.apply(index);
         Point linePoint2 = pointAt.apply(index + 1);
         Point2D anchor = CanvasUtil.intersectionPoint(point, linePoint1, linePoint2);
@@ -84,7 +84,7 @@ public class DistanceToLinePositioner implements Supplier<Point> {
         }
     }
 
-    private final Function<Integer, Point> pointAt;
+    private final IntFunction<Point> pointAt;
     private final double xDistance;
     private final double yDistance;
     private final double ratio;

@@ -74,4 +74,72 @@ public class DistanceToLinePositionerTest {
         //positioner now must supply a point 5 pixels above a quarter of the second part of the line
         assertEquals(new Point(125, 5), positioner.get());
     }
+    
+    @Test
+    public void testPointInserted() {
+        List<Point> line = new ArrayList<>();
+        Point originalPosition = new Point(100, 5);
+        DistanceToLinePositioner positioner = createPositionerWithEndPoints(line, 0, originalPosition);
+        // Add new point at index, nearer to start point than to endpoint
+        Point newPoint = new Point(200, 0);
+        line.add(0, newPoint);
+        positioner.pointInserted(0, newPoint);
+        // No index change; positioner's result changes due to line tilt
+        assertEquals(0, positioner.getIndex());
+        Point position = positioner.get();
+        assertNotEquals(originalPosition, position);
+        // Add new point inserted after index:
+        newPoint = new Point(0, 0);
+        line.add(1, newPoint);
+        positioner.pointInserted(1, newPoint);
+        // No index change nor positioner's result change, since inserted point is after index
+        assertEquals(0, positioner.getIndex());
+        assertEquals(position, positioner.get());
+        // Add new point at index, nearer to point after index than to point at index
+        newPoint = new Point(0, 25);
+        line.add(0, newPoint);
+        positioner.pointInserted(0, newPoint);
+        // Index increased; positioner's result change due to line tilt
+        assertEquals(1, positioner.getIndex());
+        assertNotEquals(position, positioner.get());
+        position = positioner.get();
+        // Add new point before index
+        newPoint = new Point(200, 0);
+        line.add(0, newPoint);
+        positioner.pointInserted(0, newPoint);
+        // Index increased positioner's result not changed
+        assertEquals(2, positioner.getIndex());
+        assertEquals(position, positioner.get());
+    }
+    
+    @Test
+    public void testPointRemoved() {
+        List<Point> line = new ArrayList<>(List.of(new Point(50, 25), new Point(100, 50), new Point(150, 25)));
+        Point originalPosition = new Point(50, 5);
+        DistanceToLinePositioner positioner = createPositionerWithEndPoints(line, 2, originalPosition);
+        // Remove point before index
+        line.remove(0);
+        positioner.pointRemoved(0);
+        // Index decreased; positioner result not changed
+        assertEquals(1, positioner.getIndex());
+        assertEquals(originalPosition, positioner.get());
+        // Remove point after index
+        line.remove(1);
+        positioner.pointRemoved(1);
+        // Index unchanged, positioner result changed due to line tilt
+        assertEquals(1, positioner.getIndex());
+        assertNotEquals(originalPosition, positioner.get());
+    }
+
+    private DistanceToLinePositioner createPositionerWithEndPoints(List<Point> line, int index, Point originalPosition) {
+        return DistanceToLinePositioner.create(originalPosition, index, i -> {
+            if (i == 0) {
+                return new Point(0, 100);
+            }
+            if (i == line.size() + 1) {
+                return new Point(200, 100);
+            }
+            return line.get(i - 1);
+        });
+    }
 }

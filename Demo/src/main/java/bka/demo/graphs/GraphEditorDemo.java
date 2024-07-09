@@ -25,6 +25,10 @@ public class GraphEditorDemo extends JFrame {
             new VertexFactory(RoundVertexPaintable::new, defaultStrokes, paints(Color.BLACK, Color.BLACK)),
             new VertexFactory(SquareVertexPaintable::new, defaultStrokes, paints(Color.BLACK, Color.WHITE))
         ));
+        populateEdgeSelectorPanel(List.of(
+            new EdgeFactory(false),
+            new EdgeFactory(true)
+        ));
         canvas.getDrawHistory().addListener(this::updateHistoryList);
         historyList.addMouseListener(new HistoryListMouseAdapter());
         historyList.addKeyListener(new HistoryListKeyAdapter());
@@ -56,7 +60,6 @@ public class GraphEditorDemo extends JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        edgeSelector = new javax.swing.ButtonGroup();
         javax.swing.JScrollPane graphScrollPane = new javax.swing.JScrollPane();
         graphPanel = new GraphPanel();
         historyPanel = new javax.swing.JPanel();
@@ -65,8 +68,7 @@ public class GraphEditorDemo extends JFrame {
         historyList.setCellRenderer(new HistoryListCellRenderer());
         componentPanel = new javax.swing.JPanel();
         vertexSelectorPanel = new javax.swing.JPanel();
-        undirectedEdgeRadioButton = new javax.swing.JRadioButton();
-        directedEdgeRadioButton = new javax.swing.JRadioButton();
+        edgeSelectorPanel = new javax.swing.JPanel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle(BUNDLE.getString("ApplicationTitle"));
@@ -110,7 +112,7 @@ public class GraphEditorDemo extends JFrame {
         );
         graphPanelLayout.setVerticalGroup(
             graphPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 442, Short.MAX_VALUE)
+            .addGap(0, 579, Short.MAX_VALUE)
         );
 
         graphScrollPane.setViewportView(graphPanel);
@@ -132,44 +134,33 @@ public class GraphEditorDemo extends JFrame {
         getContentPane().add(historyPanel, java.awt.BorderLayout.EAST);
 
         vertexSelectorPanel.setLocation(new java.awt.Point(0, 5));
+        vertexSelectorPanel.setVerifyInputWhenFocusTarget(false);
         vertexSelectorPanel.setLayout(new javax.swing.BoxLayout(vertexSelectorPanel, javax.swing.BoxLayout.Y_AXIS));
 
-        edgeSelector.add(undirectedEdgeRadioButton);
-        undirectedEdgeRadioButton.setSelected(true);
-        undirectedEdgeRadioButton.setText(BUNDLE.getString("UndirectedEdge"));
-
-        edgeSelector.add(directedEdgeRadioButton);
-        directedEdgeRadioButton.setText(BUNDLE.getString("DirectedEdge"));
+        edgeSelectorPanel.setLocation(new java.awt.Point(0, 5));
+        edgeSelectorPanel.setVerifyInputWhenFocusTarget(false);
+        edgeSelectorPanel.setLayout(new javax.swing.BoxLayout(edgeSelectorPanel, javax.swing.BoxLayout.Y_AXIS));
 
         javax.swing.GroupLayout componentPanelLayout = new javax.swing.GroupLayout(componentPanel);
         componentPanel.setLayout(componentPanelLayout);
         componentPanelLayout.setHorizontalGroup(
             componentPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(componentPanelLayout.createSequentialGroup()
-                .addContainerGap(30, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, componentPanelLayout.createSequentialGroup()
+                .addContainerGap(152, Short.MAX_VALUE)
                 .addGroup(componentPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(directedEdgeRadioButton)
-                    .addComponent(undirectedEdgeRadioButton))
-                .addContainerGap())
-            .addGroup(componentPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, componentPanelLayout.createSequentialGroup()
-                    .addContainerGap(76, Short.MAX_VALUE)
-                    .addComponent(vertexSelectorPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addContainerGap(76, Short.MAX_VALUE)))
+                    .addComponent(edgeSelectorPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(componentPanelLayout.createSequentialGroup()
+                        .addComponent(vertexSelectorPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(136, 136, 136))))
         );
         componentPanelLayout.setVerticalGroup(
             componentPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(componentPanelLayout.createSequentialGroup()
-                .addGap(151, 151, 151)
-                .addComponent(undirectedEdgeRadioButton)
-                .addGap(18, 18, 18)
-                .addComponent(directedEdgeRadioButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGap(246, 246, 246))
-            .addGroup(componentPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, componentPanelLayout.createSequentialGroup()
-                    .addContainerGap(236, Short.MAX_VALUE)
-                    .addComponent(vertexSelectorPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 171, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addContainerGap(54, Short.MAX_VALUE)))
+                .addContainerGap(217, Short.MAX_VALUE)
+                .addComponent(vertexSelectorPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 171, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(edgeSelectorPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 171, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(26, 26, 26))
         );
 
         getContentPane().add(componentPanel, java.awt.BorderLayout.WEST);
@@ -213,6 +204,16 @@ public class GraphEditorDemo extends JFrame {
             button.setIcon(createIcon(factory.getDefaultInstance()));
             button.addMouseListener(new VertexButtonMouseAdapter(factory));
             vertexSelectorPanel.add(button);
+        });
+    }
+    
+    private void populateEdgeSelectorPanel(List<EdgeFactory> factories) {
+        factories.forEach(factory -> {
+            JToggleButton button = new JToggleButton();
+            edgeButtons.put(button, factory);
+            button.setIcon(createIcon(factory.getDefaultInstance()));
+            button.addMouseListener(new EdgeButtonMouseAdapter(factory));
+            edgeSelectorPanel.add(button);
         });
     }
 
@@ -358,7 +359,7 @@ public class GraphEditorDemo extends JFrame {
         return keys.stream().collect(Collectors.toMap(Function.identity(), getter::apply));
     }
 
-
+    
     private class VertexFactory {
 
         public VertexFactory(Function<Dimension, VertexPaintable> newInstance, Map<Object, Stroke> defaultStrokes, Map<Object, Paint> defaultPaints) {
@@ -395,6 +396,44 @@ public class GraphEditorDemo extends JFrame {
         private final VertexPaintable defaultInstance;
 
     }
+    
+    
+    private class EdgeFactory {
+
+        public EdgeFactory(boolean directed) {
+            this.directed = directed;
+        }
+        
+        public Paintable getDefaultInstance() {
+            return defaultInstance;
+        }
+
+        public boolean isDirected() {
+            return directed;
+        }
+        
+        private final Paintable defaultInstance = new Paintable() {
+            @Override
+            public void paint(Graphics2D graphics) {
+                paint(graphics, Color.BLACK, SOLID_STROKE);
+            }
+            
+            @Override
+            public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
+                graphics.setPaint(paint);
+                graphics.setStroke(stroke);
+                graphics.drawLine(left.x, left.y, right.x, right.y);
+                if (directed) {
+                    new ArrowheadPaintable(() -> left, () -> right).paint(graphics, paint, stroke);
+                }
+            }
+        };
+        
+        private final boolean directed;
+        
+        private final Point left = new Point(-8, 0);
+        private final Point right = new Point(8, 0);
+    }
 
 
     private class GraphPanel extends javax.swing.JPanel {
@@ -407,7 +446,7 @@ public class GraphEditorDemo extends JFrame {
     }
 
 
-    private class VertexButtonMouseAdapter extends MouseAdapter {
+    private class VertexButtonMouseAdapter extends SelectorMouseAdapter {
 
         VertexButtonMouseAdapter(VertexFactory factory) {
             this.factory = factory;
@@ -417,17 +456,9 @@ public class GraphEditorDemo extends JFrame {
         public void mouseClicked(MouseEvent event) {
             switch (event.getButton()) {
                 case MouseEvent.BUTTON1 ->
-                    ensureSingleSelection((JToggleButton) event.getSource());
+                    ensureSingleSelection(vertexButtons.keySet(), (JToggleButton) event.getSource());
                 case MouseEvent.BUTTON3 ->
                     showVertexContextMenu(event, factory.getDefaultInstance());
-            }
-        }
-
-        private void ensureSingleSelection(JToggleButton button) {
-            if (button.isSelected()) {
-                vertexButtons.keySet().stream()
-                    .filter(vertexButton -> !vertexButton.equals(button))
-                    .forEach(vertexButton -> vertexButton.setSelected(false));
             }
         }
 
@@ -456,6 +487,38 @@ public class GraphEditorDemo extends JFrame {
         }
 
         private final VertexFactory factory;
+
+    }
+
+
+    private class EdgeButtonMouseAdapter extends SelectorMouseAdapter {
+
+        public EdgeButtonMouseAdapter(EdgeFactory factory) {
+            this.factory = factory;
+        }
+        
+        @Override
+        public void mouseClicked(MouseEvent event) {
+            switch (event.getButton()) {
+                case MouseEvent.BUTTON1 ->
+                    ensureSingleSelection(edgeButtons.keySet(), (JToggleButton) event.getSource());
+            }
+        }
+        
+        private final EdgeFactory factory;
+        
+    }
+    
+    
+    private class SelectorMouseAdapter extends MouseAdapter {
+        
+        protected void ensureSingleSelection(Collection<JToggleButton> buttons, JToggleButton button) {
+            if (button.isSelected()) {
+                buttons.stream()
+                    .filter(vertexButton -> !vertexButton.equals(button))
+                    .forEach(vertexButton -> vertexButton.setSelected(false));
+            }
+        }
 
     }
 
@@ -591,21 +654,32 @@ public class GraphEditorDemo extends JFrame {
         }
 
         @Override
-        public VertexComponent createVertexComponent(Point location) {
-            Optional<JToggleButton> vertexButton = vertexButtons.keySet().stream()
-                .filter(toggleButton -> toggleButton.isSelected())
+        public Optional<VertexComponent> createVertexComponent(Point location) {
+            Optional<Map.Entry<JToggleButton, VertexFactory>> selectedOption = vertexButtons.entrySet().stream()
+                .filter(entry -> entry.getKey().isSelected())
                 .findAny();
-            if (vertexButton.isEmpty()) {
-                return null;
+            if (selectedOption.isEmpty()) {
+                return Optional.empty();
             }
-            return new VertexComponent(vertexButtons.get(vertexButton.get()).getCopyInstance(), location);
+            return Optional.of(new VertexComponent(selectedOption.get().getValue().getCopyInstance(), location));
+        }
+        
+        @Override 
+        public boolean createEdgeAllowed() {
+            return edgeButtons.keySet().stream().anyMatch(button -> button.isSelected());
         }
 
         @Override
-        public EdgeComponent createEdgeComponent(VertexComponent origin, VertexComponent terminus) {
+        public Optional<EdgeComponent> createEdgeComponent(VertexComponent origin, VertexComponent terminus) {
+            Optional<Map.Entry<JToggleButton, EdgeFactory>> selectedOption = edgeButtons.entrySet().stream()
+                .filter(entry -> entry.getKey().isSelected())
+                .findAny();
+            if (selectedOption.isEmpty()) {
+                return Optional.empty();
+            }
             EdgeComponent edgeRenderer = new EdgeComponent(origin, terminus);
-            edgeRenderer.setDirected(directedEdgeRadioButton.isSelected());
-            return edgeRenderer;
+            edgeRenderer.setDirected(selectedOption.get().getValue().isDirected());
+            return Optional.of(edgeRenderer);
         }
 
         private static final int POPUP_WIDTH = 50;
@@ -616,17 +690,16 @@ public class GraphEditorDemo extends JFrame {
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel componentPanel;
-    private javax.swing.JRadioButton directedEdgeRadioButton;
-    private javax.swing.ButtonGroup edgeSelector;
+    private javax.swing.JPanel edgeSelectorPanel;
     private javax.swing.JPanel graphPanel;
     private javax.swing.JList<String> historyList;
     private javax.swing.JPanel historyPanel;
     private javax.swing.JScrollPane historyScrollPane;
-    private javax.swing.JRadioButton undirectedEdgeRadioButton;
     private javax.swing.JPanel vertexSelectorPanel;
     // End of variables declaration//GEN-END:variables
 
     private final Map<JToggleButton, VertexFactory> vertexButtons = new HashMap<>();
+    private final Map<JToggleButton, EdgeFactory> edgeButtons = new HashMap<>();
 
     private final javax.swing.DefaultListModel<String> historyListModel = new javax.swing.DefaultListModel<>();
 

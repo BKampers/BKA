@@ -18,7 +18,7 @@ public class CreateEdgeHandler extends CanvasEventHandler {
 
     public CreateEdgeHandler(GraphCanvas canvas, VertexComponent vertex, Point cursor) {
         super(canvas);
-        draggingEdgeRenderer = getCanvas().getContext().createEdgeComponent(vertex, new VertexComponent(VERTEX_PLACEHOLDER, cursor));
+        draggingEdgeRenderer = getCanvas().getContext().createEdgeComponent(vertex, new VertexComponent(VERTEX_PLACEHOLDER, cursor)).get();
     }
 
     @Override

@@ -93,7 +93,7 @@ public class DefaultEventHandler extends CanvasEventHandler {
             needRepaint |= setConnectorPoint(null);
             return new CanvasUpdate(getResizeDirection(cursor, vertex.getLocation()).getCursorType(), needRepaint);
         }
-        if (CanvasUtil.isNear(distance) && getCanvas().getVertices().size() > 1) {
+        if (CanvasUtil.isNear(distance) && getCanvas().getVertices().size() > 1 && getCanvas().getContext().createEdgeAllowed()) {
             needRepaint |= setConnectorPoint(cursor);
             return new CanvasUpdate(Cursor.DEFAULT_CURSOR, needRepaint);
         }
@@ -224,12 +224,12 @@ public class DefaultEventHandler extends CanvasEventHandler {
     }
 
     private CanvasUpdate addNewVertex(Point cursor) {
-        VertexComponent vertex = getCanvas().getContext().createVertexComponent(cursor);
-        if (vertex == null) {
+        Optional<VertexComponent> vertex = getCanvas().getContext().createVertexComponent(cursor);
+        if (vertex.isEmpty()) {
             return CanvasUpdate.NO_OPERATION;
         }
-        getCanvas().addVertex(vertex);
-        getCanvas().addHistory(new ElementInsertion(vertex, getCanvas()));
+        getCanvas().addVertex(vertex.get());
+        getCanvas().addHistory(new ElementInsertion(vertex.get(), getCanvas()));
         return CanvasUpdate.REPAINT;
     }
 

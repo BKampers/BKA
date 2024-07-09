@@ -160,30 +160,6 @@ public class EdgeComponent extends GraphComponent {
         return points.size() / 2;
     }
 
-    /**
-     *
-     * @param start point
-     * @param end point
-     * @return angle to rotate an arrowhead pointing from left to right so that it points from the start point to the end point
-     */
-    private double arrowheadRotation(Point start, Point end) {
-        double angle = Math.atan(CanvasUtil.slope(start, end));
-        if (end.x < start.x) {
-            return angle + Math.PI;
-        }
-        return angle;
-    }
-
-    private Point arrowheadLocation(Point start, Point end) {
-        return coordinateOnLine(start, end, 0.5f);
-    }
-
-    private Point coordinateOnLine(Point start, Point end, float position) {
-        return new Point(
-            Math.round(start.x + (end.x - start.x) * position),
-            Math.round(start.y + (end.y - start.y) * position));
-    }
-
     @Override
     public void paintHighlight(Graphics2D graphics, Color color, Stroke stroke) {
         polygonPaintable.paint(graphics, color, stroke);
@@ -361,38 +337,12 @@ public class EdgeComponent extends GraphComponent {
     };
 
 
-    private final Paintable arrowheadPaintable = new Paintable() {
-
-        @Override
-        public void paint(Graphics2D graphics) {
-            paint(graphics, getPaint(ARROWHEAD_PAINT_KEY), getStroke(ARROWHEAD_STROKE_KEY));
-        }
-
-        @Override
-        public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
-            int index = arrowHeadLineIndex();
-            Point lineStart = getPoint(index);
-            Point lineEnd = getPoint(index + 1);
-            double angle = arrowheadRotation(lineStart, lineEnd);
-            Point location = arrowheadLocation(lineStart, lineEnd);
-            graphics.translate(location.x, location.y);
-            graphics.rotate(angle);
-            graphics.setPaint(paint);
-            graphics.setStroke(stroke);
-            graphics.fillPolygon(ARROWHEAD_X_COORDINATES, ARROWHEAD_Y_COORDINATES, ARROWHEAD_X_COORDINATES.length);
-            graphics.rotate(-angle);
-            graphics.translate(-location.x, -location.y);
-        }
-
-    };
+    private final Paintable arrowheadPaintable = new ArrowheadPaintable(() -> getPoint(arrowHeadLineIndex()), () -> getPoint(arrowHeadLineIndex() + 1));
 
     private final List<Point> points = new ArrayList<>();
     private VertexComponent start;
     private VertexComponent end;
     private boolean directed;
-
-    private static final int[] ARROWHEAD_X_COORDINATES = { -5, 5, -5 };
-    private static final int[] ARROWHEAD_Y_COORDINATES = { -5, 0, 5 };
 
     private static final int ENDPOINT_COUNT = 2;
 

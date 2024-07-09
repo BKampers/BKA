@@ -7,6 +7,7 @@
 package bka.awt.graphcanvas;
 
 import java.awt.*;
+import java.util.*;
 import java.util.function.*;
 
 
@@ -17,7 +18,9 @@ public interface ApplicationContext {
     void editString(String input, Point location, Consumer<String> onApply);
     void requestUpdate(CanvasUpdate update);
 
-    VertexComponent createVertexComponent(Point location);
-    EdgeComponent createEdgeComponent(VertexComponent origin, VertexComponent terminus);
+    boolean createEdgeAllowed();
+
+    Optional<VertexComponent> createVertexComponent(Point location);
+    Optional<EdgeComponent> createEdgeComponent(VertexComponent origin, VertexComponent terminus);
 
 }

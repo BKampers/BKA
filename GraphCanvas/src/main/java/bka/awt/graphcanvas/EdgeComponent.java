@@ -68,12 +68,13 @@ public class EdgeComponent extends GraphComponent {
         private List<Point> edgePoints;
         private Map<Label, Integer> labelIndices;
     }
+    
 
-    public EdgeComponent(VertexComponent start, VertexComponent end) {
-        polygonPaintable.setPaint(LINE_PAINT_KEY, Color.BLACK);
-        polygonPaintable.setStroke(LINE_STROKE_KEY, new BasicStroke());
-        arrowheadPaintable.setPaint(ARROWHEAD_PAINT_KEY, Color.BLACK);
-        arrowheadPaintable.setStroke(ARROWHEAD_STROKE_KEY, new BasicStroke());
+    public EdgeComponent(VertexComponent start, VertexComponent end, Paintable polygonPaintable, Paintable arrowheadPaintable) {
+        this.polygonPaintable.setPaint(LINE_PAINT_KEY, polygonPaintable.getPaint(LINE_PAINT_KEY));
+        this.polygonPaintable.setStroke(LINE_STROKE_KEY, polygonPaintable.getStroke(LINE_STROKE_KEY));
+        this.arrowheadPaintable.setPaint(ARROWHEAD_PAINT_KEY, arrowheadPaintable.getPaint(ARROWHEAD_PAINT_KEY));
+        this.arrowheadPaintable.setStroke(ARROWHEAD_STROKE_KEY, arrowheadPaintable.getStroke(ARROWHEAD_STROKE_KEY));
         this.start = Objects.requireNonNull(start);
         setEnd(end);
     }

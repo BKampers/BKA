@@ -30,5 +30,6 @@
     <properties>
         <maven.compiler.source>15</maven.compiler.source>
         <maven.compiler.target>15</maven.compiler.target>
+        <maven.compileR.release>15</maven.compileR.release>
     </properties>
 </project>

@@ -202,7 +202,7 @@ public class GraphEditorDemo extends JFrame {
             JToggleButton button = new JToggleButton();
             vertexButtons.put(button, factory);
             button.setIcon(createIcon(factory.getDefaultInstance()));
-            button.addMouseListener(new VertexButtonMouseAdapter(factory));
+            button.addMouseListener(new SelectorMouseAdapter(factory, vertexButtons.keySet()));
             vertexSelectorPanel.add(button);
         });
     }
@@ -212,7 +212,7 @@ public class GraphEditorDemo extends JFrame {
             JToggleButton button = new JToggleButton();
             edgeButtons.put(button, factory);
             button.setIcon(createIcon(factory.getDefaultInstance()));
-            button.addMouseListener(new EdgeButtonMouseAdapter(factory));
+            button.addMouseListener(new SelectorMouseAdapter(factory, edgeButtons.keySet()));
             edgeSelectorPanel.add(button);
         });
     }
@@ -265,12 +265,12 @@ public class GraphEditorDemo extends JFrame {
         return paintItem;
     }
 
-    private void addColorMenuItems(VertexFactory factory, Point location, JPopupMenu menu, BiConsumer<Object, Color> onApply) {
+    private void addColorMenuItems(Factory factory, Point location, JPopupMenu menu, BiConsumer<Object, Color> onApply) {
         Paintable paintable = factory.getDefaultInstance();
         paintable.getPaintKeys().forEach(paintKey -> menu.add(createPaintItem(factory, paintKey, paintable, location, onApply)));
     }
 
-    private JMenuItem createPaintItem(VertexFactory factory, Object paintKey, Paintable paintable, Point location, BiConsumer<Object, Color> onApply) {
+    private JMenuItem createPaintItem(Factory factory, Object paintKey, Paintable paintable, Point location, BiConsumer<Object, Color> onApply) {
         JMenuItem paintItem = new JMenuItem(getBundleText(paintKey.toString()));
         Paintable iconPaintable = factory.getCopyInstance();
         iconPaintable.getPaintKeys().stream()
@@ -282,11 +282,11 @@ public class GraphEditorDemo extends JFrame {
         return paintItem;
     }
 
-    private void addStrokesMenus(VertexFactory factory, JPopupMenu menu, BiConsumer<Object, Stroke> onApply) {
+    private void addStrokesMenus(Factory factory, JPopupMenu menu, BiConsumer<Object, Stroke> onApply) {
         factory.getDefaultInstance().getStrokeKeys().forEach(strokeKey -> menu.add(createStrokesMenu(factory, strokeKey, onApply)));
     }
 
-    private JMenu createStrokesMenu(VertexFactory factory, Object strokeKey, BiConsumer<Object, Stroke> onApply) {
+    private JMenu createStrokesMenu(Factory factory, Object strokeKey, BiConsumer<Object, Stroke> onApply) {
         JMenu strokesMenu = new JMenu(getBundleText(strokeKey.toString()));
         Paintable iconPaintable = factory.getCopyInstance();
         iconPaintable.setPaint(VertexPaintable.BORDER_PAINT_KEY, Color.BLACK);
@@ -310,7 +310,7 @@ public class GraphEditorDemo extends JFrame {
         return new BasicStroke(1f, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER, 10f, dash, 0f);
     }
 
-    private JMenuItem createSrokeItem(VertexFactory factory, Object strokeKey, Stroke stroke, BiConsumer<Object, Stroke> onApply) {
+    private JMenuItem createSrokeItem(Factory factory, Object strokeKey, Stroke stroke, BiConsumer<Object, Stroke> onApply) {
         Paintable strokePaintable = factory.getCopyInstance();
         strokePaintable.setPaint(VertexPaintable.BORDER_PAINT_KEY, Color.BLACK);
         strokePaintable.setPaint(VertexPaintable.FILL_PAINT_KEY, TRANSPARENT);
@@ -359,8 +359,47 @@ public class GraphEditorDemo extends JFrame {
         return keys.stream().collect(Collectors.toMap(Function.identity(), getter::apply));
     }
 
+    private GraphCanvas getCanvas() {
+        return canvas;
+    }
+
+    private static Rectangle colorChooserBounds(Point location) {
+        return new Rectangle(location.x, location.y, 600, 300);
+    }
+
+    private static Color castToColor(Paint paint) {
+        if (paint instanceof Color) {
+            return (Color) paint;
+        }
+        return null;
+    }
+
+    private static Icon createIcon(Paintable paintable) {
+        return createIcon(paintable::paint);
+    }
+
+    private static Icon createIcon(Consumer<Graphics2D> canvas) {
+        BufferedImage image = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = image.createGraphics();
+        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        graphics.translate(image.getWidth() / 2, image.getHeight() / 2);
+        canvas.accept(graphics);
+        ImageIcon icon = new ImageIcon(image);
+        graphics.dispose();
+        return icon;
+    }
     
-    private class VertexFactory {
+    private void copy(Paintable source, Paintable target) {
+        copy(source.getPaintKeys(), target::setPaint, source::getPaint);
+        copy(source.getStrokeKeys(), target::setStroke, source::getStroke);
+    }
+
+    private static <T> void copy(Collection<Object> keys, BiConsumer<Object, T> setter, Function<Object, T> getter) {
+        keys.forEach(key -> setter.accept(key, getter.apply(key)));
+    }
+
+ 
+    private class VertexFactory implements Factory {
 
         public VertexFactory(Function<Dimension, VertexPaintable> newInstance, Map<Object, Stroke> defaultStrokes, Map<Object, Paint> defaultPaints) {
             this.newInstance = newInstance;
@@ -373,23 +412,16 @@ public class GraphEditorDemo extends JFrame {
             this(newInstance, toMap(paintable.getStrokeKeys(), paintable::getStroke), toMap(paintable.getPaintKeys(), paintable::getPaint));
         }
 
+        @Override
         public VertexPaintable getDefaultInstance() {
             return defaultInstance;
         }
 
+        @Override
         public VertexPaintable getCopyInstance() {
             VertexPaintable copyInstance = newInstance.apply(VERTEX_ICON_DIMENSION);
             copy(defaultInstance, copyInstance);
             return copyInstance;
-        }
-
-        private void copy(Paintable source, Paintable target) {
-            copy(source.getPaintKeys(), target::setPaint, source::getPaint);
-            copy(source.getStrokeKeys(), target::setStroke, source::getStroke);
-        }
-
-        private <T> void copy(Collection<Object> keys, BiConsumer<Object, T> setter, Function<Object, T> getter) {
-            keys.forEach(key -> setter.accept(key, getter.apply(key)));
         }
 
         private final Function<Dimension, VertexPaintable> newInstance;
@@ -398,43 +430,112 @@ public class GraphEditorDemo extends JFrame {
     }
     
     
-    private class EdgeFactory {
+    private class EdgeFactory implements Factory {
 
         public EdgeFactory(boolean directed) {
-            this.directed = directed;
+            defaultInstance = new EdgePaintable(() -> left, () -> right, directed);
         }
         
-        public Paintable getDefaultInstance() {
+        @Override
+        public EdgePaintable getDefaultInstance() {
             return defaultInstance;
+        }
+        
+        @Override
+        public EdgePaintable getCopyInstance() {
+            EdgePaintable copyInstance = new EdgePaintable(() -> left, () -> right, defaultInstance.isDirected());
+            copy(defaultInstance, copyInstance);
+            copy(defaultInstance.arrowheadPaintable, copyInstance);
+            return copyInstance;
         }
 
         public boolean isDirected() {
-            return directed;
+            return defaultInstance.isDirected();
         }
         
-        private final Paintable defaultInstance = new Paintable() {
-            @Override
-            public void paint(Graphics2D graphics) {
-                paint(graphics, Color.BLACK, SOLID_STROKE);
-            }
-            
-            @Override
-            public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
-                graphics.setPaint(paint);
-                graphics.setStroke(stroke);
-                graphics.drawLine(left.x, left.y, right.x, right.y);
-                if (directed) {
-                    new ArrowheadPaintable(() -> left, () -> right).paint(graphics, paint, stroke);
-                }
-            }
-        };
-        
-        private final boolean directed;
+        private final EdgePaintable defaultInstance;
         
         private final Point left = new Point(-8, 0);
         private final Point right = new Point(8, 0);
     }
+    
+    private interface Factory {
+        Paintable getDefaultInstance();
+        Paintable getCopyInstance();
+    }
 
+
+    private class EdgePaintable extends Paintable {
+
+        public EdgePaintable(Supplier<Point> start, Supplier<Point> end, boolean directed) {
+            this.start = Objects.requireNonNull(start);
+            this.end = Objects.requireNonNull(end);
+            this.directed = directed;
+            this.arrowheadPaintable = new ArrowheadPaintable(start, end);
+            setPaint(EdgeComponent.LINE_PAINT_KEY, Color.BLACK);
+            setStroke(EdgeComponent.LINE_STROKE_KEY, SOLID_STROKE);
+            arrowheadPaintable.setPaint(EdgeComponent.ARROWHEAD_PAINT_KEY, Color.BLACK);
+            arrowheadPaintable.setStroke(EdgeComponent.ARROWHEAD_STROKE_KEY, SOLID_STROKE);
+        }
+        
+        @Override
+        public void paint(Graphics2D graphics) {
+            paintLine(graphics, getPaint(EdgeComponent.LINE_PAINT_KEY), SOLID_STROKE);
+            if (directed) {
+                arrowheadPaintable.paint(graphics);
+            }
+        }
+        
+        @Override
+        public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
+            paintLine(graphics, paint, stroke);
+            if (directed) {
+                arrowheadPaintable.paint(graphics, paint, stroke);
+            }
+        }
+
+        private void paintLine(Graphics2D graphics, Paint paint, Stroke stroke) {
+            graphics.setPaint(paint);
+            graphics.setStroke(stroke);
+            Point startPoint = start.get();
+            Point endPoint = end.get();
+            graphics.drawLine(startPoint.x, startPoint.y, endPoint.x, endPoint.y);
+        }
+        
+        @Override
+        public Collection<Object> getPaintKeys() {
+            if (directed) {
+                return List.of(EdgeComponent.LINE_PAINT_KEY, EdgeComponent.ARROWHEAD_PAINT_KEY);
+            }
+            return List.of(EdgeComponent.LINE_PAINT_KEY);
+        }
+        
+        @Override
+        public Collection<Object> getStrokeKeys() {
+            return List.of();
+        }
+        
+        @Override
+        public void setPaint(Object key, Paint paint) {
+            if (EdgeComponent.ARROWHEAD_PAINT_KEY.equals(key)) {
+                arrowheadPaintable.setPaint(key, paint);
+            }
+            else {
+                super.setPaint(key, paint);
+            }
+        }
+        
+        public boolean isDirected() {
+            return directed;
+        }
+        
+        private final Supplier<Point> start;
+        private final Supplier<Point> end;
+        private final ArrowheadPaintable arrowheadPaintable;
+        private final boolean directed;
+        
+    };
+        
 
     private class GraphPanel extends javax.swing.JPanel {
 
@@ -446,23 +547,32 @@ public class GraphEditorDemo extends JFrame {
     }
 
 
-    private class VertexButtonMouseAdapter extends SelectorMouseAdapter {
-
-        VertexButtonMouseAdapter(VertexFactory factory) {
+    private class SelectorMouseAdapter extends MouseAdapter {
+        
+         public SelectorMouseAdapter(Factory factory, Set<JToggleButton> buttons) {
             this.factory = factory;
+            this.buttons = buttons;
         }
-
+        
         @Override
         public void mouseClicked(MouseEvent event) {
             switch (event.getButton()) {
                 case MouseEvent.BUTTON1 ->
-                    ensureSingleSelection(vertexButtons.keySet(), (JToggleButton) event.getSource());
+                    ensureSingleSelection(buttons, (JToggleButton) event.getSource());
                 case MouseEvent.BUTTON3 ->
-                    showVertexContextMenu(event, factory.getDefaultInstance());
+                    showContextMenu(event, factory.getDefaultInstance());
             }
         }
-
-        private void showVertexContextMenu(MouseEvent event, Paintable paintable) {
+        
+        private void ensureSingleSelection(Collection<JToggleButton> buttons, JToggleButton clickedButton) {
+            if (clickedButton.isSelected()) {
+                buttons.stream()
+                    .filter(button -> !button.equals(clickedButton))
+                    .forEach(button -> button.setSelected(false));
+            }
+        }
+        
+        private void showContextMenu(MouseEvent event, Paintable paintable) {
             JToggleButton button = (JToggleButton) event.getSource();
             JPopupMenu menu = new JPopupMenu();
             addColorMenuItems(factory, event.getPoint(), menu, applyColorChange(button, paintable));
@@ -480,45 +590,14 @@ public class GraphEditorDemo extends JFrame {
         }
 
         private BiConsumer<Object, Stroke> applyStrokeChange(JToggleButton button, Paintable paintable) {
-            return (key, color) -> {
-                paintable.setStroke(key, color);
+            return (key, stroke) -> {
+                paintable.setStroke(key, stroke);
                 button.setIcon(createIcon(paintable));
             };
         }
 
-        private final VertexFactory factory;
-
-    }
-
-
-    private class EdgeButtonMouseAdapter extends SelectorMouseAdapter {
-
-        public EdgeButtonMouseAdapter(EdgeFactory factory) {
-            this.factory = factory;
-        }
-        
-        @Override
-        public void mouseClicked(MouseEvent event) {
-            switch (event.getButton()) {
-                case MouseEvent.BUTTON1 ->
-                    ensureSingleSelection(edgeButtons.keySet(), (JToggleButton) event.getSource());
-            }
-        }
-        
-        private final EdgeFactory factory;
-        
-    }
-    
-    
-    private class SelectorMouseAdapter extends MouseAdapter {
-        
-        protected void ensureSingleSelection(Collection<JToggleButton> buttons, JToggleButton button) {
-            if (button.isSelected()) {
-                buttons.stream()
-                    .filter(vertexButton -> !vertexButton.equals(button))
-                    .forEach(vertexButton -> vertexButton.setSelected(false));
-            }
-        }
+        private final Factory factory;
+        private final Set<JToggleButton> buttons;
 
     }
 
@@ -575,36 +654,6 @@ public class GraphEditorDemo extends JFrame {
         }
     }
 
-    private GraphCanvas getCanvas() {
-        return canvas;
-    }
-
-    private static Rectangle colorChooserBounds(Point location) {
-        return new Rectangle(location.x, location.y, 600, 300);
-    }
-
-    private static Color castToColor(Paint paint) {
-        if (paint instanceof Color) {
-            return (Color) paint;
-        }
-        return null;
-    }
-
-    private static Icon createIcon(Paintable paintable) {
-        return createIcon(paintable::paint);
-    }
-
-    private static Icon createIcon(Consumer<Graphics2D> canvas) {
-        BufferedImage image = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D graphics = image.createGraphics();
-        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        graphics.translate(image.getWidth() / 2, image.getHeight() / 2);
-        canvas.accept(graphics);
-        ImageIcon icon = new ImageIcon(image);
-        graphics.dispose();
-        return icon;
-    }
-
 
     private final GraphCanvas canvas = new GraphCanvas(new ApplicationContext() {
 
@@ -639,13 +688,16 @@ public class GraphEditorDemo extends JFrame {
 
         @Override
         public void editString(String input, Point location, Consumer<String> onApply) {
-            PopupControl.show(
-                graphPanel,
+            PopupControl.show(graphPanel,
                 new TextFieldPopupModel(
-                    new Rectangle(location.x - POPUP_WIDTH / 2, location.y - POPUP_HEIGHT / 2, POPUP_WIDTH, POPUP_HEIGHT),
+                    popupRectangle(location),
                     input,
                     onApply)
             );
+        }
+
+        private Rectangle popupRectangle(Point location) {
+            return new Rectangle(location.x - POPUP_WIDTH / 2, location.y - POPUP_HEIGHT / 2, POPUP_WIDTH, POPUP_HEIGHT);
         }
 
         @Override
@@ -677,9 +729,10 @@ public class GraphEditorDemo extends JFrame {
             if (selectedOption.isEmpty()) {
                 return Optional.empty();
             }
-            EdgeComponent edgeRenderer = new EdgeComponent(origin, terminus);
-            edgeRenderer.setDirected(selectedOption.get().getValue().isDirected());
-            return Optional.of(edgeRenderer);
+            EdgePaintable paintable = selectedOption.get().getValue().getCopyInstance();
+            EdgeComponent edge = new EdgeComponent(origin, terminus, paintable, paintable.arrowheadPaintable);
+            edge.setDirected(selectedOption.get().getValue().isDirected());
+            return Optional.of(edge);
         }
 
         private static final int POPUP_WIDTH = 50;

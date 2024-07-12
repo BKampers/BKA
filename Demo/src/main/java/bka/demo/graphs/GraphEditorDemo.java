@@ -221,12 +221,12 @@ public class GraphEditorDemo extends JFrame {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-        SelectNimbusLookAndFeel();
+        selectNimbusLookAndFeel();
         /* Create and display the form */
         EventQueue.invokeLater(() -> new GraphEditorDemo().setVisible(true));
     }
 
-    private static void SelectNimbusLookAndFeel() {
+    private static void selectNimbusLookAndFeel() {
         try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {

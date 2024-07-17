@@ -276,24 +276,26 @@ public class GraphEditorDemo extends JFrame {
         iconPaintable.getPaintKeys().stream()
             .filter(key -> !key.equals(paintKey))
             .forEach(key -> iconPaintable.setPaint(key, TRANSPARENT));
-        iconPaintable.getStrokeKeys().stream().forEach(key -> iconPaintable.setStroke(key, SOLID_STROKE));
+        iconPaintable.getStrokeKeys().forEach(key -> iconPaintable.setStroke(key, SOLID_STROKE));
         paintItem.setIcon(createIcon(iconPaintable));
         paintItem.addActionListener(event -> pickColor(location, paintable, paintKey, onApply));
         return paintItem;
     }
 
     private void addStrokesMenus(Factory factory, JPopupMenu menu, BiConsumer<Object, Stroke> onApply) {
-        factory.getDefaultInstance().getStrokeKeys().forEach(strokeKey -> menu.add(createStrokesMenu(factory, strokeKey, onApply)));
+        factory.getDefaultInstance().getStrokeKeys().forEach(strokeKey -> createStrokesMenu(factory, strokeKey, menu, onApply));
     }
 
-    private JMenu createStrokesMenu(Factory factory, Object strokeKey, BiConsumer<Object, Stroke> onApply) {
+    private void createStrokesMenu(Factory factory, Object strokeKey, JPopupMenu popupMenu, BiConsumer<Object, Stroke> onApply) {
         JMenu strokesMenu = new JMenu(getBundleText(strokeKey.toString()));
         Paintable iconPaintable = factory.getCopyInstance();
-        iconPaintable.setPaint(VertexPaintable.BORDER_PAINT_KEY, Color.BLACK);
-        iconPaintable.setPaint(VertexPaintable.FILL_PAINT_KEY, TRANSPARENT);
+        modifyPaint(VertexPaintable.BORDER_PAINT_KEY, iconPaintable, Color.BLACK);
+        modifyPaint(EdgeComponent.LINE_PAINT_KEY, iconPaintable, Color.BLACK);
+        modifyPaint(VertexPaintable.FILL_PAINT_KEY, iconPaintable, TRANSPARENT);
+        modifyPaint(EdgeComponent.ARROWHEAD_PAINT_KEY, iconPaintable, TRANSPARENT);
         strokesMenu.setIcon(createIcon(iconPaintable));
         strokes().forEach(stroke -> strokesMenu.add(createSrokeItem(factory, strokeKey, stroke, onApply)));
-        return strokesMenu;
+        popupMenu.add(strokesMenu);
     }
 
     private static List<Stroke> strokes() {
@@ -312,19 +314,32 @@ public class GraphEditorDemo extends JFrame {
 
     private JMenuItem createSrokeItem(Factory factory, Object strokeKey, Stroke stroke, BiConsumer<Object, Stroke> onApply) {
         Paintable strokePaintable = factory.getCopyInstance();
-        strokePaintable.setPaint(VertexPaintable.BORDER_PAINT_KEY, Color.BLACK);
-        strokePaintable.setPaint(VertexPaintable.FILL_PAINT_KEY, TRANSPARENT);
-        strokePaintable.setStroke(VertexPaintable.BORDER_STROKE_KEY, stroke);
+        modifyPaint(VertexPaintable.BORDER_PAINT_KEY, strokePaintable, Color.BLACK);
+        modifyPaint(EdgeComponent.LINE_PAINT_KEY, strokePaintable, Color.BLACK);
+        modifyPaint(VertexPaintable.FILL_PAINT_KEY, strokePaintable, TRANSPARENT);
+        modifyPaint(EdgeComponent.ARROWHEAD_PAINT_KEY, strokePaintable, TRANSPARENT);
+        modifyStroke(VertexPaintable.BORDER_STROKE_KEY, strokePaintable, stroke);
+        modifyStroke(EdgeComponent.LINE_STROKE_KEY, strokePaintable, stroke);
         JMenuItem strokeItem = new JMenuItem();
         strokeItem.setIcon(createIcon(strokePaintable));
         strokeItem.addActionListener(event -> onApply.accept(strokeKey, stroke));
         return strokeItem;
     }
 
+    private static void modifyPaint(Object key, Paintable paintable, Paint paint) {
+        if (paintable.getPaintKeys().contains(key)) {
+            paintable.setPaint(key, paint);
+        }
+    }
+
+    private static void modifyStroke(Object key, Paintable paintable, Stroke stroke) {
+        if (paintable.getStrokeKeys().contains(key)) {
+            paintable.setStroke(key, stroke);
+        }
+    }
+
     private void addPaintsMenus(VertexFactory factory, JPopupMenu menu, Point location, BiConsumer<Object, Color> onApply) {
-        factory.getDefaultInstance().getPaintKeys().forEach(paintKey -> {
-            menu.add(createPaintItem(factory, paintKey, factory.getDefaultInstance(), location, onApply));
-        });
+        factory.getDefaultInstance().getPaintKeys().forEach(paintKey -> menu.add(createPaintItem(factory, paintKey, factory.getDefaultInstance(), location, onApply)));
     }
 
     private void pickColor(Point location, Paintable paintable, Object key, BiConsumer<Object, Color> onApply) {
@@ -344,6 +359,16 @@ public class GraphEditorDemo extends JFrame {
         return BUNDLE.getString(key);
     }
 
+    private Factory createFactory(GraphComponent component) {
+        if (component instanceof VertexComponent) {
+            return createVertexFactory((VertexComponent) component);
+        }
+        if (component instanceof EdgeComponent) {
+            return createEdgeFactory((EdgeComponent) component);
+        }
+        throw new IllegalArgumentException();
+    }
+
     private VertexFactory createVertexFactory(VertexComponent component) {
         Paintable paintable = component.getPaintable();
         if (paintable instanceof RoundVertexPaintable) {
@@ -353,6 +378,10 @@ public class GraphEditorDemo extends JFrame {
             return new VertexFactory(SquareVertexPaintable::new, paintable);
         }
         throw new IllegalStateException("Unsupported component");
+    }
+
+    private EdgeFactory createEdgeFactory(EdgeComponent component) {
+        return new EdgeFactory(component);
     }
 
     private <K, V> Map<K, V> toMap(Collection<K> keys, Function<K, V> getter) {
@@ -435,6 +464,12 @@ public class GraphEditorDemo extends JFrame {
         public EdgeFactory(boolean directed) {
             defaultInstance = new EdgePaintable(() -> left, () -> right, directed);
         }
+
+        public EdgeFactory(EdgeComponent component) {
+            this(component.isDirected());
+            copy(component.getPaintable(), defaultInstance);
+            copy(component.getArrowheadPaintable(), defaultInstance.arrowheadPaintable);
+        }
         
         @Override
         public EdgePaintable getDefaultInstance() {
@@ -445,7 +480,7 @@ public class GraphEditorDemo extends JFrame {
         public EdgePaintable getCopyInstance() {
             EdgePaintable copyInstance = new EdgePaintable(() -> left, () -> right, defaultInstance.isDirected());
             copy(defaultInstance, copyInstance);
-            copy(defaultInstance.arrowheadPaintable, copyInstance);
+            copy(defaultInstance.arrowheadPaintable, copyInstance.arrowheadPaintable);
             return copyInstance;
         }
 
@@ -480,7 +515,7 @@ public class GraphEditorDemo extends JFrame {
         
         @Override
         public void paint(Graphics2D graphics) {
-            paintLine(graphics, getPaint(EdgeComponent.LINE_PAINT_KEY), SOLID_STROKE);
+            paintLine(graphics, getPaint(EdgeComponent.LINE_PAINT_KEY), getStroke(EdgeComponent.LINE_STROKE_KEY));
             if (directed) {
                 arrowheadPaintable.paint(graphics);
             }
@@ -509,14 +544,9 @@ public class GraphEditorDemo extends JFrame {
             }
             return List.of(EdgeComponent.LINE_PAINT_KEY);
         }
-        
+
         @Override
-        public Collection<Object> getStrokeKeys() {
-            return List.of();
-        }
-        
-        @Override
-        public void setPaint(Object key, Paint paint) {
+        public final void setPaint(Object key, Paint paint) {
             if (EdgeComponent.ARROWHEAD_PAINT_KEY.equals(key)) {
                 arrowheadPaintable.setPaint(key, paint);
             }
@@ -679,11 +709,20 @@ public class GraphEditorDemo extends JFrame {
                 menu.add(revertMenuItem);
             }
             addPaintMenus(edge, location, menu);
+            addStrokeMenus(edge, location, menu);
             menu.show(graphPanel, location.x, location.y);
         }
 
         private void addPaintMenus(GraphComponent component, Point location, JPopupMenu menu) {
             component.getCustomizablePaintables().forEach(paintable -> addColorMenuItems(paintable, location, menu, (key, newPaint) -> getCanvas().changePaint(paintable, key, newPaint)));
+        }
+
+        private void addStrokeMenus(GraphComponent component, Point location, JPopupMenu menu) {
+            component.getCustomizablePaintables().forEach(paintable -> {
+                if (!(paintable instanceof ArrowheadPaintable)) {
+                    addStrokesMenus(createFactory(component), menu, (key, newStroke) -> getCanvas().changeStroke(paintable, key, newStroke));
+                }
+            });
         }
 
         @Override

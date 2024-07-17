@@ -18,6 +18,8 @@ public abstract class GraphComponent implements Renderer {
 
     public abstract void move(Point vector);
 
+    public abstract Paintable getPaintable();
+
     public abstract Supplier<Point> distancePositioner(Point point);
 
     public Collection<Paintable> getCustomizablePaintables() {

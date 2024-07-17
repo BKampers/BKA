@@ -157,10 +157,6 @@ public class EdgeComponent extends GraphComponent {
         getLabels().forEach(label -> label.paint(graphics));
     }
 
-    private int arrowHeadLineIndex() {
-        return points.size() / 2;
-    }
-
     @Override
     public void paintHighlight(Graphics2D graphics, Color color, Stroke stroke) {
         polygonPaintable.paint(graphics, color, stroke);
@@ -303,6 +299,19 @@ public class EdgeComponent extends GraphComponent {
             return List.of(polygonPaintable, arrowheadPaintable);
         }
         return List.of(polygonPaintable);
+    }
+
+    @Override
+    public Paintable getPaintable() {
+        return polygonPaintable;
+    }
+
+    public Paintable getArrowheadPaintable() {
+        return arrowheadPaintable;
+    }
+
+    private int arrowHeadLineIndex() {
+        return points.size() / 2;
     }
 
 

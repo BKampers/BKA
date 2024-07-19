@@ -26,8 +26,8 @@ public class ArrowheadPaintable extends Paintable {
     public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
         Point lineStart = startPoint.get();
         Point lineEnd = endPoint.get();
-        double angle = arrowheadRotation(lineStart, lineEnd);
-        Point location = arrowheadLocation(lineStart, lineEnd);
+        double angle = rotation(lineStart, lineEnd);
+        Point location = location(lineStart, lineEnd);
         graphics.translate(location.x, location.y);
         graphics.rotate(angle);
         graphics.setPaint(paint);
@@ -43,7 +43,7 @@ public class ArrowheadPaintable extends Paintable {
      * @return angle to rotate an arrowhead that is pointing from left to right, 
      *         so that it points from the start point to the end point
      */
-    private double arrowheadRotation(Point start, Point end) {
+    private double rotation(Point start, Point end) {
         double angle = Math.atan(CanvasUtil.slope(start, end));
         if (end.x < start.x) {
             return angle + Math.PI;
@@ -51,7 +51,7 @@ public class ArrowheadPaintable extends Paintable {
         return angle;
     }
 
-    private Point arrowheadLocation(Point start, Point end) {
+    private Point location(Point start, Point end) {
         return coordinateOnLine(start, end, 0.5f);
     }
 

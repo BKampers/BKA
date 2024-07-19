@@ -71,12 +71,13 @@ public class EdgeComponent extends GraphComponent {
     
 
     public EdgeComponent(VertexComponent start, VertexComponent end, Paintable polygonPaintable, Paintable arrowheadPaintable) {
+        this.start = Objects.requireNonNull(start);
+        setEnd(end);
+        this.polygonPaintable = PolygonPaintable.create(i -> getPoint(i), () -> points.size() + ENDPOINT_COUNT);
         this.polygonPaintable.setPaint(LINE_PAINT_KEY, polygonPaintable.getPaint(LINE_PAINT_KEY));
         this.polygonPaintable.setStroke(LINE_STROKE_KEY, polygonPaintable.getStroke(LINE_STROKE_KEY));
         this.arrowheadPaintable.setPaint(ARROWHEAD_PAINT_KEY, arrowheadPaintable.getPaint(ARROWHEAD_PAINT_KEY));
         this.arrowheadPaintable.setStroke(ARROWHEAD_STROKE_KEY, arrowheadPaintable.getStroke(ARROWHEAD_STROKE_KEY));
-        this.start = Objects.requireNonNull(start);
-        setEnd(end);
     }
 
     public final void setEnd(VertexComponent end) {
@@ -315,36 +316,7 @@ public class EdgeComponent extends GraphComponent {
     }
 
 
-    private final Paintable polygonPaintable = new Paintable() {
-
-        @Override
-        public void paint(Graphics2D graphics) {
-            paint(graphics, getPaint(LINE_PAINT_KEY), getStroke(LINE_STROKE_KEY));
-        }
-
-        @Override
-        public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
-            int count = points.size() + ENDPOINT_COUNT;
-            int[] x = new int[count];
-            int[] y = new int[count];
-            Point startPoint = getStartConnectorPoint();
-            x[0] = startPoint.x;
-            y[0] = startPoint.y;
-            int i = 1;
-            for (Point point : points) {
-                x[i] = point.x;
-                y[i] = point.y;
-                ++i;
-            }
-            Point endPoint = getEndConnectorPoint();
-            x[count - 1] = endPoint.x;
-            y[count - 1] = endPoint.y;
-            graphics.setPaint(paint);
-            graphics.setStroke(stroke);
-            graphics.drawPolyline(x, y, count);
-        }
-
-    };
+    private final Paintable polygonPaintable;
 
 
     private final Paintable arrowheadPaintable = new ArrowheadPaintable(() -> getPoint(arrowHeadLineIndex()), () -> getPoint(arrowHeadLineIndex() + 1));

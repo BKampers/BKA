@@ -463,6 +463,10 @@ public class GraphEditorDemo extends JFrame {
 
         public EdgeFactory(boolean directed) {
             defaultInstance = new EdgePaintable(() -> left, () -> right, directed);
+            defaultInstance.polygonPaintable.setPaint(EdgeComponent.LINE_PAINT_KEY, Color.BLACK);
+            defaultInstance.polygonPaintable.setStroke(EdgeComponent.LINE_STROKE_KEY, SOLID_STROKE);
+            defaultInstance.arrowheadPaintable.setPaint(EdgeComponent.ARROWHEAD_PAINT_KEY, Color.BLACK);
+            defaultInstance.arrowheadPaintable.setStroke(EdgeComponent.ARROWHEAD_STROKE_KEY, SOLID_STROKE);
         }
 
         public EdgeFactory(EdgeComponent component) {
@@ -479,7 +483,7 @@ public class GraphEditorDemo extends JFrame {
         @Override
         public EdgePaintable getCopyInstance() {
             EdgePaintable copyInstance = new EdgePaintable(() -> left, () -> right, defaultInstance.isDirected());
-            copy(defaultInstance, copyInstance);
+            copy(defaultInstance.polygonPaintable, copyInstance.polygonPaintable);
             copy(defaultInstance.arrowheadPaintable, copyInstance.arrowheadPaintable);
             return copyInstance;
         }
@@ -503,19 +507,14 @@ public class GraphEditorDemo extends JFrame {
     private class EdgePaintable extends Paintable {
 
         public EdgePaintable(Supplier<Point> start, Supplier<Point> end, boolean directed) {
-            this.start = Objects.requireNonNull(start);
-            this.end = Objects.requireNonNull(end);
             this.directed = directed;
-            this.arrowheadPaintable = new ArrowheadPaintable(start, end);
-            setPaint(EdgeComponent.LINE_PAINT_KEY, Color.BLACK);
-            setStroke(EdgeComponent.LINE_STROKE_KEY, SOLID_STROKE);
-            arrowheadPaintable.setPaint(EdgeComponent.ARROWHEAD_PAINT_KEY, Color.BLACK);
-            arrowheadPaintable.setStroke(EdgeComponent.ARROWHEAD_STROKE_KEY, SOLID_STROKE);
+            polygonPaintable = PolygonPaintable.create(List.of(start.get(), end.get()));
+            arrowheadPaintable = new ArrowheadPaintable(start, end);
         }
         
         @Override
         public void paint(Graphics2D graphics) {
-            paintLine(graphics, getPaint(EdgeComponent.LINE_PAINT_KEY), getStroke(EdgeComponent.LINE_STROKE_KEY));
+            polygonPaintable.paint(graphics);
             if (directed) {
                 arrowheadPaintable.paint(graphics);
             }
@@ -523,20 +522,12 @@ public class GraphEditorDemo extends JFrame {
         
         @Override
         public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
-            paintLine(graphics, paint, stroke);
+            polygonPaintable.paint(graphics, paint, stroke);
             if (directed) {
                 arrowheadPaintable.paint(graphics, paint, stroke);
             }
         }
 
-        private void paintLine(Graphics2D graphics, Paint paint, Stroke stroke) {
-            graphics.setPaint(paint);
-            graphics.setStroke(stroke);
-            Point startPoint = start.get();
-            Point endPoint = end.get();
-            graphics.drawLine(startPoint.x, startPoint.y, endPoint.x, endPoint.y);
-        }
-        
         @Override
         public Collection<Object> getPaintKeys() {
             if (directed) {
@@ -546,12 +537,27 @@ public class GraphEditorDemo extends JFrame {
         }
 
         @Override
+        public Collection<Object> getStrokeKeys() {
+            return List.of(EdgeComponent.LINE_STROKE_KEY);
+        }
+
+        @Override
         public final void setPaint(Object key, Paint paint) {
             if (EdgeComponent.ARROWHEAD_PAINT_KEY.equals(key)) {
                 arrowheadPaintable.setPaint(key, paint);
             }
             else {
-                super.setPaint(key, paint);
+                polygonPaintable.setPaint(key, paint);
+            }
+        }
+        
+        @Override
+        public final void setStroke(Object key, Stroke stroke) {
+            if (EdgeComponent.ARROWHEAD_STROKE_KEY.equals(key)) {
+                arrowheadPaintable.setStroke(key, stroke);
+            }
+            else {
+                polygonPaintable.setStroke(key, stroke);
             }
         }
         
@@ -559,8 +565,7 @@ public class GraphEditorDemo extends JFrame {
             return directed;
         }
         
-        private final Supplier<Point> start;
-        private final Supplier<Point> end;
+        private final PolygonPaintable polygonPaintable;
         private final ArrowheadPaintable arrowheadPaintable;
         private final boolean directed;
         
@@ -709,7 +714,7 @@ public class GraphEditorDemo extends JFrame {
                 menu.add(revertMenuItem);
             }
             addPaintMenus(edge, location, menu);
-            addStrokeMenus(edge, location, menu);
+            addStrokeMenus(edge, menu);
             menu.show(graphPanel, location.x, location.y);
         }
 
@@ -717,7 +722,7 @@ public class GraphEditorDemo extends JFrame {
             component.getCustomizablePaintables().forEach(paintable -> addColorMenuItems(paintable, location, menu, (key, newPaint) -> getCanvas().changePaint(paintable, key, newPaint)));
         }
 
-        private void addStrokeMenus(GraphComponent component, Point location, JPopupMenu menu) {
+        private void addStrokeMenus(GraphComponent component, JPopupMenu menu) {
             component.getCustomizablePaintables().forEach(paintable -> {
                 if (!(paintable instanceof ArrowheadPaintable)) {
                     addStrokesMenus(createFactory(component), menu, (key, newStroke) -> getCanvas().changeStroke(paintable, key, newStroke));
@@ -769,7 +774,7 @@ public class GraphEditorDemo extends JFrame {
                 return Optional.empty();
             }
             EdgePaintable paintable = selectedOption.get().getValue().getCopyInstance();
-            EdgeComponent edge = new EdgeComponent(origin, terminus, paintable, paintable.arrowheadPaintable);
+            EdgeComponent edge = new EdgeComponent(origin, terminus, paintable.polygonPaintable, paintable.arrowheadPaintable);
             edge.setDirected(selectedOption.get().getValue().isDirected());
             return Optional.of(edge);
         }

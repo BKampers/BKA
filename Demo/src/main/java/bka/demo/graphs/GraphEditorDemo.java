@@ -290,9 +290,9 @@ public class GraphEditorDemo extends JFrame {
         JMenu strokesMenu = new JMenu(getBundleText(strokeKey.toString()));
         Paintable iconPaintable = factory.getCopyInstance();
         modifyPaint(VertexPaintable.BORDER_PAINT_KEY, iconPaintable, Color.BLACK);
-        modifyPaint(EdgeComponent.LINE_PAINT_KEY, iconPaintable, Color.BLACK);
+        modifyPaint(PolygonPaintable.LINE_PAINT_KEY, iconPaintable, Color.BLACK);
         modifyPaint(VertexPaintable.FILL_PAINT_KEY, iconPaintable, TRANSPARENT);
-        modifyPaint(EdgeComponent.ARROWHEAD_PAINT_KEY, iconPaintable, TRANSPARENT);
+        modifyPaint(ArrowheadPaintable.ARROWHEAD_PAINT_KEY, iconPaintable, TRANSPARENT);
         strokesMenu.setIcon(createIcon(iconPaintable));
         strokes().forEach(stroke -> strokesMenu.add(createSrokeItem(factory, strokeKey, stroke, onApply)));
         popupMenu.add(strokesMenu);
@@ -315,11 +315,11 @@ public class GraphEditorDemo extends JFrame {
     private JMenuItem createSrokeItem(Factory factory, Object strokeKey, Stroke stroke, BiConsumer<Object, Stroke> onApply) {
         Paintable strokePaintable = factory.getCopyInstance();
         modifyPaint(VertexPaintable.BORDER_PAINT_KEY, strokePaintable, Color.BLACK);
-        modifyPaint(EdgeComponent.LINE_PAINT_KEY, strokePaintable, Color.BLACK);
+        modifyPaint(PolygonPaintable.LINE_PAINT_KEY, strokePaintable, Color.BLACK);
         modifyPaint(VertexPaintable.FILL_PAINT_KEY, strokePaintable, TRANSPARENT);
-        modifyPaint(EdgeComponent.ARROWHEAD_PAINT_KEY, strokePaintable, TRANSPARENT);
+        modifyPaint(ArrowheadPaintable.ARROWHEAD_PAINT_KEY, strokePaintable, TRANSPARENT);
         modifyStroke(VertexPaintable.BORDER_STROKE_KEY, strokePaintable, stroke);
-        modifyStroke(EdgeComponent.LINE_STROKE_KEY, strokePaintable, stroke);
+        modifyStroke(PolygonPaintable.LINE_STROKE_KEY, strokePaintable, stroke);
         JMenuItem strokeItem = new JMenuItem();
         strokeItem.setIcon(createIcon(strokePaintable));
         strokeItem.addActionListener(event -> onApply.accept(strokeKey, stroke));
@@ -463,10 +463,10 @@ public class GraphEditorDemo extends JFrame {
 
         public EdgeFactory(boolean directed) {
             defaultInstance = new EdgePaintable(() -> left, () -> right, directed);
-            defaultInstance.polygonPaintable.setPaint(EdgeComponent.LINE_PAINT_KEY, Color.BLACK);
-            defaultInstance.polygonPaintable.setStroke(EdgeComponent.LINE_STROKE_KEY, SOLID_STROKE);
-            defaultInstance.arrowheadPaintable.setPaint(EdgeComponent.ARROWHEAD_PAINT_KEY, Color.BLACK);
-            defaultInstance.arrowheadPaintable.setStroke(EdgeComponent.ARROWHEAD_STROKE_KEY, SOLID_STROKE);
+            defaultInstance.polygonPaintable.setPaint(PolygonPaintable.LINE_PAINT_KEY, Color.BLACK);
+            defaultInstance.polygonPaintable.setStroke(PolygonPaintable.LINE_STROKE_KEY, SOLID_STROKE);
+            defaultInstance.arrowheadPaintable.setPaint(ArrowheadPaintable.ARROWHEAD_PAINT_KEY, Color.BLACK);
+            defaultInstance.arrowheadPaintable.setStroke(ArrowheadPaintable.ARROWHEAD_STROKE_KEY, SOLID_STROKE);
         }
 
         public EdgeFactory(EdgeComponent component) {
@@ -531,33 +531,39 @@ public class GraphEditorDemo extends JFrame {
         @Override
         public Collection<Object> getPaintKeys() {
             if (directed) {
-                return List.of(EdgeComponent.LINE_PAINT_KEY, EdgeComponent.ARROWHEAD_PAINT_KEY);
+                return List.of(PolygonPaintable.LINE_PAINT_KEY, ArrowheadPaintable.ARROWHEAD_PAINT_KEY);
             }
-            return List.of(EdgeComponent.LINE_PAINT_KEY);
+            return List.of(PolygonPaintable.LINE_PAINT_KEY);
         }
 
         @Override
         public Collection<Object> getStrokeKeys() {
-            return List.of(EdgeComponent.LINE_STROKE_KEY);
+            return List.of(PolygonPaintable.LINE_STROKE_KEY);
         }
 
         @Override
         public final void setPaint(Object key, Paint paint) {
-            if (EdgeComponent.ARROWHEAD_PAINT_KEY.equals(key)) {
+            if (polygonPaintable.getPaintKeys().contains(key)) {
+                polygonPaintable.setPaint(key, paint);
+            }
+            else if (arrowheadPaintable.getPaintKeys().contains(key)) {
                 arrowheadPaintable.setPaint(key, paint);
             }
             else {
-                polygonPaintable.setPaint(key, paint);
+                throw new IllegalArgumentException(key.toString());
             }
         }
         
         @Override
         public final void setStroke(Object key, Stroke stroke) {
-            if (EdgeComponent.ARROWHEAD_STROKE_KEY.equals(key)) {
+            if (polygonPaintable.getStrokeKeys().contains(key)) {
+                polygonPaintable.setStroke(key, stroke);
+            }
+            else if (arrowheadPaintable.getStrokeKeys().contains(key)) {
                 arrowheadPaintable.setStroke(key, stroke);
             }
             else {
-                polygonPaintable.setStroke(key, stroke);
+                throw new IllegalArgumentException(key.toString());
             }
         }
         

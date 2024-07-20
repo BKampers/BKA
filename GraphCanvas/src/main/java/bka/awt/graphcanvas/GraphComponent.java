@@ -7,7 +7,6 @@
 package bka.awt.graphcanvas;
 
 import bka.awt.*;
-import bka.awt.graphcanvas.Label;
 import java.awt.*;
 import java.util.*;
 import java.util.function.*;

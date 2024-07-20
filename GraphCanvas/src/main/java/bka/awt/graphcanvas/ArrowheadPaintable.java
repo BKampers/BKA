@@ -12,6 +12,10 @@ import java.util.function.*;
 
 public class ArrowheadPaintable extends Paintable {
     
+    public static final Object ARROWHEAD_PAINT_KEY = "ArrowheadPaint";
+    public static final Object ARROWHEAD_STROKE_KEY = "ArrowheadStroke";
+
+    
     public ArrowheadPaintable(Supplier<Point> startPoint, Supplier<Point> endPoint) {
         this.startPoint = Objects.requireNonNull(startPoint);
         this.endPoint = Objects.requireNonNull(endPoint);
@@ -19,7 +23,7 @@ public class ArrowheadPaintable extends Paintable {
 
     @Override
     public void paint(Graphics2D graphics) {
-        paint(graphics, getPaint(EdgeComponent.ARROWHEAD_PAINT_KEY), getStroke(EdgeComponent.ARROWHEAD_STROKE_KEY));
+        paint(graphics, getPaint(ARROWHEAD_PAINT_KEY), getStroke(ARROWHEAD_STROKE_KEY));
     }
 
     @Override

@@ -6,8 +6,6 @@
 */
 package bka.awt.graphcanvas;
 
-import static bka.awt.graphcanvas.EdgeComponent.LINE_PAINT_KEY;
-import static bka.awt.graphcanvas.EdgeComponent.LINE_STROKE_KEY;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
@@ -16,6 +14,9 @@ import java.util.stream.*;
 
 
 public class PolygonPaintable extends Paintable {
+
+    public static final Object LINE_PAINT_KEY = "LinePaint";
+    public static final Object LINE_STROKE_KEY = "LineStroke";
 
     public PolygonPaintable(Supplier<int[]> xPoints, Supplier<int[]> yPoints, IntSupplier nPoints) {
         this.xPoints = Objects.requireNonNull(xPoints);

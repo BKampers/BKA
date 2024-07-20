@@ -6,8 +6,6 @@
 */
 package bka.awt.graphcanvas;
 
-import bka.awt.graphcanvas.Label;
-import bka.awt.graphcanvas.Vector;
 import java.awt.*;
 import java.util.List;
 import java.util.*;
@@ -16,11 +14,6 @@ import java.util.stream.*;
 
 
 public class EdgeComponent extends GraphComponent {
-
-    public static final Object LINE_PAINT_KEY = "LinePaint";
-    public static final Object LINE_STROKE_KEY = "LineStroke";
-    public static final Object ARROWHEAD_PAINT_KEY = "ArrowheadPaint";
-    public static final Object ARROWHEAD_STROKE_KEY = "ArrowheadStroke";
 
     public class Excerpt {
 
@@ -74,10 +67,10 @@ public class EdgeComponent extends GraphComponent {
         this.start = Objects.requireNonNull(start);
         setEnd(end);
         this.polygonPaintable = PolygonPaintable.create(i -> getPoint(i), () -> points.size() + ENDPOINT_COUNT);
-        this.polygonPaintable.setPaint(LINE_PAINT_KEY, polygonPaintable.getPaint(LINE_PAINT_KEY));
-        this.polygonPaintable.setStroke(LINE_STROKE_KEY, polygonPaintable.getStroke(LINE_STROKE_KEY));
-        this.arrowheadPaintable.setPaint(ARROWHEAD_PAINT_KEY, arrowheadPaintable.getPaint(ARROWHEAD_PAINT_KEY));
-        this.arrowheadPaintable.setStroke(ARROWHEAD_STROKE_KEY, arrowheadPaintable.getStroke(ARROWHEAD_STROKE_KEY));
+        this.polygonPaintable.setPaint(PolygonPaintable.LINE_PAINT_KEY, polygonPaintable.getPaint(PolygonPaintable.LINE_PAINT_KEY));
+        this.polygonPaintable.setStroke(PolygonPaintable.LINE_STROKE_KEY, polygonPaintable.getStroke(PolygonPaintable.LINE_STROKE_KEY));
+        this.arrowheadPaintable.setPaint(ArrowheadPaintable.ARROWHEAD_PAINT_KEY, arrowheadPaintable.getPaint(ArrowheadPaintable.ARROWHEAD_PAINT_KEY));
+        this.arrowheadPaintable.setStroke(ArrowheadPaintable.ARROWHEAD_STROKE_KEY, arrowheadPaintable.getStroke(ArrowheadPaintable.ARROWHEAD_STROKE_KEY));
     }
 
     public final void setEnd(VertexComponent end) {

@@ -497,7 +497,8 @@ public class GraphEditorDemo extends JFrame {
         private final Point left = new Point(-8, 0);
         private final Point right = new Point(8, 0);
     }
-    
+
+
     private interface Factory {
         Paintable getDefaultInstance();
         Paintable getCopyInstance();
@@ -578,13 +579,14 @@ public class GraphEditorDemo extends JFrame {
     };
         
 
-    private class GraphPanel extends javax.swing.JPanel {
+    private class GraphPanel extends JPanel {
 
         @Override
         public void paint(Graphics graphics) {
             super.paint(graphics);
             canvas.paint((Graphics2D) graphics);
         }
+
     }
 
 

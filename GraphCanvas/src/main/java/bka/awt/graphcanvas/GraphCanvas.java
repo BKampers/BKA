@@ -338,5 +338,4 @@ public class GraphCanvas extends CompositeRenderer {
     private static final Color LABEL_HIGHLIGHT_COLOR = new Color(0x7f6699ff, true);
     private static final Stroke HIGHLIGHT_STROKE = new BasicStroke(4f);
 
-
 }

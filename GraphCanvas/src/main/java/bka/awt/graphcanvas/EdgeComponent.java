@@ -6,6 +6,8 @@
 */
 package bka.awt.graphcanvas;
 
+import bka.awt.graphcanvas.Label;
+import bka.awt.graphcanvas.Vector;
 import java.awt.*;
 import java.util.List;
 import java.util.*;
@@ -14,54 +16,6 @@ import java.util.stream.*;
 
 
 public class EdgeComponent extends GraphComponent {
-
-    public class Excerpt {
-
-        private Excerpt() {
-            edgePoints = Collections.unmodifiableList(CanvasUtil.deepCopy(points));
-            labelIndices = collectLabelIndices();
-        }
-
-        private Map<Label, Integer> collectLabelIndices() {
-            if (getLabels().isEmpty()) {
-                return Collections.emptyMap();
-            }
-            return Collections.unmodifiableMap(getLabels().stream().collect(Collectors.toMap(
-                Function.identity(),
-                label -> ((DistanceToLinePositioner) label.getPositioner()).getIndex())));
-        }
-
-        public void set(Excerpt excerpt) {
-            edgePoints = excerpt.edgePoints;
-            labelIndices = excerpt.labelIndices;
-        }
-
-        public List<Point> getPoints() {
-            return edgePoints;
-        }
-
-        public Map<Label, Integer> getLabelIndices() {
-            return labelIndices;
-        }
-
-        @Override
-        public boolean equals(Object object) {
-            if (!(object instanceof Excerpt)) {
-                return false;
-            }
-            Excerpt excerpt = (Excerpt) object;
-            return edgePoints.equals(excerpt.edgePoints) && labelIndices.equals(excerpt.labelIndices);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(edgePoints, labelIndices);
-        }
-
-        private List<Point> edgePoints;
-        private Map<Label, Integer> labelIndices;
-    }
-    
 
     public EdgeComponent(VertexComponent start, VertexComponent end, Paintable polygonPaintable, Paintable arrowheadPaintable) {
         this.start = Objects.requireNonNull(start);
@@ -309,9 +263,55 @@ public class EdgeComponent extends GraphComponent {
     }
 
 
+    public class Excerpt {
+
+        private Excerpt() {
+            edgePoints = Collections.unmodifiableList(CanvasUtil.deepCopy(points));
+            labelIndices = collectLabelIndices();
+        }
+
+        private Map<Label, Integer> collectLabelIndices() {
+            if (getLabels().isEmpty()) {
+                return Collections.emptyMap();
+            }
+            return Collections.unmodifiableMap(getLabels().stream().collect(Collectors.toMap(
+                Function.identity(),
+                label -> ((DistanceToLinePositioner) label.getPositioner()).getIndex())));
+        }
+
+        public void set(Excerpt excerpt) {
+            edgePoints = excerpt.edgePoints;
+            labelIndices = excerpt.labelIndices;
+        }
+
+        public List<Point> getPoints() {
+            return Collections.unmodifiableList(edgePoints);
+        }
+
+        private Map<Label, Integer> getLabelIndices() {
+            return labelIndices;
+        }
+
+        @Override
+        public boolean equals(Object object) {
+            if (!(object instanceof Excerpt)) {
+                return false;
+            }
+            Excerpt excerpt = (Excerpt) object;
+            return edgePoints.equals(excerpt.edgePoints) && labelIndices.equals(excerpt.labelIndices);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(edgePoints, labelIndices);
+        }
+
+        private List<Point> edgePoints;
+        private Map<Label, Integer> labelIndices;
+    }
+
+
     private final Paintable polygonPaintable;
-
-
     private final Paintable arrowheadPaintable = new ArrowheadPaintable(() -> getPoint(arrowHeadLineIndex()), () -> getPoint(arrowHeadLineIndex() + 1));
 
     private final List<Point> points = new ArrayList<>();

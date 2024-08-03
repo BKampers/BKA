@@ -6,8 +6,6 @@
 */
 package bka.awt.graphcanvas;
 
-import bka.awt.graphcanvas.Label;
-import bka.awt.graphcanvas.Vector;
 import java.awt.*;
 import java.util.List;
 import java.util.*;
@@ -17,14 +15,21 @@ import java.util.stream.*;
 
 public class EdgeComponent extends GraphComponent {
 
-    public EdgeComponent(VertexComponent start, VertexComponent end, Paintable polygonPaintable, Paintable arrowheadPaintable) {
+    public EdgeComponent(VertexComponent start, VertexComponent end, Paintable polygonPaintable, BiFunction<Supplier<Point>, Supplier<Point>, EdgeDecorationPaintable> decorationPaintable) {
         this.start = Objects.requireNonNull(start);
         setEnd(end);
         this.polygonPaintable = PolygonPaintable.create(i -> getPoint(i), () -> points.size() + ENDPOINT_COUNT);
         this.polygonPaintable.setPaint(PolygonPaintable.LINE_PAINT_KEY, polygonPaintable.getPaint(PolygonPaintable.LINE_PAINT_KEY));
         this.polygonPaintable.setStroke(PolygonPaintable.LINE_STROKE_KEY, polygonPaintable.getStroke(PolygonPaintable.LINE_STROKE_KEY));
-        this.arrowheadPaintable.setPaint(ArrowheadPaintable.ARROWHEAD_PAINT_KEY, arrowheadPaintable.getPaint(ArrowheadPaintable.ARROWHEAD_PAINT_KEY));
-        this.arrowheadPaintable.setStroke(ArrowheadPaintable.ARROWHEAD_STROKE_KEY, arrowheadPaintable.getStroke(ArrowheadPaintable.ARROWHEAD_STROKE_KEY));
+        this.decorationPaintable = Objects.requireNonNull(decorationPaintable.apply(decorationLeftPoint(), decorationRightPoint()));
+    }
+
+    private Supplier<Point> decorationLeftPoint() {
+        return () -> getPoint(decorationLineIndex());
+    }
+
+    private Supplier<Point> decorationRightPoint() {
+        return () -> getPoint(decorationLineIndex() + 1);
     }
 
     public final void setEnd(VertexComponent end) {
@@ -100,7 +105,7 @@ public class EdgeComponent extends GraphComponent {
     public void paint(Graphics2D graphics) {
         polygonPaintable.paint(graphics);
         if (directed) {
-            arrowheadPaintable.paint(graphics);
+            decorationPaintable.paint(graphics);
         }
         getLabels().forEach(label -> label.paint(graphics));
     }
@@ -109,7 +114,7 @@ public class EdgeComponent extends GraphComponent {
     public void paintHighlight(Graphics2D graphics, Color color, Stroke stroke) {
         polygonPaintable.paint(graphics, color, stroke);
         if (directed) {
-            arrowheadPaintable.paint(graphics, color, stroke);
+            decorationPaintable.paint(graphics, color, stroke);
         }
     }
 
@@ -244,7 +249,7 @@ public class EdgeComponent extends GraphComponent {
     @Override
     public Collection<Paintable> getCustomizablePaintables() {
         if (directed) {
-            return List.of(polygonPaintable, arrowheadPaintable);
+            return List.of(polygonPaintable, decorationPaintable);
         }
         return List.of(polygonPaintable);
     }
@@ -254,11 +259,11 @@ public class EdgeComponent extends GraphComponent {
         return polygonPaintable;
     }
 
-    public Paintable getArrowheadPaintable() {
-        return arrowheadPaintable;
+    public Paintable getDecorationPaintable() {
+        return decorationPaintable;
     }
 
-    private int arrowHeadLineIndex() {
+    private int decorationLineIndex() {
         return points.size() / 2;
     }
 
@@ -310,9 +315,8 @@ public class EdgeComponent extends GraphComponent {
         private Map<Label, Integer> labelIndices;
     }
 
-
     private final Paintable polygonPaintable;
-    private final Paintable arrowheadPaintable = new ArrowheadPaintable(() -> getPoint(arrowHeadLineIndex()), () -> getPoint(arrowHeadLineIndex() + 1));
+    private final Paintable decorationPaintable;// = new ArrowheadPaintable(() -> getPoint(arrowHeadLineIndex()), () -> getPoint(arrowHeadLineIndex() + 1));
 
     private final List<Point> points = new ArrayList<>();
     private VertexComponent start;

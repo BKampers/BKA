@@ -9,19 +9,20 @@ package bka.awt.graphcanvas;
 import java.awt.*;
 import java.util.function.*;
 
-public class ArrowheadPaintable extends EdgeDecorationPaintable {
+public class DiamondPaintable extends EdgeDecorationPaintable {
     
-    public static final Object ARROWHEAD_PAINT_KEY = "ArrowheadPaint";
-    public static final Object ARROWHEAD_STROKE_KEY = "ArrowheadStroke";
+    public static final Object DIAMOND_FILL_PAINT_KEY = "DiamondFillPaint";
+    public static final Object DIAMOND_BORDER_PAINT_KEY = "DiamondBorderPaint";
+    public static final Object DIAMOND_BORDER_STROKE_KEY = "DiamondBorderStroke";
 
     
-    public ArrowheadPaintable(Supplier<Point> startPoint, Supplier<Point> endPoint) {
+    public DiamondPaintable(Supplier<Point> startPoint, Supplier<Point> endPoint) {
         super(startPoint, endPoint);
     }
 
     @Override
     public void paint(Graphics2D graphics) {
-        paint(graphics, getPaint(ARROWHEAD_PAINT_KEY), getStroke(ARROWHEAD_STROKE_KEY));
+        paint(graphics, getPaint(DIAMOND_FILL_PAINT_KEY), getStroke(DIAMOND_BORDER_STROKE_KEY));
     }
 
     @Override
@@ -34,7 +35,7 @@ public class ArrowheadPaintable extends EdgeDecorationPaintable {
         graphics.rotate(angle);
         graphics.setPaint(paint);
         graphics.setStroke(stroke);
-        graphics.fillPolygon(ARROWHEAD_X_COORDINATES, ARROWHEAD_Y_COORDINATES, ARROWHEAD_X_COORDINATES.length);
+        graphics.fillPolygon(DIAMOND_X_COORDINATES, DIAMOND_Y_COORDINATES, DIAMOND_X_COORDINATES.length);
         graphics.rotate(-angle);
         graphics.translate(-location.x, -location.y);
     }
@@ -42,8 +43,8 @@ public class ArrowheadPaintable extends EdgeDecorationPaintable {
     /**
      * @param start point
      * @param end point
-     * @return angle to rotate an arrowhead that is pointing from left to right, 
-     *         so that it points from the start point to the end point
+     * @return angle to rotate an upright diamod that is pointing from left to right, 
+     *         so that it tilts to the slope of the line from start point to end point.
      */
     private double rotation(Point start, Point end) {
         double angle = Math.atan(CanvasUtil.slope(start, end));
@@ -63,7 +64,7 @@ public class ArrowheadPaintable extends EdgeDecorationPaintable {
             Math.round(start.y + (end.y - start.y) * position));
     }
 
-    private static final int[] ARROWHEAD_X_COORDINATES = { -5, 5, -5 };
-    private static final int[] ARROWHEAD_Y_COORDINATES = { -5, 0, 5 };
+    private static final int[] DIAMOND_X_COORDINATES = {  0, 5, 0, -5 };
+    private static final int[] DIAMOND_Y_COORDINATES = { -5, 0, 5 , 0};
 
 }

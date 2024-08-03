@@ -25,10 +25,14 @@ public class GraphEditorDemo extends JFrame {
             new VertexFactory(RoundVertexPaintable::new, defaultStrokes, paints(Color.BLACK, Color.BLACK)),
             new VertexFactory(SquareVertexPaintable::new, defaultStrokes, paints(Color.BLACK, Color.WHITE))
         ));
+        DiamondPaintable diamondPaintable = new DiamondPaintable(() -> ICON_MID_LEFT, () -> ICON_MID_RIGHT);
+        diamondPaintable.setStroke(DiamondPaintable.DIAMOND_BORDER_STROKE_KEY, SOLID_STROKE);
+        diamondPaintable.setPaint(DiamondPaintable.DIAMOND_BORDER_PAINT_KEY, Color.BLACK);
+        diamondPaintable.setPaint(DiamondPaintable.DIAMOND_FILL_PAINT_KEY, Color.BLACK);
         populateEdgeSelectorPanel(List.of(
             new EdgeFactory(false),
-            new EdgeFactory(true)
-        ));
+            new EdgeFactory(true),
+            new EdgeFactory(diamondPaintable)));
         canvas.getDrawHistory().addListener(this::updateHistoryList);
         historyList.addMouseListener(new HistoryListMouseAdapter());
         historyList.addKeyListener(new HistoryListKeyAdapter());
@@ -256,7 +260,8 @@ public class GraphEditorDemo extends JFrame {
     }
 
     private void addColorMenuItems(Paintable paintable, Point location, JPopupMenu menu, BiConsumer<Object, Color> onApply) {
-        paintable.getPaintKeys().forEach(paintKey -> menu.add(createColorMenuItem(paintKey, paintable, location, onApply)));
+        paintable.getPaintKeys().stream().filter(key -> !DiamondPaintable.DIAMOND_BORDER_PAINT_KEY.equals(key))
+            .forEach(paintKey -> menu.add(createColorMenuItem(paintKey, paintable, location, onApply)));
     }
 
     private JMenuItem createColorMenuItem(Object paintKey, Paintable paintable, Point location, BiConsumer<Object, Color> onApply) {
@@ -293,6 +298,9 @@ public class GraphEditorDemo extends JFrame {
         modifyPaint(PolygonPaintable.LINE_PAINT_KEY, iconPaintable, Color.BLACK);
         modifyPaint(VertexPaintable.FILL_PAINT_KEY, iconPaintable, TRANSPARENT);
         modifyPaint(ArrowheadPaintable.ARROWHEAD_PAINT_KEY, iconPaintable, TRANSPARENT);
+        modifyPaint(DiamondPaintable.DIAMOND_BORDER_PAINT_KEY, iconPaintable, TRANSPARENT);
+        modifyPaint(DiamondPaintable.DIAMOND_FILL_PAINT_KEY, iconPaintable, TRANSPARENT);
+
         strokesMenu.setIcon(createIcon(iconPaintable));
         strokes().forEach(stroke -> strokesMenu.add(createSrokeItem(factory, strokeKey, stroke, onApply)));
         popupMenu.add(strokesMenu);
@@ -318,6 +326,8 @@ public class GraphEditorDemo extends JFrame {
         modifyPaint(PolygonPaintable.LINE_PAINT_KEY, strokePaintable, Color.BLACK);
         modifyPaint(VertexPaintable.FILL_PAINT_KEY, strokePaintable, TRANSPARENT);
         modifyPaint(ArrowheadPaintable.ARROWHEAD_PAINT_KEY, strokePaintable, TRANSPARENT);
+        modifyPaint(DiamondPaintable.DIAMOND_BORDER_PAINT_KEY, strokePaintable, TRANSPARENT);
+        modifyPaint(DiamondPaintable.DIAMOND_FILL_PAINT_KEY, strokePaintable, TRANSPARENT);
         modifyStroke(VertexPaintable.BORDER_STROKE_KEY, strokePaintable, stroke);
         modifyStroke(PolygonPaintable.LINE_STROKE_KEY, strokePaintable, stroke);
         JMenuItem strokeItem = new JMenuItem();
@@ -461,18 +471,24 @@ public class GraphEditorDemo extends JFrame {
     
     private class EdgeFactory implements Factory {
 
-        public EdgeFactory(boolean directed) {
-            defaultInstance = new EdgePaintable(() -> left, () -> right, directed);
+        public EdgeFactory(EdgeDecorationPaintable decorationPaintable) {
+            defaultInstance = new EdgePaintable(() -> ICON_MID_LEFT, () -> ICON_MID_RIGHT, decorationPaintable, true);
             defaultInstance.polygonPaintable.setPaint(PolygonPaintable.LINE_PAINT_KEY, Color.BLACK);
             defaultInstance.polygonPaintable.setStroke(PolygonPaintable.LINE_STROKE_KEY, SOLID_STROKE);
-            defaultInstance.arrowheadPaintable.setPaint(ArrowheadPaintable.ARROWHEAD_PAINT_KEY, Color.BLACK);
-            defaultInstance.arrowheadPaintable.setStroke(ArrowheadPaintable.ARROWHEAD_STROKE_KEY, SOLID_STROKE);
+        }
+        
+        public EdgeFactory(boolean directed) {
+            defaultInstance = new EdgePaintable(() -> ICON_MID_LEFT, () -> ICON_MID_RIGHT, directed);
+            defaultInstance.polygonPaintable.setPaint(PolygonPaintable.LINE_PAINT_KEY, Color.BLACK);
+            defaultInstance.polygonPaintable.setStroke(PolygonPaintable.LINE_STROKE_KEY, SOLID_STROKE);
+            defaultInstance.decorationPaintable.setPaint(ArrowheadPaintable.ARROWHEAD_PAINT_KEY, Color.BLACK);
+            defaultInstance.decorationPaintable.setStroke(ArrowheadPaintable.ARROWHEAD_STROKE_KEY, SOLID_STROKE);
         }
 
         public EdgeFactory(EdgeComponent component) {
             this(component.isDirected());
             copy(component.getPaintable(), defaultInstance);
-            copy(component.getArrowheadPaintable(), defaultInstance.arrowheadPaintable);
+            copy(component.getDecorationPaintable(), defaultInstance.decorationPaintable);
         }
         
         @Override
@@ -482,9 +498,12 @@ public class GraphEditorDemo extends JFrame {
         
         @Override
         public EdgePaintable getCopyInstance() {
-            EdgePaintable copyInstance = new EdgePaintable(() -> left, () -> right, defaultInstance.isDirected());
+            EdgeDecorationPaintable decorationPaintable = (defaultInstance.decorationPaintable instanceof ArrowheadPaintable) 
+                ? new ArrowheadPaintable(defaultInstance.decorationPaintable.getStartPoint(), defaultInstance.decorationPaintable.getEndPoint()) 
+                : new DiamondPaintable(defaultInstance.decorationPaintable.getStartPoint(), defaultInstance.decorationPaintable.getEndPoint());
+            EdgePaintable copyInstance = new EdgePaintable(() -> ICON_MID_LEFT, () -> ICON_MID_RIGHT, decorationPaintable, defaultInstance.isDirected());
             copy(defaultInstance.polygonPaintable, copyInstance.polygonPaintable);
-            copy(defaultInstance.arrowheadPaintable, copyInstance.arrowheadPaintable);
+            copy(defaultInstance.decorationPaintable, copyInstance.decorationPaintable);
             return copyInstance;
         }
 
@@ -494,8 +513,6 @@ public class GraphEditorDemo extends JFrame {
         
         private final EdgePaintable defaultInstance;
         
-        private final Point left = new Point(-8, 0);
-        private final Point right = new Point(8, 0);
     }
 
 
@@ -508,16 +525,26 @@ public class GraphEditorDemo extends JFrame {
     private class EdgePaintable extends Paintable {
 
         public EdgePaintable(Supplier<Point> start, Supplier<Point> end, boolean directed) {
+            this(start, end, new ArrowheadPaintable(start, end), directed);
+        }
+        
+        public EdgePaintable(Supplier<Point> start, Supplier<Point> end, EdgeDecorationPaintable decorationPaintable, boolean directed) {
             this.directed = directed;
             polygonPaintable = PolygonPaintable.create(List.of(start.get(), end.get()));
-            arrowheadPaintable = new ArrowheadPaintable(start, end);
+            this.decorationPaintable = (decorationPaintable != null)
+                ? decorationPaintable
+                : new ArrowheadPaintable(start, end);
+        }
+        
+        public EdgePaintable(Supplier<Point> start, Supplier<Point> end) {
+            this(start, end, null, false);
         }
         
         @Override
         public void paint(Graphics2D graphics) {
             polygonPaintable.paint(graphics);
             if (directed) {
-                arrowheadPaintable.paint(graphics);
+                decorationPaintable.paint(graphics);
             }
         }
         
@@ -525,16 +552,17 @@ public class GraphEditorDemo extends JFrame {
         public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
             polygonPaintable.paint(graphics, paint, stroke);
             if (directed) {
-                arrowheadPaintable.paint(graphics, paint, stroke);
+                decorationPaintable.paint(graphics, paint, stroke);
             }
         }
 
         @Override
         public Collection<Object> getPaintKeys() {
+            ArrayList keys = new ArrayList(polygonPaintable.getPaintKeys());
             if (directed) {
-                return List.of(PolygonPaintable.LINE_PAINT_KEY, ArrowheadPaintable.ARROWHEAD_PAINT_KEY);
+                keys.addAll(decorationPaintable.getPaintKeys());
             }
-            return List.of(PolygonPaintable.LINE_PAINT_KEY);
+            return keys;
         }
 
         @Override
@@ -547,8 +575,8 @@ public class GraphEditorDemo extends JFrame {
             if (polygonPaintable.getPaintKeys().contains(key)) {
                 polygonPaintable.setPaint(key, paint);
             }
-            else if (arrowheadPaintable.getPaintKeys().contains(key)) {
-                arrowheadPaintable.setPaint(key, paint);
+            else if (decorationPaintable.getPaintKeys().contains(key)) {
+                decorationPaintable.setPaint(key, paint);
             }
             else {
                 throw new IllegalArgumentException(key.toString());
@@ -560,8 +588,8 @@ public class GraphEditorDemo extends JFrame {
             if (polygonPaintable.getStrokeKeys().contains(key)) {
                 polygonPaintable.setStroke(key, stroke);
             }
-            else if (arrowheadPaintable.getStrokeKeys().contains(key)) {
-                arrowheadPaintable.setStroke(key, stroke);
+            else if (decorationPaintable.getStrokeKeys().contains(key)) {
+                decorationPaintable.setStroke(key, stroke);
             }
             else {
                 throw new IllegalArgumentException(key.toString());
@@ -573,7 +601,7 @@ public class GraphEditorDemo extends JFrame {
         }
         
         private final PolygonPaintable polygonPaintable;
-        private final ArrowheadPaintable arrowheadPaintable;
+        private final EdgeDecorationPaintable decorationPaintable;
         private final boolean directed;
         
     };
@@ -732,7 +760,7 @@ public class GraphEditorDemo extends JFrame {
 
         private void addStrokeMenus(GraphComponent component, JPopupMenu menu) {
             component.getCustomizablePaintables().forEach(paintable -> {
-                if (!(paintable instanceof ArrowheadPaintable)) {
+                if (!(paintable instanceof EdgeDecorationPaintable)) {
                     addStrokesMenus(createFactory(component), menu, (key, newStroke) -> getCanvas().changeStroke(paintable, key, newStroke));
                 }
             });
@@ -782,7 +810,14 @@ public class GraphEditorDemo extends JFrame {
                 return Optional.empty();
             }
             EdgePaintable paintable = selectedOption.get().getValue().getCopyInstance();
-            EdgeComponent edge = new EdgeComponent(origin, terminus, paintable.polygonPaintable, paintable.arrowheadPaintable);
+            BiFunction<Supplier<Point>, Supplier<Point>, EdgeDecorationPaintable> decorationPaintable = (left, right) -> {
+                EdgeDecorationPaintable p = (paintable.decorationPaintable instanceof DiamondPaintable) 
+                    ? new DiamondPaintable(left, right)
+                    : new ArrowheadPaintable(left, right);
+                copy(paintable.decorationPaintable, p);
+                return p;
+            };
+            EdgeComponent edge = new EdgeComponent(origin, terminus, paintable.polygonPaintable, decorationPaintable);
             edge.setDirected(selectedOption.get().getValue().isDirected());
             return Optional.of(edge);
         }
@@ -809,6 +844,9 @@ public class GraphEditorDemo extends JFrame {
     private final javax.swing.DefaultListModel<String> historyListModel = new javax.swing.DefaultListModel<>();
 
     private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("GraphEditor");
+
+    private static final Point ICON_MID_LEFT = new Point(-8, 0);
+    private static final Point ICON_MID_RIGHT = new Point(8, 0);
 
     private static final Dimension VERTEX_ICON_DIMENSION = new Dimension(12, 12);
 

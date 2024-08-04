@@ -406,7 +406,10 @@ public class GraphEditorDemo extends JFrame {
     }
 
     private static Color castToColor(Paint paint) {
-        return (paint instanceof Color) ? (Color) paint : null;
+        if (paint instanceof Color color) {
+            return color;
+        }
+        return null;
     }
 
     private static Icon createIcon(Paintable paintable) {
@@ -501,6 +504,17 @@ public class GraphEditorDemo extends JFrame {
             copy(defaultInstance.polygonPaintable, copyInstance.polygonPaintable);
             copy(defaultInstance.decorationPaintable, copyInstance.decorationPaintable);
             return copyInstance;
+        }
+        
+        public EdgeDecorationPaintable.Factory createDecorationPaintable() {
+            EdgePaintable paintable = getCopyInstance();
+            return (left, right) -> {
+                EdgeDecorationPaintable decorationPaintable = (paintable.decorationPaintable instanceof DiamondPaintable) 
+                    ? new DiamondPaintable(left, right)
+                    : new ArrowheadPaintable(left, right);
+                copy(paintable.decorationPaintable, decorationPaintable);
+                return decorationPaintable;
+            };
         }
 
         public boolean isDirected() {
@@ -783,13 +797,17 @@ public class GraphEditorDemo extends JFrame {
 
         @Override
         public Optional<VertexComponent> createVertexComponent(Point location) {
-            Optional<Map.Entry<JToggleButton, VertexFactory>> selectedOption = vertexButtons.entrySet().stream()
-                .filter(entry -> entry.getKey().isSelected())
-                .findAny();
+            Optional<Map.Entry<JToggleButton, VertexFactory>> selectedOption = selectedVertexButton();
             if (selectedOption.isEmpty()) {
                 return Optional.empty();
             }
             return Optional.of(new VertexComponent(selectedOption.get().getValue().getCopyInstance(), location));
+        }
+
+        private Optional<Map.Entry<JToggleButton, VertexFactory>> selectedVertexButton() {
+            return vertexButtons.entrySet().stream()
+                .filter(entry -> entry.getKey().isSelected())
+                .findAny();
         }
         
         @Override 
@@ -799,23 +817,29 @@ public class GraphEditorDemo extends JFrame {
 
         @Override
         public Optional<EdgeComponent> createEdgeComponent(VertexComponent origin, VertexComponent terminus) {
-            Optional<Map.Entry<JToggleButton, EdgeFactory>> selectedOption = edgeButtons.entrySet().stream()
-                .filter(entry -> entry.getKey().isSelected())
-                .findAny();
+            Optional<Map.Entry<JToggleButton, EdgeFactory>> selectedOption = selectedEdgeButton();
             if (selectedOption.isEmpty()) {
                 return Optional.empty();
             }
-            EdgePaintable paintable = selectedOption.get().getValue().getCopyInstance();
-            BiFunction<Supplier<Point>, Supplier<Point>, EdgeDecorationPaintable> decorationPaintable = (left, right) -> {
-                EdgeDecorationPaintable p = (paintable.decorationPaintable instanceof DiamondPaintable) 
-                    ? new DiamondPaintable(left, right)
-                    : new ArrowheadPaintable(left, right);
-                copy(paintable.decorationPaintable, p);
-                return p;
-            };
-            EdgeComponent edge = new EdgeComponent(origin, terminus, paintable.polygonPaintable, decorationPaintable);
+            EdgeFactory edgeFactory = selectedOption.get().getValue();
+            PolygonPaintable.Factory polygonFactory = getPolygonFactory(edgeFactory);
+            EdgeComponent edge = new EdgeComponent(origin, terminus, polygonFactory, edgeFactory.createDecorationPaintable());
             edge.setDirected(selectedOption.get().getValue().isDirected());
             return Optional.of(edge);
+        }
+
+        private PolygonPaintable.Factory getPolygonFactory(EdgeFactory edgeFactory) {
+            return (pointAt, pointCount) -> {
+                PolygonPaintable polygonPaintable = PolygonPaintable.create(pointAt, pointCount);
+                copy(edgeFactory.getCopyInstance().polygonPaintable, polygonPaintable);
+                return polygonPaintable;
+            };
+        }
+
+        private Optional<Map.Entry<JToggleButton, EdgeFactory>> selectedEdgeButton() {
+            return edgeButtons.entrySet().stream()
+                .filter(entry -> entry.getKey().isSelected())
+                .findAny();
         }
 
         private static final int POPUP_WIDTH = 50;

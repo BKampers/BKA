@@ -28,7 +28,7 @@ public class GraphEditorDemo extends JFrame {
         DiamondPaintable diamondPaintable = new DiamondPaintable(() -> ICON_MID_LEFT, () -> ICON_MID_RIGHT);
         diamondPaintable.setStroke(DiamondPaintable.DIAMOND_BORDER_STROKE_KEY, SOLID_STROKE);
         diamondPaintable.setPaint(DiamondPaintable.DIAMOND_BORDER_PAINT_KEY, Color.BLACK);
-        diamondPaintable.setPaint(DiamondPaintable.DIAMOND_FILL_PAINT_KEY, Color.BLACK);
+        diamondPaintable.setPaint(DiamondPaintable.DIAMOND_FILL_PAINT_KEY, Color.WHITE);
         populateEdgeSelectorPanel(List.of(
             new EdgeFactory(false),
             new EdgeFactory(true),
@@ -260,8 +260,7 @@ public class GraphEditorDemo extends JFrame {
     }
 
     private void addColorMenuItems(Paintable paintable, Point location, JPopupMenu menu, BiConsumer<Object, Color> onApply) {
-        paintable.getPaintKeys().stream().filter(key -> !DiamondPaintable.DIAMOND_BORDER_PAINT_KEY.equals(key))
-            .forEach(paintKey -> menu.add(createColorMenuItem(paintKey, paintable, location, onApply)));
+        paintable.getPaintKeys().forEach(paintKey -> menu.add(createColorMenuItem(paintKey, paintable, location, onApply)));
     }
 
     private JMenuItem createColorMenuItem(Object paintKey, Paintable paintable, Point location, BiConsumer<Object, Color> onApply) {
@@ -407,10 +406,7 @@ public class GraphEditorDemo extends JFrame {
     }
 
     private static Color castToColor(Paint paint) {
-        if (paint instanceof Color) {
-            return (Color) paint;
-        }
-        return null;
+        return (paint instanceof Color) ? (Color) paint : null;
     }
 
     private static Icon createIcon(Paintable paintable) {

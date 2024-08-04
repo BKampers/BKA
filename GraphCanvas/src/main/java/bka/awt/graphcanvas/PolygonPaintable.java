@@ -17,6 +17,10 @@ public class PolygonPaintable extends Paintable {
 
     public static final Object LINE_PAINT_KEY = "LinePaint";
     public static final Object LINE_STROKE_KEY = "LineStroke";
+    
+    public interface Factory {
+        PolygonPaintable create(IntFunction<Point> pointAt, IntSupplier pointCount);
+    }
 
     public PolygonPaintable(Supplier<int[]> xPoints, Supplier<int[]> yPoints, IntSupplier nPoints) {
         this.xPoints = Objects.requireNonNull(xPoints);

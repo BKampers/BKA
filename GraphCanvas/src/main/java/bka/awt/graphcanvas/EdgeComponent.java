@@ -15,13 +15,11 @@ import java.util.stream.*;
 
 public class EdgeComponent extends GraphComponent {
 
-    public EdgeComponent(VertexComponent start, VertexComponent end, Paintable polygonPaintable, BiFunction<Supplier<Point>, Supplier<Point>, EdgeDecorationPaintable> decorationPaintable) {
+    public EdgeComponent(VertexComponent start, VertexComponent end, PolygonPaintable.Factory polygonFactory, EdgeDecorationPaintable.Factory decorationFactory) {
         this.start = Objects.requireNonNull(start);
         setEnd(end);
-        this.polygonPaintable = PolygonPaintable.create(i -> getPoint(i), () -> points.size() + ENDPOINT_COUNT);
-        this.polygonPaintable.setPaint(PolygonPaintable.LINE_PAINT_KEY, polygonPaintable.getPaint(PolygonPaintable.LINE_PAINT_KEY));
-        this.polygonPaintable.setStroke(PolygonPaintable.LINE_STROKE_KEY, polygonPaintable.getStroke(PolygonPaintable.LINE_STROKE_KEY));
-        this.decorationPaintable = Objects.requireNonNull(decorationPaintable.apply(decorationLeftPoint(), decorationRightPoint()));
+        this.polygonPaintable = Objects.requireNonNull(polygonFactory.create(i -> getPoint(i), () -> points.size() + ENDPOINT_COUNT));
+        this.decorationPaintable = Objects.requireNonNull(decorationFactory.create(decorationLeftPoint(), decorationRightPoint()));
     }
 
     private Supplier<Point> decorationLeftPoint() {
@@ -316,7 +314,7 @@ public class EdgeComponent extends GraphComponent {
     }
 
     private final Paintable polygonPaintable;
-    private final Paintable decorationPaintable;// = new ArrowheadPaintable(() -> getPoint(arrowHeadLineIndex()), () -> getPoint(arrowHeadLineIndex() + 1));
+    private final Paintable decorationPaintable;
 
     private final List<Point> points = new ArrayList<>();
     private VertexComponent start;

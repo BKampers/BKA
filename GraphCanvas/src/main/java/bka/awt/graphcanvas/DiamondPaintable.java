@@ -33,54 +33,14 @@ public class DiamondPaintable extends EdgeDecorationPaintable {
         paint(graphics, () -> drawBorder(graphics, paint, stroke));
     }
     
-    private void paint(Graphics2D graphics, Runnable painter) {
-        Point lineStart = getStartPoint().get();
-        Point lineEnd = getEndPoint().get();
-        double angle = rotation(lineStart, lineEnd);
-        Point location = location(lineStart, lineEnd);
-        graphics.translate(location.x, location.y);
-        graphics.rotate(angle);
-        painter.run();
-        graphics.rotate(-angle);
-        graphics.translate(-location.x, -location.y);
-    }
-
-    private void drawBorder(Graphics2D graphics, Paint paint, Stroke stroke) {
-        graphics.setPaint(paint);
-        graphics.setStroke(stroke);
-        graphics.drawPolygon(DIAMOND_X_COORDINATES, DIAMOND_Y_COORDINATES, DIAMOND_X_COORDINATES.length);
-    }
-
-    private void fill(Graphics2D graphics, Paint paint) {
-        graphics.setPaint(paint);
-        graphics.fillPolygon(DIAMOND_X_COORDINATES, DIAMOND_Y_COORDINATES, DIAMOND_X_COORDINATES.length);
+    @Override
+    protected Polygon getPolygon() {
+        return DIAMOND;
     }
     
-    /**
-     * @param start point
-     * @param end point
-     * @return angle to rotate an upright diamod that is pointing from left to right, 
-     *         so that it tilts to the slope of the line from start point to end point.
-     */
-    private double rotation(Point start, Point end) {
-        double angle = Math.atan(CanvasUtil.slope(start, end));
-        if (end.x < start.x) {
-            return angle + Math.PI;
-        }
-        return angle;
-    }
-
-    private Point location(Point start, Point end) {
-        return coordinateOnLine(start, end, 0.5f);
-    }
-
-    private Point coordinateOnLine(Point start, Point end, float position) {
-        return new Point(
-            Math.round(start.x + (end.x - start.x) * position),
-            Math.round(start.y + (end.y - start.y) * position));
-    }
-
-    private static final int[] DIAMOND_X_COORDINATES = {  0, 5, 0, -5 };
-    private static final int[] DIAMOND_Y_COORDINATES = { -5, 0, 5 , 0};
+    private static final Polygon DIAMOND = new Polygon(
+        new int[] {  0, 5, 0, -5 },
+        new int[] { -5, 0, 5 , 0},
+        4);
 
 }

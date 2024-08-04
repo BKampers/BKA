@@ -21,49 +21,22 @@ public class ArrowheadPaintable extends EdgeDecorationPaintable {
 
     @Override
     public void paint(Graphics2D graphics) {
-        paint(graphics, getPaint(ARROWHEAD_PAINT_KEY), getStroke(ARROWHEAD_STROKE_KEY));
+        paint(graphics, () -> fill(graphics, getPaint(ARROWHEAD_PAINT_KEY)));
     }
 
     @Override
     public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
-        Point lineStart = getStartPoint().get();
-        Point lineEnd = getEndPoint().get();
-        double angle = rotation(lineStart, lineEnd);
-        Point location = location(lineStart, lineEnd);
-        graphics.translate(location.x, location.y);
-        graphics.rotate(angle);
-        graphics.setPaint(paint);
-        graphics.setStroke(stroke);
-        graphics.fillPolygon(ARROWHEAD_X_COORDINATES, ARROWHEAD_Y_COORDINATES, ARROWHEAD_X_COORDINATES.length);
-        graphics.rotate(-angle);
-        graphics.translate(-location.x, -location.y);
+        paint(graphics, () -> drawBorder(graphics, paint, stroke));
     }
 
-    /**
-     * @param start point
-     * @param end point
-     * @return angle to rotate an arrowhead that is pointing from left to right, 
-     *         so that it points from the start point to the end point
-     */
-    private double rotation(Point start, Point end) {
-        double angle = Math.atan(CanvasUtil.slope(start, end));
-        if (end.x < start.x) {
-            return angle + Math.PI;
-        }
-        return angle;
+    @Override
+    protected Polygon getPolygon() {
+        return ARROWHEAD;
     }
-
-    private Point location(Point start, Point end) {
-        return coordinateOnLine(start, end, 0.5f);
-    }
-
-    private Point coordinateOnLine(Point start, Point end, float position) {
-        return new Point(
-            Math.round(start.x + (end.x - start.x) * position),
-            Math.round(start.y + (end.y - start.y) * position));
-    }
-
-    private static final int[] ARROWHEAD_X_COORDINATES = { -5, 5, -5 };
-    private static final int[] ARROWHEAD_Y_COORDINATES = { -5, 0, 5 };
+    
+    private static final Polygon ARROWHEAD = new Polygon(
+        new int[] { -5, 5, -5 }, 
+        new int[] { -5, 0, 5 },
+        3);
 
 }

@@ -47,8 +47,8 @@
         </dependency>
     </dependencies>
     <properties>
-        <maven.compiler.source>15</maven.compiler.source>
-        <maven.compiler.target>15</maven.compiler.target>
+        <maven.compiler.source>22</maven.compiler.source>
+        <maven.compiler.target>22</maven.compiler.target>
         <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
     </properties>
     <build>

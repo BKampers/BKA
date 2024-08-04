@@ -22,24 +22,40 @@ public class DiamondPaintable extends EdgeDecorationPaintable {
 
     @Override
     public void paint(Graphics2D graphics) {
-        paint(graphics, getPaint(DIAMOND_FILL_PAINT_KEY), getStroke(DIAMOND_BORDER_STROKE_KEY));
+        paint(graphics, () -> {
+            fill(graphics, getPaint(DIAMOND_FILL_PAINT_KEY));
+            drawBorder(graphics, getPaint(DIAMOND_BORDER_PAINT_KEY), getStroke(DIAMOND_BORDER_STROKE_KEY));
+        });
     }
-
+    
     @Override
     public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
+        paint(graphics, () -> drawBorder(graphics, paint, stroke));
+    }
+    
+    private void paint(Graphics2D graphics, Runnable painter) {
         Point lineStart = getStartPoint().get();
         Point lineEnd = getEndPoint().get();
         double angle = rotation(lineStart, lineEnd);
         Point location = location(lineStart, lineEnd);
         graphics.translate(location.x, location.y);
         graphics.rotate(angle);
-        graphics.setPaint(paint);
-        graphics.setStroke(stroke);
-        graphics.fillPolygon(DIAMOND_X_COORDINATES, DIAMOND_Y_COORDINATES, DIAMOND_X_COORDINATES.length);
+        painter.run();
         graphics.rotate(-angle);
         graphics.translate(-location.x, -location.y);
     }
 
+    private void drawBorder(Graphics2D graphics, Paint paint, Stroke stroke) {
+        graphics.setPaint(paint);
+        graphics.setStroke(stroke);
+        graphics.drawPolygon(DIAMOND_X_COORDINATES, DIAMOND_Y_COORDINATES, DIAMOND_X_COORDINATES.length);
+    }
+
+    private void fill(Graphics2D graphics, Paint paint) {
+        graphics.setPaint(paint);
+        graphics.fillPolygon(DIAMOND_X_COORDINATES, DIAMOND_Y_COORDINATES, DIAMOND_X_COORDINATES.length);
+    }
+    
     /**
      * @param start point
      * @param end point

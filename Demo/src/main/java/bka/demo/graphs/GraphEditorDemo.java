@@ -3,9 +3,7 @@
 */
 package bka.demo.graphs;
 
-import bka.awt.*;
 import bka.awt.graphcanvas.*;
-import bka.awt.graphcanvas.history.*;
 import bka.swing.popup.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -33,27 +31,12 @@ public class GraphEditorDemo extends JFrame {
             new EdgeFactory(false),
             new EdgeFactory(true),
             new EdgeFactory(diamondPaintable)));
-        canvas.getDrawHistory().addListener(this::updateHistoryList);
-        historyList.addMouseListener(new HistoryListMouseAdapter());
-        historyList.addKeyListener(new HistoryListKeyAdapter());
     }
 
     private static Map<Object, Paint> paints(Paint borderPaint, Paint fillPaint) {
         return Map.of(
             VertexPaintable.BORDER_PAINT_KEY, borderPaint,
             VertexPaintable.FILL_PAINT_KEY, fillPaint);
-    }
-
-    private void updateHistoryList(DrawHistory history) {
-        historyListModel.removeAllElements();
-        history.getMutattions().forEach(mutation -> historyListModel.addElement(getBundleText(mutation.getBundleKey())));
-        if (history.getIndex() > 0) {
-            int index = history.getIndex() - 1;
-            historyList.setSelectedIndex(index);
-            Rectangle selection = historyList.getCellBounds(index, index);
-            historyScrollPane.getViewport().scrollRectToVisible(selection);
-            historyScrollPane.getVerticalScrollBar().setValue(selection.y);
-        }
     }
 
     /**
@@ -66,10 +49,7 @@ public class GraphEditorDemo extends JFrame {
 
         javax.swing.JScrollPane graphScrollPane = new javax.swing.JScrollPane();
         graphPanel = new GraphPanel();
-        historyPanel = new javax.swing.JPanel();
-        historyScrollPane = new javax.swing.JScrollPane();
-        historyList = new javax.swing.JList<>();
-        historyList.setCellRenderer(new HistoryListCellRenderer());
+        historyPanel = new bka.demo.graphs.HistoryPanel(graphPanel, canvas, GraphEditorDemo::getBundleText);
         componentPanel = new javax.swing.JPanel();
         vertexSelectorPanel = new javax.swing.JPanel();
         edgeSelectorPanel = new javax.swing.JPanel();
@@ -122,19 +102,6 @@ public class GraphEditorDemo extends JFrame {
         graphScrollPane.setViewportView(graphPanel);
 
         getContentPane().add(graphScrollPane, java.awt.BorderLayout.CENTER);
-
-        historyPanel.setLayout(new javax.swing.BoxLayout(historyPanel, javax.swing.BoxLayout.LINE_AXIS));
-
-        historyScrollPane.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        historyScrollPane.setMinimumSize(new java.awt.Dimension(150, 400));
-        historyScrollPane.setPreferredSize(new java.awt.Dimension(150, 400));
-
-        historyList.setModel(historyListModel);
-        historyList.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
-        historyScrollPane.setViewportView(historyList);
-
-        historyPanel.add(historyScrollPane);
-
         getContentPane().add(historyPanel, java.awt.BorderLayout.EAST);
 
         vertexSelectorPanel.setLocation(new java.awt.Point(0, 5));
@@ -153,9 +120,8 @@ public class GraphEditorDemo extends JFrame {
                 .addContainerGap(152, Short.MAX_VALUE)
                 .addGroup(componentPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(edgeSelectorPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(componentPanelLayout.createSequentialGroup()
-                        .addComponent(vertexSelectorPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(136, 136, 136))))
+                    .addComponent(vertexSelectorPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(136, 136, 136))
         );
         componentPanelLayout.setVerticalGroup(
             componentPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -546,10 +512,6 @@ public class GraphEditorDemo extends JFrame {
                 : new ArrowheadPaintable(start, end);
         }
         
-        public EdgePaintable(Supplier<Point> start, Supplier<Point> end) {
-            this(start, end, null, false);
-        }
-        
         @Override
         public void paint(Graphics2D graphics) {
             polygonPaintable.paint(graphics);
@@ -683,59 +645,6 @@ public class GraphEditorDemo extends JFrame {
     }
 
 
-    private class HistoryListCellRenderer extends javax.swing.DefaultListCellRenderer {
-
-        @Override
-        public Component getListCellRendererComponent(javax.swing.JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-            Component renderer = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-            if (isSelected) {
-                renderer.setForeground(Color.BLACK);
-            }
-            else if (index < canvas.getDrawHistory().getIndex()) {
-                renderer.setForeground(Color.BLACK);
-            }
-            else {
-                renderer.setForeground(Color.GRAY);
-            }
-            return renderer;
-        }
-    }
-
-
-    private class HistoryListMouseAdapter extends MouseAdapter {
-
-        @Override
-        public void mouseReleased(MouseEvent event) {
-            int target = historyList.getSelectedIndex() + 1;
-            if (canvas.getDrawHistory().getIndex() != target) {
-                while (canvas.getDrawHistory().getIndex() < target) {
-                    canvas.getDrawHistory().redo();
-                }
-                while (canvas.getDrawHistory().getIndex() > target) {
-                    canvas.getDrawHistory().undo();
-                }
-                graphPanel.repaint();
-            }
-        }
-    }
-
-
-    private class HistoryListKeyAdapter extends KeyAdapter {
-
-        @Override
-        public void keyReleased(KeyEvent event) {
-            if (Keyboard.getInstance().isUndo(event)) {
-                canvas.getDrawHistory().undo();
-                graphPanel.repaint();
-            }
-            else if (Keyboard.getInstance().isRedo(event)) {
-                canvas.getDrawHistory().redo();
-                graphPanel.repaint();
-            }
-        }
-    }
-
-
     private final GraphCanvas canvas = new GraphCanvas(new ApplicationContext() {
 
         @Override
@@ -852,16 +761,12 @@ public class GraphEditorDemo extends JFrame {
     private javax.swing.JPanel componentPanel;
     private javax.swing.JPanel edgeSelectorPanel;
     private javax.swing.JPanel graphPanel;
-    private javax.swing.JList<String> historyList;
     private javax.swing.JPanel historyPanel;
-    private javax.swing.JScrollPane historyScrollPane;
     private javax.swing.JPanel vertexSelectorPanel;
     // End of variables declaration//GEN-END:variables
 
     private final Map<JToggleButton, VertexFactory> vertexButtons = new HashMap<>();
     private final Map<JToggleButton, EdgeFactory> edgeButtons = new HashMap<>();
-
-    private final javax.swing.DefaultListModel<String> historyListModel = new javax.swing.DefaultListModel<>();
 
     private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("GraphEditor");
 

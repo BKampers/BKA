@@ -21,17 +21,50 @@ public class Keyboard {
     public int getToggleSelectionModifiers() {
         return toggleSelectionModifiers;
     }
-
+    
     public boolean isDelete(KeyEvent event) {
         return event.getKeyCode() == KeyEvent.VK_DELETE;
     }
 
-    public boolean isUndo(KeyEvent event) {
-        return event.getKeyCode() == undoKeyCode && event.getModifiersEx() == undoModifiers;
+    public boolean isNavigateEnd(KeyEvent event) {
+        return event.getKeyCode() == KeyEvent.VK_END && event.getModifiersEx() == 0;
+    }
+
+    public boolean isNavigateHome(KeyEvent event) {
+        return event.getKeyCode() == KeyEvent.VK_HOME && event.getModifiersEx() == 0;
+    }
+    
+    public boolean isNavigatePageDown(KeyEvent event) {
+        return event.getKeyCode() == KeyEvent.VK_PAGE_DOWN && event.getModifiersEx() == 0;
+    }
+
+    public boolean isNavigatePageUp(KeyEvent event) {
+        return event.getKeyCode() == KeyEvent.VK_PAGE_UP && event.getModifiersEx() == 0;
+    }
+    
+
+    public boolean isNavigateLeft(KeyEvent event) {
+        return event.getKeyCode() == KeyEvent.VK_LEFT && event.getModifiersEx() == 0;
+    }
+
+    public boolean isNavigateRight(KeyEvent event) {
+        return event.getKeyCode() == KeyEvent.VK_RIGHT && event.getModifiersEx() == 0;
+    }
+
+    public boolean isNavigateUp(KeyEvent event) {
+        return event.getKeyCode() == KeyEvent.VK_UP && event.getModifiersEx() == 0;
+    }
+
+    public boolean isNavigateDown(KeyEvent event) {
+        return event.getKeyCode() == KeyEvent.VK_DOWN && event.getModifiersEx() == 0;
     }
 
     public boolean isRedo(KeyEvent event) {
         return event.getKeyCode() == redoKeyCode && event.getModifiersEx() == redoModifiers;
+    }
+
+    public boolean isUndo(KeyEvent event) {
+        return event.getKeyCode() == undoKeyCode && event.getModifiersEx() == undoModifiers;
     }
 
     private Keyboard() {

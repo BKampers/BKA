@@ -86,7 +86,7 @@ public class FormatterUtilTest {
     public void testDateFormat() {
         assertEquals("1970-01-01", FormatterUtil.format("YYYY-MM-dd", 0));
         assertEquals("Jan 1", FormatterUtil.format("MMM d", Locale.ENGLISH, 0));
-        assertEquals("1 jan.", FormatterUtil.format("d MMM", new Locale("nl"), 0));
+        assertEquals("1 jan", FormatterUtil.format("d MMM", new Locale("nl"), 0));
     }
 
 

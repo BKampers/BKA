@@ -10,7 +10,6 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
 import java.util.function.*;
-import java.util.logging.*;
 import javax.swing.*;
 
 
@@ -64,56 +63,19 @@ public class HistoryPanel extends JPanel {
 
         list.setModel(model);
         list.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
-        list.addInputMethodListener(new java.awt.event.InputMethodListener() {
-            public void caretPositionChanged(java.awt.event.InputMethodEvent evt) {
-            }
-            public void inputMethodTextChanged(java.awt.event.InputMethodEvent evt) {
-                HistoryPanel.this.inputMethodTextChanged(evt);
-            }
-        });
-        list.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
-            public void propertyChange(java.beans.PropertyChangeEvent evt) {
-                listPropertyChange(evt);
-            }
-        });
-        list.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyTyped(java.awt.event.KeyEvent evt) {
-                listKeyTyped(evt);
-            }
-        });
-        list.addListSelectionListener(new javax.swing.event.ListSelectionListener() {
-            public void valueChanged(javax.swing.event.ListSelectionEvent evt) {
-                HistoryPanel.this.valueChanged(evt);
-            }
-        });
         scrollPane.setViewportView(list);
 
         add(scrollPane);
     }// </editor-fold>//GEN-END:initComponents
 
-    private void valueChanged(javax.swing.event.ListSelectionEvent evt) {//GEN-FIRST:event_valueChanged
-        //System.out.println("valueChanged: [" + evt.getFirstIndex() + " .. " + evt.getLastIndex() + "] " + evt.getSource());
-    }//GEN-LAST:event_valueChanged
-
-    private void inputMethodTextChanged(java.awt.event.InputMethodEvent evt) {//GEN-FIRST:event_inputMethodTextChanged
-        //System.out.println("inputMethodTextChanged");
-    }//GEN-LAST:event_inputMethodTextChanged
-
-    private void listKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_listKeyTyped
-        //System.out.println("listKeyTyped");
-    }//GEN-LAST:event_listKeyTyped
-
-    private void listPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_listPropertyChange
-        //System.out.println("listPropertyChange");
-    }//GEN-LAST:event_listPropertyChange
-
     private void select(int target) {
-        if (canvas.getDrawHistory().getIndex() != target) {
-            while (canvas.getDrawHistory().getIndex() < target) {
-                canvas.getDrawHistory().redo();
+        DrawHistory history = canvas.getDrawHistory();
+        if (history.getIndex() != target) {
+            while (history.getIndex() < target && history.canRedo()) {
+                history.redo();
             }
-            while (canvas.getDrawHistory().getIndex() > target) {
-                canvas.getDrawHistory().undo();
+            while (history.getIndex() > target && history.canUndo()) {
+                history.undo();
             }
             graphPanel.repaint();
         }
@@ -143,8 +105,7 @@ public class HistoryPanel extends JPanel {
 
         @Override
         public void mouseReleased(MouseEvent event) {
-            int target = list.getSelectedIndex() + 1;
-            select(target);
+            select(list.getSelectedIndex() + 1);
         }
 
     }

@@ -11,7 +11,6 @@ import java.awt.image.*;
 import java.util.List;
 import java.util.*;
 import java.util.function.*;
-import java.util.stream.*;
 import javax.swing.*;
 
 public class GraphEditorDemo extends JFrame {
@@ -265,7 +264,6 @@ public class GraphEditorDemo extends JFrame {
         modifyPaint(ArrowheadPaintable.ARROWHEAD_PAINT_KEY, iconPaintable, TRANSPARENT);
         modifyPaint(DiamondPaintable.DIAMOND_BORDER_PAINT_KEY, iconPaintable, TRANSPARENT);
         modifyPaint(DiamondPaintable.DIAMOND_FILL_PAINT_KEY, iconPaintable, TRANSPARENT);
-
         strokesMenu.setIcon(createIcon(iconPaintable));
         strokes().forEach(stroke -> strokesMenu.add(createSrokeItem(factory, strokeKey, stroke, onApply)));
         popupMenu.add(strokesMenu);
@@ -359,10 +357,6 @@ public class GraphEditorDemo extends JFrame {
         return new EdgeFactory(component);
     }
 
-    private <K, V> Map<K, V> toMap(Collection<K> keys, Function<K, V> getter) {
-        return keys.stream().collect(Collectors.toMap(Function.identity(), getter::apply));
-    }
-
     private GraphCanvas getCanvas() {
         return canvas;
     }
@@ -402,182 +396,6 @@ public class GraphEditorDemo extends JFrame {
         keys.forEach(key -> setter.accept(key, getter.apply(key)));
     }
 
- 
-    private class VertexFactory implements Factory {
-
-        public VertexFactory(Function<Dimension, VertexPaintable> newInstance, Map<Object, Stroke> defaultStrokes, Map<Object, Paint> defaultPaints) {
-            this.newInstance = newInstance;
-            defaultInstance = newInstance.apply(VERTEX_ICON_DIMENSION);
-            defaultStrokes.forEach(defaultInstance::setStroke);
-            defaultPaints.forEach(defaultInstance::setPaint);
-        }
-
-        public VertexFactory(Function<Dimension, VertexPaintable> newInstance, Paintable paintable) {
-            this(newInstance, toMap(paintable.getStrokeKeys(), paintable::getStroke), toMap(paintable.getPaintKeys(), paintable::getPaint));
-        }
-
-        @Override
-        public VertexPaintable getDefaultInstance() {
-            return defaultInstance;
-        }
-
-        @Override
-        public VertexPaintable getCopyInstance() {
-            VertexPaintable copyInstance = newInstance.apply(VERTEX_ICON_DIMENSION);
-            copy(defaultInstance, copyInstance);
-            return copyInstance;
-        }
-
-        private final Function<Dimension, VertexPaintable> newInstance;
-        private final VertexPaintable defaultInstance;
-
-    }
-    
-    
-    private class EdgeFactory implements Factory {
-
-        public EdgeFactory(EdgeDecorationPaintable decorationPaintable) {
-            defaultInstance = new EdgePaintable(() -> ICON_MID_LEFT, () -> ICON_MID_RIGHT, decorationPaintable, true);
-            defaultInstance.polygonPaintable.setPaint(PolygonPaintable.LINE_PAINT_KEY, Color.BLACK);
-            defaultInstance.polygonPaintable.setStroke(PolygonPaintable.LINE_STROKE_KEY, SOLID_STROKE);
-        }
-        
-        public EdgeFactory(boolean directed) {
-            defaultInstance = new EdgePaintable(() -> ICON_MID_LEFT, () -> ICON_MID_RIGHT, directed);
-            defaultInstance.polygonPaintable.setPaint(PolygonPaintable.LINE_PAINT_KEY, Color.BLACK);
-            defaultInstance.polygonPaintable.setStroke(PolygonPaintable.LINE_STROKE_KEY, SOLID_STROKE);
-            defaultInstance.decorationPaintable.setPaint(ArrowheadPaintable.ARROWHEAD_PAINT_KEY, Color.BLACK);
-            defaultInstance.decorationPaintable.setStroke(ArrowheadPaintable.ARROWHEAD_STROKE_KEY, SOLID_STROKE);
-        }
-
-        public EdgeFactory(EdgeComponent component) {
-            this(component.isDirected());
-            copy(component.getPaintable(), defaultInstance);
-            copy(component.getDecorationPaintable(), defaultInstance.decorationPaintable);
-        }
-        
-        @Override
-        public EdgePaintable getDefaultInstance() {
-            return defaultInstance;
-        }
-        
-        @Override
-        public EdgePaintable getCopyInstance() {
-            EdgeDecorationPaintable decorationPaintable = (defaultInstance.decorationPaintable instanceof ArrowheadPaintable) 
-                ? new ArrowheadPaintable(defaultInstance.decorationPaintable.getStartPoint(), defaultInstance.decorationPaintable.getEndPoint()) 
-                : new DiamondPaintable(defaultInstance.decorationPaintable.getStartPoint(), defaultInstance.decorationPaintable.getEndPoint());
-            EdgePaintable copyInstance = new EdgePaintable(() -> ICON_MID_LEFT, () -> ICON_MID_RIGHT, decorationPaintable, defaultInstance.isDirected());
-            copy(defaultInstance.polygonPaintable, copyInstance.polygonPaintable);
-            copy(defaultInstance.decorationPaintable, copyInstance.decorationPaintable);
-            return copyInstance;
-        }
-        
-        public EdgeDecorationPaintable.Factory createDecorationPaintable() {
-            EdgePaintable paintable = getCopyInstance();
-            return (left, right) -> {
-                EdgeDecorationPaintable decorationPaintable = (paintable.decorationPaintable instanceof DiamondPaintable) 
-                    ? new DiamondPaintable(left, right)
-                    : new ArrowheadPaintable(left, right);
-                copy(paintable.decorationPaintable, decorationPaintable);
-                return decorationPaintable;
-            };
-        }
-
-        public boolean isDirected() {
-            return defaultInstance.isDirected();
-        }
-        
-        private final EdgePaintable defaultInstance;
-        
-    }
-
-
-    private interface Factory {
-        Paintable getDefaultInstance();
-        Paintable getCopyInstance();
-    }
-
-
-    private class EdgePaintable extends Paintable {
-
-        public EdgePaintable(Supplier<Point> start, Supplier<Point> end, boolean directed) {
-            this(start, end, new ArrowheadPaintable(start, end), directed);
-        }
-        
-        public EdgePaintable(Supplier<Point> start, Supplier<Point> end, EdgeDecorationPaintable decorationPaintable, boolean directed) {
-            this.directed = directed;
-            polygonPaintable = PolygonPaintable.create(List.of(start.get(), end.get()));
-            this.decorationPaintable = (decorationPaintable != null)
-                ? decorationPaintable
-                : new ArrowheadPaintable(start, end);
-        }
-        
-        @Override
-        public void paint(Graphics2D graphics) {
-            polygonPaintable.paint(graphics);
-            if (directed) {
-                decorationPaintable.paint(graphics);
-            }
-        }
-        
-        @Override
-        public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
-            polygonPaintable.paint(graphics, paint, stroke);
-            if (directed) {
-                decorationPaintable.paint(graphics, paint, stroke);
-            }
-        }
-
-        @Override
-        public Collection<Object> getPaintKeys() {
-            ArrayList keys = new ArrayList(polygonPaintable.getPaintKeys());
-            if (directed) {
-                keys.addAll(decorationPaintable.getPaintKeys());
-            }
-            return keys;
-        }
-
-        @Override
-        public Collection<Object> getStrokeKeys() {
-            return List.of(PolygonPaintable.LINE_STROKE_KEY);
-        }
-
-        @Override
-        public final void setPaint(Object key, Paint paint) {
-            if (polygonPaintable.getPaintKeys().contains(key)) {
-                polygonPaintable.setPaint(key, paint);
-            }
-            else if (decorationPaintable.getPaintKeys().contains(key)) {
-                decorationPaintable.setPaint(key, paint);
-            }
-            else {
-                throw new IllegalArgumentException(key.toString());
-            }
-        }
-        
-        @Override
-        public final void setStroke(Object key, Stroke stroke) {
-            if (polygonPaintable.getStrokeKeys().contains(key)) {
-                polygonPaintable.setStroke(key, stroke);
-            }
-            else if (decorationPaintable.getStrokeKeys().contains(key)) {
-                decorationPaintable.setStroke(key, stroke);
-            }
-            else {
-                throw new IllegalArgumentException(key.toString());
-            }
-        }
-        
-        public boolean isDirected() {
-            return directed;
-        }
-        
-        private final PolygonPaintable polygonPaintable;
-        private final EdgeDecorationPaintable decorationPaintable;
-        private final boolean directed;
-        
-    };
-        
 
     private class GraphPanel extends JPanel {
 
@@ -740,7 +558,7 @@ public class GraphEditorDemo extends JFrame {
         private PolygonPaintable.Factory getPolygonFactory(EdgeFactory edgeFactory) {
             return (pointAt, pointCount) -> {
                 PolygonPaintable polygonPaintable = PolygonPaintable.create(pointAt, pointCount);
-                copy(edgeFactory.getCopyInstance().polygonPaintable, polygonPaintable);
+                copy(edgeFactory.getCopyInstance().getPolygonPaintable(), polygonPaintable);
                 return polygonPaintable;
             };
         }
@@ -772,8 +590,6 @@ public class GraphEditorDemo extends JFrame {
 
     private static final Point ICON_MID_LEFT = new Point(-8, 0);
     private static final Point ICON_MID_RIGHT = new Point(8, 0);
-
-    private static final Dimension VERTEX_ICON_DIMENSION = new Dimension(12, 12);
 
     private static final Color TRANSPARENT = new Color(0, true);
     private static final BasicStroke SOLID_STROKE = new BasicStroke();

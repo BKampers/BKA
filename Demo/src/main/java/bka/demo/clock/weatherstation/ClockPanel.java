@@ -1,7 +1,6 @@
 /*
 ** © Bart Kampers
 */
-
 package bka.demo.clock.weatherstation;
 
 import bka.awt.*;
@@ -101,11 +100,11 @@ public class ClockPanel extends javax.swing.JPanel {
 
     public void update(WeatherStation station) {
         needles.forEach((measurement, needle) -> {
-            Double value = measurement.getValue(station);
-            if (value != null) {
+            Optional<Double> value = measurement.getValue(station);
+            if (value.isPresent()) {
                 mainMarkerRenderer.setPaint(MARKER_COLOR);
                 needle.applyPaint();
-                updateTask.setValue(measurement, value);
+                updateTask.setValue(measurement, value.get());
             }
             else {
                 mainMarkerRenderer.setPaint(NO_DATA_COLOR);

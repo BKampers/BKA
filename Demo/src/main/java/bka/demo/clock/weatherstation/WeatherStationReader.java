@@ -1,8 +1,7 @@
-package bka.demo.clock.weatherstation;
-
 /*
 ** © Bart Kampers
 */
+package bka.demo.clock.weatherstation;
 
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.dataformat.xml.*;
@@ -68,10 +67,18 @@ public class WeatherStationReader {
     }
 
     private static String loadPage() throws IOException {
+        try {
+            return loadPage(new URI(KNMI_LINK));
+        }
+        catch (URISyntaxException ex) {
+            throw new IllegalStateException(ex);
+        }
+    }
+
+    private static String loadPage(URI uri) throws IOException {
         StringBuilder page = new StringBuilder();
-        URL url = new URL(KNMI_URL);
-        try (InputStream stream = url.openStream()) {
-            char[] buffer = new char[4096];
+        char[] buffer = new char[4096];
+        try ( InputStream stream = uri.toURL().openStream()) {
             Reader reader = new InputStreamReader(stream, StandardCharsets.UTF_8.name());
             int count;
             while ((count = reader.read(buffer)) > 0) {
@@ -210,34 +217,38 @@ public class WeatherStationReader {
         }
 
         @Override
-        public String getWeatherSummary() {
-            return data.get(WEATHER_SUMMARY_HEADER);
+        public Optional<String> getWeatherSummary() {
+            String summary = data.get(WEATHER_SUMMARY_HEADER);
+            if (summary == null) {
+                return Optional.empty();
+            }
+            return Optional.of(summary);
         }
 
         @Override
-        public Double getTemperature() {
+        public Optional<Double> getTemperature() {
             return parseDouble(data.get(TEMPERATURE_HEADER));
         }
 
         @Override
-        public Double getChill() {
+        public Optional<Double> getChill() {
             return parseDouble(data.get(CHILL_HEADER));
         }
 
         @Override
-        public Double getHumidity() {
+        public Optional<Double> getHumidity() {
             return parseDouble(data.get(HUMIDITY_HEADER));
         }
 
         @Override
-        public Double getWindDirection() {
+        public Optional<Double> getWindDirection() {
             String directionData = data.get(WIND_DIRECTION_HEADER);
             if (directionData == null) {
                 return null;
             }
             String cardinal = directionData.substring(0, directionData.indexOf(' '));
             try {
-                return new CardinalNumberFormat().parse(cardinal).doubleValue();
+                return Optional.of(new CardinalNumberFormat().parse(cardinal).doubleValue());
             }
             catch (ParseException ex) {
                 throw new IllegalStateException("Invalid cardinal direction: " + cardinal);
@@ -245,37 +256,37 @@ public class WeatherStationReader {
         }
 
         @Override
-        public Double getWindSpeed() {
+        public Optional<Double> getWindSpeed() {
             return parseDouble(data.get(WIND_SPEED_HEADER));
         }
 
         @Override
-        public Double getSquall() {
+        public Optional<Double> getSquall() {
             return parseDouble(data.get(SQUALL_HEADER));
         }
 
         @Override
-        public Double getVisibility() {
+        public Optional<Double> getVisibility() {
             return parseDouble(data.get(VISIBILITY_HEADER));
         }
 
         @Override
-        public Double getPressure() {
+        public Optional<Double> getPressure() {
             return parseDouble(data.get(PRESSURE_HEADER));
         }
 
-        private Double parseDouble(String data) {
+        private Optional<Double> parseDouble(String data) {
             if (data == null) {
-                return null;
+                return Optional.empty();
             }
-            return Double.parseDouble(data);
+            return Optional.of(Double.valueOf(data));
         }
 
         private final LocalDateTime timestamp;
         private final Map<String, String> data = new HashMap<>();
     }
 
-    private static final String KNMI_URL = "https://www.knmi.nl/nederland-nu/weer/waarnemingen";
+    private static final String KNMI_LINK = "https://www.knmi.nl/nederland-nu/weer/waarnemingen";
 
     private static final String TABLE_HEAD = "thead";
     private static final String TABLE_BODY = "tbody";

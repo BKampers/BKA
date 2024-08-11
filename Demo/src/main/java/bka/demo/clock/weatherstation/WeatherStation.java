@@ -1,12 +1,10 @@
-package bka.demo.clock.weatherstation;
-
-import java.time.*;
-
 /*
 ** © Bart Kampers
 */
+package bka.demo.clock.weatherstation;
 
-
+import java.time.*;
+import java.util.*;
 
 public interface WeatherStation {
 
@@ -14,22 +12,22 @@ public interface WeatherStation {
 
     LocalDateTime getTimestamp();
 
-    String getWeatherSummary();
+    Optional<String> getWeatherSummary();
 
-    Double getTemperature(); //* celcius
+    Optional<Double> getTemperature(); //* celcius
 
-    Double getChill(); //* celcius
+    Optional<Double> getChill(); //* celcius
 
-    Double getHumidity(); //* percent
+    Optional<Double> getHumidity(); //* percent
 
-    Double getWindDirection(); // degrees clockwise
+    Optional<Double> getWindDirection(); // degrees clockwise
 
-    Double getWindSpeed(); //* m/s
+    Optional<Double> getWindSpeed(); //* m/s
 
-    Double getSquall(); //* km/h
+    Optional<Double> getSquall(); //* km/h
 
-    Double getVisibility(); //* meters
+    Optional<Double> getVisibility(); //* meters
 
-    Double getPressure(); //* hPa
+    Optional<Double> getPressure(); //* hPa
 
 }

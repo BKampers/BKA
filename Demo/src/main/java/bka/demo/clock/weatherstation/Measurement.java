@@ -1,8 +1,9 @@
 /*
- * © Bart Kampers
- */
+** © Bart Kampers
+*/
 package bka.demo.clock.weatherstation;
 
+import java.util.*;
 import java.util.function.*;
 
 public enum Measurement {
@@ -11,32 +12,32 @@ public enum Measurement {
     HUMIDITY(station -> station.getHumidity()),
     WIND_DIRECTION(station -> station.getWindDirection()),
     WIND_SPEED(station -> station.getWindSpeed()),
-    SQUALL(station -> computeValue(station.getSquall(), value -> value / 3.6, () -> station.getWindSpeed())),
+    SQUALL(station -> computeValue(station.getSquall(), value -> Optional.of(value.get() / 3.6), () -> station.getWindSpeed())),
     PRESSURE(station -> station.getPressure()),
-    VISIBILITY(station -> computeValue(station.getVisibility(), value -> value / 1000));
+    VISIBILITY(station -> computeValue(station.getVisibility(), value -> Optional.of(value.get() / 1000)));
 
-    private Measurement(Function<WeatherStation, Double> provider) {
+    private Measurement(Function<WeatherStation, Optional<Double>> provider) {
         this.provider = provider;
     }
 
-    public Double getValue(WeatherStation station) {
+    public Optional<Double> getValue(WeatherStation station) {
         return provider.apply(station);
     }
 
-    private static Double computeValue(Double value, Supplier<Double> alternative) {
+    private static Optional<Double> computeValue(Optional<Double> value, Supplier<Optional<Double>> alternative) {
         return computeValue(value, Function.identity(), alternative);
     }
 
-    private static Double computeValue(Double value, Function<Double, Double> processor) {
+    private static Optional<Double> computeValue(Optional<Double> value, Function<Optional<Double>, Optional<Double>> processor) {
         return computeValue(value, processor, () -> null);
     }
 
-    private static Double computeValue(Double value, Function<Double, Double> processor, Supplier<Double> alternative) {
-        if (value == null) {
+    private static Optional<Double> computeValue(Optional<Double> value, Function<Optional<Double>, Optional<Double>> processor, Supplier<Optional<Double>> alternative) {
+        if (value.isEmpty()) {
             return alternative.get();
         }
         return processor.apply(value);
     }
 
-    private final Function<WeatherStation, Double> provider;
+    private final Function<WeatherStation, Optional<Double>> provider;
 }

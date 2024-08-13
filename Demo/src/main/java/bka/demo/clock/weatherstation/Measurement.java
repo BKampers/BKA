@@ -25,14 +25,14 @@ public enum Measurement {
     }
 
     private static Optional<Double> computeValue(Optional<Double> value, Supplier<Optional<Double>> alternative) {
-        return computeValue(value, Function.identity(), alternative);
+        return computeValue(value, UnaryOperator.identity(), alternative);
     }
 
-    private static Optional<Double> computeValue(Optional<Double> value, Function<Optional<Double>, Optional<Double>> processor) {
+    private static Optional<Double> computeValue(Optional<Double> value, UnaryOperator<Optional<Double>> processor) {
         return computeValue(value, processor, Optional::empty);
     }
 
-    private static Optional<Double> computeValue(Optional<Double> value, Function<Optional<Double>, Optional<Double>> processor, Supplier<Optional<Double>> alternative) {
+    private static Optional<Double> computeValue(Optional<Double> value, UnaryOperator<Optional<Double>> processor, Supplier<Optional<Double>> alternative) {
         if (value.isEmpty()) {
             return alternative.get();
         }

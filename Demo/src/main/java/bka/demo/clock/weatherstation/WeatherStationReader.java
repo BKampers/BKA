@@ -102,8 +102,12 @@ public class WeatherStationReader {
 
     private static class TableHeadRow {
 
-        public TableHeadData[] getColumns() {
-            return columns;
+        public int getColumnCount() {
+            return columns.length;
+        }
+
+        public String getColumnData(int index) {
+            return columns[index].getData();
         }
 
         public void setColumns(TableHeadData[] columns) {
@@ -157,8 +161,8 @@ public class WeatherStationReader {
 
     private static class TableRow {
 
-        public TableData[] getColumns() {
-            return columns;
+        public String getColumnData(int index) {
+            return columns[index].getData();
         }
 
         public void setColumns(TableData[] columns) {
@@ -201,14 +205,12 @@ public class WeatherStationReader {
 
         Station(TableHeadRow head, TableRow row, LocalDateTime timestamp) {
             this.timestamp = Objects.requireNonNull(timestamp);
-            for (int i = 0; i < head.getColumns().length; ++i) {
-                data.put(head.getColumns()[i].getData(), row.getColumns()[i].getData());
-            }
+            IntStream.range(0, head.getColumnCount()).forEach(i -> data.put(head.getColumnData(i), row.getColumnData(i)));
         }
 
         @Override
         public String getStationName() {
-            return data.get(STATION_NAME_HEADER);
+            return Objects.toString(data.get(STATION_NAME_HEADER), "?");
         }
 
         @Override
@@ -244,7 +246,7 @@ public class WeatherStationReader {
         public Optional<Double> getWindDirection() {
             String directionData = data.get(WIND_DIRECTION_HEADER);
             if (directionData == null) {
-                return null;
+                return Optional.empty();
             }
             String cardinal = directionData.substring(0, directionData.indexOf(' '));
             try {

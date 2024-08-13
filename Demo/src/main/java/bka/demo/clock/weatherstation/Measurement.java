@@ -29,7 +29,7 @@ public enum Measurement {
     }
 
     private static Optional<Double> computeValue(Optional<Double> value, Function<Optional<Double>, Optional<Double>> processor) {
-        return computeValue(value, processor, () -> null);
+        return computeValue(value, processor, Optional::empty);
     }
 
     private static Optional<Double> computeValue(Optional<Double> value, Function<Optional<Double>, Optional<Double>> processor, Supplier<Optional<Double>> alternative) {

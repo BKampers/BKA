@@ -4,11 +4,17 @@
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
 */
-
 package bka.math.graphs;
 
 import java.util.*;
 
+/**
+ * Mutable directed graph of given vertex type.
+ * Allows only directed edges. Allows vertices and edges to be added or removed.
+ * @see bka.math.graps.MutableGraph
+ * @see bka.math.graps.Edge
+ * @param <V> vertex type
+ */
 public class DefaultMutableDigraph<V> extends MutableGraph<V, DirectedEdge<V>> implements Digraph<V> {
 
     public DefaultMutableDigraph() {

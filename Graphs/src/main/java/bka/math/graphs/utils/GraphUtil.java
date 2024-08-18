@@ -4,7 +4,6 @@
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
 */
-
 package bka.math.graphs.utils;
 
 import bka.math.graphs.*;
@@ -14,13 +13,13 @@ import java.util.function.*;
 
 public final class GraphUtil {
 
-    private GraphUtil() throws IllegalAccessException {
+    private GraphUtil() {
     }
 
     /**
      * @param <V> vertex type
      * @param graph
-     * @return true if given graph is not empty and contains only directed edges
+     * @return true iff given graph is not empty and contains only directed edges
      */
     public static <V> boolean isDirected(GraphBase<V, Edge<V>> graph) {
         return ! graph.getEdges().isEmpty() && graph.getEdges().stream().allMatch(edge -> edge.isDirected());
@@ -29,7 +28,7 @@ public final class GraphUtil {
     /**
      * @param <V> vertex type
      * @param graph
-     * @return true if given graph is not empty and contains only undirected edges
+     * @return true iff given graph is not empty and contains only undirected edges
      */
     public static <V> boolean isUndirected(GraphBase<V, Edge<V>> graph) {
         return ! graph.getEdges().isEmpty() && graph.getEdges().stream().allMatch(edge -> ! edge.isDirected());
@@ -38,48 +37,46 @@ public final class GraphUtil {
     /**
      * @param <V> vertex type
      * @param graph
-     * @return true if given graph has at least one directed edge and at least one undirected edge
+     * @return true iff given graph has at least one directed edge and at least one undirected edge
      */
     public static <V> boolean isMixed(GraphBase<V, Edge<V>> graph) {
-        boolean hasDirectedEdge = false;
-        boolean hasUndirectedEdge = false;
-        for (Edge<V> edge : graph.getEdges()) {
-            if (edge.isDirected()) {
-                hasDirectedEdge = true;
-            }
-            else {
-                hasUndirectedEdge = true;
-            }
-            if (hasDirectedEdge && hasUndirectedEdge) {
+        Iterator<Edge<V>> it = graph.getEdges().iterator();
+        if (!it.hasNext()) {
+            return false;
+        }
+        boolean isDirected = it.next().isDirected();
+        while (it.hasNext()) {
+            if (it.next().isDirected() != isDirected) {
                 return true;
             }
         }
         return false;
     }
 
-    public static <V> int degree(GraphBase<V, Edge<V>> graph, V vertex) {
-        int count = 0;
-        for (Edge<V> edge : graph.getEdges()) {
-            count += edge.getVertices().stream().filter(v -> vertex.equals(v)).count();
+    /**
+     * @param <V> vertex type
+     * @param graph
+     * @param vertex
+     * @return the number of edges from given graph that are incident on given vertex, where a loop is counted twice.
+     */
+    public static <V> long degree(GraphBase<V, Edge<V>> graph, V vertex) {
+        return graph.getEdges().stream()
+            .map(count(vertex))
+            .reduce(0L, (total, count) -> total + count);
+    }
+
+    private static <V> Function<Edge<V>, Long> count(V vertex) {
+        return edge -> edge.getVertices().stream().filter(vertex::equals).count();
+    }
+    
+    public static <V, E extends Edge<V>> List<V> vertexPath(List<E> edgePath, V start) {
+        if (edgePath.isEmpty()) {
+            return Collections.emptyList();
         }
-        return count;
-    }
-
-    public static <V> String toString(Edge<V> edge) {
-        return toString(edge, Objects::toString);
-    }
-
-    public static <V> String toString(Edge<V> edge, Function<V, String> vertexToString) {
-        StringBuilder builder = new StringBuilder();
-        edge.getVertices().forEach(v -> {
-            if (! builder.isEmpty()) {
-                builder.append(',');
-            }
-            builder.append(vertexToString.apply(v));
-        });
-        builder.insert(0, '{');
-        builder.append('}');
-        return builder.toString();
+        List<V> path = new ArrayList<>(edgePath.size() + 1);
+        path.add(start);
+        edgePath.forEach(edge -> path.add(EdgeUtil.getAdjacentVertex(edge, path.getLast()))); 
+        return path;
     }
 
 }

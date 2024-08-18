@@ -4,13 +4,17 @@
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
 */
-
 package bka.math.graphs;
 
 import java.util.*;
-import java.util.stream.*;
 
 
+/**
+ * Default implementation of an undirected edge for given vertex type.
+ * To be used in graphs where multiple edges are not allowed. That is two or more edges that join the same vertices, are not allowed.
+ * @see bka.math.graph.DirectedEdge
+ * @param <V> vertex type
+ */
 public class UniqueUndirectedEdge<V> extends UndirectedEdge<V> {
 
     public UniqueUndirectedEdge(V vertex1, V vertex2) {
@@ -22,17 +26,19 @@ public class UniqueUndirectedEdge<V> extends UndirectedEdge<V> {
         if (object == this) {
             return true;
         }
-        if (object == null || !getClass().equals(object.getClass())) {
-            return false;
+        if (object instanceof UniqueUndirectedEdge other) {
+            return vertexSet().equals(other.vertexSet());
         }
-        Collection<V> thisVertices = getVertices();
-        Collection<V> otherVertices = ((UniqueUndirectedEdge) object).getVertices();
-        return otherVertices.containsAll(thisVertices) && thisVertices.containsAll(otherVertices);
+        return false;
     }
 
     @Override
     public int hashCode() {
-        return getVertices().stream().map(vertex -> vertex.hashCode()).sorted().collect(Collectors.toList()).hashCode();
+        return vertexSet().hashCode();
+    }
+    
+    private HashSet<V> vertexSet() {
+        return new HashSet<>(getVertices());
     }
 
 }

@@ -6,7 +6,9 @@
         <artifactId>BKA</artifactId>
         <version>0</version>
     </parent>
+    <groupId>bka</groupId>
     <artifactId>Graphs</artifactId>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
     <dependencies>
         <dependency>
@@ -25,7 +27,6 @@
         </dependency>
     </dependencies>
     <properties>
-        <maven.compiler.source>15</maven.compiler.source>
-        <maven.compiler.target>15</maven.compiler.target>
+        <maven.compiler.release>21</maven.compiler.release>
     </properties>
 </project>

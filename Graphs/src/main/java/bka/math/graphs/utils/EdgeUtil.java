@@ -20,13 +20,13 @@ public final class EdgeUtil {
      * @param <V> Vertex type
      * @param <E> Edge of vertex type
      * @param edge
-     * @param vertex incident with given edge
+     * @param vertex incident on given edge
      * @return The vertex that is connected to given vertex by given edge.
-     * @throws IllegalArgumentException if given vertex is not incident with (not connected by) given edge.
+     * @throws IllegalArgumentException if given vertex is not incident on (not connected by) given edge.
      */
     public static <V, E extends Edge<V>> V getAdjacentVertex(E edge, V vertex) {
         if (!isIncidentWith(edge, vertex)) {
-            throw new IllegalArgumentException("Edge " + edge + " is not incident with vertex " + vertex);
+            throw new IllegalArgumentException("Edge " + edge + " is not incident on vertex " + vertex);
         }
         return edge.getVertices().stream().filter(v -> !vertex.equals(v)).findAny().orElse(vertex);
     }
@@ -46,7 +46,7 @@ public final class EdgeUtil {
      * @param <E> Edge of vertex type
      * @param edge
      * @param vertex
-     * @return true if given vertex is incident with (is connected by) edge, false otherwise
+     * @return true if given vertex is incident on (is connected by) edge, false otherwise
      */
     public static <V, E extends Edge<V>> boolean isIncidentWith(E edge, V vertex) {
         return edge.getVertices().contains(vertex);

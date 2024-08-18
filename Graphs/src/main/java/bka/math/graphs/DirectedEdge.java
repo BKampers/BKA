@@ -4,9 +4,14 @@
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
 */
-
 package bka.math.graphs;
 
+/**
+ * Default implementation of a directed edge for given vertex type.
+ * @see bka.math.graph.Edge
+ * @see bka.math.graph.AbstractEdge
+ * @param <V> vertex type
+ */
 public class DirectedEdge<V> extends AbstractEdge<V> {
     
     public DirectedEdge(V origin, V terminus) {
@@ -28,11 +33,6 @@ public class DirectedEdge<V> extends AbstractEdge<V> {
     @Override
     public final boolean isDirected() {
         return true;
-    }
-
-    @Override
-    protected String stringPattern() {
-        return "(%s,%s)";
     }
 
 }

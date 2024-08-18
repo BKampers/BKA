@@ -4,41 +4,40 @@
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
 */
-
 package bka.math.graphs;
 
 import java.util.*;
+import java.util.function.*;
+import java.util.stream.*;
 
-
+/**
+ * Abstract base class for directed and undirected edges, including loops. 
+ * An edge that joins a vertex with itself reperesents a loop.
+ * @see bka.math.graphs.Edge
+ * @param <V> vertex type
+ */
 public abstract class AbstractEdge<V> implements Edge<V> {
 
     public AbstractEdge(V vertex1, V vertex2) {
-        vertices = List.of(vertex1, vertex2);
+        vertices = List.of(Objects.requireNonNull(vertex1), Objects.requireNonNull(vertex2));
     }
 
     public AbstractEdge(Edge<V> other) {
-        if (other.getVertices().size() != VERTEX_COUNT) {
-            throw new IllegalArgumentException("Invalid vertex count");
+        this(other.getVertices());
+    }
+
+    public AbstractEdge(Collection<V> vertices) {
+        if (vertices.size() != VERTEX_COUNT) {
+            throw new IllegalArgumentException("Illegal vertex count: " + vertices.size());
         }
-        vertices = Collections.unmodifiableList(new ArrayList<>(other.getVertices()));
+        this.vertices = vertices.stream()
+            .map(Objects::requireNonNull)
+            .collect(Collectors.toUnmodifiableList());
     }
 
     @Override
     public Collection<V> getVertices() {
         return vertices;
-    }
-
-    @Override
-    public String toString() {
-        return String.format(stringPattern(), toString(vertices.get(VERTEX_1)), toString(vertices.get(VERTEX_2)));
-    }
-
-    protected String toString(V vertex) {
-        return vertex.toString();
-    }
-
-    protected String stringPattern() {
-        return "{%s,%s}";
     }
 
     protected V getVertex1() {
@@ -49,6 +48,23 @@ public abstract class AbstractEdge<V> implements Edge<V> {
         return vertices.get(VERTEX_2);
     }
 
+    @Override
+    public String toString() {
+        return toString(Objects::toString);
+    }
+
+    public String toString(Function<V, String> vertexToString) {
+        return vertices.stream()
+            .map(vertexToString)
+            .collect(getCollector());
+    }
+
+    private Collector<CharSequence, ?, String> getCollector() {
+        return (isDirected())
+            ? Collectors.joining(",", "(", ")")
+            : Collectors.joining(",", "{", "}");
+    }
+    
     private final List<V> vertices;
 
     private static final int VERTEX_1 = 0;

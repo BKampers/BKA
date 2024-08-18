@@ -26,6 +26,10 @@ public class NonRecursiveTrailFinder<V, E extends Edge<V>> extends AbstractTrail
         this.filter = (filter == null) ? allPass() : filter;
     }
 
+    /**
+     * Set conditon all found resolutions have to meet in order to stop searching for more resolutions
+     * @param limiter predicate
+     */
     public void setLimiter(Predicate<Collection<List<E>>> limiter) {
         this.limiter = (limiter == null) ? nonePass() : limiter;
     }

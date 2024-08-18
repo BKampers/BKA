@@ -4,16 +4,15 @@
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
 */
-
 package bka.math.graphs;
 
 import java.util.*;
 
 /**
- * Immutable graph. Once constructed, edges and vertices cannot be added or removed anymore. Does not contain duplicate edges or vertices. That is,
+ * Immutable graph of given vertextype and edge type. Once constructed, edges and vertices cannot be added or removed anymore. Does not contain duplicate edges or vertices. That is,
  * this graph contains no pair of edges {e1,e2} where e1.equals(e2), and no pair of vertices {v1,v2} where v1.equals(v2). Edges may be directed or
  * undirected.
- *
+ * @see bka.math.graphs.GraphBase
  * @param <V> Vertex type
  * @param <E> Edge of Vertex type
  */

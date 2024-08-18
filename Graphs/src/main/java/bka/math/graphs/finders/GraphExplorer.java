@@ -16,13 +16,11 @@ public class GraphExplorer<V, E extends Edge<V>> {
     public GraphExplorer(TrailFinder<V, E> finder) {
         this.finder = Objects.requireNonNull(finder);
     }
-
+    
     /**
      * Find all trails between two vertices in a graph. A trail is a sequence of edges joining a sequence of vertices. Vertices in a trail may be
      * repeated but edges may not be repeated.
      *
-     * @param <V> Type of vertex
-     * @param <E> Type of edge extending Edge&lt;V&gt;
      * @param graph
      * @param start
      * @param end
@@ -40,8 +38,6 @@ public class GraphExplorer<V, E extends Edge<V>> {
      * Find all circuits in a graph that contain a given vertex. A circuit is a sequence of edges joining a sequence of vertices where the tail of the
      * last edge is the same vertex as the head of the first vertex. Vertices in a circuit may be repeated but edges may not be repeated.
      *
-     * @param <V> Type of vertex
-     * @param <E> Type of edge extending Edge&lt;V&gt;
      * @param graph
      * @param vertex
      * @return a collection of all circuits that contain the vertex, empty if no cirtcuit can be found.
@@ -55,8 +51,6 @@ public class GraphExplorer<V, E extends Edge<V>> {
      * Find all paths between two vertices in a graph. A path is a sequence of edges joining a sequence of vertices. Vertices and edges in a trail may
      * not be repeated.
      *
-     * @param <V> Type of vertex
-     * @param <E> Type of edge extending Edge&lt;V&gt;
      * @param graph
      * @param start
      * @param end
@@ -77,8 +71,6 @@ public class GraphExplorer<V, E extends Edge<V>> {
      * Find all cycles in a graph that contain a given vertex. A cycle is a sequence of edges joining a sequence of vertices where the tail of the
      * last edge is the same vertex as the head of the first vertex. Vertices and edges in a cycle may not be repeated.
      *
-     * @param <V> Type of vertex
-     * @param <E> Type of edge extending Edge&lt;V&gt;
      * @param graph
      * @param vertex
      * @return a collection of all cycles that contain the vertex, empty if no cycle can be found.

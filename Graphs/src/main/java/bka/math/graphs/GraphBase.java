@@ -4,16 +4,15 @@
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
 */
-
 package bka.math.graphs;
 
 import java.util.*;
 
 /**
- * Root interface for graphs of given vertex type an given edge type. Edge type is an extension of {@code Edge<V>}.
- *
+ * Root interface for graphs of given vertex type and edge type.
+ * @see <a href="https://en.wikipedia.org/wiki/Graph_theory">Grahp theory on Wikipedia</a>
  * @param <V> Vertex type
- * @param <E> Edge of vertex type
+ * @param <E> {@code Edge} of vertex type
  */
 public interface GraphBase<V, E extends Edge<V>> {
 

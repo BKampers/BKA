@@ -4,12 +4,17 @@
 ** exploitation and discrimination), humanity, the environment or the
 ** universe.
 */
-
 package bka.math.graphs;
 
 import java.util.*;
 
 
+/**
+ * Default implementation of a directed edge for given vertex type.
+ * To be used in graphs where multiple edges are not allowed. That is, two or more edges that join the same origin to the same terminus, are not allowed.
+ * @see bka.math.graph.DirectedEdge
+ * @param <V> vertex type
+ */
 public class UniqueDirectedEdge<V> extends DirectedEdge<V> {
 
     public UniqueDirectedEdge(V origin, V terminus) {
@@ -21,11 +26,10 @@ public class UniqueDirectedEdge<V> extends DirectedEdge<V> {
         if (object == this) {
             return true;
         }
-        if (object == null || !getClass().equals(object.getClass())) {
-            return false;
+        if (object instanceof UniqueDirectedEdge other) {
+            return getOrigin().equals(other.getOrigin()) && getTerminus().equals(other.getTerminus());
         }
-        UniqueDirectedEdge other = (UniqueDirectedEdge) object;
-        return Objects.equals(getOrigin(), other.getOrigin()) && Objects.equals(getTerminus(), other.getTerminus());
+        return false;
     }
 
     @Override

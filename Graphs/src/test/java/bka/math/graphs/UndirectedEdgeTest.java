@@ -1,7 +1,6 @@
 /*
 ** © Bart Kampers
 */
-
 package bka.math.graphs;
 
 import java.util.*;
@@ -16,7 +15,7 @@ public class UndirectedEdgeTest extends GraphTestBase {
         UndirectedEdge edge = new UndirectedEdge('A', 'B');
         assertUndirectedEdge(edge, 'A', 'B');
     }
-
+    
     @Test
     public void testCopyFromDirectedEdge() {
         UndirectedEdge edge = new UndirectedEdge(new DirectedEdge('A', 'B'));

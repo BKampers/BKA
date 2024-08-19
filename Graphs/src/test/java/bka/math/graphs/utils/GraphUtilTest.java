@@ -1,6 +1,6 @@
 /*
 ** © Bart Kampers
- */
+*/
 
 package bka.math.graphs.utils;
 
@@ -57,5 +57,5 @@ public class GraphUtilTest {
         assertFalse(GraphUtil.isDirected(graph));
         assertFalse(GraphUtil.isUndirected(graph));
     }
-
+    
 }

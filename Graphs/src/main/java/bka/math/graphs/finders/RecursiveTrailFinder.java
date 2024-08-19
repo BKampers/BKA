@@ -49,7 +49,7 @@ public class RecursiveTrailFinder<V, E extends Edge<V>> extends AbstractTrailFin
                 if (revisitVertices || !nextVertex.equals(end)) {
                     Collection<E> remainingEdges = (revisitVertices || start.equals(end)) ? complement(graph, nextEdge) : complement(graph, start);
                     find(remainingEdges, nextVertex, end, revisitVertices, currentTrail).forEach(trail -> {
-                        trail.add(0, nextEdge);
+                        trail.addFirst(nextEdge);
                         allTrails.add(trail);
                     });
                 }

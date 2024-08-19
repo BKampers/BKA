@@ -15,11 +15,13 @@ import java.util.function.*;
 public interface TrailFinder<V, E extends Edge<V>> {
 
     /**
-     * Find all trails or paths in given graph, from the given start edge to the given end edge.
+     * Find all trails or paths in given graph, from the given vertex edge to the given end vertex.
+     * A path is a trail without repeated vertices. 
+     * If the end vertex is omitted, then trails to any end vertex will be included in the resolution. 
      *
      * @param graph as a collection of edges
      * @param start
-     * @param end
+     * @param end optional, null if omitted
      * @param revisitVertices true if all trails may be included in the resolution, false if only paths may be included.
      * @return found resolutions
      */

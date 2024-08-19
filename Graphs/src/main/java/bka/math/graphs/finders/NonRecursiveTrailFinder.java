@@ -27,7 +27,7 @@ public class NonRecursiveTrailFinder<V, E extends Edge<V>> extends AbstractTrail
     }
 
     /**
-     * Set conditon all found resolutions have to meet in order to stop searching for more resolutions
+     * Set conditon the collections of found resolutions has to meet in order to stop searching for more resolutions
      * @param limiter predicate
      */
     public void setLimiter(Predicate<Collection<List<E>>> limiter) {
@@ -39,16 +39,13 @@ public class NonRecursiveTrailFinder<V, E extends Edge<V>> extends AbstractTrail
         Collection<List<E>> foundTrails = new ArrayList<>();
         Deque<SearchStage> stack = new LinkedList<>();
         SearchStage stage = new SearchStage(relevantEdges(revisitVertices, graph, start), start);
-        for (;;) {
+        while (!limiter.test(foundTrails)) {
             if (stage.selectNextEdge()) {
                 V nextVertex = stage.getAdjacentVertex();
                 TrailBuilder currentTrail = new TrailBuilder(stack, stage);
                 if (restriction.test(currentTrail.get())) {
                     if ((end == null || nextVertex.equals(end)) && filter.test(currentTrail.get())) {
                         foundTrails.add(currentTrail.get());
-                        if (limiter.test(foundTrails)) {
-                            return foundTrails;
-                        }
                     }
                     if (revisitVertices || !nextVertex.equals(end)) {
                         stack.push(stage);
@@ -63,6 +60,7 @@ public class NonRecursiveTrailFinder<V, E extends Edge<V>> extends AbstractTrail
                 return foundTrails;
             }
         }
+        return foundTrails;
     }
 
     private Collection<E> relevantEdges(boolean revisitVertices, Collection<E> graph, V start) {

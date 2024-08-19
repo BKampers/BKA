@@ -37,6 +37,4 @@ public class DirectedEdgeTest extends GraphTestBase {
         assertEquals("(" + origin.toString() + "," + terminus.toString() + ")", edge.toString());
     }
 
-  
-
 }

@@ -13,24 +13,77 @@ import java.util.function.*;
 
 public class EdgeFactory implements Factory {
 
-    public EdgeFactory(EdgeDecorationPaintable decorationPaintable) {
-        defaultInstance = new EdgePaintable(() -> ICON_MID_LEFT, () -> ICON_MID_RIGHT, decorationPaintable, true);
-        defaultInstance.getPolygonPaintable().setPaint(PolygonPaintable.LINE_PAINT_KEY, Color.BLACK);
-        defaultInstance.getPolygonPaintable().setStroke(PolygonPaintable.LINE_STROKE_KEY, SOLID_STROKE);
-    }
+    public enum Decoration {
+        NONE(ArrowheadPaintable::new, EdgeFactory::initializeArrowhead),
+        ARROWHEAD(ArrowheadPaintable::new, EdgeFactory::initializeArrowhead),
+        DIAMOND(DiamondPaintable::new, EdgeFactory::initializeDiamond);
 
-    public EdgeFactory(boolean directed) {
-        defaultInstance = new EdgePaintable(() -> ICON_MID_LEFT, () -> ICON_MID_RIGHT, directed);
-        defaultInstance.getPolygonPaintable().setPaint(PolygonPaintable.LINE_PAINT_KEY, Color.BLACK);
-        defaultInstance.getPolygonPaintable().setStroke(PolygonPaintable.LINE_STROKE_KEY, SOLID_STROKE);
-        defaultInstance.getDecorationPaintable().setPaint(ArrowheadPaintable.ARROWHEAD_PAINT_KEY, Color.BLACK);
-        defaultInstance.getDecorationPaintable().setStroke(ArrowheadPaintable.ARROWHEAD_STROKE_KEY, SOLID_STROKE);
-    }
+        private Decoration(BiFunction<Supplier<Point>, Supplier<Point>, EdgeDecorationPaintable> constructor, Consumer<EdgePaintable> initialize) {
+            this.constructor = constructor;
+            this.initializer = initialize;
+        }
+
+        public EdgePaintable createEdgePaintable() {
+            EdgePaintable paintable = new EdgePaintable(ICON_LEFT, ICON_RIGHT, createEdgeDecorationPaintable(), this != NONE);
+            initializer.accept(paintable);
+            return paintable;
+        }
+
+        public EdgeDecorationPaintable createEdgeDecorationPaintable() {
+            return constructor.apply(ICON_LEFT, ICON_RIGHT);
+        }
+
+        public Consumer<EdgePaintable> getInitializer() {
+            return initializer;
+        }
+
+        private final BiFunction<Supplier<Point>, Supplier<Point>, EdgeDecorationPaintable> constructor;
+        private final Consumer<EdgePaintable> initializer;
+    };
 
     public EdgeFactory(EdgeComponent component) {
-        this(component.isDirected());
+        decoration = getDecoration(component);
+        defaultInstance = decoration.createEdgePaintable();
         copy(component.getPaintable(), defaultInstance);
         copy(component.getDecorationPaintable(), defaultInstance.getDecorationPaintable());
+    }
+
+    private static Decoration getDecoration(EdgeComponent component) {
+        if (!component.isDirected()) {
+            return Decoration.NONE;
+        }
+        return getDecoration(component.getDecorationPaintable());
+    }
+
+    public static Decoration getDecoration(Paintable decorationPaintable) {
+        if (decorationPaintable instanceof ArrowheadPaintable) {
+            return Decoration.ARROWHEAD;
+        }
+        if (decorationPaintable instanceof DiamondPaintable) {
+            return Decoration.DIAMOND;
+        }
+        throw new IllegalStateException("Unsupported decoration: " + decorationPaintable.getClass());
+    }
+
+    public EdgeFactory(Decoration decoration) {
+        this.decoration = decoration;
+        defaultInstance = decoration.createEdgePaintable();
+        decoration.getInitializer().accept(defaultInstance);
+    }
+
+    private static void initializeArrowhead(EdgePaintable edgePainatble) {
+        edgePainatble.getPolygonPaintable().setPaint(PolygonPaintable.LINE_PAINT_KEY, Color.BLACK);
+        edgePainatble.getPolygonPaintable().setStroke(PolygonPaintable.LINE_STROKE_KEY, SOLID_STROKE);
+        edgePainatble.getDecorationPaintable().setPaint(ArrowheadPaintable.ARROWHEAD_PAINT_KEY, Color.BLACK);
+        edgePainatble.getDecorationPaintable().setStroke(ArrowheadPaintable.ARROWHEAD_STROKE_KEY, SOLID_STROKE);
+    }
+
+    private static void initializeDiamond(EdgePaintable edgePaintable) {
+        edgePaintable.getPolygonPaintable().setPaint(PolygonPaintable.LINE_PAINT_KEY, Color.BLACK);
+        edgePaintable.getPolygonPaintable().setStroke(PolygonPaintable.LINE_STROKE_KEY, SOLID_STROKE);
+        edgePaintable.getDecorationPaintable().setStroke(DiamondPaintable.DIAMOND_BORDER_STROKE_KEY, SOLID_STROKE);
+        edgePaintable.getDecorationPaintable().setPaint(DiamondPaintable.DIAMOND_BORDER_PAINT_KEY, Color.BLACK);
+        edgePaintable.getDecorationPaintable().setPaint(DiamondPaintable.DIAMOND_FILL_PAINT_KEY, Color.WHITE);
     }
 
     @Override
@@ -40,10 +93,8 @@ public class EdgeFactory implements Factory {
 
     @Override
     public EdgePaintable getCopyInstance() {
-        EdgeDecorationPaintable decorationPaintable = (defaultInstance.getDecorationPaintable() instanceof ArrowheadPaintable)
-            ? new ArrowheadPaintable(defaultInstance.getDecorationPaintable().getStartPoint(), defaultInstance.getDecorationPaintable().getEndPoint())
-            : new DiamondPaintable(defaultInstance.getDecorationPaintable().getStartPoint(), defaultInstance.getDecorationPaintable().getEndPoint());
-        EdgePaintable copyInstance = new EdgePaintable(() -> ICON_MID_LEFT, () -> ICON_MID_RIGHT, decorationPaintable, defaultInstance.isDirected());
+        EdgeDecorationPaintable decorationPaintable = getDecoration(defaultInstance.getDecorationPaintable()).createEdgeDecorationPaintable();
+        EdgePaintable copyInstance = new EdgePaintable(ICON_LEFT, ICON_RIGHT, decorationPaintable, defaultInstance.isDirected());
         copy(defaultInstance.getPolygonPaintable(), copyInstance.getPolygonPaintable());
         copy(defaultInstance.getDecorationPaintable(), copyInstance.getDecorationPaintable());
         return copyInstance;
@@ -74,10 +125,13 @@ public class EdgeFactory implements Factory {
         return defaultInstance.isDirected();
     }
 
+    private final Decoration decoration;
     private final EdgePaintable defaultInstance;
 
     private static final Point ICON_MID_LEFT = new Point(-8, 0);
     private static final Point ICON_MID_RIGHT = new Point(8, 0);
+    private static final Supplier<Point> ICON_LEFT = () -> ICON_MID_LEFT;
+    private static final Supplier<Point> ICON_RIGHT = () -> ICON_MID_RIGHT;
 
     private static final BasicStroke SOLID_STROKE = new BasicStroke();
 }

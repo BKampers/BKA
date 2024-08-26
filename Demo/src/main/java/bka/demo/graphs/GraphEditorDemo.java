@@ -11,6 +11,7 @@ import java.awt.image.*;
 import java.util.List;
 import java.util.*;
 import java.util.function.*;
+import java.util.stream.*;
 import javax.swing.*;
 
 public class GraphEditorDemo extends JFrame {
@@ -22,14 +23,7 @@ public class GraphEditorDemo extends JFrame {
             new VertexFactory(RoundVertexPaintable::new, defaultStrokes, paints(Color.BLACK, Color.BLACK)),
             new VertexFactory(SquareVertexPaintable::new, defaultStrokes, paints(Color.BLACK, Color.WHITE))
         ));
-        DiamondPaintable diamondPaintable = new DiamondPaintable(() -> ICON_MID_LEFT, () -> ICON_MID_RIGHT);
-        diamondPaintable.setStroke(DiamondPaintable.DIAMOND_BORDER_STROKE_KEY, SOLID_STROKE);
-        diamondPaintable.setPaint(DiamondPaintable.DIAMOND_BORDER_PAINT_KEY, Color.BLACK);
-        diamondPaintable.setPaint(DiamondPaintable.DIAMOND_FILL_PAINT_KEY, Color.WHITE);
-        populateEdgeSelectorPanel(List.of(
-            new EdgeFactory(false),
-            new EdgeFactory(true),
-            new EdgeFactory(diamondPaintable)));
+        populateEdgeSelectorPanel(Arrays.stream(EdgeFactory.Decoration.values()).map(EdgeFactory::new).collect(Collectors.toList()));
     }
 
     private static Map<Object, Paint> paints(Paint borderPaint, Paint fillPaint) {
@@ -224,12 +218,15 @@ public class GraphEditorDemo extends JFrame {
         }
     }
 
-    private void addColorMenuItems(Paintable paintable, Point location, JPopupMenu menu, BiConsumer<Object, Color> onApply) {
-        paintable.getPaintKeys().forEach(paintKey -> menu.add(createColorMenuItem(paintKey, paintable, location, onApply)));
+    private void addColorMenuItems(Factory factory, Paintable source, Point location, JPopupMenu menu, BiConsumer<Object, Color> onApply) {
+        source.getPaintKeys().forEach(paintKey -> menu.add(createColorMenuItem(paintKey, factory.getCopyInstance(), location, onApply)));
     }
 
     private JMenuItem createColorMenuItem(Object paintKey, Paintable paintable, Point location, BiConsumer<Object, Color> onApply) {
         JMenuItem paintItem = new JMenuItem(getBundleText(paintKey.toString()));
+        paintable.getPaintKeys().stream().filter(key -> !key.equals(paintKey)).forEach(key -> paintable.setPaint(key, TRANSPARENT));
+        paintable.getStrokeKeys().forEach(key -> paintable.setStroke(key, SOLID_STROKE));
+        paintItem.setIcon(createIcon(paintable));
         paintItem.addActionListener(event -> pickColor(location, paintable, paintKey, onApply));
         return paintItem;
     }
@@ -491,8 +488,16 @@ public class GraphEditorDemo extends JFrame {
             menu.show(graphPanel, location.x, location.y);
         }
 
-        private void addPaintMenus(GraphComponent component, Point location, JPopupMenu menu) {
-            component.getCustomizablePaintables().forEach(paintable -> addColorMenuItems(paintable, location, menu, (key, newPaint) -> getCanvas().changePaint(paintable, key, newPaint)));
+        private void addPaintMenus(EdgeComponent component, Point location, JPopupMenu menu) {
+            component.getCustomizablePaintables().forEach(addPaintMenu(new EdgeFactory(component), location, menu));
+        }
+
+        private Consumer<Paintable> addPaintMenu(Factory factory, Point location, JPopupMenu menu) {
+            return paintable -> addColorMenuItems(factory, paintable, location, menu, applyPaint(paintable));
+        }
+
+        private BiConsumer<Object, Color> applyPaint(Paintable paintable) {
+            return (key, newPaint) -> getCanvas().changePaint(paintable, key, newPaint);
         }
 
         private void addStrokeMenus(GraphComponent component, JPopupMenu menu) {
@@ -574,7 +579,7 @@ public class GraphEditorDemo extends JFrame {
 
     });
 
-    
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel componentPanel;
     private javax.swing.JPanel edgeSelectorPanel;
@@ -587,9 +592,6 @@ public class GraphEditorDemo extends JFrame {
     private final Map<JToggleButton, EdgeFactory> edgeButtons = new HashMap<>();
 
     private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("GraphEditor");
-
-    private static final Point ICON_MID_LEFT = new Point(-8, 0);
-    private static final Point ICON_MID_RIGHT = new Point(8, 0);
 
     private static final Color TRANSPARENT = new Color(0, true);
     private static final BasicStroke SOLID_STROKE = new BasicStroke();

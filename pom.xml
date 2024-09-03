@@ -14,6 +14,7 @@
         <module>Graphs</module>
         <module>Swing</module>
         <module>GraphCanvas</module>
+        <module>Calendars</module>
     </modules>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

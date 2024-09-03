@@ -45,6 +45,12 @@
             <artifactId>GraphCanvas</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>Calendars</artifactId>
+            <version>${project.version}</version>
+            <type>jar</type>
+        </dependency>
     </dependencies>
     <properties>
         <maven.compiler.source>22</maven.compiler.source>

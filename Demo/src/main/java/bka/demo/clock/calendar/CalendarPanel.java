@@ -5,6 +5,7 @@ package bka.demo.clock.calendar;
 
 import bka.awt.clock.*;
 import java.awt.*;
+import java.util.*;
 
 /**
  *
@@ -15,16 +16,17 @@ public class CalendarPanel extends javax.swing.JPanel {
     /**
      * Creates new form CalendarPanel
      */
-    public CalendarPanel() {
+    public CalendarPanel(CalendarPanelConfiguration configuration, CalendarModel model) {
+        this.model = Objects.requireNonNull(model);
         initComponents();
         final int radius = Math.min(clockPanel.getWidth(), clockPanel.getHeight()) / 2;
         final Point center = new Point(clockPanel.getWidth() / 2, clockPanel.getHeight() / 2);
         final int fontSize = 12;
-        renderer = new ClockRenderer(center, new Scale(1, 12, 1d / 12, 1));
-        MarkerRingRenderer markers = renderer.addMarkerRingRenderer(radius - (fontSize * 2), 1, fontSize / 4, 5, fontSize / 3, Color.BLUE, 2);
+        renderer = new ClockRenderer(center, configuration.getHourScale());
+        MarkerRingRenderer markers = renderer.addMarkerRingRenderer(radius - (fontSize * 2), 1, fontSize / 4, 5, fontSize / 2, Color.BLUE, 3f);
         Scale scale = new Scale(0, 60);
         markers.setScale(scale);
-        renderer.addNumberRingRenderer(radius * 9 / 10, 1, FONT_COLOR, getFont(Font.BOLD, fontSize));
+        renderer.addNumberRingRenderer(radius * 9 / 10, configuration.getHourInterval(), FONT_COLOR, getFont(Font.BOLD, fontSize));
         hourHand = renderer.addNeedleRenderer(radius / 2, 5, Color.BLACK, 5);
         minuteHand = renderer.addNeedleRenderer(radius - (fontSize + 10), 5, Color.BLACK, 3);
         minuteHand.setScale(scale);
@@ -53,7 +55,7 @@ public class CalendarPanel extends javax.swing.JPanel {
 
         setLayout(new java.awt.BorderLayout());
 
-        yearLabel.setFont(getFont(48));
+        yearLabel.setFont(new java.awt.Font("Times New Roman", 0, 32)); // NOI18N
         yearLabel.setForeground(FONT_COLOR);
         yearLabel.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         yearLabel.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
@@ -163,7 +165,7 @@ public class CalendarPanel extends javax.swing.JPanel {
         add(datePanel, java.awt.BorderLayout.SOUTH);
     }// </editor-fold>//GEN-END:initComponents
 
-    public void update(CalendarModel model) {
+    public void update() {
         yearLabel.setText(model.getYear());
         weekLabel.setText(model.getWeek());
         dayLabel.setText(model.getDayOfWeek());
@@ -183,18 +185,23 @@ public class CalendarPanel extends javax.swing.JPanel {
             if (graphics instanceof Graphics2D graphics2D) {
                 renderer.paint(graphics2D);
             }
+            else {
+                graphics.setColor(FONT_COLOR);
+                graphics.drawString("Unexpected graphics type " + graphics.getClass(), 0, getSize().height / 2);
+            }
         }
 
     }
 
-    private static final Font getFont(int size) {
+    private static Font getFont(int size) {
         return getFont(Font.PLAIN, size);
     }
 
-    private static final Font getFont(int style, int size) {
-        return new Font("Lucida Grande", style, size);
+    private static Font getFont(int style, int size) {
+        return new Font("Helvetica", style, size);
     }
 
+    private final CalendarModel model;
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel clockPanel;
@@ -213,6 +220,6 @@ public class CalendarPanel extends javax.swing.JPanel {
     private final NeedleRenderer minuteHand;
     private final NeedleRenderer secondHand;
 
-    private static final Color FONT_COLOR = new Color(51, 51, 255);
+    private static final Color FONT_COLOR = new Color(0, 0, 135);
 
 }

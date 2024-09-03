@@ -3,12 +3,9 @@
  */
 package bka.demo.clock.calendar;
 
+import bka.calendar.*;
 import java.util.*;
 
-/**
- *
- * @author bartkampers
- */
 public class CalendarDemo extends javax.swing.JFrame {
 
     /**
@@ -16,7 +13,8 @@ public class CalendarDemo extends javax.swing.JFrame {
      */
     public CalendarDemo() {
         initComponents();
-        calendarsPanel.add(calendarPanel);
+        calendarsPanel.add(gregorianPanel);
+        calendarsPanel.add(earthianPanel);
         Timer timer = new Timer();
         timer.schedule(timerTask, nextSecond(), MILLIS_PER_SECOND);
     }
@@ -85,13 +83,18 @@ public class CalendarDemo extends javax.swing.JFrame {
     private final TimerTask timerTask = new TimerTask() {
         @Override
         public void run() {
-            calendar.setTimeInMillis(System.currentTimeMillis());
-            calendarPanel.update(new CalendarModel(calendar));
+            long millis = System.currentTimeMillis();
+            gregorian.setTimeInMillis(millis);
+            gregorianPanel.update();
+            earthian.setTimeInMillis(millis);
+            earthianPanel.update();
         }
     };
 
-    private final Calendar calendar = Calendar.getInstance();
-    private final CalendarPanel calendarPanel = new CalendarPanel();
+    private final Calendar gregorian = Calendar.getInstance();
+    private final Calendar earthian = EarthianCalendar.getInstance();
+    private final CalendarPanel gregorianPanel = new CalendarPanel(new CalendarPanelConfiguration(), new CalendarModel(gregorian));
+    private final CalendarPanel earthianPanel = new CalendarPanel(new EarthianCalendarPanelConfiguration(), new EarthianCalendarModel(earthian));
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel calendarsPanel;

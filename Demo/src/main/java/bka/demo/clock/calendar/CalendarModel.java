@@ -51,6 +51,10 @@ public class CalendarModel {
         return calendar.get(Calendar.SECOND) + calendar.get(Calendar.MILLISECOND) / 1000d;
     }
 
+    protected Calendar getCalendar() {
+        return calendar;
+    }
+
     private final Calendar calendar;
 
 }

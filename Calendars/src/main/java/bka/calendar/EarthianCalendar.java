@@ -1,7 +1,9 @@
 /*
-** Copyright © Bart Kampers
+** © Bart Kampers
+** This code may not be used for any purpose that harms humans (including
+** exploitation and discrimination), humanity, the environment or the
+** universe.
 */
-
 package bka.calendar;
 
 
@@ -31,14 +33,12 @@ public class EarthianCalendar extends Calendar {
     public static final int VENUS = Calendar.FRIDAY;
     public static final int SATURNUS = Calendar.SATURDAY;
     
-    
     public EarthianCalendar() {
         time = System.currentTimeMillis();
         isTimeSet = true;
         setTimeZone(TimeZone.getDefault());
     }
-    
-    
+
     public EarthianCalendar(int year, int month, int dayOfMonth, int hourOfDay, int minute, int second) {
         setField(YEAR, year);
         setField(MONTH, month);
@@ -49,12 +49,10 @@ public class EarthianCalendar extends Calendar {
         setField(MILLISECOND, 0);
         setTimeZone(TimeZone.getDefault());
     }
-    
 
     public EarthianCalendar(int year, int month, int dayOfMonth, int hourOfDay, int minute) {
         this(year, month, dayOfMonth, hourOfDay, minute, 0);        
     }
-    
     
     public EarthianCalendar(int year, int month, int dayOfMonth) {
         this(year, month, dayOfMonth, 0, 0, 0);
@@ -107,8 +105,7 @@ public class EarthianCalendar extends Calendar {
         }
         computeFields();
     }
-    
-    
+
     @Override
     public void roll(int field, boolean up) {
         int min = getActualMinimum(field);
@@ -132,36 +129,30 @@ public class EarthianCalendar extends Calendar {
         }
     }
 
-
     @Override
     public int getMinimum(int field) {
         return MIN_VALUES[field];
     }
-
 
     @Override
     public int getMaximum(int field) {
         return MAX_VALUES[field];
     }
 
-
     @Override
     public int getGreatestMinimum(int field) {
         return MIN_VALUES[field];
     }
-
 
     @Override
     public int getLeastMaximum(int field) {
         return LEAST_MAX_VALUES[field];
     }
     
-    
     @Override
     public int getActualMinimum(int field) {
         return getMinimum(field);
     }
-    
     
     @Override
     public int getActualMaximum(int field) {
@@ -177,7 +168,6 @@ public class EarthianCalendar extends Calendar {
                 return getMaximum(field);
         }
     }
-    
     
     @Override
     protected void computeTime() {
@@ -204,7 +194,6 @@ public class EarthianCalendar extends Calendar {
         }
     }
 
-
     @Override
     protected void computeFields() {
         long millisSinceEpoch = time - EPOCH + computeTimeZoneFields();
@@ -213,14 +202,12 @@ public class EarthianCalendar extends Calendar {
         computeMonthFields(calculations);        
         computeTimeFields((int) (millisSinceEpoch % MILLIS_PER_DAY));
     }
-
     
     private void setField(int fieldIndex, int value) {
         fields[fieldIndex] = value;
         isSet[fieldIndex] = true;
         areFieldsSet = false;
     }
-    
     
     private void addMonth(int amount) {
         int month = fields[MONTH] + amount;
@@ -241,7 +228,6 @@ public class EarthianCalendar extends Calendar {
         computeTime();
     }
     
-    
     private void addYear(int amount) {
         int year = fields[YEAR] + amount;
         setField(YEAR, year);
@@ -254,7 +240,6 @@ public class EarthianCalendar extends Calendar {
         isSet[DAY_OF_WEEK] = false;
         computeTime();
     }
-
     
     private int computeTimeZoneFields() {
         TimeZone timeZone = getTimeZone();
@@ -269,7 +254,6 @@ public class EarthianCalendar extends Calendar {
             return 0;
         }
     }
-
     
     private void computeYearFields(DateCalculations calculations) {
         setField(ERA, 1);
@@ -279,7 +263,6 @@ public class EarthianCalendar extends Calendar {
         setField(WEEK_OF_YEAR, weekOfYear(calculations));
     }
 
-    
     private void computeMonthFields(DateCalculations calculations) {
         long millisSinceYearStart = calculations.millisSinceEpoch - calculations.yearStart;
         int bimesterIndex = (int) (millisSinceYearStart / MILLIS_PER_BIMESTER);
@@ -300,7 +283,6 @@ public class EarthianCalendar extends Calendar {
         setField(WEEK_OF_MONTH, weekOfMonth);
         setField(DAY_OF_WEEK_IN_MONTH, dayOfMonthIndex / DAYS_PER_WEEK + 1);
     }
-
     
     private void computeTimeFields(int millis) {
         if (millis < 0) {
@@ -314,8 +296,7 @@ public class EarthianCalendar extends Calendar {
         setField(SECOND, millis % MILLIS_PER_MINUTE / 1000);
         setField(MILLISECOND, millis % 1000);
     }
-    
-    
+
     private int weekOfYear(DateCalculations calculations) {
         int dayOfYearStart = dayOfWeekIndex(calculations.yearStart);
         if (dayOfYearStart < 4) {
@@ -329,7 +310,6 @@ public class EarthianCalendar extends Calendar {
         }
     }
     
-    
     private int weekOfYear(int daysSinceWeek1, DateCalculations calculations) {
         int weekOfYear = daysSinceWeek1 / DAYS_PER_WEEK + 1;
         if (weekOfYear == 53 && dayCountForYear(calculations.year) - calculations.dayOfYear + calculations.dayOfWeekIndex < 3) {
@@ -338,7 +318,6 @@ public class EarthianCalendar extends Calendar {
         return weekOfYear;    
     }
     
-    
     private boolean isLeapYear(int year) {
         int generationIndex =  year % YEARS_PER_GENERATION;
         if (generationIndex < 0) {
@@ -346,13 +325,11 @@ public class EarthianCalendar extends Calendar {
         }
         return generationIndex % 4 == 2;
     }
-    
-    
+
     private int dayCountForYear(int year) {
         return (isLeapYear(year)) ? DAYS_PER_LEAP_YEAR : DAYS_PER_YEAR;
     }
-    
-    
+
     private int dayCountForMonth(int month, int year) {
         if (month % 2 == 0) {
             return getLeastMaximum(DAY_OF_MONTH);
@@ -365,7 +342,6 @@ public class EarthianCalendar extends Calendar {
         }
     }
 
-
     private int yearIndex(long offset) {
         int i = 1;
         while (yearOffset(i) <= offset) {
@@ -375,12 +351,10 @@ public class EarthianCalendar extends Calendar {
         return i - 1;
     }
 
-
     private long yearOffset(int yearIndex) {
         return yearIndex * MILLIS_PER_YEAR + ((yearIndex + 1) / 4) * MILLIS_PER_DAY;
     }
-    
-    
+
     private int dayOfWeekIndex(long millisSinceEpoch) {
         int dayOfWeekIndex = (int) ((millisSinceEpoch / MILLIS_PER_DAY + 3) % DAYS_PER_WEEK);
         if (dayOfWeekIndex < 0) {
@@ -388,8 +362,7 @@ public class EarthianCalendar extends Calendar {
         }
         return dayOfWeekIndex;
     }
-    
-    
+
     private class DateCalculations {
         
         DateCalculations(long millisSinceEpoch) {
@@ -571,8 +544,5 @@ public class EarthianCalendar extends Calendar {
         14 * MILLIS_PER_HOUR, // ZONE_OFFSET
         2 * MILLIS_PER_HOUR   // DST_OFFSET (double summer time)
     };
-
-
-    
 
 }

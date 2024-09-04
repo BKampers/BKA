@@ -24,15 +24,15 @@ public class CalendarPanel extends javax.swing.JPanel {
         final int fontSize = 12;
         renderer = new ClockRenderer(center, configuration.getHourScale());
         MarkerRingRenderer markers = renderer.addMarkerRingRenderer(radius - (fontSize * 2), 1, fontSize / 4, 5, fontSize / 2, Color.BLUE, 3f);
-        Scale scale = new Scale(0, 60);
-        markers.setScale(scale);
+        Scale fractionScale = configuration.getFractionScale();
+        markers.setScale(fractionScale);
         renderer.addNumberRingRenderer(radius * 9 / 10, configuration.getHourInterval(), FONT_COLOR, getFont(Font.BOLD, fontSize));
         hourHand = renderer.addNeedleRenderer(radius / 2, 5, Color.BLACK, 5);
         minuteHand = renderer.addNeedleRenderer(radius - (fontSize + 10), 5, Color.BLACK, 3);
-        minuteHand.setScale(scale);
+        minuteHand.setScale(fractionScale);
         renderer.add(minuteHand);
         secondHand = renderer.addNeedleRenderer(radius - fontSize, 5, Color.RED, (float) radius / 100);
-        secondHand.setScale(scale);
+        secondHand.setScale(fractionScale);
         renderer.add(secondHand);
     }
 

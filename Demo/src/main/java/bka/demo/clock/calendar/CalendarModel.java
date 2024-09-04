@@ -43,11 +43,11 @@ public class CalendarModel {
         return calendar.get(Calendar.HOUR) + getMinute() / 60;
     }
 
-    double getMinute() {
+    public double getMinute() {
         return calendar.get(Calendar.MINUTE) + getSecond() / 60;
     }
 
-    double getSecond() {
+    public double getSecond() {
         return calendar.get(Calendar.SECOND) + calendar.get(Calendar.MILLISECOND) / 1000d;
     }
 

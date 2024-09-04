@@ -17,4 +17,8 @@ public class CalendarPanelConfiguration {
         return 1;
     }
 
+    public Scale getFractionScale() {
+        return new Scale(0, 60);
+    }
+
 }

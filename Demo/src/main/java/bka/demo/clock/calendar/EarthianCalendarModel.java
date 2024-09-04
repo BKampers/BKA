@@ -22,5 +22,4 @@ public class EarthianCalendarModel extends CalendarModel {
         return getCalendar().get(Calendar.HOUR_OF_DAY) + getMinute() / 60;
     }
 
-
 }

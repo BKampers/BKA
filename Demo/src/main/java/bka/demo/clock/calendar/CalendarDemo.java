@@ -14,6 +14,7 @@ public class CalendarDemo extends javax.swing.JFrame {
     public CalendarDemo() {
         initComponents();
         calendarsPanel.add(gregorianPanel);
+        calendarsPanel.add(frenchPanel);
         calendarsPanel.add(earthianPanel);
         Timer timer = new Timer();
         timer.schedule(timerTask, nextSecond(), MILLIS_PER_SECOND);
@@ -86,14 +87,18 @@ public class CalendarDemo extends javax.swing.JFrame {
             long millis = System.currentTimeMillis();
             gregorian.setTimeInMillis(millis);
             gregorianPanel.update();
+            french.setTimeInMillis(millis);
+            frenchPanel.update();
             earthian.setTimeInMillis(millis);
             earthianPanel.update();
         }
     };
 
     private final Calendar gregorian = Calendar.getInstance();
+    private final Calendar french = FrenchRepublicanCalendar.getInstance();
     private final Calendar earthian = EarthianCalendar.getInstance();
     private final CalendarPanel gregorianPanel = new CalendarPanel(new CalendarPanelConfiguration(), new CalendarModel(gregorian));
+    private final CalendarPanel frenchPanel = new CalendarPanel(new FrenchRepublicanCalendarPanelConfiguration(), new FrenchRepublicanCalendarModel(french));
     private final CalendarPanel earthianPanel = new CalendarPanel(new EarthianCalendarPanelConfiguration(), new EarthianCalendarModel(earthian));
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

@@ -1,7 +1,7 @@
 /*
  * © Bart Kampers
  */
-package bka.demo.clock.calendar;
+package bka.demo.calendar;
 
 import bka.calendar.*;
 import java.util.*;
@@ -35,7 +35,8 @@ public class CalendarDemo extends javax.swing.JFrame {
         calendarsPanel = new javax.swing.JPanel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setMinimumSize(new java.awt.Dimension(965, 300));
+        setBounds(new java.awt.Rectangle(0, 25, 1300, 300));
+        setMinimumSize(new java.awt.Dimension(1300, 300));
         setName("Calendars"); // NOI18N
 
         calendarsPanel.setPreferredSize(new java.awt.Dimension(1000, 400));

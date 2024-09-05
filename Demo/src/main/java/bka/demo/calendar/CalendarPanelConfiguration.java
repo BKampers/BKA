@@ -2,7 +2,7 @@
 ** © Bart Kampers
 */
 
-package bka.demo.clock.calendar;
+package bka.demo.calendar;
 
 import bka.awt.clock.*;
 

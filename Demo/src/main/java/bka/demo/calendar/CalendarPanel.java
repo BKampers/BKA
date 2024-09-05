@@ -1,21 +1,15 @@
 /*
  * © Bart Kampers
  */
-package bka.demo.clock.calendar;
+package bka.demo.calendar;
 
 import bka.awt.clock.*;
 import java.awt.*;
 import java.util.*;
 
-/**
- *
- * @author bartkampers
- */
+
 public class CalendarPanel extends javax.swing.JPanel {
 
-    /**
-     * Creates new form CalendarPanel
-     */
     public CalendarPanel(CalendarPanelConfiguration configuration, CalendarModel model) {
         this.model = Objects.requireNonNull(model);
         initComponents();
@@ -31,7 +25,7 @@ public class CalendarPanel extends javax.swing.JPanel {
         minuteHand = renderer.addNeedleRenderer(radius - (fontSize + 10), 5, Color.BLACK, 3);
         minuteHand.setScale(fractionScale);
         renderer.add(minuteHand);
-        secondHand = renderer.addNeedleRenderer(radius - fontSize, 5, Color.RED, (float) radius / 100);
+        secondHand = renderer.addNeedleRenderer(radius - (fontSize + 5), 5, Color.RED, 1f);
         secondHand.setScale(fractionScale);
         renderer.add(secondHand);
     }
@@ -213,7 +207,6 @@ public class CalendarPanel extends javax.swing.JPanel {
     private javax.swing.JLabel yearLabel;
     private javax.swing.JPanel yearPanel;
     // End of variables declaration//GEN-END:variables
-
 
     private final ClockRenderer renderer;
     private final NeedleRenderer hourHand;

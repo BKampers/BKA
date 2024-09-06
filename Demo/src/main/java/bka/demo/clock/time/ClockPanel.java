@@ -7,6 +7,7 @@ package bka.demo.clock.time;
 
 import bka.awt.clock.*;
 import bka.demo.clock.*;
+import bka.text.roman.*;
 import java.awt.*;
 import java.io.*;
 import java.util.*;
@@ -25,7 +26,7 @@ public class ClockPanel extends javax.swing.JPanel {
         renderer.add(graphics -> clockFace(graphics, center, radius));
         MarkerRingRenderer markers = renderer.addMarkerRingRenderer(radius - 6, 1, new ImageRenderer(markerImage));
         markers.setScale(scale);
-        renderer.addNumberRingRenderer(radius * 0.9, 1, new Color(190, 190, 255), new Font(Font.SANS_SERIF, Font.BOLD, radius / 10));
+        renderer.addNumberRingRenderer(radius * 0.85, 1, new RomanNumberFormat(), new Color(190, 190, 255), new Font("Times New Roman", Font.BOLD, radius / 9));
         hourHand = renderer.addNeedleRenderer(new ImageRenderer(hourHandImage, -16, -184));
         minuteHand = renderer.addNeedleRenderer(new ImageRenderer(minuteHandImage, -12, -234));
         minuteHand.setScale(scale);

@@ -6,6 +6,7 @@ package bka.demo.calendar;
 import bka.awt.clock.*;
 import java.awt.*;
 import java.util.*;
+import javax.swing.*;
 
 
 public class CalendarPanel extends javax.swing.JPanel {
@@ -168,7 +169,17 @@ public class CalendarPanel extends javax.swing.JPanel {
         hourHand.setValue(model.getHour());
         minuteHand.setValue(model.getMinute());
         secondHand.setValue(model.getSecond());
+        setFontColor(dateLabel, model.getDateColor());
         repaint();
+    }
+
+    private void setFontColor(JLabel component, Optional<Color> color) {
+        if (color.isPresent()) {
+            component.setForeground(color.get());
+        }
+        else {
+            component.setForeground(FONT_COLOR);
+        }
     }
 
     private class ClockPanel extends javax.swing.JPanel {

@@ -4,6 +4,7 @@
 
 package bka.demo.calendar;
 
+import java.awt.*;
 import java.util.*;
 
 public class CalendarModel {
@@ -48,7 +49,18 @@ public class CalendarModel {
     }
 
     public double getSecond() {
-        return calendar.get(Calendar.SECOND) + calendar.get(Calendar.MILLISECOND) / 1000d;
+        int second = calendar.get(Calendar.SECOND);
+        if (calendar.get(Calendar.MILLISECOND) >= 500) {
+            return second + 1;
+        }
+        return second;
+    }
+
+    public Optional<Color> getDateColor() {
+        if (calendar.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
+            return Optional.of(Color.RED);
+        }
+        return Optional.empty();
     }
 
     protected Calendar getCalendar() {

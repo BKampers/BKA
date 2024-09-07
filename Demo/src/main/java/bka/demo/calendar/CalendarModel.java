@@ -28,6 +28,10 @@ public class CalendarModel {
         return " (" + calendar.getWeekYear() + ')';
     }
 
+    public Optional<String> getDayOfYear() {
+        return Optional.ofNullable(calendar.getDisplayName(Calendar.DAY_OF_YEAR, Calendar.LONG, Locale.getDefault()));
+    }
+
     public String getDayOfWeek() {
         return calendar.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.LONG, Locale.getDefault());
     }

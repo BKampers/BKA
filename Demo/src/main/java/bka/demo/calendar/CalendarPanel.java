@@ -163,7 +163,12 @@ public class CalendarPanel extends javax.swing.JPanel {
     public void update() {
         yearLabel.setText(model.getYear());
         weekLabel.setText(model.getWeek());
-        dayLabel.setText(model.getDayOfWeek());
+        if (!model.getDayOfYear().isEmpty()) {
+            dayLabel.setText(model.getDayOfYear().get());
+        }
+        else {
+            dayLabel.setText(model.getDayOfWeek());
+        }
         dateLabel.setText(model.getDate());
         monthLabel.setText(model.getMonth());
         hourHand.setValue(model.getHour());

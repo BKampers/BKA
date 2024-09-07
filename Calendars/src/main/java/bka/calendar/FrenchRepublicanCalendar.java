@@ -274,8 +274,10 @@ public class FrenchRepublicanCalendar extends Calendar {
                 mothDisplayName(type, locale);
             case DAY_OF_WEEK ->
                 dayOfWeekDisplayName(type, locale);
+            case DAY_OF_YEAR ->
+                dayOfWeekDisplayName(type, locale);
             default ->
-                throw new IllegalArgumentException("Unsupported field: " + field);
+                null;
         };
     }
 
@@ -287,6 +289,21 @@ public class FrenchRepublicanCalendar extends Calendar {
     public String dayOfWeekDisplayName(int type, Locale locale) {
         String[] dayNames = new String[]{ "Primidi", "Duodi", "Tridi", "Quartidi", "Quintidi", "Sextidi", "Septidi", "Octidi", "Nonidi", "Décadi" };
         return dayNames[fields[DAY_OF_WEEK] - 1];
+    }
+
+    public String dayOfYearDisplayName(int type, Locale locale) {
+        String[] dayNames = new String[]{
+            "Jour de la vertu",
+            "Jour du génie",
+            "Jour du travail",
+            "Jour de l'opinion",
+            "Jour des récompenses",
+            "Jour de la révolution" };
+        int index = fields[Calendar.DAY_OF_YEAR] - 360;
+        if (index < 0) {
+            return null;
+        }
+        return dayNames[fields[index]];
     }
 
     @Override

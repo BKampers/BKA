@@ -397,7 +397,7 @@ public class EarthianCalendar extends Calendar {
             case DAY_OF_WEEK ->
                 dayOfWeekDisplayName(type, locale);
             default ->
-                throw new IllegalArgumentException();
+                null;
         };
     }
 

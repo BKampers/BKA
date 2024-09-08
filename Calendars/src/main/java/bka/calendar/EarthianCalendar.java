@@ -391,17 +391,22 @@ public class EarthianCalendar extends Calendar {
 
     @Override
     public String getDisplayName(int field, int type, Locale locale) {
+        if (field < 0 || fields.length <= field) {
+            throw new IllegalArgumentException("Invalid field: " + field);
+        }
         return switch (field) {
             case MONTH ->
-                mothDisplayName(type, locale);
+                monthDisplayName(type, locale);
             case DAY_OF_WEEK ->
                 dayOfWeekDisplayName(type, locale);
+            case AM_PM ->
+                super.getDisplayName(AM_PM, type, locale);
             default ->
                 null;
         };
     }
 
-    public String mothDisplayName(int type, Locale locale) {
+    private String monthDisplayName(int type, Locale locale) {
         return switch (fields[MONTH]) {
             case ARIES ->
                 "Aries";
@@ -432,7 +437,7 @@ public class EarthianCalendar extends Calendar {
         };
     }
 
-    public String dayOfWeekDisplayName(int type, Locale locale) {
+    private String dayOfWeekDisplayName(int type, Locale locale) {
         return switch (fields[DAY_OF_WEEK]) {
             case SOL ->
                 "Sol";

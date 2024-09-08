@@ -246,6 +246,9 @@ public class FrenchRepublicanCalendar extends Calendar {
     
     @Override
     public int getLeastMaximum(int field) {
+        if (field < 0 || fields.length <= field) {
+            throw new IllegalArgumentException("Invalid field: " + field);
+        }
         return switch (field) {
             case WEEK_OF_MONTH ->
                 1;
@@ -269,29 +272,32 @@ public class FrenchRepublicanCalendar extends Calendar {
 
     @Override
     public String getDisplayName(int field, int type, Locale locale) {
+        if (field < 0 || fields.length <= field) {
+            throw new IllegalArgumentException("Invalid field: " + field);
+        }
         return switch (field) {
             case MONTH ->
                 mothDisplayName(type, locale);
             case DAY_OF_WEEK ->
                 dayOfWeekDisplayName(type, locale);
             case DAY_OF_YEAR ->
-                dayOfWeekDisplayName(type, locale);
+                dayOfYearDisplayName(type, locale);
             default ->
                 null;
         };
     }
 
-    public String mothDisplayName(int type, Locale locale) {
+    private String mothDisplayName(int type, Locale locale) {
         String[] monthNames = new String[]{ "Vendémiaire", "Brumaire", "Frimaire", "Nivose", "Pluviose", "Ventose", "Germinal", "Floréal", "Prairial", "Messidor", "Thermidor", "Fructidor", "Jours complémentaire" };
         return monthNames[fields[MONTH]];
     }
 
-    public String dayOfWeekDisplayName(int type, Locale locale) {
+    private String dayOfWeekDisplayName(int type, Locale locale) {
         String[] dayNames = new String[]{ "Primidi", "Duodi", "Tridi", "Quartidi", "Quintidi", "Sextidi", "Septidi", "Octidi", "Nonidi", "Décadi" };
         return dayNames[fields[DAY_OF_WEEK] - 1];
     }
 
-    public String dayOfYearDisplayName(int type, Locale locale) {
+    private String dayOfYearDisplayName(int type, Locale locale) {
         String[] dayNames = new String[]{
             "Jour de la vertu",
             "Jour du génie",
@@ -304,11 +310,6 @@ public class FrenchRepublicanCalendar extends Calendar {
             return null;
         }
         return dayNames[fields[index]];
-    }
-
-    @Override
-    public int getWeekYear() {
-        return fields[YEAR];
     }
 
     private static final long EPOCH = -5594230800000L; // September 22, 1792 in Unix millis

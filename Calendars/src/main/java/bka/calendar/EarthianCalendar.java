@@ -305,9 +305,7 @@ public class EarthianCalendar extends Calendar {
         else if (calculations.dayOfYear + dayOfYearStart > DAYS_PER_WEEK) {
             return weekOfYear(calculations.dayOfYear + dayOfYearStart - DAYS_PER_WEEK - 1, calculations);
         }
-        else {
-            return weekOfYear(new DateCalculations(calculations.millisSinceEpoch - dayOfYearStart * MILLIS_PER_DAY));
-        }
+        return weekOfYear(new DateCalculations(calculations.millisSinceEpoch - dayOfYearStart * MILLIS_PER_DAY));
     }
     
     private int weekOfYear(int daysSinceWeek1, DateCalculations calculations) {
@@ -361,32 +359,6 @@ public class EarthianCalendar extends Calendar {
             dayOfWeekIndex += DAYS_PER_WEEK;
         }
         return dayOfWeekIndex;
-    }
-
-    private class DateCalculations {
-        
-        DateCalculations(long millisSinceEpoch) {
-            this.millisSinceEpoch = millisSinceEpoch;
-            generationIndex = millisSinceEpoch / MILLIS_PER_GENERATION;
-            if (millisSinceEpoch < 0 && millisSinceEpoch % MILLIS_PER_GENERATION != 0) {
-                generationIndex--;
-            }
-            generationStart = generationIndex * MILLIS_PER_GENERATION;
-            yearIndex = yearIndex(millisSinceEpoch - generationStart);
-            yearStart = generationStart + yearOffset(yearIndex);
-            year = (int) (generationIndex * YEARS_PER_GENERATION + yearIndex(millisSinceEpoch - generationStart));
-            dayOfYear = (int) ((millisSinceEpoch - yearStart) / MILLIS_PER_DAY) + 1;
-            dayOfWeekIndex = dayOfWeekIndex(millisSinceEpoch);
-        }
-        
-        long millisSinceEpoch;
-        long generationStart;
-        long generationIndex;
-        long yearStart;
-        int yearIndex;
-        int year;
-        int dayOfYear;
-        int dayOfWeekIndex;
     }
 
     @Override
@@ -459,6 +431,11 @@ public class EarthianCalendar extends Calendar {
     }
 
     @Override
+    public boolean isWeekDateSupported() {
+        return true;
+    }
+
+    @Override
     public int getWeekYear() {
         if (fields[WEEK_OF_YEAR] == 1 && fields[MONTH] != ARIES) {
             return fields[YEAR] + 1;
@@ -468,6 +445,70 @@ public class EarthianCalendar extends Calendar {
         }
         return fields[YEAR];
     }
+
+    @Override
+    public void setWeekDate(int weekYear, int weekOfYear, int dayOfWeek) {
+        if (weekOfYear < 1) {
+            throw new IllegalArgumentException("Illegal week of year: " + weekOfYear);
+        }
+        if (dayOfWeek < SOL || SATURNUS < dayOfWeek) {
+            throw new IllegalArgumentException("Illegal day of week: " + dayOfWeek);
+        }
+        clear();
+        setField(YEAR, weekYear);
+        setField(HOUR_OF_DAY, 0);
+        setField(MINUTE, 0);
+        setField(SECOND, 0);
+        setField(MILLISECOND, 0);
+        computeTime();
+        if (fields[WEEK_OF_YEAR] == 1) {
+            add(DATE, -(fields[DAY_OF_WEEK] - 1));
+        }
+        else {
+            add(DATE, DAYS_PER_WEEK - (fields[DAY_OF_WEEK] - 1));
+        }
+        add(DATE, weekOfYear * DAYS_PER_WEEK + (dayOfWeek - 1));
+    }
+
+    @Override
+    public int getWeeksInWeekYear() {
+        clear();
+        setField(YEAR, getWeekYear());
+        setField(HOUR_OF_DAY, 0);
+        setField(MINUTE, 0);
+        setField(SECOND, 0);
+        setField(MILLISECOND, 0);
+        computeTime();
+        return getActualMaximum(WEEK_OF_YEAR);
+    }
+
+
+    private class DateCalculations {
+
+        DateCalculations(long millisSinceEpoch) {
+            this.millisSinceEpoch = millisSinceEpoch;
+            generationIndex = millisSinceEpoch / MILLIS_PER_GENERATION;
+            if (millisSinceEpoch < 0 && millisSinceEpoch % MILLIS_PER_GENERATION != 0) {
+                generationIndex--;
+            }
+            generationStart = generationIndex * MILLIS_PER_GENERATION;
+            yearIndex = yearIndex(millisSinceEpoch - generationStart);
+            yearStart = generationStart + yearOffset(yearIndex);
+            year = (int) (generationIndex * YEARS_PER_GENERATION + yearIndex(millisSinceEpoch - generationStart));
+            dayOfYear = (int) ((millisSinceEpoch - yearStart) / MILLIS_PER_DAY) + 1;
+            dayOfWeekIndex = dayOfWeekIndex(millisSinceEpoch);
+        }
+
+        long millisSinceEpoch;
+        long generationStart;
+        long generationIndex;
+        long yearStart;
+        int yearIndex;
+        int year;
+        int dayOfYear;
+        int dayOfWeekIndex;
+    }
+
 
     private static final long EPOCH = 1174435200000L; // March 21, 2007, Midnight UTC 
     

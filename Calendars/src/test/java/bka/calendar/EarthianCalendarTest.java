@@ -287,6 +287,20 @@ public class EarthianCalendarTest {
         assertEquals(31, earthian.get(Calendar.DAY_OF_MONTH));
     }
 
+    @Ignore
+    @Test
+    public void testSetWeekDate() {
+        earthian.setWeekDate(0, 1, 1);
+        System.out.printf("%04d-%02d-%02d (w) %04d.%02d.%d\n",
+            earthian.get(Calendar.YEAR),
+            earthian.get(Calendar.MONTH) + 1,
+            earthian.get(Calendar.DATE),
+            earthian.getWeekYear(),
+            earthian.get(Calendar.WEEK_OF_YEAR),
+            earthian.get(Calendar.DAY_OF_WEEK));
+    }
+
+
     private int dayCount(int year) {
         return (isLeapYear(year)) ? 366 : 365;
     }

@@ -22,7 +22,7 @@ public class CalendarModel {
     }
 
     private String getOptionalWeekYear() {
-        if (calendar.getWeekYear() == calendar.get(Calendar.YEAR)) {
+        if (!calendar.isWeekDateSupported() || calendar.getWeekYear() == calendar.get(Calendar.YEAR)) {
             return "";
         }
         return " (" + calendar.getWeekYear() + ')';

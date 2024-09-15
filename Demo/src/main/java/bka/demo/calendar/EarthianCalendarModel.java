@@ -24,7 +24,7 @@ public class EarthianCalendarModel extends CalendarModel {
     }
 
     @Override
-    public Optional<Color> getDateColor() {
+    public Optional<Color> getDayOfWeekColor() {
         return Optional.empty();
     }
 

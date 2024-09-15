@@ -1,9 +1,12 @@
 /*
- * © Bart Kampers
- */
+** © Bart Kampers
+*/
 package bka.demo.calendar;
 
 import bka.calendar.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.awt.image.*;
 import java.util.*;
 
 public class CalendarDemo extends javax.swing.JFrame {
@@ -14,8 +17,12 @@ public class CalendarDemo extends javax.swing.JFrame {
     public CalendarDemo() {
         initComponents();
         calendarsPanel.add(gregorianPanel);
-        calendarsPanel.add(frenchPanel);
+        calendarsPanel.add(republicanPanel);
         calendarsPanel.add(earthianPanel);
+        hoveredPanel = gregorianPanel;
+        gregorianPanel.addMouseListener(mouseListener);
+        republicanPanel.addMouseListener(mouseListener);
+        earthianPanel.addMouseListener(mouseListener);
         Timer timer = new Timer();
         timer.schedule(timerTask, nextSecond(), MILLIS_PER_SECOND);
     }
@@ -88,18 +95,94 @@ public class CalendarDemo extends javax.swing.JFrame {
             long millis = System.currentTimeMillis();
             gregorian.setTimeInMillis(millis);
             gregorianPanel.update();
-            french.setTimeInMillis(millis);
-            frenchPanel.update();
+            republican.setTimeInMillis(millis);
+            republicanPanel.update();
             earthian.setTimeInMillis(millis);
             earthianPanel.update();
+            setIcon(hoveredPanel.getModel());
         }
     };
 
+
+    private void setIcon(CalendarModel model) {
+        String osName = System.getProperty("os.name");
+        if (osName.contains("Mac")) {
+            setMacIcon(model);
+        }
+        else if (osName.contains("Windows")) {
+            setWindowsIcons(model);
+        }
+        else {
+            setIconImage(createDefaultImage(model, DEFAULT_ICON_SIZE));
+        }
+    }
+
+    private static void setMacIcon(CalendarModel model) {
+        Taskbar.getTaskbar().setIconImage(createDefaultImage(model, DEFAULT_ICON_SIZE));
+    }
+
+    private void setWindowsIcons(CalendarModel model) {
+        setIconImages(java.util.List.of(createWindowsImage(model, THUMB_ICON_SIZE),
+            createWindowsImage(model, SMALL_ICON_SIZE)));
+    }
+
+    private static BufferedImage createDefaultImage(CalendarModel model, int size) {
+        BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = (Graphics2D) image.getGraphics();
+        drawImageBackground(graphics, size);
+        graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, size / 3));
+        FontMetrics metrics = graphics.getFontMetrics();
+        String date = model.getDate();
+        Color color = model.getDayOfWeekColor().isPresent() ? model.getDayOfWeekColor().get() : CalendarPanel.FONT_COLOR;
+        graphics.setColor(color);
+        graphics.drawString(date, (size - metrics.stringWidth(date)) / 2, size / 2);
+        graphics.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, size / 8));
+        graphics.setColor(CalendarPanel.FONT_COLOR);
+        metrics = graphics.getFontMetrics();
+        String text = model.getMonth();
+        graphics.drawString(text, (size - metrics.stringWidth(text)) / 2, size - size / 4);
+        return image;
+    }
+
+    private static BufferedImage createWindowsImage(CalendarModel model, int size) {
+        BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = (Graphics2D) image.getGraphics();
+        drawImageBackground(graphics, size);
+        graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, size / 2));
+        FontMetrics metrics = graphics.getFontMetrics();
+        String date = model.getMonth();
+        graphics.setColor(CalendarPanel.FONT_COLOR);
+        graphics.drawString(date, (size - metrics.stringWidth(date)) / 2, size / 16 * 10);
+        return image;
+    }
+
+    private static void drawImageBackground(Graphics2D graphics, int size) {
+        int margin = size / 16;
+        int innerSize = size - 2 * margin;
+        graphics.setColor(Color.WHITE);
+        graphics.fillRect(margin, margin, innerSize, innerSize);
+        graphics.setColor(Color.GRAY);
+        graphics.drawRect(margin, margin, innerSize, innerSize);
+    }
+
+
+    private final MouseListener mouseListener = new MouseAdapter() {
+        @Override
+        public void mouseEntered(MouseEvent evt) {
+            hoveredPanel = (CalendarPanel) evt.getSource();
+        }
+    };
+
+
+    private CalendarPanel hoveredPanel;
+
     private final Calendar gregorian = Calendar.getInstance();
-    private final Calendar french = FrenchRepublicanCalendar.getInstance();
+    private final Calendar republican = FrenchRepublicanCalendar.getInstance();
     private final Calendar earthian = EarthianCalendar.getInstance();
     private final CalendarPanel gregorianPanel = new CalendarPanel(new CalendarPanelConfiguration(), new CalendarModel(gregorian));
-    private final CalendarPanel frenchPanel = new CalendarPanel(new FrenchRepublicanCalendarPanelConfiguration(), new FrenchRepublicanCalendarModel(french));
+    private final CalendarPanel republicanPanel = new CalendarPanel(new FrenchRepublicanCalendarPanelConfiguration(), new FrenchRepublicanCalendarModel(republican));
     private final CalendarPanel earthianPanel = new CalendarPanel(new EarthianCalendarPanelConfiguration(), new EarthianCalendarModel(earthian));
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -107,6 +190,10 @@ public class CalendarDemo extends javax.swing.JFrame {
     // End of variables declaration//GEN-END:variables
 
     private static final long MILLIS_PER_SECOND = 1000;
+
+    private static final int DEFAULT_ICON_SIZE = 1024;
+    private static final int SMALL_ICON_SIZE = 256;
+    private static final int THUMB_ICON_SIZE = 32;
 
 
 }

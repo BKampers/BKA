@@ -41,7 +41,7 @@ public class FrenchRepublicanCalendarModel extends CalendarModel {
     }
 
     @Override
-    public Optional<Color> getDateColor() {
+    public Optional<Color> getDayOfWeekColor() {
         if (getCalendar().get(Calendar.DAY_OF_WEEK) == FrenchRepublicanCalendar.DECADI || getCalendar().get(Calendar.MONTH) == FrenchRepublicanCalendar.JOURS_COMPLEMENTAIRES) {
             return Optional.of(Color.RED);
         }

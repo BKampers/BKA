@@ -1,6 +1,6 @@
 /*
- * © Bart Kampers
- */
+** © Bart Kampers
+*/
 package bka.demo.calendar;
 
 import bka.awt.clock.*;
@@ -10,6 +10,8 @@ import javax.swing.*;
 
 
 public class CalendarPanel extends javax.swing.JPanel {
+
+    public static final Color FONT_COLOR = new Color(0, 0, 135);
 
     public CalendarPanel(CalendarPanelConfiguration configuration, CalendarModel model) {
         this.model = Objects.requireNonNull(model);
@@ -167,6 +169,7 @@ public class CalendarPanel extends javax.swing.JPanel {
             dayLabel.setText(model.getDayOfYear().get());
         }
         else {
+            setFontColor(dayLabel, model.getDayOfWeekColor());
             dayLabel.setText(model.getDayOfWeek());
         }
         dateLabel.setText(model.getDate());
@@ -174,7 +177,6 @@ public class CalendarPanel extends javax.swing.JPanel {
         hourHand.setValue(model.getHour());
         minuteHand.setValue(model.getMinute());
         secondHand.setValue(model.getSecond());
-        setFontColor(dateLabel, model.getDateColor());
         repaint();
     }
 
@@ -211,6 +213,10 @@ public class CalendarPanel extends javax.swing.JPanel {
         return new Font("Helvetica", style, size);
     }
 
+    public CalendarModel getModel() {
+        return model;
+    }
+
     private final CalendarModel model;
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -228,7 +234,5 @@ public class CalendarPanel extends javax.swing.JPanel {
     private final NeedleRenderer hourHand;
     private final NeedleRenderer minuteHand;
     private final NeedleRenderer secondHand;
-
-    private static final Color FONT_COLOR = new Color(0, 0, 135);
 
 }

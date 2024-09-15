@@ -60,7 +60,7 @@ public class CalendarModel {
         return second;
     }
 
-    public Optional<Color> getDateColor() {
+    public Optional<Color> getDayOfWeekColor() {
         if (calendar.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
             return Optional.of(Color.RED);
         }

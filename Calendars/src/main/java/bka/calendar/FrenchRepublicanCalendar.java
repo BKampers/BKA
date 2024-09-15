@@ -305,7 +305,7 @@ public class FrenchRepublicanCalendar extends Calendar {
             "Jour de l'opinion",
             "Jour des récompenses",
             "Jour de la révolution" };
-        int index = fields[Calendar.DAY_OF_YEAR] - 360;
+        int index = fields[Calendar.DAY_OF_YEAR] - 361;
         if (index < 0) {
             return null;
         }

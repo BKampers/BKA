@@ -265,7 +265,7 @@ public class FrenchRepublicanCalendar extends Calendar {
         };
     }
     
-    private boolean isLeapYear(int year) {
+    private static boolean isLeapYear(int year) {
         int nextYear = year + 1;
         return nextYear % 4 == 0 && nextYear % 100 != 0 || nextYear % 400 == 0 && nextYear % 4000 != 0;
     }
@@ -277,7 +277,7 @@ public class FrenchRepublicanCalendar extends Calendar {
         }
         return switch (field) {
             case MONTH ->
-                mothDisplayName(type, locale);
+                monthDisplayName(type, locale);
             case DAY_OF_WEEK ->
                 dayOfWeekDisplayName(type, locale);
             case DAY_OF_YEAR ->
@@ -287,7 +287,7 @@ public class FrenchRepublicanCalendar extends Calendar {
         };
     }
 
-    private String mothDisplayName(int type, Locale locale) {
+    private String monthDisplayName(int type, Locale locale) {
         String[] monthNames = new String[]{ "Vendémiaire", "Brumaire", "Frimaire", "Nivose", "Pluviose", "Ventose", "Germinal", "Floréal", "Prairial", "Messidor", "Thermidor", "Fructidor", "Jours complémentaire" };
         return monthNames[fields[MONTH]];
     }

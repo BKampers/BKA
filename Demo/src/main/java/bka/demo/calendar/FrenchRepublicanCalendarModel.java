@@ -41,13 +41,36 @@ public class FrenchRepublicanCalendarModel extends CalendarModel {
     }
 
     @Override
+    public String getMonth() {
+        if (getCalendar().get(Calendar.MONTH) == FrenchRepublicanCalendar.JOURS_COMPLEMENTAIRES) {
+            return "";
+        }
+        return super.getMonth();
+    }
+
+    @Override
+    public String getDayOfWeek() {
+        if (getCalendar().get(Calendar.MONTH) == FrenchRepublicanCalendar.JOURS_COMPLEMENTAIRES) {
+            return "";
+        }
+        return super.getDayOfWeek();
+    }
+
+    @Override
     public Optional<Color> getDayOfWeekColor() {
-        if (getCalendar().get(Calendar.DAY_OF_WEEK) == FrenchRepublicanCalendar.DECADI || getCalendar().get(Calendar.MONTH) == FrenchRepublicanCalendar.JOURS_COMPLEMENTAIRES) {
+        if (getCalendar().get(Calendar.DAY_OF_WEEK) == FrenchRepublicanCalendar.DECADI) {
             return Optional.of(Color.RED);
         }
         return Optional.empty();
     }
 
-    final RomanNumberFormat roman = new RomanNumberFormat();
+    public Optional<Color> getDayOfYearColor() {
+        if (getCalendar().get(Calendar.MONTH) == FrenchRepublicanCalendar.JOURS_COMPLEMENTAIRES) {
+            return Optional.of(Color.RED);
+        }
+        return Optional.empty();
+    }
+
+    private final RomanNumberFormat roman = new RomanNumberFormat();
 
 }

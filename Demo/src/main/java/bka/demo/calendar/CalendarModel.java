@@ -67,6 +67,10 @@ public class CalendarModel {
         return Optional.empty();
     }
 
+    public Optional<Color> getDayOfYearColor() {
+        return Optional.empty();
+    }
+
     protected Calendar getCalendar() {
         return calendar;
     }

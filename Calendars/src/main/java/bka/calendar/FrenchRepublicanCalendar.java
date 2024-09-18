@@ -288,7 +288,7 @@ public class FrenchRepublicanCalendar extends Calendar {
     }
 
     private String monthDisplayName(int type, Locale locale) {
-        String[] monthNames = new String[]{ "Vendémiaire", "Brumaire", "Frimaire", "Nivose", "Pluviose", "Ventose", "Germinal", "Floréal", "Prairial", "Messidor", "Thermidor", "Fructidor", "Jours complémentaire" };
+        String[] monthNames = new String[]{ "Vendémiaire", "Brumaire", "Frimaire", "Nivose", "Pluviose", "Ventose", "Germinal", "Floréal", "Prairial", "Messidor", "Thermidor", "Fructidor", "Jours complémentaires" };
         return monthNames[fields[MONTH]];
     }
 
@@ -309,7 +309,7 @@ public class FrenchRepublicanCalendar extends Calendar {
         if (index < 0) {
             return null;
         }
-        return dayNames[fields[index]];
+        return dayNames[index];
     }
 
     private static final long EPOCH = -5594230800000L; // September 22, 1792 in Unix millis

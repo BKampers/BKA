@@ -148,15 +148,35 @@ public class CalendarDemo extends javax.swing.JFrame {
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, size / 3));
         FontMetrics metrics = graphics.getFontMetrics();
-        graphics.setColor(model.getDayOfWeekColor().isPresent() ? model.getDayOfWeekColor().get() : CalendarPanel.FONT_COLOR);
+        graphics.setColor(model.getDayOfWeekColor().orElse(CalendarPanel.FONT_COLOR));
         String date = model.getDate();
         graphics.drawString(date, (size - metrics.stringWidth(date)) / 2, size / 2);
-        graphics.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, size / 8));
-        graphics.setColor(CalendarPanel.FONT_COLOR);
-        metrics = graphics.getFontMetrics();
         String text = model.getMonth();
-        graphics.drawString(text, (size - metrics.stringWidth(text)) / 2, size - size / 4);
+        if (text.isBlank()) {
+            drawDayOfYearText(graphics, model, size);
+        }
+        else {
+            drawMonthText(graphics, text, size);
+        }
         return image;
+    }
+
+    private static void drawMonthText(Graphics2D graphics, String text, int size) {
+        graphics.setColor(CalendarPanel.FONT_COLOR);
+        graphics.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, size / 8));
+        FontMetrics metrics = graphics.getFontMetrics();
+        graphics.drawString(text, (size - metrics.stringWidth(text)) / 2, size - size / 4);
+    }
+
+    private static void drawDayOfYearText(Graphics2D graphics, CalendarModel model, int size) {
+        Optional<String> dayOfYear = model.getDayOfYear();
+        if (dayOfYear.isPresent()) {
+            String text = dayOfYear.get();
+            graphics.setColor(model.getDayOfYearColor().orElse(CalendarPanel.FONT_COLOR));
+            graphics.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, size / 12));
+            FontMetrics metrics = graphics.getFontMetrics();
+            graphics.drawString(text, (size - metrics.stringWidth(text)) / 2, size - size / 4);
+        }
     }
 
     private static BufferedImage createWindowsImage(CalendarModel model, int size) {

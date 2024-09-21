@@ -7,6 +7,7 @@ import bka.calendar.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.*;
+import java.util.List;
 import java.util.*;
 
 public class CalendarDemo extends javax.swing.JFrame {
@@ -145,20 +146,24 @@ public class CalendarDemo extends javax.swing.JFrame {
         BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = (Graphics2D) image.getGraphics();
         drawImageBackground(graphics, size);
+        drawDayOfMonth(graphics, model, size);
+        String month = model.getMonth();
+        if (!month.isBlank()) {
+            drawMonthText(graphics, month, size);
+        }
+        else {
+            drawDayOfYearText(graphics, model, size);
+        }
+        return image;
+    }
+
+    private static void drawDayOfMonth(Graphics2D graphics, CalendarModel model, int size) {
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, size / 3));
         FontMetrics metrics = graphics.getFontMetrics();
         graphics.setColor(model.getDayOfWeekColor().orElse(CalendarPanel.FONT_COLOR));
         String date = model.getDate();
         graphics.drawString(date, (size - metrics.stringWidth(date)) / 2, size / 2);
-        String text = model.getMonth();
-        if (text.isBlank()) {
-            drawDayOfYearText(graphics, model, size);
-        }
-        else {
-            drawMonthText(graphics, text, size);
-        }
-        return image;
     }
 
     private static void drawMonthText(Graphics2D graphics, String text, int size) {
@@ -170,13 +175,38 @@ public class CalendarDemo extends javax.swing.JFrame {
 
     private static void drawDayOfYearText(Graphics2D graphics, CalendarModel model, int size) {
         Optional<String> dayOfYear = model.getDayOfYear();
-        if (dayOfYear.isPresent()) {
-            String text = dayOfYear.get();
-            graphics.setColor(model.getDayOfYearColor().orElse(CalendarPanel.FONT_COLOR));
-            graphics.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, size / 12));
-            FontMetrics metrics = graphics.getFontMetrics();
-            graphics.drawString(text, (size - metrics.stringWidth(text)) / 2, size - size / 4);
+        if (dayOfYear.isEmpty()) {
+            return;
         }
+        List<String> lines = getLines(dayOfYear.get());
+        graphics.setColor(model.getDayOfYearColor().orElse(CalendarPanel.FONT_COLOR));
+        graphics.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, size / 10));
+        FontMetrics metrics = graphics.getFontMetrics();
+        int y = size - size / 4;
+        for (String line : lines) {
+            graphics.drawString(line, (size - metrics.stringWidth(line)) / 2, y);
+            y += metrics.getHeight();
+        }
+    }
+
+    private static List<String> getLines(String dayOfYear) {
+        ArrayList<String> lines = new ArrayList<>();
+        String[] text = dayOfYear.split("\\s");
+        if (text.length > 1) {
+            return List.of(concatWithoutLast(text), text[text.length - 1]);
+        }
+        return List.of(dayOfYear);
+    }
+
+    private static String concatWithoutLast(String[] text) {
+        StringBuilder line = new StringBuilder();
+        for (int i = 0; i < text.length - 1; ++i) {
+            if (!line.isEmpty()) {
+                line.append(' ');
+            }
+            line.append(text[i]);
+        }
+        return line.toString();
     }
 
     private static BufferedImage createWindowsImage(CalendarModel model, int size) {

@@ -28,4 +28,9 @@ public class EarthianCalendarModel extends CalendarModel {
         return Optional.empty();
     }
 
+    @Override
+    protected String getDateFormat() {
+        return "%04d/%02d/%02d";
+    }
+
 }

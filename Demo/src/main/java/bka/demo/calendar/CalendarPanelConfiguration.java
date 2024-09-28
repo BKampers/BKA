@@ -5,6 +5,7 @@
 package bka.demo.calendar;
 
 import bka.awt.clock.*;
+import java.util.*;
 
 
 public class CalendarPanelConfiguration {
@@ -19,6 +20,10 @@ public class CalendarPanelConfiguration {
 
     public Scale getFractionScale() {
         return new Scale(0, 60);
+    }
+
+    public Optional<SolarDecorator> getDecorator() {
+        return Optional.empty();
     }
 
 }

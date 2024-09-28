@@ -75,6 +75,22 @@ public class CalendarModel {
         return calendar;
     }
 
+    public String getTimeToolTipText() {
+        return String.format(getTimeFormat(), calendar.get(Calendar.HOUR), calendar.get(Calendar.MINUTE) + 1, calendar.get(Calendar.DATE));
+    }
+
+    public String getDateToolTipText() {
+        return String.format(getDateFormat(), calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH) + 1, calendar.get(Calendar.DATE));
+    }
+
+    protected String getDateFormat() {
+        return "%d/%02d/%02d";
+    }
+
     private final Calendar calendar;
+
+    private String getTimeFormat() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
 
 }

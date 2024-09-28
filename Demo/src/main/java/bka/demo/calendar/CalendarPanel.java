@@ -5,7 +5,9 @@ package bka.demo.calendar;
 
 import bka.awt.clock.*;
 import java.awt.*;
+import java.time.*;
 import java.util.*;
+import java.util.function.*;
 import javax.swing.*;
 
 
@@ -19,18 +21,58 @@ public class CalendarPanel extends javax.swing.JPanel {
         final int radius = Math.min(clockPanel.getWidth(), clockPanel.getHeight()) / 2;
         final Point center = new Point(clockPanel.getWidth() / 2, clockPanel.getHeight() / 2);
         final int fontSize = 12;
-        renderer = new ClockRenderer(center, configuration.getHourScale());
-        MarkerRingRenderer markers = renderer.addMarkerRingRenderer(radius - (fontSize * 2), 1, fontSize / 4, 5, fontSize / 2, Color.BLUE, 3f);
+        clock = new ClockRenderer(center, configuration.getHourScale());
+        clock.add(clockFaceRenderer(center, radius));
+        MarkerRingRenderer markers = clock.addMarkerRingRenderer(radius - (fontSize * 2), 1, markerRingRenderer(fontSize));
         Scale fractionScale = configuration.getFractionScale();
         markers.setScale(fractionScale);
-        renderer.addNumberRingRenderer(radius * 9 / 10, configuration.getHourInterval(), FONT_COLOR, getFont(Font.BOLD, fontSize));
-        hourHand = renderer.addNeedleRenderer(radius / 2, 5, Color.BLACK, 5);
-        minuteHand = renderer.addNeedleRenderer(radius - (fontSize + 10), 5, Color.BLACK, 3);
+        numberRenderer = new FormattedValueRenderer(FONT_COLOR, getFont(Font.BOLD, fontSize));
+        clock.addNonTiltedMarkerRingRenderer(radius * 9 / 10, configuration.getHourInterval(), numberRenderer);
+        decorator = configuration.getDecorator();
+        decorator.ifPresent(initializeDecorator(radius - 35));
+        hourHand = clock.addNeedleRenderer(needleRenderer(() -> hourHandPaint, 5, radius / 2));
+        minuteHand = clock.addNeedleRenderer(needleRenderer(() -> minuteHandPaint, 3, radius - (fontSize + 10)));
         minuteHand.setScale(fractionScale);
-        renderer.add(minuteHand);
-        secondHand = renderer.addNeedleRenderer(radius - (fontSize + 5), 5, Color.RED, 1f);
+        secondHand = clock.addNeedleRenderer(needleRenderer(() -> secondHandPaint, 1, radius - (fontSize + 5)));
         secondHand.setScale(fractionScale);
-        renderer.add(secondHand);
+    }
+
+    private bka.awt.Renderer clockFaceRenderer(Point center, int radius) {
+        int x = center.x - radius;
+        int y = center.y - radius;
+        int diameter = radius * 2;
+        return graphics -> {
+            graphics.setPaint(clockFacePaint);
+            graphics.fillOval(x, y, diameter, diameter);
+        };
+    }
+
+    private MarkerRenderer markerRingRenderer(int fontSize) {
+        Stroke stroke = new BasicStroke(3f);
+        return (graphics, value) -> {
+            graphics.setPaint(markerPaint);
+            graphics.setStroke(stroke);
+            graphics.drawLine(0, 0, 0, (((int) value) % 5 == 0) ? fontSize / 2 : fontSize / 4);
+        };
+    }
+
+    private Consumer<SolarDecorator> initializeDecorator(double radius) {
+        return solarDecorator -> {
+            solarDecorator.calculateArcs(LocalDate.now()).forEach((event, arc) -> {
+                ArcRenderer arcRenderer = new ArcRenderer(radius, arc);
+                solarArcs.put(event, arcRenderer);
+                clock.add(arcRenderer);
+            });
+        };
+    }
+
+    private bka.awt.Renderer needleRenderer(Supplier<Paint> paint, float width, int length) {
+        Stroke stroke = new BasicStroke(width, BasicStroke.CAP_ROUND, BasicStroke.JOIN_MITER);
+        return graphics -> {
+            graphics.setPaint(paint.get());
+            graphics.setStroke(stroke);
+            graphics.drawLine(0, 5, 0, -length);
+        };
     }
 
     /**
@@ -185,32 +227,38 @@ public class CalendarPanel extends javax.swing.JPanel {
         hourHand.setValue(model.getHour());
         minuteHand.setValue(model.getMinute());
         secondHand.setValue(model.getSecond());
+        decorator.ifPresent(this::updateSolarDecoration);
         repaint();
+        datePanel.setToolTipText(model.getDateToolTipText());
+    }
+
+
+    private void updateSolarDecoration(SolarDecorator solarDecorator) {
+        Map<SolarDecorator.Event, SolarDecorator.Arc> arcs = solarDecorator.calculateArcs(LocalDate.now());
+        SolarDecorator.Event currentEvent = arcs.keySet().stream()
+            .filter(e -> model.getHour() < arcs.get(e).getEnd())
+            .findFirst().orElse(arcs.keySet().iterator().next());
+        Color faceColor = arcs.get(currentEvent).getColor();
+        if (!clockFacePaint.equals(faceColor)) {
+            updateColors(currentEvent, faceColor);
+            arcs.forEach((event, arc) -> {
+                solarArcs.get(event).arc.setStart(arc.getStart());
+                solarArcs.get(event).arc.setEnd(arc.getEnd());
+            });
+        }
+    }
+
+    private void updateColors(SolarDecorator.Event currentEvent, Color faceColor) {
+        clockFacePaint = faceColor;
+        hourHandPaint = (currentEvent == SolarDecorator.Event.ASTRONOMICAL_SUNRISE) ? BRIGHT_COLOR : Color.BLACK;
+        minuteHandPaint = (currentEvent == SolarDecorator.Event.ASTRONOMICAL_SUNRISE) ? BRIGHT_COLOR : Color.BLACK;
+        secondHandPaint = (currentEvent == SolarDecorator.Event.ASTRONOMICAL_SUNRISE) ? Color.YELLOW : Color.RED;
+        numberRenderer.setPaint((currentEvent == SolarDecorator.Event.ASTRONOMICAL_SUNRISE) ? Color.YELLOW : Color.BLUE);
+        markerPaint = (currentEvent == SolarDecorator.Event.ASTRONOMICAL_SUNRISE) ? BRIGHT_COLOR : Color.BLUE;
     }
 
     private void setFontColor(JLabel component, Optional<Color> color) {
-        if (color.isPresent()) {
-            component.setForeground(color.get());
-        }
-        else {
-            component.setForeground(FONT_COLOR);
-        }
-    }
-
-    private class ClockPanel extends javax.swing.JPanel {
-
-        @Override
-        public void paint(Graphics graphics) {
-            super.paint(graphics);
-            if (graphics instanceof Graphics2D graphics2D) {
-                renderer.paint(graphics2D);
-            }
-            else {
-                graphics.setColor(FONT_COLOR);
-                graphics.drawString("Unexpected graphics type " + graphics.getClass(), 0, getSize().height / 2);
-            }
-        }
-
+        component.setForeground(color.orElse(FONT_COLOR));
     }
 
     private static Font getFont(int size) {
@@ -225,7 +273,37 @@ public class CalendarPanel extends javax.swing.JPanel {
         return model;
     }
 
+
+    private class ArcRenderer implements bka.awt.Renderer {
+
+        public ArcRenderer(double radius, SolarDecorator.Arc arc) {
+            this.radius = radius;
+            this.arc = arc;
+        }
+
+        @Override
+        public void paint(Graphics2D graphics) {
+            graphics.setPaint(arc.getColor());
+            graphics.setStroke(arc.getStroke());
+            graphics.draw(clock.createArc(radius, arc.getStart(), arc.getEnd()));
+        }
+
+        private final double radius;
+        private final SolarDecorator.Arc arc;
+    }
+
+
+    private class ClockPanel extends javax.swing.JPanel {
+        @Override
+        public void paint(Graphics graphics) {
+            super.paint(graphics);
+            clock.paint((Graphics2D) graphics);
+        }
+    }
+
+
     private final CalendarModel model;
+    private final Optional<SolarDecorator> decorator;
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel clockPanel;
@@ -239,9 +317,21 @@ public class CalendarPanel extends javax.swing.JPanel {
     private javax.swing.JPanel yearPanel;
     // End of variables declaration//GEN-END:variables
 
-    private final ClockRenderer renderer;
+
+    private final ClockRenderer clock;
     private final NeedleRenderer hourHand;
     private final NeedleRenderer minuteHand;
     private final NeedleRenderer secondHand;
+    private final Map<SolarDecorator.Event, ArcRenderer> solarArcs = new HashMap<>();
+
+    private final FormattedValueRenderer numberRenderer;
+
+    private Paint clockFacePaint = Color.WHITE;
+    private Paint hourHandPaint = Color.BLACK;
+    private Paint minuteHandPaint = Color.BLACK;
+    private Paint secondHandPaint = Color.RED;
+    private Paint markerPaint = Color.BLUE;
+
+    private static final Color BRIGHT_COLOR = Color.YELLOW.darker();
 
 }

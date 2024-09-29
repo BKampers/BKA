@@ -8,7 +8,6 @@ import java.awt.*;
 import java.time.*;
 import java.util.*;
 import java.util.function.*;
-import javax.swing.*;
 
 
 public class CalendarPanel extends javax.swing.JPanel {
@@ -58,11 +57,8 @@ public class CalendarPanel extends javax.swing.JPanel {
 
     private Consumer<SolarDecorator> initializeDecorator(double radius) {
         return solarDecorator -> {
-            solarDecorator.calculateArcs(LocalDate.now()).forEach((event, arc) -> {
-                ArcRenderer arcRenderer = new ArcRenderer(radius, arc);
-                solarArcs.put(event, arcRenderer);
-                clock.add(arcRenderer);
-            });
+            solarDecorator.calculateArcs(LocalDate.now());
+            solarDecorator.getArcs().forEach((period, arc) -> clock.add(new ArcRenderer(radius, arcPaints.get(period), arc)));
         };
     }
 
@@ -234,30 +230,34 @@ public class CalendarPanel extends javax.swing.JPanel {
 
 
     private void updateSolarDecoration(SolarDecorator solarDecorator) {
-        Map<SolarDecorator.Event, SolarDecorator.Arc> arcs = solarDecorator.calculateArcs(LocalDate.now());
-        SolarDecorator.Event currentEvent = arcs.keySet().stream()
-            .filter(e -> model.getHour() < arcs.get(e).getEnd())
-            .findFirst().orElse(arcs.keySet().iterator().next());
-        Color faceColor = arcs.get(currentEvent).getColor();
-        if (!clockFacePaint.equals(faceColor)) {
-            updateColors(currentEvent, faceColor);
-            arcs.forEach((event, arc) -> {
-                solarArcs.get(event).arc.setStart(arc.getStart());
-                solarArcs.get(event).arc.setEnd(arc.getEnd());
-            });
+        TreeMap<SolarDecorator.Period, SolarDecorator.Arc> arcs = solarDecorator.getArcs();
+        SolarDecorator.Period currentPeriod = currentPeriod(solarDecorator);
+        Paint arcPaint = arcPaints.get(currentPeriod);
+        if (!clockFacePaint.equals(arcPaint)) {
+            updateColors(currentPeriod, arcPaint);
         }
+        solarDecorator.calculateArcs(LocalDate.now());
     }
 
-    private void updateColors(SolarDecorator.Event currentEvent, Color faceColor) {
-        clockFacePaint = faceColor;
-        hourHandPaint = (currentEvent == SolarDecorator.Event.ASTRONOMICAL_SUNRISE) ? BRIGHT_COLOR : Color.BLACK;
-        minuteHandPaint = (currentEvent == SolarDecorator.Event.ASTRONOMICAL_SUNRISE) ? BRIGHT_COLOR : Color.BLACK;
-        secondHandPaint = (currentEvent == SolarDecorator.Event.ASTRONOMICAL_SUNRISE) ? Color.YELLOW : Color.RED;
-        numberRenderer.setPaint((currentEvent == SolarDecorator.Event.ASTRONOMICAL_SUNRISE) ? Color.YELLOW : Color.BLUE);
-        markerPaint = (currentEvent == SolarDecorator.Event.ASTRONOMICAL_SUNRISE) ? BRIGHT_COLOR : Color.BLUE;
+    private SolarDecorator.Period currentPeriod(SolarDecorator solarDecorator) {
+        double currentHour = model.getHour();
+        TreeMap<SolarDecorator.Period, SolarDecorator.Arc> arcs = solarDecorator.getArcs();
+        return arcs.keySet().stream()
+            .filter(period -> currentHour < arcs.get(period).getEnd())
+            .findFirst()
+            .orElse(arcs.firstKey());
     }
 
-    private void setFontColor(JLabel component, Optional<Color> color) {
+    private void updateColors(SolarDecorator.Period currentEvent, Paint paint) {
+        clockFacePaint = paint;
+        hourHandPaint = (currentEvent == SolarDecorator.Period.NIGHTTIME) ? BRIGHT_COLOR : Color.BLACK;
+        minuteHandPaint = (currentEvent == SolarDecorator.Period.NIGHTTIME) ? BRIGHT_COLOR : Color.BLACK;
+        secondHandPaint = (currentEvent == SolarDecorator.Period.NIGHTTIME) ? Color.YELLOW : Color.RED;
+        numberRenderer.setPaint((currentEvent == SolarDecorator.Period.NIGHTTIME) ? Color.YELLOW : Color.BLUE);
+        markerPaint = (currentEvent == SolarDecorator.Period.NIGHTTIME) ? BRIGHT_COLOR : Color.BLUE;
+    }
+
+    private void setFontColor(javax.swing.JLabel component, Optional<Color> color) {
         component.setForeground(color.orElse(FONT_COLOR));
     }
 
@@ -276,19 +276,22 @@ public class CalendarPanel extends javax.swing.JPanel {
 
     private class ArcRenderer implements bka.awt.Renderer {
 
-        public ArcRenderer(double radius, SolarDecorator.Arc arc) {
+        public ArcRenderer(double radius, Paint paint, SolarDecorator.Arc arc) {
             this.radius = radius;
+            this.paint = paint;
             this.arc = arc;
         }
 
         @Override
         public void paint(Graphics2D graphics) {
-            graphics.setPaint(arc.getColor());
-            graphics.setStroke(arc.getStroke());
+            graphics.setPaint(paint);
+            graphics.setStroke(ARC_STROKE);
             graphics.draw(clock.createArc(radius, arc.getStart(), arc.getEnd()));
         }
 
+
         private final double radius;
+        private final Paint paint;
         private final SolarDecorator.Arc arc;
     }
 
@@ -322,7 +325,6 @@ public class CalendarPanel extends javax.swing.JPanel {
     private final NeedleRenderer hourHand;
     private final NeedleRenderer minuteHand;
     private final NeedleRenderer secondHand;
-    private final Map<SolarDecorator.Event, ArcRenderer> solarArcs = new HashMap<>();
 
     private final FormattedValueRenderer numberRenderer;
 
@@ -333,5 +335,25 @@ public class CalendarPanel extends javax.swing.JPanel {
     private Paint markerPaint = Color.BLUE;
 
     private static final Color BRIGHT_COLOR = Color.YELLOW.darker();
+
+
+    private static final Color DAYTIME_COLOR = new Color(0xb1d0fd);
+    private static final Color CIVIL_TWILIGHT_COLOR = new Color(0x99b3e4);
+    private static final Color NAUTICAL_TWILIGHT_COLOR = new Color(0x7c96c9);
+    private static final Color ASTRONOMICAL_TWILIGHT_COLOR = new Color(0x6c82ba);
+    private static final Color NIGHTTIME_COLOR = new Color(0x4b5b97);
+
+    private static final Map<SolarDecorator.Period, Paint> arcPaints = Map.of(
+        SolarDecorator.Period.NIGHTTIME, NIGHTTIME_COLOR,
+        SolarDecorator.Period.ASTRONOMICAL_SUNRISE_TWILIGHT, ASTRONOMICAL_TWILIGHT_COLOR,
+        SolarDecorator.Period.NAUTICAL_SUNRISE_TWILIGHT, NAUTICAL_TWILIGHT_COLOR,
+        SolarDecorator.Period.CIVIL_SUNRISE_TWILIGHT, CIVIL_TWILIGHT_COLOR,
+        SolarDecorator.Period.DAYTIME, DAYTIME_COLOR,
+        SolarDecorator.Period.CIVIL_SUNSET_TWILIGHT, CIVIL_TWILIGHT_COLOR,
+        SolarDecorator.Period.NAUTICAL_SUNSET_TWILIGHT, NAUTICAL_TWILIGHT_COLOR,
+        SolarDecorator.Period.ASTRONOMICAL_SUNSET_TWILIGHT, ASTRONOMICAL_TWILIGHT_COLOR
+    );
+
+    private static final BasicStroke ARC_STROKE = new BasicStroke(4);
 
 }

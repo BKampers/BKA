@@ -9,6 +9,7 @@ import java.awt.event.*;
 import java.awt.image.*;
 import java.util.List;
 import java.util.*;
+import java.util.stream.*;
 
 public class CalendarDemo extends javax.swing.JFrame {
 
@@ -199,14 +200,7 @@ public class CalendarDemo extends javax.swing.JFrame {
     }
 
     private static String concatWithoutLast(String[] text) {
-        StringBuilder line = new StringBuilder();
-        for (int i = 0; i < text.length - 1; ++i) {
-            if (!line.isEmpty()) {
-                line.append(' ');
-            }
-            line.append(text[i]);
-        }
-        return line.toString();
+        return Arrays.stream(text).limit(text.length - 1).collect(Collectors.joining(" "));
     }
 
     private static BufferedImage createWindowsImage(CalendarModel model, int size) {

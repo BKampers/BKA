@@ -124,10 +124,10 @@ public class ClockRenderer extends CompositeRenderer {
         add(new ShapeRenderer(createArc(radius, start, end), paint, stroke));
     }
 
-    private Shape createArc(double radius, double start, double end) {
+    public Shape createArc(double radius, double start, double end) {
         double startDegrees = scale.degrees(start);
         double endDegrees = scale.degrees(end);
-        double diameter = radius * 2d;
+        double diameter = radius * 2;
         return new Arc2D.Double(center.getX() - radius, center.getY() - radius, diameter, diameter, angleStart(startDegrees), angleExtent(startDegrees, endDegrees), Arc2D.OPEN);
     }
 
@@ -143,12 +143,12 @@ public class ClockRenderer extends CompositeRenderer {
     }
 
     private static double angleStart(double start) {
-        return 90d - start;
+        return 90 - start;
     }
 
     private static double angleExtent(double start, double end) {
         double arc = start - end;
-        return (arc <= 0.0) ? arc : -360d + arc;
+        return (arc <= 0) ? arc : -360 + arc;
     }
 
     public NeedleRenderer addNeedleRenderer(int length, Paint paint, float width) {

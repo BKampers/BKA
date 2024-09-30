@@ -5,6 +5,7 @@
 package bka.demo.calendar;
 
 import java.awt.*;
+import java.text.*;
 import java.util.*;
 
 public class EarthianCalendarModel extends CalendarModel {
@@ -26,6 +27,11 @@ public class EarthianCalendarModel extends CalendarModel {
     @Override
     public Optional<Color> getDayOfWeekColor() {
         return Optional.empty();
+    }
+
+    @Override
+    public String getTimeToolTipText() {
+        return new SimpleDateFormat("HH:mm").format(getCalendar().getTime());
     }
 
     @Override

@@ -226,6 +226,7 @@ public class CalendarPanel extends javax.swing.JPanel {
         decorator.ifPresent(this::updateSolarDecoration);
         repaint();
         datePanel.setToolTipText(model.getDateToolTipText());
+        clockPanel.setToolTipText(model.getTimeToolTipText());
     }
 
 

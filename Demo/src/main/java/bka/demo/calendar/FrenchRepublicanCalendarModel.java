@@ -64,11 +64,17 @@ public class FrenchRepublicanCalendarModel extends CalendarModel {
         return Optional.empty();
     }
 
+    @Override
     public Optional<Color> getDayOfYearColor() {
         if (getCalendar().get(Calendar.MONTH) == FrenchRepublicanCalendar.JOURS_COMPLEMENTAIRES) {
             return Optional.of(Color.RED);
         }
         return Optional.empty();
+    }
+
+    @Override
+    public String getTimeToolTipText() {
+        return String.format("%d:%02d", getCalendar().get(Calendar.HOUR), getCalendar().get(Calendar.MINUTE));
     }
 
     private final RomanNumberFormat roman = new RomanNumberFormat();

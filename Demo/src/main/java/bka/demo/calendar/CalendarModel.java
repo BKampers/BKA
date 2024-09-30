@@ -5,6 +5,7 @@
 package bka.demo.calendar;
 
 import java.awt.*;
+import java.text.*;
 import java.util.*;
 
 public class CalendarModel {
@@ -76,7 +77,7 @@ public class CalendarModel {
     }
 
     public String getTimeToolTipText() {
-        return String.format(getTimeFormat(), calendar.get(Calendar.HOUR), calendar.get(Calendar.MINUTE) + 1, calendar.get(Calendar.DATE));
+        return new SimpleDateFormat("h:mm a").format(calendar.getTime());
     }
 
     public String getDateToolTipText() {
@@ -88,9 +89,5 @@ public class CalendarModel {
     }
 
     private final Calendar calendar;
-
-    private String getTimeFormat() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
 
 }

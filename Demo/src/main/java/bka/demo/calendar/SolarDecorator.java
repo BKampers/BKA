@@ -60,11 +60,9 @@ public class SolarDecorator {
     }
 
     private double calculateEndTime(LocalDate date, Period period) {
-        return decimalHour(endTimeCalculator(period).getEndTime(period.getZenith(), date));
-    }
-
-    private EndTimeCalculator endTimeCalculator(Period period) {
-        return period.isBeforeSunrise() ? solarEventCalculator::sunrise : solarEventCalculator::sunset;
+        return decimalHour(period.isBeforeSunrise()
+            ? solarEventCalculator.sunrise(period.getZenith(), date)
+            : solarEventCalculator.sunset(period.getZenith(), date));
     }
 
     private static double decimalHour(LocalDateTime dateTime) {
@@ -91,12 +89,6 @@ public class SolarDecorator {
 
         private double start;
         private double end;
-    }
-
-    private interface EndTimeCalculator {
-
-        LocalDateTime getEndTime(double zenith, LocalDate date);
-
     }
 
     private final SolarEventCalculator solarEventCalculator;

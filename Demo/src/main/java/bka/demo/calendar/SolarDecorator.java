@@ -40,15 +40,15 @@ public class SolarDecorator {
         this.solarEventCalculator = Objects.requireNonNull(solarEventCalculator);
     }
 
-    public TreeMap<Period, Arc> getArcs() {
-        return new TreeMap<>(arcs);
+    public SortedMap<Period, Arc> getArcs() {
+        return Collections.unmodifiableSortedMap(arcs);
     }
 
     public void calculateArcs(LocalDate date) {
         if (!date.equals(this.date)) {
-            double start = decimalHour(solarEventCalculator.sunset(Period.NIGHTTIME.getZenith(), date));
+            Optional<Double> start = decimalHour(solarEventCalculator.sunset(Period.NIGHTTIME.getZenith(), date));
             for (Period period : Period.values()) {
-                double end = calculateEndTime(date, period);
+                Optional<Double> end = calculateEndTime(date, period);
                 Logger.getLogger(SolarDecorator.class.getName()).log(Level.FINE, "{0}: {1} .. {2}", new Object[]{ period.name(), start, end });
                 Arc arc = arcs.computeIfAbsent(period, key -> new Arc());
                 arc.setStart(start);
@@ -59,41 +59,44 @@ public class SolarDecorator {
         }
     }
 
-    private double calculateEndTime(LocalDate date, Period period) {
+    private Optional<Double> calculateEndTime(LocalDate date, Period period) {
         return decimalHour(period.isBeforeSunrise()
             ? solarEventCalculator.sunrise(period.getZenith(), date)
             : solarEventCalculator.sunset(period.getZenith(), date));
     }
 
-    private static double decimalHour(LocalDateTime dateTime) {
-        return dateTime.getHour() + dateTime.getMinute() / 60d;
+    private static Optional<Double> decimalHour(Optional<LocalDateTime> dateTime) {
+        if (dateTime.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(dateTime.get().getHour() + dateTime.get().getMinute() / 60d);
     }
 
     public class Arc {
 
-        private void setStart(double start) {
+        private void setStart(Optional<Double> start) {
             this.start = start;
         }
 
-        private void setEnd(double end) {
+        private void setEnd(Optional<Double> end) {
             this.end = end;
         }
 
-        public double getStart() {
+        public Optional<Double> getStart() {
             return start;
         }
 
-        public double getEnd() {
+        public Optional<Double> getEnd() {
             return end;
         }
 
-        private double start;
-        private double end;
+        private Optional<Double> start;
+        private Optional<Double> end;
     }
 
     private final SolarEventCalculator solarEventCalculator;
 
-    private final Map<Period, Arc> arcs = new HashMap<>();
+    private final TreeMap<Period, Arc> arcs = new TreeMap<>();
 
     private LocalDate date;
 

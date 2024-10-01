@@ -231,7 +231,6 @@ public class CalendarPanel extends javax.swing.JPanel {
 
 
     private void updateSolarDecoration(SolarDecorator solarDecorator) {
-        TreeMap<SolarDecorator.Period, SolarDecorator.Arc> arcs = solarDecorator.getArcs();
         SolarDecorator.Period currentPeriod = currentPeriod(solarDecorator);
         Paint arcPaint = arcPaints.get(currentPeriod);
         if (!clockFacePaint.equals(arcPaint)) {
@@ -242,11 +241,19 @@ public class CalendarPanel extends javax.swing.JPanel {
 
     private SolarDecorator.Period currentPeriod(SolarDecorator solarDecorator) {
         double currentHour = model.getHour();
-        TreeMap<SolarDecorator.Period, SolarDecorator.Arc> arcs = solarDecorator.getArcs();
-        return arcs.keySet().stream()
-            .filter(period -> currentHour < arcs.get(period).getEnd())
+        SortedMap<SolarDecorator.Period, SolarDecorator.Arc> arcs = solarDecorator.getArcs();
+        return arcs.entrySet().stream()
+            .filter(lessThan(currentHour))
+            .map(Map.Entry::getKey)
             .findFirst()
             .orElse(arcs.firstKey());
+    }
+
+    private static Predicate<Map.Entry<SolarDecorator.Period, SolarDecorator.Arc>> lessThan(double currentHour) {
+        return entry -> {
+            Optional<Double> end = entry.getValue().getEnd();
+            return end.isPresent() && currentHour < end.get();
+        };
     }
 
     private void updateColors(SolarDecorator.Period currentEvent, Paint paint) {
@@ -285,9 +292,11 @@ public class CalendarPanel extends javax.swing.JPanel {
 
         @Override
         public void paint(Graphics2D graphics) {
-            graphics.setPaint(paint);
-            graphics.setStroke(ARC_STROKE);
-            graphics.draw(clock.createArc(radius, arc.getStart(), arc.getEnd()));
+            if (arc.getStart().isPresent() && arc.getEnd().isPresent()) {
+                graphics.setPaint(paint);
+                graphics.setStroke(ARC_STROKE);
+                graphics.draw(clock.createArc(radius, arc.getStart().get(), arc.getEnd().get()));
+            }
         }
 
 

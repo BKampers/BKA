@@ -19,38 +19,38 @@ public class SolarEventCalculator {
     }
 
     /**
-     * @param solarZenith of sunrise to compute, in radians @see Zenith class
-     * @param date to compute the sunrise for
-     * @return sunrise <code>LocalDateTime</code> or <code>null</code> for no sunrise
+     * @param solarZenith in radians @see Zenith class
+     * @param date
+     * @return sunrise <code>LocalDateTime</code> for given zenith and date; empty if no sunrise occurs.
      */
-    public LocalDateTime sunrise(double solarZenith, LocalDate date) {
+    public Optional<LocalDateTime> sunrise(double solarZenith, LocalDate date) {
         return solarEventTime(solarZenith, date, SUNRISE_HOUR_OFFSET);
     }
 
     /**
-     * @param solarZenith of sunet to compute, in radians @see Zenith class
-     * @param date to compute the sunset for
-     * @return sunset <code>LocalDateTime</code> or <code>null</code> for no sunset
+     * @param solarZenith in radians @see Zenith class
+     * @param date
+     * @return sunset <code>LocalDateTime</code> for given zenith and date; empty if no sunset occurs.
      */
-    public LocalDateTime sunset(double solarZenith, LocalDate date) {
+    public Optional<LocalDateTime> sunset(double solarZenith, LocalDate date) {
         return solarEventTime(solarZenith, date, SUNSET_HOUR_OFFSET);
     }
 
-    private LocalDateTime solarEventTime(double zenith, LocalDate date, int eventHourOffset) {
+    private Optional<LocalDateTime> solarEventTime(double zenith, LocalDate date, int eventHourOffset) {
         double longitudeHour = longitudeHour(date, eventHourOffset);
         double sunTrueLongitude = sunTrueLongitude(meanAnomaly(longitudeHour));
         double cosineSunLocalHour = cosineSunLocalHour(zenith, sunTrueLongitude);
         if (Double.isNaN(cosineSunLocalHour)) {
-            return null;
+            return Optional.empty();
         }
         double sunLocalHour = (eventHourOffset == SUNRISE_HOUR_OFFSET)
             ? sunriseLocalHour(Math.acos(cosineSunLocalHour))
             : sunsetLocalHour(Math.acos(cosineSunLocalHour));
-        return zoneDateTime(date, localMeanTime(sunTrueLongitude, longitudeHour, sunLocalHour) - baseLongitudeHour);
+        return Optional.of(zoneDateTime(date, localMeanTime(sunTrueLongitude, longitudeHour, sunLocalHour) - baseLongitudeHour));
     }
 
     private LocalDateTime zoneDateTime(LocalDate date, double localMeanTime) {
-        LocalDateTime meanDateTime = localDateTimeOf(date, localMeanTime);
+        LocalDateTime meanDateTime = meanDateTime(date, localMeanTime);
         return meanDateTime.plusMinutes(zoneOffset(meanDateTime));
     }
 
@@ -58,7 +58,7 @@ public class SolarEventCalculator {
         return timeZone.getOffset(meanDateTime.toEpochSecond(ZoneOffset.UTC) * 1000L) / MILLIS_PER_MINUTE;
     }
 
-    private static LocalDateTime localDateTimeOf(LocalDate date, double hours) {
+    private static LocalDateTime meanDateTime(LocalDate date, double hours) {
         return LocalDateTime.of(date, LocalTime.MIDNIGHT).plusMinutes((int) Math.round(hours * MINUTES_PER_HOUR));
     }
 

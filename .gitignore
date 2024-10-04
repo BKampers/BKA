@@ -10,3 +10,6 @@
 /GraphCanvas/target/
 /GraphCanvas/nbproject/
 /Calendars/target/
+/Calendars/nbproject/
+**/*.log
+**/*.log.lck

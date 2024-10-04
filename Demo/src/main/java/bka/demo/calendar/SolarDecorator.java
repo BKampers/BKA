@@ -49,8 +49,8 @@ public class SolarDecorator {
             Optional<Double> start = decimalHour(solarEventCalculator.sunset(Period.NIGHTTIME.getZenith(), date));
             for (Period period : Period.values()) {
                 Optional<Double> end = calculateEndTime(date, period);
-                Logger.getLogger(SolarDecorator.class.getName()).log(Level.FINE, "{0}: {1} .. {2}", new Object[]{ period.name(), start, end });
-                Arc arc = arcs.computeIfAbsent(period, key -> new Arc());
+                Logger.getLogger(SolarDecorator.class.getName()).log(Level.FINE, "{0}: {1} .. {2}", new Object[]{ period, start, end });
+                Arc arc = arcs.computeIfAbsent(period, p -> new Arc());
                 arc.setStart(start);
                 arc.setEnd(end);
                 start = end;

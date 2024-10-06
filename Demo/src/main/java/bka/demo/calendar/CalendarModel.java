@@ -45,6 +45,14 @@ public class CalendarModel {
         return calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.getDefault());
     }
 
+    public int getYearDayMax() {
+        return calendar.getActualMaximum(Calendar.DAY_OF_YEAR);
+    }
+
+    public int getYearDay() {
+        return calendar.get(Calendar.DAY_OF_YEAR);
+    }
+
     public double getHour() {
         return calendar.get(Calendar.HOUR) + getMinute() / 60;
     }
@@ -86,6 +94,10 @@ public class CalendarModel {
 
     protected String getDateFormat() {
         return "%d/%02d/%02d";
+    }
+
+    public String getDayOfYearToolTipText() {
+        return getYearDay() + "/" + getYearDayMax();
     }
 
     private final Calendar calendar;

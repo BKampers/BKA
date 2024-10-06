@@ -4,6 +4,7 @@
 
 package bka.demo.calendar;
 
+import bka.calendar.*;
 import java.awt.*;
 import java.text.*;
 import java.util.*;
@@ -17,6 +18,14 @@ public class EarthianCalendarModel extends CalendarModel {
     @Override
     public String getYear() {
         return String.format("%04d", getCalendar().get(Calendar.YEAR));
+    }
+
+    @Override
+    public Optional<String> getDayOfYear() {
+        if (getCalendar().get(Calendar.DATE) == 8 && getCalendar().get(Calendar.MONTH) == EarthianCalendar.CAPRICORNUS) {
+            return Optional.of("Kepler's birthday");
+        }
+        return Optional.empty();
     }
 
     @Override

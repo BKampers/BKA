@@ -64,7 +64,7 @@ public class PListSaxHandler extends DefaultHandler {
         if (object instanceof Map map) {
             return Collections.unmodifiableMap(map);
         }
-        return pool.computeIfAbsent(object, t -> object);
+        return pool.computeIfAbsent(object, o -> object);
     }
 
 
@@ -163,7 +163,7 @@ public class PListSaxHandler extends DefaultHandler {
         }
 
         public void setContentKey(String contentKey) {
-            this.contentKey = contentKey;
+            this.contentKey = (String) pool.computeIfAbsent(contentKey, k -> contentKey);
         }
         
         public String getContentKey() {

@@ -10,6 +10,7 @@ import java.time.*;
 import java.util.*;
 import javax.xml.parsers.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import org.junit.*;
 import org.xml.sax.*;
 
@@ -67,6 +68,27 @@ public class PListSaxHandlerTest {
                         Boolean.TRUE))));
         createSaxParser().parse("src/test/resources/plists/nested.plist", handler);
         assertEquals(expected, handler.getContent());
+    }
+
+    @Test
+    public void testDuplicates() throws SAXException, ParserConfigurationException, IOException {
+        createSaxParser().parse("src/test/resources/plists/duplicates.plist", handler);
+        Map<String, Object> map1 = (Map) ((List) handler.getContent()).get(0);
+        Map<String, Object> map2 = (Map) ((List) handler.getContent()).get(1);
+        assertSameKeys(map1, map2);
+        assertSame(map1.get("String"), map2.get("String"));
+        List<Integer> integers1 = (List) map1.get("Integers");
+        List<Integer> integers2 = (List) map2.get("Integers");
+        assertSame(integers1.get(0), integers2.get(0));
+        assertSame(integers1.get(1), integers2.get(1));
+    }
+
+    private void assertSameKeys(Map<String, Object> map1, Map<String, Object> map2) {
+        map1.keySet().forEach(key1 -> {
+            map2.keySet().stream().filter(key2 -> key2.equals(key1)).forEach(key2 -> {
+                assertSame(key1, key2);
+            });
+        });
     }
 
     private static SAXParser createSaxParser() throws SAXException, ParserConfigurationException {

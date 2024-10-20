@@ -10,7 +10,11 @@ import org.xml.sax.helpers.*;
 public class PListSaxHandler extends DefaultHandler {
 
     public Object getContent() {
-        return plists.get(0);
+        return getContent(0);
+    }
+
+    public Object getContent(int index) {
+        return plists.get(index);
     }
 
     @Override

@@ -18,56 +18,26 @@ public class PListSaxHandlerTest {
 
     @Test
     public void testAllTypes() throws SAXException, ParserConfigurationException, IOException {
-        final Object expected = List.of(
-            "Text",
-            BigInteger.ZERO,
-            BigDecimal.ZERO,
-            ZonedDateTime.of(1970, 1, 1, 0, 0, 0, 0, ZoneId.of("Z")),
-            Boolean.TRUE,
-            Boolean.FALSE);
         createSaxParser().parse("src/test/resources/plists/all-types.plist", handler);
-        assertEquals(expected, handler.getContent());
+        assertEquals(expectedObjectAllTypes(), handler.getContent());
     }
 
     @Test
     public void testArray() throws SAXException, ParserConfigurationException, IOException {
-        final Object expected = List.of(
-            List.of(
-                "Text",
-                BigInteger.ZERO,
-                BigDecimal.ZERO,
-                ZonedDateTime.of(1970, 1, 1, 0, 0, 0, 0, ZoneId.of("Z")),
-                Boolean.TRUE,
-                Boolean.FALSE));
         createSaxParser().parse("src/test/resources/plists/array.plist", handler);
-        assertEquals(expected, handler.getContent());
+        assertEquals(expectedObjectArray(), handler.getContent());
     }
 
     @Test
     public void testTwoElements() throws SAXException, ParserConfigurationException, IOException {
-        final Object expected = List.of(
-            Map.of(
-                "String", "Text",
-                "Integer", BigInteger.ZERO),
-            List.of(
-                Boolean.FALSE,
-                Boolean.TRUE));
         createSaxParser().parse("src/test/resources/plists/two-elements.plist", handler);
-        assertEquals(expected, handler.getContent());
+        assertEquals(expectedObjectTwoElement(), handler.getContent());
     }
 
     @Test
     public void testNested() throws SAXException, ParserConfigurationException, IOException {
-        final Object expected = List.of(
-            Map.of(
-                "Map", Map.of(
-                    "String", "Text",
-                    "Integer", BigInteger.ZERO,
-                    "List", List.of(
-                        Boolean.FALSE,
-                        Boolean.TRUE))));
         createSaxParser().parse("src/test/resources/plists/nested.plist", handler);
-        assertEquals(expected, handler.getContent());
+        assertEquals(expecteObjectdNested(), handler.getContent());
     }
 
     @Test
@@ -83,11 +53,17 @@ public class PListSaxHandlerTest {
         assertSame(integers1.get(1), integers2.get(1));
     }
 
+    @Test
+    public void testTwoFiles() throws SAXException, ParserConfigurationException, IOException {
+        createSaxParser().parse("src/test/resources/plists/two-elements.plist", handler);
+        createSaxParser().parse("src/test/resources/plists/nested.plist", handler);
+        assertEquals(expectedObjectTwoElement(), handler.getContent(0));
+        assertEquals(expecteObjectdNested(), handler.getContent(1));
+    }
+
     private void assertSameKeys(Map<String, Object> map1, Map<String, Object> map2) {
         map1.keySet().forEach(key1 -> {
-            map2.keySet().stream().filter(key2 -> key2.equals(key1)).forEach(key2 -> {
-                assertSame(key1, key2);
-            });
+            assertEquals(1, map2.keySet().stream().filter(key2 -> key2 == key1).count());
         });
     }
 
@@ -96,5 +72,47 @@ public class PListSaxHandlerTest {
     }
 
     private final PListSaxHandler handler = new PListSaxHandler();
+
+    private static Object expectedObjectAllTypes() {
+        return List.of(
+            "Text",
+            BigInteger.ZERO,
+            BigDecimal.ZERO,
+            ZonedDateTime.of(1970, 1, 1, 0, 0, 0, 0, ZoneId.of("Z")),
+            Boolean.TRUE,
+            Boolean.FALSE);
+    }
+
+    private static Object expectedObjectArray() {
+        return List.of(
+            List.of(
+                "Text",
+                BigInteger.ZERO,
+                BigDecimal.ZERO,
+                ZonedDateTime.of(1970, 1, 1, 0, 0, 0, 0, ZoneId.of("Z")),
+                Boolean.TRUE,
+                Boolean.FALSE));
+    }
+
+    private static Object expectedObjectTwoElement() {
+        return List.of(
+            Map.of(
+                "String", "Text",
+                "Integer", BigInteger.ZERO),
+            List.of(
+                Boolean.FALSE,
+                Boolean.TRUE));
+    }
+
+    private static Object expecteObjectdNested() {
+        return List.of(
+            Map.of(
+                "Map", Map.of(
+                    "String", "Text",
+                    "Integer", BigInteger.ZERO,
+                    "List", List.of(
+                        Boolean.FALSE,
+                        Boolean.TRUE))));
+    }
 
 }

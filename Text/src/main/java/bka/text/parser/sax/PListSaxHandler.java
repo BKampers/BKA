@@ -9,11 +9,11 @@ import org.xml.sax.helpers.*;
 
 public class PListSaxHandler extends DefaultHandler {
 
-    public Object getContent() {
+    public List<Object> getContent() {
         return getContent(0);
     }
 
-    public Object getContent(int index) {
+    public List<Object> getContent(int index) {
         return plists.get(index);
     }
 
@@ -49,7 +49,7 @@ public class PListSaxHandler extends DefaultHandler {
     public void endElement(String uri, String localName, String qualifiedName) throws SAXException {
         Element element = stack.pop();
         if (stack.isEmpty()) {
-            plists.add(element.getValue());
+            plists.add(Collections.unmodifiableList((List) element.getValue()));
         }
         else {
             element.getType().assignChildToParent(stack.peek(), element);
@@ -132,7 +132,8 @@ public class PListSaxHandler extends DefaultHandler {
         private final BiConsumer<Element, Element> childToParent;
         
     };
-    
+
+
     private class Element {
 
         public Element(String key, ElementType type) {
@@ -188,8 +189,9 @@ public class PListSaxHandler extends DefaultHandler {
         private String contentKey;
         private final StringBuilder characters = new StringBuilder();
     }
-  
-    private final List<Object> plists = new ArrayList<>();
+
+
+    private final List<List<Object>> plists = new ArrayList<>();
   
     private final Deque<Element> stack = new LinkedList<>();
 

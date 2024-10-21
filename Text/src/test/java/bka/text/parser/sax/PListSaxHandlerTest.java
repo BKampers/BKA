@@ -16,6 +16,11 @@ import org.xml.sax.*;
 
 public class PListSaxHandlerTest {
 
+    @Before
+    public void init() {
+        handler = new PListSaxHandler();
+    }
+
     @Test
     public void testAllTypes() throws SAXException, ParserConfigurationException, IOException {
         createSaxParser().parse("src/test/resources/plists/all-types.plist", handler);
@@ -71,9 +76,9 @@ public class PListSaxHandlerTest {
         return SAXParserFactory.newInstance().newSAXParser();
     }
 
-    private final PListSaxHandler handler = new PListSaxHandler();
+    private PListSaxHandler handler;
 
-    private static Object expectedObjectAllTypes() {
+    private static List<Object> expectedObjectAllTypes() {
         return List.of(
             "Text",
             BigInteger.ZERO,
@@ -83,7 +88,7 @@ public class PListSaxHandlerTest {
             Boolean.FALSE);
     }
 
-    private static Object expectedObjectArray() {
+    private static List<Object> expectedObjectArray() {
         return List.of(
             List.of(
                 "Text",
@@ -94,7 +99,7 @@ public class PListSaxHandlerTest {
                 Boolean.FALSE));
     }
 
-    private static Object expectedObjectTwoElement() {
+    private static List<Object> expectedObjectTwoElement() {
         return List.of(
             Map.of(
                 "String", "Text",
@@ -104,7 +109,7 @@ public class PListSaxHandlerTest {
                 Boolean.TRUE));
     }
 
-    private static Object expecteObjectdNested() {
+    private static List<Object> expecteObjectdNested() {
         return List.of(
             Map.of(
                 "Map", Map.of(

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shelf>
+    <book>
+        <title>The Unified Modeling Language User Guide</title>
+        <authors>
+            <author>Booch</author>
+            <author>Jacobson</author>
+            <author>Rumbaugh</author>
+        </authors>
+        <release>1999</release>
+    </book>
+    <book>
+        <title>The Java Programming Language</title>
+        <authors>
+            <author>Ken Arnold</author>
+            <author>James Gosling</author>
+        </authors>
+        <release>1998</release>
+    </book>
+</shelf>
+

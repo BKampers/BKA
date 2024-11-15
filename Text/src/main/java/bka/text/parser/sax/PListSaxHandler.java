@@ -1,3 +1,9 @@
+/*
+** © Bart Kampers
+** This code may not be used for any purpose that harms humans (including
+** exploitation and discrimination), humanity, the environment or the
+** universe.
+*/
 package bka.text.parser.sax;
 
 import java.math.*;
@@ -68,7 +74,7 @@ public class PListSaxHandler extends DefaultHandler {
         if (object instanceof Map map) {
             return Collections.unmodifiableMap(map);
         }
-        return pool.computeIfAbsent(object, o -> object);
+        return pool.computeIfAbsent(object, Function.identity());
     }
 
 
@@ -168,7 +174,7 @@ public class PListSaxHandler extends DefaultHandler {
         }
 
         public void setContentKey(String contentKey) {
-            this.contentKey = (String) pool.computeIfAbsent(contentKey, k -> contentKey);
+            this.contentKey = (String) pool.computeIfAbsent(contentKey, Function.identity());
         }
         
         public String getContentKey() {

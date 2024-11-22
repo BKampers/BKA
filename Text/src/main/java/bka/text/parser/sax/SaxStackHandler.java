@@ -7,13 +7,61 @@
 package bka.text.parser.sax;
 
 import java.util.*;
+import java.util.stream.*;
 import org.xml.sax.*;
 import org.xml.sax.helpers.*;
 
 public class SaxStackHandler extends DefaultHandler {
 
+    public class Children {
+
+        private Children(Map<String, List<Object>> children) {
+            this.children = children;
+        }
+
+        public List<Object> get(String qualifiedName) {
+            return Collections.unmodifiableList(children.get(qualifiedName));
+        }
+
+        public Children getChildren(String qualifiedName) {
+            return (Children) children.get(qualifiedName).get(0);
+        }
+
+        public List<String> getStrings(String qualifiedName) {
+            return children.get(qualifiedName).stream().map(element -> (String) element).collect(Collectors.toList());
+        }
+
+        public List<String> getStringList(String qualifiedName) {
+            return (List<String>) children.get("authors").get(0);
+        }
+
+        public Optional<String> getString(String qualifiedName) {
+            List<Object> elements = children.get(qualifiedName);
+            if (elements == null) {
+                return Optional.empty();
+            }
+            if (elements.size() > 1) {
+                throw new IllegalArgumentException("Multiple elements of '" + qualifiedName + "'");
+            }
+            return Optional.of((String) elements.get(0));
+        }
+
+        public Optional<Integer> getInteger(String qualifiedName) {
+            List<Object> elements = children.get(qualifiedName);
+            if (elements == null) {
+                return Optional.empty();
+            }
+            if (elements.size() > 1) {
+                throw new IllegalArgumentException("Multiple elements of '" + qualifiedName + "'");
+            }
+            return Optional.of((Integer) elements.get(0));
+        }
+
+        private final Map<String, List<Object>> children;
+    }
+
     public interface Model {
-        Object createObject(String qualifiedName, Map<String, List<Object>> children, String characters);
+        Object createObject(String qualifiedName, Children children, String characters);
     }
 
     public List<Object> getObjects() {
@@ -33,10 +81,10 @@ public class SaxStackHandler extends DefaultHandler {
     public void endElement(String uri, String localName, String qualifiedName) throws SAXException {
         Element element = stack.pop();
         if (stack.isEmpty()) {
-            objects.add(model.createObject(qualifiedName, element.getChildren(), element.getCharacters()));
+            objects.add(model.createObject(qualifiedName, new Children(element.getChildren()), element.getCharacters()));
         }
         else {
-            stack.peek().getChildren().computeIfAbsent(qualifiedName, k -> new ArrayList<>()).add(model.createObject(qualifiedName, element.getChildren(), element.getCharacters()));
+            stack.peek().getChildren().computeIfAbsent(qualifiedName, k -> new ArrayList<>()).add(model.createObject(qualifiedName, new Children(element.getChildren()), element.getCharacters()));
         }
     }
     
@@ -79,9 +127,6 @@ public class SaxStackHandler extends DefaultHandler {
     private final Model model;
 
     private final List<Object> objects = new ArrayList<>();
-  
     private final Deque<Element> stack = new LinkedList<>();
-
-//    private final Map<Object, Object> pool = new HashMap<>();
 
 }

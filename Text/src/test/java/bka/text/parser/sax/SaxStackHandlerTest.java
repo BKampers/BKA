@@ -6,7 +6,6 @@ package bka.text.parser.sax;
 
 import java.io.*;
 import java.util.*;
-import java.util.stream.*;
 import javax.xml.parsers.*;
 import static org.junit.Assert.assertEquals;
 import org.junit.*;
@@ -34,7 +33,7 @@ public class SaxStackHandlerTest {
                 case "book" ->
                     createBook(children);
                 case "authors" ->
-                    children.get("author").stream().map(Object::toString).collect(Collectors.toList());
+                    children.getStrings("author");
                 case "title", "author" ->
                     characters;
                 case "release" ->
@@ -44,7 +43,7 @@ public class SaxStackHandlerTest {
             };
         });
         createSaxParser().parse("src/test/resources/xml/books.xml", handler);
-        List<Book> shelf = (List<Book>) ((List) handler.getObjects().get(0));
+        List<Book> shelf = (List<Book>) handler.getObjects().get(0);
         assertEquals(2, shelf.size());
         assertEquals("The Unified Modeling Language User Guide", shelf.get(0).getTitle());
         assertEquals(List.of("Booch", "Jacobson", "Rumbaugh"), shelf.get(0).getAuthors());
@@ -54,11 +53,12 @@ public class SaxStackHandlerTest {
         assertEquals(1998, shelf.get(1).getRelease());
     }
 
-    private Book createBook(Map<String, List<Object>> properties) {
+    private Book createBook(SaxStackHandler.Children properties) {
         return new Book(
-            (String) properties.get("title").get(0),
-            (List<String>) properties.get("authors").get(0),//.stream().map(Object::toString).collect(Collectors.toList()),
-            (Integer) properties.get("release").get(0)
+            properties.getString("title").get(),
+            properties.getStringList("authors"),
+            //            properties.getChildren("authors").getStrings("author"),
+            properties.getInteger("release").get()
         );
     }
 
@@ -69,10 +69,10 @@ public class SaxStackHandlerTest {
     private class ArrayModel implements SaxStackHandler.Model {
 
         @Override
-        public Object createObject(String qualifiedName, Map<String, List<Object>> children, String characters) {
+        public Object createObject(String qualifiedName, SaxStackHandler.Children children, String characters) {
             return switch (qualifiedName) {
                 case "root" ->
-                    ((Map) children).get("element");
+                    children.getStrings("element");
                 case "element" ->
                     characters;
                 default ->

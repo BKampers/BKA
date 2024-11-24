@@ -19,42 +19,40 @@ public class SaxStackHandler extends DefaultHandler {
             this.children = children;
         }
 
-        public List<Object> get(String qualifiedName) {
-            return Collections.unmodifiableList(children.get(qualifiedName));
+        private void insert(String qualifiedName, Element element) {
+            children
+                .computeIfAbsent(qualifiedName, name -> new ArrayList<>())
+                .add(model.createObject(qualifiedName, element.getChildren(), element.getCharacters()));
+        }
+
+        public <T> List<T> getList(String qualifiedName) {
+            List<Object> elements = children.get(qualifiedName);
+            if (elements == null) {
+                return Collections.emptyList();
+            }
+            return elements.stream().map(element -> (T) element).collect(Collectors.toList());
+        }
+
+        /**
+         * @param <T> type of element
+         * @param qualifiedName of the element yp get
+         * @return Single element with given qualified name
+         * @throws RuntimeException if zero or more than one elements with given qualifieName are available or if the single element is not of
+         * specified element type
+         */
+        public <T> T getElement(String qualifiedName) {
+            List<Object> elements = children.get(qualifiedName);
+            if (elements == null) {
+                throw new NoSuchElementException(qualifiedName);
+            }
+            if (elements.size() > 1) {
+                throw new IllegalStateException("Multiple elements of '" + qualifiedName + "'");
+            }
+            return (T) elements.get(0);
         }
 
         public Children getChildren(String qualifiedName) {
             return (Children) children.get(qualifiedName).get(0);
-        }
-
-        public List<String> getStrings(String qualifiedName) {
-            return children.get(qualifiedName).stream().map(element -> (String) element).collect(Collectors.toList());
-        }
-
-        public List<String> getStringList(String qualifiedName) {
-            return (List<String>) children.get("authors").get(0);
-        }
-
-        public Optional<String> getString(String qualifiedName) {
-            List<Object> elements = children.get(qualifiedName);
-            if (elements == null) {
-                return Optional.empty();
-            }
-            if (elements.size() > 1) {
-                throw new IllegalArgumentException("Multiple elements of '" + qualifiedName + "'");
-            }
-            return Optional.of((String) elements.get(0));
-        }
-
-        public Optional<Integer> getInteger(String qualifiedName) {
-            List<Object> elements = children.get(qualifiedName);
-            if (elements == null) {
-                return Optional.empty();
-            }
-            if (elements.size() > 1) {
-                throw new IllegalArgumentException("Multiple elements of '" + qualifiedName + "'");
-            }
-            return Optional.of((Integer) elements.get(0));
         }
 
         private final Map<String, List<Object>> children;
@@ -81,10 +79,10 @@ public class SaxStackHandler extends DefaultHandler {
     public void endElement(String uri, String localName, String qualifiedName) throws SAXException {
         Element element = stack.pop();
         if (stack.isEmpty()) {
-            objects.add(model.createObject(qualifiedName, new Children(element.getChildren()), element.getCharacters()));
+            objects.add(model.createObject(qualifiedName, element.getChildren(), element.getCharacters()));
         }
         else {
-            stack.peek().getChildren().computeIfAbsent(qualifiedName, k -> new ArrayList<>()).add(model.createObject(qualifiedName, new Children(element.getChildren()), element.getCharacters()));
+            stack.peek().getChildren().insert(qualifiedName, element);
         }
     }
     
@@ -108,7 +106,7 @@ public class SaxStackHandler extends DefaultHandler {
             return characters.toString();
         }
 
-        public Map<String, List<Object>> getChildren() {
+        public Children getChildren() {
             return children;
         }
 
@@ -118,7 +116,7 @@ public class SaxStackHandler extends DefaultHandler {
 
         private final String qualifiedName;
         private final StringBuilder characters = new StringBuilder();
-        private final Map<String, List<Object>> children = new HashMap<>();
+        private final Children children = new Children(new HashMap<>());
 
         private Object object;
     }

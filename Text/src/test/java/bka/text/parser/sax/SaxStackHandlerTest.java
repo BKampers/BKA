@@ -13,35 +13,16 @@ import org.xml.sax.*;
 
 public class SaxStackHandlerTest {
 
-    @Before
-    public void init() {
-        handler = new SaxStackHandler(new ArrayModel());
-    }
-
     @Test
     public void testArray() throws SAXException, ParserConfigurationException, IOException {
+        SaxStackHandler handler = new SaxStackHandler(getArrayModel());
         createSaxParser().parse("src/test/resources/xml/array.xml", handler);
         assertEquals(List.of("Apple", "Banana", "Cherry"), ((List) handler.getObjects().get(0)));
     }
 
     @Test
     public void testBookShelf() throws SAXException, ParserConfigurationException, IOException {
-        SaxStackHandler handler = new SaxStackHandler((qualifiedName, children, characters) -> {
-            return switch (qualifiedName) {
-                case "shelf" ->
-                    children.get("book");
-                case "book" ->
-                    createBook(children);
-                case "authors" ->
-                    children.getStrings("author");
-                case "title", "author" ->
-                    characters;
-                case "release" ->
-                    Integer.parseInt(characters);
-                default ->
-                    throw new IllegalArgumentException("Cannot create element for qualified name '" + qualifiedName + "'");
-            };
-        });
+        SaxStackHandler handler = new SaxStackHandler(getBookshlefModel());
         createSaxParser().parse("src/test/resources/xml/books.xml", handler);
         List<Book> shelf = (List<Book>) handler.getObjects().get(0);
         assertEquals(2, shelf.size());
@@ -53,35 +34,47 @@ public class SaxStackHandlerTest {
         assertEquals(1998, shelf.get(1).getRelease());
     }
 
-    private Book createBook(SaxStackHandler.Children properties) {
-        return new Book(
-            properties.getString("title").get(),
-            properties.getStringList("authors"),
-            //            properties.getChildren("authors").getStrings("author"),
-            properties.getInteger("release").get()
-        );
-    }
-
     private static SAXParser createSaxParser() throws SAXException, ParserConfigurationException {
         return SAXParserFactory.newInstance().newSAXParser();
     }
 
-    private class ArrayModel implements SaxStackHandler.Model {
-
-        @Override
-        public Object createObject(String qualifiedName, SaxStackHandler.Children children, String characters) {
-            return switch (qualifiedName) {
-                case "root" ->
-                    children.getStrings("element");
-                case "element" ->
-                    characters;
-                default ->
-                    throw new IllegalArgumentException("Cannot create element for qualified name '" + qualifiedName + "'");
+    private static SaxStackHandler.Model getArrayModel() {
+        return (qualifiedName, children, characters) -> switch (qualifiedName) {
+            case "root" ->
+                children.getList("element");
+            case "element" ->
+                characters;
+            default ->
+                throw new IllegalArgumentException("Cannot create element for qualified name '" + qualifiedName + "'");
             };
-        }
     }
 
-    private class Book {
+    private static SaxStackHandler.Model getBookshlefModel() {
+        return (qualifiedName, children, characters) -> switch (qualifiedName) {
+            case "shelf" ->
+                children.getList("book");
+            case "book" ->
+                createBook(children);
+            case "authors" ->
+                children;
+            case "title", "author" ->
+                characters;
+            case "release" ->
+                Integer.parseInt(characters);
+            default ->
+                throw new IllegalArgumentException("Cannot create element for qualified name '" + qualifiedName + "'");
+        };
+    }
+
+    private static Book createBook(SaxStackHandler.Children properties) {
+        return new Book(
+            properties.getElement("title"),
+            properties.getChildren("authors").getList("author"),
+            properties.getElement("release")
+        );
+    }
+
+    private static class Book {
 
         public Book(String title, List<String> authors, int release) {
             this.title = title;
@@ -106,8 +99,5 @@ public class SaxStackHandlerTest {
         private final List<String> authors;
         private final int release;
     }
-
-    private SaxStackHandler handler;
-
 
 }

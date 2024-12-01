@@ -13,16 +13,21 @@ import org.xml.sax.helpers.*;
 
 public class SaxStackHandler extends DefaultHandler {
 
+    public interface Model {
+
+        Object createObject(String localName, String qualifiedName, Attributes attributes, Children children, String characters);
+    }
+
     public class Children {
 
         private Children(Map<String, List<Object>> children) {
             this.children = children;
         }
 
-        private void insert(String qualifiedName, Element element) {
+        private void insert(String localName, String qualifiedName, Element element) {
             children
                 .computeIfAbsent(qualifiedName, name -> new ArrayList<>())
-                .add(model.createObject(qualifiedName, element.getChildren(), element.getCharacters()));
+                .add(model.createObject(localName, qualifiedName, element.getAttributes(), element.getChildren(), element.getCharacters()));
         }
 
         public <T> List<T> getList(String qualifiedName) {
@@ -58,8 +63,8 @@ public class SaxStackHandler extends DefaultHandler {
         private final Map<String, List<Object>> children;
     }
 
-    public interface Model {
-        Object createObject(String qualifiedName, Children children, String characters);
+    public SaxStackHandler(Model model) {
+        this.model = Objects.requireNonNull(model);
     }
 
     public List<Object> getObjects() {
@@ -68,21 +73,17 @@ public class SaxStackHandler extends DefaultHandler {
 
     @Override
     public void startElement(String uri, String localName, String qualifiedName, Attributes attributes) {
-        stack.push(new Element(qualifiedName));
-    }
-
-    public SaxStackHandler(Model model) {
-        this.model = Objects.requireNonNull(model);
+        stack.push(new Element(qualifiedName, attributes));
     }
 
     @Override
     public void endElement(String uri, String localName, String qualifiedName) throws SAXException {
         Element element = stack.pop();
         if (stack.isEmpty()) {
-            objects.add(model.createObject(qualifiedName, element.getChildren(), element.getCharacters()));
+            objects.add(model.createObject(localName, qualifiedName, element.getAttributes(), element.getChildren(), element.getCharacters()));
         }
         else {
-            stack.peek().getChildren().insert(qualifiedName, element);
+            stack.peek().getChildren().insert(localName, qualifiedName, element);
         }
     }
     
@@ -94,8 +95,13 @@ public class SaxStackHandler extends DefaultHandler {
 
     private class Element {
 
-        public Element(String qualifiedName) {
+        public Element(String qualifiedName, Attributes attributes) {
             this.qualifiedName = qualifiedName;
+            this.attributes = attributes;
+        }
+
+        public Attributes getAttributes() {
+            return attributes;
         }
         
         public void appendCharacters(char buffer[], int start, int length) {
@@ -115,6 +121,7 @@ public class SaxStackHandler extends DefaultHandler {
         }
 
         private final String qualifiedName;
+        private final Attributes attributes;
         private final StringBuilder characters = new StringBuilder();
         private final Children children = new Children(new HashMap<>());
 

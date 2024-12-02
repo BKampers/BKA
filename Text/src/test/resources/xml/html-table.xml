@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col"
+             data-sorted="true" 
+             class="">Station &nbsp;</th>
+            <th scope="col"
+             data-sorted="false" 
+             class="">Weer &nbsp;</th>
+            <th scope="col"
+             data-sorted="false" 
+             class="">Temp (&deg;C)</th>
+            <th scope="col"
+             data-sorted="false" 
+             class="">Chill (&deg;C)</th>
+            <th scope="col"
+             data-sorted="false" 
+             class="">RV (%)</th>
+            <th scope="col"
+             data-sorted="false" 
+             class="">Wind (bft)</th>
+            <th scope="col"
+             data-sorted="false" 
+             class="">Wind (m/s)</th>
+            <th scope="col"
+             data-sorted="false" 
+             class="">Windstoot (km/uur)</th>
+            <th scope="col"
+             data-sorted="false" 
+             class="">Zicht (m)</th>
+            <th scope="col"
+             data-sorted="false" 
+             class="">Druk (hPa)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td class="">Lauwersoog</td>
+            <td class=""></td>
+            <td class="">6.9</td>
+            <td class="">3.3</td>
+            <td class="">65</td>
+            <td class="">ZZO 4</td>
+            <td class="">6</td>
+            <td class="">29</td>
+            <td class=""></td>
+            <td class=""></td>
+        </tr>
+        <tr>
+            <td class="">Terschelling</td>
+            <td class=""></td>
+            <td class="">6.3</td>
+            <td class="">2.5</td>
+            <td class="">78</td>
+            <td class="">ZZO 4</td>
+            <td class="">6</td>
+            <td class="">31</td>
+            <td class="">31000</td>
+            <td class="">1015.0</td>
+        </tr>
+        <tr>
+            <td class="">Vlieland</td>
+            <td class="">zwaar bewolkt</td>
+            <td class="">6.6</td>
+            <td class="">2.0</td>
+            <td class="">75</td>
+            <td class="">ZZO 5</td>
+            <td class="">9</td>
+            <td class="">40</td>
+            <td class="">35000</td>
+            <td class="">1014.4</td>
+        </tr>
+    </tbody>
+</table>

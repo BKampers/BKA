@@ -111,8 +111,11 @@ public class SaxStackHandler extends DefaultHandler {
         this.model = Objects.requireNonNull(model);
     }
 
-    public List<Object> getObjects() {
-        return Collections.unmodifiableList(objects);
+    public <T> T getRoot() {
+        if (root == null) {
+            throw new IllegalStateException("Nothing has been parsed yet");
+        }
+        return (T) root;
     }
 
     @Override
@@ -124,7 +127,7 @@ public class SaxStackHandler extends DefaultHandler {
     public void endElement(String uri, String localName, String qualifiedName) throws SAXException {
         Element element = stack.pop();
         if (stack.isEmpty()) {
-            objects.add(model.createObject(element));
+            root = Objects.requireNonNull(model.createObject(element), "Root ellemnent must not be null");
         }
         else {
             stack.peek().getChildren().insert(qualifiedName, element);
@@ -138,8 +141,7 @@ public class SaxStackHandler extends DefaultHandler {
 
 
     private final Model model;
-
-    private final List<Object> objects = new ArrayList<>();
     private final Deque<Element> stack = new LinkedList<>();
+    private Object root;
 
 }

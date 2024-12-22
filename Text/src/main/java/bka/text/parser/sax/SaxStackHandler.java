@@ -24,6 +24,7 @@ public class SaxStackHandler extends DefaultHandler {
             this.localName = localName;
             this.qualifiedName = qualifiedName;
             this.attributes = attributes;
+            children = new Children(this);
         }
 
         public String getUri() {
@@ -42,7 +43,7 @@ public class SaxStackHandler extends DefaultHandler {
             return attributes;
         }
 
-        public void appendCharacters(char buffer[], int start, int length) {
+        private void appendCharacters(char buffer[], int start, int length) {
             characters.append(buffer, start, length);
         }
 
@@ -54,19 +55,23 @@ public class SaxStackHandler extends DefaultHandler {
             return children;
         }
 
+        private String getNamespace() {
+            return qualifiedName.substring(0, qualifiedName.length() - localName.length());
+        }
+
         private final String uri;
         private final String localName;
         private final String qualifiedName;
         private final Attributes attributes;
         private final StringBuilder characters = new StringBuilder();
-        private final Children children = new Children(new HashMap<>());
+        private final Children children;
     }
 
 
     public class Children {
 
-        private Children(Map<String, List<Object>> children) {
-            this.children = children;
+        private Children(Element parent) {
+            this.parent = parent;
         }
 
         private void insert(String qualifiedName, Element element) {
@@ -75,6 +80,11 @@ public class SaxStackHandler extends DefaultHandler {
                 .add(model.createObject(element));
         }
 
+        /**
+         * @param <T> type of elements
+         * @param qualifiedName of the elements to get
+         * @return List of elements with given qualified name, an empty list if no elements with qualified name are available
+         */
         public <T> List<T> getList(String qualifiedName) {
             List<Object> elements = children.get(qualifiedName);
             if (elements == null) {
@@ -84,10 +94,25 @@ public class SaxStackHandler extends DefaultHandler {
         }
 
         /**
+         * @param <T> type of elements
+         * @param localName of the elements to get
+         * @return List of elements with given local name in the namespace of the parent element. An empty list if no elements with local name are
+         * available for the parent's namespace.
+         * @throws IllegalStateException if the parent element has no namespace
+         */
+        public <T> List<T> getLocalList(String localName) {
+            Optional<String> qualifiedName = getQualifiedName(localName);
+            if (qualifiedName.isEmpty()) {
+                return Collections.emptyList();
+            }
+            return getList(getQualifiedName(localName).get());
+        }
+
+        /**
          * @param <T> type of element
-         * @param qualifiedName of the element yp get
+         * @param qualifiedName of the element to get
          * @return Single element with given qualified name
-         * @throws RuntimeException if zero or more than one elements with given qualifieName are available or if the single element is not of type T
+         * @throws RuntimeException if zero or multiple elements with given qualifieName are available or if the single element is not of type T
          */
         public <T> T getElement(String qualifiedName) {
             List<Object> elements = children.get(qualifiedName);
@@ -100,11 +125,33 @@ public class SaxStackHandler extends DefaultHandler {
             return (T) elements.get(0);
         }
 
+        /**
+         * @param <T> type of element
+         * @param localName of the element to get
+         * @return Single element with given local name in the namespace of the parent element
+         * @throws IllegalStateException if the parent element has no namespace
+         * @throws NoSuchElementException if no elements with given localName are available in the parents namespace
+         * @throws ClassCastException if the single element is not of type T
+         * @throws IllegalArgumentException if multiple elements with given qualifieName are available
+         */
+        public <T> T getLocalElement(String localName) {
+            return getElement(getQualifiedName(localName).get());
+        }
+
+        private Optional<String> getQualifiedName(String localName) {
+            String namespace = parent.getNamespace();
+            if (namespace.isEmpty()) {
+                throw new IllegalStateException("Cannot determine namespace for " + localName);
+            }
+            return children.keySet().stream().filter(key -> key.equals(namespace + localName)).findAny();
+        }
+
         public Children getChildren(String qualifiedName) {
             return (Children) children.get(qualifiedName).get(0);
         }
 
-        private final Map<String, List<Object>> children;
+        private final Element parent;
+        private final Map<String, List<Object>> children = new HashMap<>();
     }
 
     public SaxStackHandler(Model model) {

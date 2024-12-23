@@ -68,16 +68,18 @@ public class SaxStackHandlerTest {
         SaxStackHandler handler = new SaxStackHandler(getTableModel());
         createNamespaceParser().parse("src/test/resources/xml/namespaces.xml", handler);
         List<Object> list = handler.getRoot();
-        assertEquals(2, list.size());
+        assertEquals(4, list.size());
+        assertEquals("HTML 4", list.get(0));
         assertEquals(
-            List.of(List.of("Apples", "Bananas")),
-            ((List) list.get(0)).get(0));
+            List.of(List.of(List.of("Apples", "Bananas"), List.of("round", "long"))),
+            list.get(1));
+        assertEquals("Furniture", list.get(2));
         assertEquals(
-            Map.of(
+            List.of(Map.of(
                 "name", "African Coffee Table",
                 "width", 80,
-                "length", 120),
-            ((List) list.get(1)).get(0));
+                "length", 120)),
+            list.get(3));
     }
 
     private static SaxStackHandler.Model getTableModel() {
@@ -97,13 +99,14 @@ public class SaxStackHandlerTest {
         return switch (element.getLocalName()) {
             case "root" ->
                 List.of(
-                element.getChildren().getList("h:table"),
-                element.getChildren().getList("f:table"));
+                (Object) element.getChildren().getElement("http://www.w3.org/TR/html4/", "subject"),
+                (Object) element.getChildren().getList("http://www.w3.org/TR/html4/", "table"),
+                (Object) element.getChildren().getElement("http://www.w3schools.com/furniture", "subject"),
+                (Object) element.getChildren().getList("http://www.w3schools.com/furniture", "table"));
             default ->
                 throw new IllegalArgumentException(unsupportedLocalName(element));
         };
     }
-
 
     private static Object handleHtmlElement(SaxStackHandler.Element element) {
         return switch (element.getLocalName()) {
@@ -111,7 +114,7 @@ public class SaxStackHandlerTest {
                 element.getChildren().getLocalList("tr");
             case "tr" ->
                 element.getChildren().getLocalList("td");
-            case "td" ->
+            case "subject", "td" ->
                 element.getCharacters();
             default ->
                 throw new IllegalArgumentException(unsupportedLocalName(element));
@@ -122,7 +125,7 @@ public class SaxStackHandlerTest {
         return switch (element.getLocalName()) {
             case "table" ->
                 createTable(element.getChildren());
-            case "name" ->
+            case "subject", "name" ->
                 element.getCharacters();
             case "width", "length" ->
                 Integer.valueOf(element.getCharacters());

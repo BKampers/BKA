@@ -1,14 +1,19 @@
 <root xmlns:h="http://www.w3.org/TR/html4/"
       xmlns:f="http://www.w3schools.com/furniture"
 >
-
+    <h:subject>HTML 4</h:subject>
     <h:table>
       <h:tr>
         <h:td>Apples</h:td>
         <h:td>Bananas</h:td>
       </h:tr>
+      <h:tr>
+        <h:td>round</h:td>
+        <h:td>long</h:td>
+      </h:tr>
     </h:table>
 
+    <f:subject>Furniture</f:subject>
     <f:table>
       <f:name>African Coffee Table</f:name>
       <f:width>80</f:width>

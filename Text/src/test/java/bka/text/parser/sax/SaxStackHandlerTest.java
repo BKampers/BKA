@@ -6,6 +6,7 @@ package bka.text.parser.sax;
 
 import java.io.*;
 import java.util.*;
+import java.util.function.*;
 import javax.xml.parsers.*;
 import static org.junit.Assert.assertEquals;
 import org.junit.*;
@@ -64,7 +65,7 @@ public class SaxStackHandlerTest {
     }
 
     @Test
-    public void testNamespace() throws SAXException, ParserConfigurationException, IOException {
+    public void testNamespaces() throws SAXException, ParserConfigurationException, IOException {
         SaxStackHandler handler = new SaxStackHandler(getTableModel());
         createNamespaceParser().parse("src/test/resources/xml/namespaces.xml", handler);
         List<Object> list = handler.getRoot();
@@ -82,7 +83,7 @@ public class SaxStackHandlerTest {
             list.get(3));
     }
 
-    private static SaxStackHandler.Model getTableModel() {
+    private static Function<Element, Object> getTableModel() {
         return element -> switch (element.getUri()) {
             case "" ->
                 handleTableRoot(element);
@@ -95,25 +96,25 @@ public class SaxStackHandlerTest {
         };
     }
 
-    private static Object handleTableRoot(SaxStackHandler.Element element) {
+    private static Object handleTableRoot(Element element) {
         return switch (element.getLocalName()) {
             case "root" ->
                 List.of(
-                (Object) element.getChildren().getElement("http://www.w3.org/TR/html4/", "subject"),
-                (Object) element.getChildren().getList("http://www.w3.org/TR/html4/", "table"),
-                (Object) element.getChildren().getElement("http://www.w3schools.com/furniture", "subject"),
-                (Object) element.getChildren().getList("http://www.w3schools.com/furniture", "table"));
+                (Object) element.getChild("http://www.w3.org/TR/html4/", "subject"),
+                (Object) element.getChildren("http://www.w3.org/TR/html4/", "table"),
+                (Object) element.getChild("http://www.w3schools.com/furniture", "subject"),
+                (Object) element.getChildren("http://www.w3schools.com/furniture", "table"));
             default ->
                 throw new IllegalArgumentException(unsupportedLocalName(element));
         };
     }
 
-    private static Object handleHtmlElement(SaxStackHandler.Element element) {
+    private static Object handleHtmlElement(Element element) {
         return switch (element.getLocalName()) {
             case "table" ->
-                element.getChildren().getLocalList("tr");
+                element.getLocalChildren("tr");
             case "tr" ->
-                element.getChildren().getLocalList("td");
+                element.getLocalChildren("td");
             case "subject", "td" ->
                 element.getCharacters();
             default ->
@@ -121,10 +122,10 @@ public class SaxStackHandlerTest {
         };
     }
 
-    private static Object handleFurnitureElement(SaxStackHandler.Element element) {
+    private static Object handleFurnitureElement(Element element) {
         return switch (element.getLocalName()) {
             case "table" ->
-                createTable(element.getChildren());
+                createTable(element);
             case "subject", "name" ->
                 element.getCharacters();
             case "width", "length" ->
@@ -134,11 +135,11 @@ public class SaxStackHandlerTest {
         };
     }
 
-    private static Map<String, Object> createTable(SaxStackHandler.Children properties) {
+    private static Map<String, Object> createTable(Element properties) {
         return Map.of(
-            "name", properties.getLocalElement("name"),
-            "width", properties.getLocalElement("width"),
-            "length", properties.getLocalElement("length"));
+            "name", properties.getLocalChild("name"),
+            "width", properties.getLocalChild("width"),
+            "length", properties.getLocalChild("length"));
     }
 
     private static SAXParser createParser() throws SAXException, ParserConfigurationException {
@@ -155,10 +156,10 @@ public class SaxStackHandlerTest {
         return factory.newSAXParser();
     }
 
-    private static SaxStackHandler.Model getArrayModel() {
+    private static Function<Element, Object> getArrayModel() {
         return (element) -> switch (element.getQualifiedName()) {
             case "root" ->
-                element.getChildren().getList("element");
+                element.getChildren("element");
             case "element" ->
                 element.getCharacters();
             default ->
@@ -166,14 +167,14 @@ public class SaxStackHandlerTest {
         };
     }
 
-    private static SaxStackHandler.Model getBookshlefModel() {
+    private static Function<Element, Object> getBookshlefModel() {
         return (element) -> switch (element.getQualifiedName()) {
             case "shelf" ->
-                element.getChildren().getList("book");
+                element.getChildren("book");
             case "book" ->
-                createBook(element.getChildren());
+                createBook(element);
             case "authors" ->
-                element.getChildren();
+                element.getChildren("author");
             case "title", "author" ->
                 element.getCharacters();
             case "release" ->
@@ -183,18 +184,18 @@ public class SaxStackHandlerTest {
         };
     }
 
-    private static Book createBook(SaxStackHandler.Children properties) {
+    private static Book createBook(Element properties) {
         return new Book(
-            properties.getElement("title"),
-            properties.getChildren("authors").getList("author"),
-            properties.getElement("release")
+            properties.getChild("title"),
+            properties.getChild("authors"),
+            properties.getChild("release")
         );
     }
 
-    private static SaxStackHandler.Model getIntegerModel() {
+    private static Function<Element, Object> getIntegerModel() {
         return (element) -> switch (element.getQualifiedName()) {
             case "integers" ->
-                element.getChildren().getList("integer");
+                element.getChildren("integer");
             case "integer" ->
                 getInteger(element.getAttributes().getValue("width"), element.getCharacters());
             default ->
@@ -217,45 +218,45 @@ public class SaxStackHandlerTest {
         };
     }
 
-    private static SaxStackHandler.Model getHtmlTableModel() {
+    private static Function<Element, Object> getHtmlTableModel() {
         return (element) -> switch (element.getQualifiedName()) {
             case "table" ->
-                getTable(element.getChildren());
+                getTable(element);
             case "thead", "tbody" ->
-                element.getChildren().getList("tr");
+                element.getChildren("tr");
             case "tr" ->
-                getColumns(element.getChildren());
+                getColumns(element);
             case "th", "td" ->
-                element.getCharacters().replace(NBSP, ' ').trim();
+                element.getCharacters().replace(NBSP, ' ').strip();
             default ->
                 throw new IllegalArgumentException(unsupportedQualifiedName(element));
         };
     }
 
-    private static Map<String, List<String>> getTable(SaxStackHandler.Children children) {
+    private static Map<String, List<String>> getTable(Element children) {
         return Map.of(
-            "Headers", children.getElement("thead"),
-            "Rows", children.getElement("tbody"));
+            "Headers", children.getChild("thead"),
+            "Rows", children.getChild("tbody"));
     }
 
-    private static List<String> getColumns(SaxStackHandler.Children children) {
-        List<String> columns = children.getList("td");
+    private static List<String> getColumns(Element children) {
+        List<String> columns = children.getChildren("td");
         if (columns.isEmpty()) {
-            return children.getList("th");
+            return children.getChildren("th");
         }
         return columns;
     }
 
 
-    private static String unsupportedUri(SaxStackHandler.Element element) {
+    private static String unsupportedUri(Element element) {
         return "Unsupported uri " + quoted(element.getUri());
     }
 
-    private static String unsupportedLocalName(SaxStackHandler.Element element) {
+    private static String unsupportedLocalName(Element element) {
         return "Unsupported local name " + quoted(element.getLocalName());
     }
 
-    private static String unsupportedQualifiedName(SaxStackHandler.Element element) {
+    private static String unsupportedQualifiedName(Element element) {
         return "Unsupported qualified name " + quoted(element.getQualifiedName());
     }
 

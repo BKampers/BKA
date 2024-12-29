@@ -83,20 +83,20 @@ public class SaxStackHandlerTest {
             list.get(3));
     }
 
-    private static Function<Element, Object> getTableModel() {
+    private static Function<XmlElement, Object> getTableModel() {
         return element -> switch (element.getUri()) {
             case "" ->
                 handleTableRoot(element);
             case "http://www.w3.org/TR/html4/" ->
-                handleHtmlElement(element);
+                handleHtmlXmlElement(element);
             case "http://www.w3schools.com/furniture" ->
-                handleFurnitureElement(element);
+                handleFurnitureXmlElement(element);
             default ->
                 throw new IllegalArgumentException(unsupportedUri(element));
         };
     }
 
-    private static Object handleTableRoot(Element element) {
+    private static Object handleTableRoot(XmlElement element) {
         return switch (element.getLocalName()) {
             case "root" ->
                 List.of(
@@ -109,7 +109,7 @@ public class SaxStackHandlerTest {
         };
     }
 
-    private static Object handleHtmlElement(Element element) {
+    private static Object handleHtmlXmlElement(XmlElement element) {
         return switch (element.getLocalName()) {
             case "table" ->
                 element.getLocalChildren("tr");
@@ -122,7 +122,7 @@ public class SaxStackHandlerTest {
         };
     }
 
-    private static Object handleFurnitureElement(Element element) {
+    private static Object handleFurnitureXmlElement(XmlElement element) {
         return switch (element.getLocalName()) {
             case "table" ->
                 createTable(element);
@@ -135,7 +135,7 @@ public class SaxStackHandlerTest {
         };
     }
 
-    private static Map<String, Object> createTable(Element properties) {
+    private static Map<String, Object> createTable(XmlElement properties) {
         return Map.of(
             "name", properties.getLocalChild("name"),
             "width", properties.getLocalChild("width"),
@@ -156,7 +156,7 @@ public class SaxStackHandlerTest {
         return factory.newSAXParser();
     }
 
-    private static Function<Element, Object> getArrayModel() {
+    private static Function<XmlElement, Object> getArrayModel() {
         return (element) -> switch (element.getQualifiedName()) {
             case "root" ->
                 element.getChildren("element");
@@ -167,7 +167,7 @@ public class SaxStackHandlerTest {
         };
     }
 
-    private static Function<Element, Object> getBookshlefModel() {
+    private static Function<XmlElement, Object> getBookshlefModel() {
         return (element) -> switch (element.getQualifiedName()) {
             case "shelf" ->
                 element.getChildren("book");
@@ -184,7 +184,7 @@ public class SaxStackHandlerTest {
         };
     }
 
-    private static Book createBook(Element properties) {
+    private static Book createBook(XmlElement properties) {
         return new Book(
             properties.getChild("title"),
             properties.getChild("authors"),
@@ -192,7 +192,7 @@ public class SaxStackHandlerTest {
         );
     }
 
-    private static Function<Element, Object> getIntegerModel() {
+    private static Function<XmlElement, Object> getIntegerModel() {
         return (element) -> switch (element.getQualifiedName()) {
             case "integers" ->
                 element.getChildren("integer");
@@ -218,7 +218,7 @@ public class SaxStackHandlerTest {
         };
     }
 
-    private static Function<Element, Object> getHtmlTableModel() {
+    private static Function<XmlElement, Object> getHtmlTableModel() {
         return (element) -> switch (element.getQualifiedName()) {
             case "table" ->
                 getTable(element);
@@ -233,13 +233,13 @@ public class SaxStackHandlerTest {
         };
     }
 
-    private static Map<String, List<String>> getTable(Element children) {
+    private static Map<String, List<String>> getTable(XmlElement children) {
         return Map.of(
             "Headers", children.getChild("thead"),
             "Rows", children.getChild("tbody"));
     }
 
-    private static List<String> getColumns(Element children) {
+    private static List<String> getColumns(XmlElement children) {
         List<String> columns = children.getChildren("td");
         if (columns.isEmpty()) {
             return children.getChildren("th");
@@ -248,15 +248,15 @@ public class SaxStackHandlerTest {
     }
 
 
-    private static String unsupportedUri(Element element) {
+    private static String unsupportedUri(XmlElement element) {
         return "Unsupported uri " + quoted(element.getUri());
     }
 
-    private static String unsupportedLocalName(Element element) {
+    private static String unsupportedLocalName(XmlElement element) {
         return "Unsupported local name " + quoted(element.getLocalName());
     }
 
-    private static String unsupportedQualifiedName(Element element) {
+    private static String unsupportedQualifiedName(XmlElement element) {
         return "Unsupported qualified name " + quoted(element.getQualifiedName());
     }
 

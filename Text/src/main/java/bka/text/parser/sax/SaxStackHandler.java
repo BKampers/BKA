@@ -13,8 +13,8 @@ import org.xml.sax.helpers.*;
 
 public class SaxStackHandler extends DefaultHandler {
 
-    public SaxStackHandler(Function<Element, Object> model) {
-        this.converter = Objects.requireNonNull(model);
+    public SaxStackHandler(Function<XmlElement, Object> converter) {
+        this.converter = Objects.requireNonNull(converter);
     }
 
     public <T> T getRoot() {
@@ -43,7 +43,7 @@ public class SaxStackHandler extends DefaultHandler {
             root = Objects.requireNonNull(converter.apply(element), "Root element must not be null");
         }
         else {
-            stack.peek().getChildren().insert(qualifiedName, converter.apply(element));
+            stack.peek().addChild(qualifiedName, converter.apply(element));
         }
     }
     
@@ -57,7 +57,7 @@ public class SaxStackHandler extends DefaultHandler {
     }
 
 
-    private final Function<Element, Object> converter;
+    private final Function<XmlElement, Object> converter;
     private final Deque<Element> stack = new LinkedList<>();
     private final Map<String, String> namespaces = new HashMap<>();
 

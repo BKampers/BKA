@@ -28,7 +28,7 @@ TypeExpression                Identifier |
                               RangeExpression |
                               "(" IdentifierList ")" |
                               "ARRAY" "[" RangeExpression "]" "OF" TypeExpression |
-                              Identifier "=" "RECORD" VariableDeclaration "END"
+                              "RECORD" VariableDeclaration "END"
 IdentifierList                Identifier "," IdentifierList |
                               Identifier 
 RangeExpression               IntegerLiteral ".." IntegerLiteral |
@@ -60,7 +60,7 @@ ArgumentList                  Exrpession "," ArgumentList |
 Identifier                    [A-Z_]+[A-Z0-9_]*
 Literal                       IntegerLiteral |
                               RealLiteral |
-                              "'".*"'" |
+                              "'"[^']*"'" |
                               "FALSE" |
                               "TRUE"
 IntegerLiteral                \d+

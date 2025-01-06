@@ -1,6 +1,6 @@
 {
     "Program": [
-        [ "PROGRAM", "Identifier", ";", "Declarations", "CompoundStatement", "." ]
+        [ "PROGRAM", "Identifier", ";", "Declarations", "CompoundStatement", "\\." ]
     ],
     "Declarations": [
         [ "ConstDeclaration", "Declarations" ], 
@@ -49,10 +49,11 @@
         [ "IdentifierList", ":", "TypeDeclarationExpression", ";" ]
     ],
     "TypeDeclarationExpression": [
+        [ "RangeExpression" ],
         [ "TypeExpression" ], 
-       [ "RangeExpression" ],
         [ "\\(", "IdentifierList", "\\)" ],
-        [ "ARRAY", "\\[", "RangeExpression", "\\]", "OF", "TypeExpression" ]
+        [ "ARRAY", "\\[", "RangeExpression", "\\]", "OF", "TypeExpression" ],
+        [ "RECORD", "VariableDeclarationList", "END" ]
     ],
     "TypeExpression": [
         [ "BOOLEAN" ],
@@ -66,8 +67,8 @@
         [ "Identifier" ]
     ],
     "RangeExpression": [
-        [ "IntegerLiteral", "..", "IntegerLiteral" ],
-        [ "Identifier", "..", "Identifier" ]
+        [ "IntegerLiteral", "\\.\\.", "IntegerLiteral" ],
+        [ "Identifier", "\\.\\.", "Identifier" ]
     ],
     "CompoundStatement": [
         [ "BEGIN", "Statements", "END" ]
@@ -134,22 +135,13 @@
         ["XOR"]
     ],
     "Identifier": [
-        [ "([A-Z_]+[A-Z_0-9]*)(?<!AND|ARRAY|BEGIN|BOOLEAN|BREAK|CASE|CONST|DO|ELSE|END|FALSE|FOR|FUNCTION|INTEGER|IF|NOT|OF|OR|OTHERWISE|PROCEDURE|PROGRAM|REAL|RECORD|REPEAT|STRING|THEN|TO|TRUE|TYPE|UNTIL|VAR|WHILE|XOR)" ],
+        [ "\\b(?!AND\\b|ARRAY\\b|BEGIN\\b|BOOLEAN\\b|BREAK\\b|CASE\\b|CONST\\b|DO\\b|ELSE\\b|END\\b|FALSE\\b|FOR\\b|FUNCTION\\b|INTEGER\\b|IF\\b|NOT\\b|OF\\b|OR\\b|OTHERWISE\\b|PROCEDURE\\b|PROGRAM\\b|REAL\\b|RECORD\\b|REPEAT\\b|STRING\\b|THEN\\b|TO\\b|TRUE\\b|TYPE\\b|UNTIL\\b|VAR\\b|WHILE\\b|XOR\\b)[A-Z_]+[A-Z_0-9]*" ],
         ["^Keyword"]
     ],
-    "Keyword": [
-        ["AND|ARRAY|BEGIN|BOOLEAN|BREAK|CASE|CONST|DO|ELSE|END|FALSE|FOR|FUNCTION|INTEGER|IF|NOT|OF|OR|OTHERWISE|PROCEDURE|PROGRAM|REAL|RECORD|REPEAT|STRING|THEN|TO|TRUE|TYPE|UNTIL|VAR|WHILE|XOR"]
-    ],
-    "ExIdentifier1": [
-        [ "^([A-Z_]+[A-Z0-9_]*)(?<!AND|ARRAY|BEGIN|BOOLEAN|BREAK|CASE|CONST|DO|ELSE|END|FALSE|FOR|FUNCTION|INTEGER|IF|NOT|OF|OR|OTHERWISE|PROCEDURE|PROGRAM|REAL|RECORD|REPEAT|STRING|THEN|TO|TRUE|TYPE|UNTIL|VAR|WHILE|XOR)$" ]
-    ],
-    "GroupedIdentifier": [
-        [ "((?<i>[A-Z_]+[A-Z0-9_]*)(?<s>[^A-Z0-9_]))(?<!AND|ARRAY|BEGIN|BOOLEAN|BREAK|CASE|CONST|DO|ELSE|END|FALSE|FOR|FUNCTION|INTEGER|IF|NOT|OF|OR|OTHERWISE|PROCEDURE|PROGRAM|REAL|RECORD|REPEAT|STRING|THEN|TO|TRUE|TYPE|UNTIL|VAR|WHILE|XOR)" ]
-    ],
     "Literal": [
-        [ "IntegerLiteral" ],
         [ "RealLiteral" ],
-        [ "'", ".*", "'" ],
+        [ "IntegerLiteral" ],
+        [ "'", "[^']*", "'" ],
         [ "FALSE" ],
         [ "TRUE" ]
     ],
@@ -158,6 +150,6 @@
         [ "$[0-9A-F]+" ]
     ],
     "RealLiteral": [
-        [ "\\d+\\.\\d*(E[-+]?\\d+)?" ]
+        [ "\\d+\\.\\d*(E[\\-\\+]?\\d+)?" ]
     ]
 }

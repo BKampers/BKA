@@ -17,12 +17,46 @@ public class PascalParserTest {
     @Test
     public void testEmptyProgram() {
         String output = parser.parse("PROGRAM program_name; BEGIN END.");
+        assertSuccess(output);
+    }
+
+    @Test
+    public void testVariableDeclarations() {
+        String output = parser.parse("""
+            PROGRAM program_name;
+            VAR bool: BOOLEAN;
+            VAR byte, word: 0 .. 255;
+            VAR point: RECORD
+                x: REAL;
+                y: REAL;
+                END;
+            VAR fruit: ( apple, banana, cherry );
+            BEGIN
+            END.
+            """);
+        assertSuccess(output);
+    }
+
+    @Test
+    public void testTypeDeclarations() {
+        String output = parser.parse("""
+            PROGRAM program_name;
+            TYPE bool = BOOLEAN;
+            TYPE byte = 0 .. 255;
+            TYPE point = RECORD
+                x: REAL;
+                y: REAL;
+                END;
+            TYPE fruit = ( apple, banana, cherry );
+            BEGIN
+            END.
+            """);
         System.out.println(output);
         assertSuccess(output);
     }
 
     @Test
-    public void testProcedure() {
+    public void testProcedureDeclaration() {
         String output = parser.parse("""
             PROGRAM program_name;
 
@@ -37,12 +71,11 @@ public class PascalParserTest {
             p1(result, 0);
             END.
             """);
-        System.out.println(output);
         assertSuccess(output);
     }
 
     @Test
-    public void testFunction() {
+    public void testFunctionDeclaration() {
         String output = parser.parse("""
             PROGRAM program_name;
 
@@ -59,7 +92,6 @@ public class PascalParserTest {
             result := getPi;
             END.
             """);
-        System.out.println(output);
         assertSuccess(output);
     }
 
@@ -72,10 +104,12 @@ public class PascalParserTest {
             BEGIN
                 i := 0;
                 WHILE i < 10 DO
-                    a [i] := i + 1;
+                BEGIN
+                    a[i] := i;
+                    i := i + 1
+                END
             END.
             """);
-        System.out.println(output);
         assertSuccess(output);
     }
 
@@ -86,13 +120,9 @@ public class PascalParserTest {
             VAR a: ARRAY [1 .. 10] OF INTEGER;
             VAR i: INTEGER;
             BEGIN
-                FOR i := 1 TO 10 DO
-                    BEGIN
-                    a[i] := i
-                    END
+                FOR i := 1 TO 10 DO a[i] := i
             END.
             """);
-        System.out.println(output);
         assertSuccess(output);
     }
 
@@ -103,26 +133,40 @@ public class PascalParserTest {
             VAR i,j,s: INTEGER;
             BEGIN
                 IF i = 0 THEN
-                   BEGIN
-                   s := 0;
-                   END;
+                    BEGIN
+                    s := 0;
+                    END;
                 IF i < 0 THEN
-                   BEGIN
-                   s := -1
-                   END
+                    BEGIN
+                    s := -1
+                    END
                 ELSE
-                   BEGIN
-                   s := 1;
-                   END;
-               IF s < 0 THEN
-                  j := -i
-               ELSE IF s = 0 THEN
-                  j := 0
-               ELSE
-                  j := i;
+                    BEGIN
+                    s := 1;
+                    END;
+                IF s < 0 THEN
+                    j := -i
+                ELSE IF s = 0 THEN
+                    j := 0
+                ELSE
+                    j := i;
             END.
             """);
-        System.out.println(output);
+        assertSuccess(output);
+    }
+
+    @Test
+    public void testLiterals() {
+        String output = parser.parse("""
+            PROGRAM program_name;
+            CONST float = 1.4e9;
+            CONST greeting = 'Hello World!';
+            CONST int = 1234567890;
+            CONST yes = TRUE;
+            CONST no = FALSE;
+            BEGIN
+            END.
+            """);
         assertSuccess(output);
     }
 
@@ -138,7 +182,6 @@ public class PascalParserTest {
             BEGIN
             END.
             """);
-        System.out.println(output);
         assertSuccess(output);
     }
 
@@ -149,11 +192,30 @@ public class PascalParserTest {
             ** A Pascal Program
             *)
             PROGRAM program_name;
-            (* Main *)
+            (* Main *)(* *)
             BEGIN
-            END. (**)
+            END.
+            (**)""");
+        assertSuccess(output);
+    }
+
+    @Test
+    public void testRangeExpressions() {
+        String output = parser.parse("""
+            PROGRAM program_name;
+            CONST s = 0;
+            CONST e = 9;
+            VAR r1: 0 .. 7;
+            VAR r2: 25.. 74;
+            VAR r3: 1 ..12;
+            VAR r4: 1024..2047;
+            VAR r5: s .. e;
+            VAR r6: s.. e;
+            VAR r7: s ..e;
+            VAR r8: s..e;
+            BEGIN
+            END.
             """);
-        System.out.println(output);
         assertSuccess(output);
     }
 
@@ -175,7 +237,6 @@ public class PascalParserTest {
             BEGIN
             END.
             """);
-        System.out.println(output);
         assertError(output);
     }
 
@@ -197,7 +258,6 @@ public class PascalParserTest {
             BEGIN
             END.
             """);
-        System.out.println(output);
         assertError(output);
     }
 
@@ -219,7 +279,6 @@ public class PascalParserTest {
             BEGIN
             (*END*).
             """);
-        System.out.println(output);
         assertError(output);
     }
 
@@ -230,7 +289,6 @@ public class PascalParserTest {
             BEGIN
             END(*.*)
             """);
-        System.out.println(output);
         assertError(output);
     }
 
@@ -249,7 +307,6 @@ public class PascalParserTest {
             p1(result, 0);
             END.
             """);
-        System.out.println(output);
         assertError(output);
     }
 
@@ -265,7 +322,7 @@ public class PascalParserTest {
     }
 
     private static void assertSuccess(String output) {
-        assertTrue(output.startsWith("Program parsed successfully"));
+        assertTrue("Parse error: " + output, output.startsWith("Program parsed successfully"));
     }
 
     private static void assertError(String output) {
@@ -273,30 +330,5 @@ public class PascalParserTest {
     }
 
     private PascalParser parser;
-
-    private static final String A_PROGRAM = """
-        PROGRAM program_name;
-            var a,b,c: integer;
-
-            procedure procedure1
-                var _1_: real;
-                procedure nested
-                begin
-                end;
-            begin
-                _1_ := 1e+1 + 2.2
-            end
-
-           function function1 : integer
-           begin
-
-           end;
-
-        BEGIN (* Main *)
-        a:=3+3;
-        b:=a-1;
-        c:= b mod a;
-        END. (**)
-        """;
 
 }

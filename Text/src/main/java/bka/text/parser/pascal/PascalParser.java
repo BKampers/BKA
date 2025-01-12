@@ -15,11 +15,10 @@ public class PascalParser {
     }
 
     public String parse(String sourceCode) {
-        source = sourceCode.toUpperCase();
         long startTime = System.nanoTime();
-        List<Node> nodes = buildTree(0, "Program");
+        List<Node> nodes = buildTree(sourceCode);
         long duration = System.nanoTime() - startTime;
-        nodes.forEach(node -> dump(node, 0));
+//        nodes.forEach(node -> dump(node, 0));
         Optional<Node> error = findError(nodes);
         if (error.isPresent()) {
             return "Error: " + error.get().toString();
@@ -27,16 +26,18 @@ public class PascalParser {
         return ("Program parsed successfully in " + (duration / 1000) + " microseconds");
     }
 
+    public List<Node> buildTree(String sourceCode) {
+        source = sourceCode;
+        matchers.clear();
+        return buildTree(0, "Program");
+    }
+
     private static void dump(Node node, int depth) {
         for (int i = 0; i < depth; ++i) {
             System.out.print('\t');
         }
         System.out.println(node);
-        if (node.getChildren() != null) {
-            for (Node child : node.getChildren()) {
-                dump(child, depth + 1);
-            }
-        }
+        node.getChildren().forEach(child -> dump(child, depth + 1));
     }
 
     private List<Node> buildTree(int index, String symbol) {
@@ -104,8 +105,7 @@ public class PascalParser {
             return node;
         }
         else {
-            Pattern pattern = Pattern.compile(symbol);
-            Matcher matcher = pattern.matcher(source);
+            Matcher matcher = matchers.computeIfAbsent(symbol, this::createMatcher);
             if (matcher.find(index) && matcher.start() == index) {
                 node.setEnd(matcher.end());
                 return node;
@@ -113,6 +113,10 @@ public class PascalParser {
         }
         node.setError("No match");
         return node;
+    }
+
+    private Matcher createMatcher(String symbol) {
+        return Pattern.compile(symbol, Pattern.CASE_INSENSITIVE).matcher(source);
     }
 
     private int skipWhitespaceAndComment(int index) {
@@ -142,27 +146,11 @@ public class PascalParser {
         return nodes.stream().filter(node -> node.getError() != null).findAny();
     }
 
-    private class Node {
+    public class Node {
 
         private Node(String symbol, int start) {
             this.symbol = symbol;
             this.start = start;
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            if (error != null) {
-                builder.append("Error: ").append(error).append(' ');
-            }
-            builder.append(symbol);
-            if (children != null) {
-                builder.append(" (").append(children.size()).append(')');
-            }
-            if (0 <= start && start <= end && end < source.length()) {
-                builder.append(" '").append(source.substring(start, end)).append('\'');
-            }
-            return builder.toString();
         }
 
         public int getStart() {
@@ -190,22 +178,49 @@ public class PascalParser {
         }
 
         private void setChildren(List<Node> children) {
-            this.children = children;
+            this.children.addAll(children);
         }
 
         private void setError(String error) {
             this.error = error;
         }
 
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            if (error != null) {
+                builder.append("Error: ").append(error).append(' ');
+            }
+            builder.append(symbol);
+            builder.append(" (").append(children.size()).append(')');
+            if (0 <= start && start <= end && end < source.length()) {
+                builder.append(" '").append(source.substring(start, end)).append('\'');
+            }
+            return builder.toString();
+        }
+
+        public String content() {
+            if (0 <= start && start <= end && end <= source.length()) {
+                return source.substring(start, end);
+            }
+            return "";
+        }
+
+        public int startLine() {
+            return source.substring(0, start).split("\n").length;
+        }
+
         private final String symbol;
         private final int start;
         private int end;
-        private List<Node> children;
+        private final List<Node> children = new ArrayList<>();
         private String error;
     }
 
     private final Map<String, List<List<String>>> grammar;
     private String source;
+
+    private final Map<String, Matcher> matchers = new HashMap<>();
 
     private static final String COMMENT_START = "(*";
     private static final String COMMENT_END = "*)";

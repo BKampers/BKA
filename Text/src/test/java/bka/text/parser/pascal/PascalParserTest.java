@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.*;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import org.junit.*;
 
@@ -16,13 +17,24 @@ public class PascalParserTest {
 
     @Test
     public void testEmptyProgram() {
-        String output = parser.parse("PROGRAM program_name; BEGIN END.");
-        assertSuccess(output);
+        List<PascalParser.Node> tree = parser.buildTree("PROGRAM program_name; BEGIN END.");
+        assertParseTree(List.of(
+            ExpectedNode.ofSymbolAndContent("PROGRAM"),
+            ExpectedNode.ofSymbol("Identifier", "program_name",
+                ExpectedNode.ofContent("program_name")),
+            ExpectedNode.ofSymbolAndContent(";"),
+            ExpectedNode.ofSymbol("Declarations", ""),
+            ExpectedNode.ofSymbol("CompoundStatement", "BEGIN END",
+                ExpectedNode.ofSymbolAndContent("BEGIN"),
+                ExpectedNode.ofSymbol("Statements", "",
+                    ExpectedNode.ofSymbol("Statement", "")),
+                ExpectedNode.ofSymbolAndContent("END")),
+            ExpectedNode.ofSymbol("\\.", ".")), tree);
     }
 
     @Test
     public void testVariableDeclarations() {
-        String output = parser.parse("""
+        List<PascalParser.Node> tree = parser.buildTree("""
             PROGRAM program_name;
             VAR bool: BOOLEAN;
             VAR byte, word: 0 .. 255;
@@ -34,7 +46,109 @@ public class PascalParserTest {
             BEGIN
             END.
             """);
-        assertSuccess(output);
+        assertParseTree(List.of(
+            ExpectedNode.ofSymbolAndContent("PROGRAM"),
+            ExpectedNode.ofSymbol("Identifier", "program_name",
+                ExpectedNode.ofContent("program_name")),
+            ExpectedNode.ofSymbolAndContent(";"),
+            ExpectedNode.ofSymbol("Declarations",
+                ExpectedNode.ofSymbol("VariableDeclaration", "VAR bool: BOOLEAN;",
+                    ExpectedNode.ofSymbolAndContent("VAR"),
+                    ExpectedNode.ofSymbol("VariableDeclarationList", "bool: BOOLEAN;",
+                        ExpectedNode.ofSymbol("VariableDeclarationExpression", "bool: BOOLEAN;",
+                            ExpectedNode.ofSymbol("IdentifierList", "bool",
+                                ExpectedNode.ofSymbol("Identifier", "bool",
+                                    ExpectedNode.ofContent("bool"))),
+                            ExpectedNode.ofSymbol("\\:", ":"),
+                            ExpectedNode.ofSymbol("TypeDeclarationExpression", "BOOLEAN",
+                                ExpectedNode.ofSymbol("TypeExpression", "BOOLEAN",
+                                    ExpectedNode.ofSymbolAndContent("BOOLEAN"))),
+                            ExpectedNode.ofSymbolAndContent(";")))),
+                ExpectedNode.ofSymbol("Declarations",
+                    ExpectedNode.ofSymbol("VariableDeclaration", "VAR byte, word: 0 .. 255;",
+                        ExpectedNode.ofSymbolAndContent("VAR"),
+                        ExpectedNode.ofSymbol("VariableDeclarationList", "byte, word: 0 .. 255;",
+                            ExpectedNode.ofSymbol("VariableDeclarationExpression", "byte, word: 0 .. 255;",
+                                ExpectedNode.ofSymbol("IdentifierList", "byte, word",
+                                    ExpectedNode.ofSymbol("Identifier", "byte",
+                                        ExpectedNode.ofContent("byte")),
+                                    ExpectedNode.ofSymbol("\\,", ","),
+                                    ExpectedNode.ofSymbol("IdentifierList",
+                                        ExpectedNode.ofSymbol("Identifier", "word",
+                                            ExpectedNode.ofContent("word")))),
+                                ExpectedNode.ofSymbol("\\:", ":"),
+                                ExpectedNode.ofSymbol("TypeDeclarationExpression", "0 .. 255",
+                                    ExpectedNode.ofSymbol("RangeExpression", "0 .. 255",
+                                        ExpectedNode.ofSymbol("IntegerLiteral", "0",
+                                            ExpectedNode.ofContent("0")),
+                                        ExpectedNode.ofSymbol("\\.\\.", ".."),
+                                        ExpectedNode.ofSymbol("IntegerLiteral", "255",
+                                            ExpectedNode.ofContent("255")))),
+                                ExpectedNode.ofSymbolAndContent(";")))),
+                    ExpectedNode.ofSymbol("Declarations",
+                        ExpectedNode.ofSymbol("VariableDeclaration", "VAR point: RECORD\n    x: REAL;\n    y: REAL;\n    END;",
+                            ExpectedNode.ofSymbolAndContent("VAR"),
+                            ExpectedNode.ofSymbol("VariableDeclarationList", "point: RECORD\n    x: REAL;\n    y: REAL;\n    END;",
+                                ExpectedNode.ofSymbol("VariableDeclarationExpression", "point: RECORD\n    x: REAL;\n    y: REAL;\n    END;",
+                                    ExpectedNode.ofSymbol("IdentifierList", "point",
+                                        ExpectedNode.ofSymbol("Identifier", "point",
+                                            ExpectedNode.ofContent("point"))),
+                                    ExpectedNode.ofSymbol("\\:", ":"),
+                                    ExpectedNode.ofSymbol("TypeDeclarationExpression", "RECORD\n    x: REAL;\n    y: REAL;\n    END",
+                                        ExpectedNode.ofSymbolAndContent("RECORD"),
+                                        ExpectedNode.ofSymbol("VariableDeclarationList", "x: REAL;\n    y: REAL;",
+                                            ExpectedNode.ofSymbol("VariableDeclarationExpression", "x: REAL;",
+                                                ExpectedNode.ofSymbol("IdentifierList", "x",
+                                                    ExpectedNode.ofSymbol("Identifier", "x",
+                                                        ExpectedNode.ofContent("x"))),
+                                                ExpectedNode.ofSymbol("\\:", ":"),
+                                                ExpectedNode.ofSymbol("TypeDeclarationExpression", "REAL",
+                                                    ExpectedNode.ofSymbol("TypeExpression", "REAL",
+                                                        ExpectedNode.ofSymbolAndContent("REAL"))),
+                                                ExpectedNode.ofSymbolAndContent(";")),
+                                            ExpectedNode.ofSymbol("VariableDeclarationList", "y: REAL;",
+                                                ExpectedNode.ofSymbol("VariableDeclarationExpression", "y: REAL;",
+                                                    ExpectedNode.ofSymbol("IdentifierList", "y",
+                                                        ExpectedNode.ofSymbol("Identifier", "y",
+                                                            ExpectedNode.ofContent("y"))),
+                                                    ExpectedNode.ofSymbol("\\:", ":"),
+                                                    ExpectedNode.ofSymbol("TypeDeclarationExpression", "REAL",
+                                                        ExpectedNode.ofSymbol("TypeExpression", "REAL",
+                                                            ExpectedNode.ofSymbolAndContent("REAL"))),
+                                                    ExpectedNode.ofSymbolAndContent(";")))),
+                                        ExpectedNode.ofSymbolAndContent("END")),
+                                    ExpectedNode.ofSymbolAndContent(";")))),
+                        ExpectedNode.ofSymbol("Declarations",
+                            ExpectedNode.ofSymbol("VariableDeclaration", "VAR fruit: ( apple, banana, cherry );",
+                                ExpectedNode.ofSymbolAndContent("VAR"),
+                                ExpectedNode.ofSymbol("VariableDeclarationList", "fruit: ( apple, banana, cherry );",
+                                    ExpectedNode.ofSymbol("VariableDeclarationExpression", "fruit: ( apple, banana, cherry );",
+                                        ExpectedNode.ofSymbol("IdentifierList", "fruit",
+                                            ExpectedNode.ofSymbol("Identifier", "fruit",
+                                                ExpectedNode.ofContent("fruit"))),
+                                        ExpectedNode.ofSymbol("\\:", ":"),
+                                        ExpectedNode.ofSymbol("TypeDeclarationExpression", "( apple, banana, cherry )",
+                                            ExpectedNode.ofSymbol("\\(", "("),
+                                            ExpectedNode.ofSymbol("IdentifierList", "apple, banana, cherry",
+                                                ExpectedNode.ofSymbol("Identifier", "apple",
+                                                    ExpectedNode.ofContent("apple")),
+                                                ExpectedNode.ofSymbol("\\,", ","),
+                                                ExpectedNode.ofSymbol("IdentifierList", "banana, cherry",
+                                                    ExpectedNode.ofSymbol("Identifier", "banana",
+                                                        ExpectedNode.ofContent("banana")),
+                                                    ExpectedNode.ofSymbol("\\,", ","),
+                                                    ExpectedNode.ofSymbol("IdentifierList", "cherry",
+                                                        ExpectedNode.ofSymbol("Identifier", "cherry",
+                                                            ExpectedNode.ofContent("cherry"))))),
+                                            ExpectedNode.ofSymbol("\\)", ")")),
+                                        ExpectedNode.ofSymbolAndContent(";")))),
+                            ExpectedNode.ofSymbol("Declarations", ""))))),
+            ExpectedNode.ofSymbol("CompoundStatement", "BEGIN\nEND",
+                ExpectedNode.ofSymbolAndContent("BEGIN"),
+                ExpectedNode.ofSymbol("Statements", "",
+                    ExpectedNode.ofSymbol("Statement", "")),
+                ExpectedNode.ofSymbolAndContent("END")),
+            ExpectedNode.ofSymbol("\\.", ".")), tree);
     }
 
     @Test
@@ -328,6 +442,93 @@ public class PascalParserTest {
     private static void assertError(String output) {
         assertTrue(output.startsWith("Error"));
     }
+
+
+    private static void assertParseTree(List<ExpectedNode> expected, List<PascalParser.Node> actual) {
+        assertParseTree(null, expected, actual);
+    }
+
+    private static void assertParseTree(PascalParser.Node parent, List<ExpectedNode> expected, List<PascalParser.Node> actual) {
+        int line = (parent == null) ? 0 : parent.startLine();
+        assertEquals("Line " + line + ": Child count of '" + ((parent == null) ? "root" : parent.getSymbol()) + '\'', expected.size(), actual.size());
+        for (int i = 0; i < expected.size(); ++i) {
+            expected.get(i).assertParserNode(actual.get(i));
+        }
+    }
+
+
+    private static class ExpectedNode {
+
+        public static ExpectedNode ofSymbol(String symbol) {
+            return new ExpectedNode(symbol, null, Collections.emptyList());
+        }
+
+        public static ExpectedNode ofSymbol(String symbol, String content) {
+            return new ExpectedNode(symbol, content, Collections.emptyList());
+        }
+
+        public static ExpectedNode ofSymbolAndContent(String symbol) {
+            return new ExpectedNode(symbol, symbol, Collections.emptyList());
+        }
+
+        public static ExpectedNode ofSymbol(String symbol, ExpectedNode... children) {
+            return new ExpectedNode(symbol, null, Arrays.asList(children));
+        }
+
+        public static ExpectedNode ofSymbol(String symbol, String content, ExpectedNode... children) {
+            return new ExpectedNode(symbol, content, Arrays.asList(children));
+        }
+
+        public static ExpectedNode ofContent(String content) {
+            return new ExpectedNode(null, content, Collections.emptyList());
+        }
+
+        public ExpectedNode(String symbol, String content, List<ExpectedNode> children) {
+            this.symbol = symbol;
+            this.content = content;
+            this.children = children;
+        }
+
+        public String getSymbol() {
+            return symbol;
+        }
+
+        public String getContent() {
+            return content;
+        }
+
+        public List<ExpectedNode> getChildren() {
+            return children;
+        }
+
+        public void assertParserNode(PascalParser.Node node) {
+            if (symbol != null) {
+                assertEquals("Line " + node.startLine() + ": Symbol", symbol, node.getSymbol());
+            }
+            if (content != null) {
+                assertEquals("Line " + node.startLine() + ": Content", content, node.content());
+            }
+            assertParseTree(node, children, node.getChildren());
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            if (symbol != null) {
+                builder.append(symbol);
+            }
+            builder.append(" (").append(children.size()).append(')');
+            if (content != null) {
+                builder.append(" '").append(content).append('\'');
+            }
+            return builder.toString();
+        }
+
+        private final String symbol;
+        private final String content;
+        private final List<ExpectedNode> children;
+    }
+
 
     private PascalParser parser;
 

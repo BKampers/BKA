@@ -11,10 +11,10 @@
         [ ]
     ],
     "ConstDeclaration": [
-        ["CONST", "Identifier", "=", "Expression", ";" ]
+        ["CONST", "Identifier", "\\=", "Expression", ";" ]
     ],
     "TypeDeclaration": [
-        [ "TYPE", "Identifier", "=", "TypeDeclarationExpression", ";" ]
+        [ "TYPE", "Identifier", "\\=", "TypeDeclarationExpression", ";" ]
     ],
     "VariableDeclaration": [
         [ "VAR", "VariableDeclarationList" ]
@@ -78,12 +78,12 @@
         [ "Statement" ]
     ],
     "Statement": [
-        [ "Assignable", ":=", "Expression" ],
+        [ "Assignable", "\\:\\=", "Expression" ],
         [ "Call" ],
         [ "Identifier" ],
         [ "IF", "Expression", "THEN", "Statement", "ElseClause" ],
         [ "WHILE", "Expression", "DO", "Statement" ],
-        [ "FOR", "Identifier", ":=", "Expression", "TO", "Expression", "DO", "Statement" ],
+        [ "FOR", "Identifier", "\\:\\=", "Expression", "TO", "Expression", "DO", "Statement" ],
         [ "REPEAT", "Statement", "UNTIL", "Expression" ],
         [ "CompoundStatement" ],
         [ ]
@@ -126,11 +126,11 @@
         ["MOD"],
         ["\\+"],
         ["\\-"],
-        ["="],
+        ["\\="],
         ["\\<"],
-        ["\\<="],
+        ["\\<\\="],
         ["\\>"],
-        ["\\>="],
+        ["\\>\\="],
         ["\\<\\>"],
         ["AND"],
         ["OR"],

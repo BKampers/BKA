@@ -79,20 +79,22 @@ public class PascalParserTest {
 
     @Test
     public void testRangeVarDeclaration() {
-        assertParseTree(List.of(keyword("PROGRAM"),                identifier("byte_definition"),
-                separator(),
-                ExpectedNode.ofSymbol("Declarations", "VAR byte : 0..255;\n",
-                    ExpectedNode.ofSymbol("VariableDeclaration",
-                        ExpectedNode.ofSymbolAndContent("VAR"),
-                        ExpectedNode.ofSymbol("VariableDeclarationList",
-                            ExpectedNode.ofSymbol("VariableDeclarationExpression",
-                                identifierList(List.of("byte")),
-                                sign("\\:", ":"),
-                                ExpectedNode.ofSymbol("TypeDeclarationExpression",
-                                rangeExpression("0", "255")),                                separator()))),
-                    emptyNode("Declarations")),
-                emptyBody(),
-                endOfProgram()),
+        assertParseTree(List.of(keyword("PROGRAM"),
+            identifier("byte_definition"),
+            separator(),
+            ExpectedNode.ofSymbol("Declarations", "VAR byte : 0..255;\n",
+                ExpectedNode.ofSymbol("VariableDeclaration",
+                    keyword("VAR"),
+                    ExpectedNode.ofSymbol("VariableDeclarationList",
+                        ExpectedNode.ofSymbol("VariableDeclarationExpression",
+                            identifierList(List.of("byte")),
+                            sign("\\:", ":"),
+                            ExpectedNode.ofSymbol("TypeDeclarationExpression",
+                                rangeExpression("0", "255")),
+                            separator()))),
+                emptyNode("Declarations")),
+            emptyBody(),
+            endOfProgram()),
             parser.buildTree("""
                 PROGRAM byte_definition;
                 VAR byte : 0..255;
@@ -120,7 +122,7 @@ public class PascalParserTest {
     }
 
     private static ExpectedNode keyword(String keyword) {
-        return ExpectedNode.ofSymbolAndContent(keyword);
+        return ExpectedNode.ofSymbol(keyword + "\\b", keyword);
     }
 
     private static ExpectedNode recordTypeDefinition(String typeName, SequencedMap<String, String> fields, String content) {
@@ -243,13 +245,13 @@ public class PascalParserTest {
             """);
         assertParseTree(
             List.of(
-                ExpectedNode.ofSymbolAndContent("PROGRAM"),
+                keyword("PROGRAM"),
                 ExpectedNode.ofSymbol("Identifier", "program_name",
                     ExpectedNode.ofContent("program_name")),
                 separator(),
                 ExpectedNode.ofSymbol("Declarations",
                     ExpectedNode.ofSymbol("VariableDeclaration", "VAR bool: BOOLEAN;",
-                        ExpectedNode.ofSymbolAndContent("VAR"),
+                        keyword("VAR"),
                         ExpectedNode.ofSymbol("VariableDeclarationList", "bool: BOOLEAN;",
                             ExpectedNode.ofSymbol("VariableDeclarationExpression", "bool: BOOLEAN;",
                                 ExpectedNode.ofSymbol("IdentifierList", "bool",
@@ -258,11 +260,11 @@ public class PascalParserTest {
                                 ExpectedNode.ofSymbol("\\:", ":"),
                                 ExpectedNode.ofSymbol("TypeDeclarationExpression", "BOOLEAN",
                                     ExpectedNode.ofSymbol("TypeExpression", "BOOLEAN",
-                                        ExpectedNode.ofSymbolAndContent("BOOLEAN"))),
+                                        keyword("BOOLEAN"))),
                                 separator()))),
                     ExpectedNode.ofSymbol("Declarations",
                         ExpectedNode.ofSymbol("VariableDeclaration", "VAR byte, word: 0 .. 255;",
-                            ExpectedNode.ofSymbolAndContent("VAR"),
+                            keyword("VAR"),
                             ExpectedNode.ofSymbol("VariableDeclarationList", "byte, word: 0 .. 255;",
                                 ExpectedNode.ofSymbol("VariableDeclarationExpression", "byte, word: 0 .. 255;",
                                     ExpectedNode.ofSymbol("IdentifierList", "byte, word",
@@ -283,7 +285,7 @@ public class PascalParserTest {
                                     separator()))),
                         ExpectedNode.ofSymbol("Declarations",
                             ExpectedNode.ofSymbol("VariableDeclaration", "VAR point: RECORD\n    x: REAL;\n    y: REAL;\n    END;",
-                                ExpectedNode.ofSymbolAndContent("VAR"),
+                                keyword("VAR"),
                                 ExpectedNode.ofSymbol("VariableDeclarationList", "point: RECORD\n    x: REAL;\n    y: REAL;\n    END;",
                                     ExpectedNode.ofSymbol("VariableDeclarationExpression", "point: RECORD\n    x: REAL;\n    y: REAL;\n    END;",
                                         ExpectedNode.ofSymbol("IdentifierList", "point",
@@ -291,7 +293,7 @@ public class PascalParserTest {
                                                 ExpectedNode.ofContent("point"))),
                                         ExpectedNode.ofSymbol("\\:", ":"),
                                         ExpectedNode.ofSymbol("TypeDeclarationExpression", "RECORD\n    x: REAL;\n    y: REAL;\n    END",
-                                            ExpectedNode.ofSymbolAndContent("RECORD"),
+                                            keyword("RECORD"),
                                             ExpectedNode.ofSymbol("VariableDeclarationList", "x: REAL;\n    y: REAL;",
                                                 ExpectedNode.ofSymbol("VariableDeclarationExpression", "x: REAL;",
                                                     ExpectedNode.ofSymbol("IdentifierList", "x",
@@ -300,7 +302,7 @@ public class PascalParserTest {
                                                     ExpectedNode.ofSymbol("\\:", ":"),
                                                     ExpectedNode.ofSymbol("TypeDeclarationExpression", "REAL",
                                                         ExpectedNode.ofSymbol("TypeExpression", "REAL",
-                                                            ExpectedNode.ofSymbolAndContent("REAL"))),
+                                                            keyword("REAL"))),
                                                     separator()),
                                                 ExpectedNode.ofSymbol("VariableDeclarationList", "y: REAL;",
                                                     ExpectedNode.ofSymbol("VariableDeclarationExpression", "y: REAL;",
@@ -310,13 +312,13 @@ public class PascalParserTest {
                                                         ExpectedNode.ofSymbol("\\:", ":"),
                                                         ExpectedNode.ofSymbol("TypeDeclarationExpression", "REAL",
                                                             ExpectedNode.ofSymbol("TypeExpression", "REAL",
-                                                                ExpectedNode.ofSymbolAndContent("REAL"))),
+                                                                keyword("REAL"))),
                                                         separator()))),
-                                            ExpectedNode.ofSymbolAndContent("END")),
+                                            keyword("END")),
                                         separator()))),
                             ExpectedNode.ofSymbol("Declarations",
                                 ExpectedNode.ofSymbol("VariableDeclaration", "VAR fruit: ( apple, banana, cherry );",
-                                    ExpectedNode.ofSymbolAndContent("VAR"),
+                                    keyword("VAR"),
                                     ExpectedNode.ofSymbol("VariableDeclarationList", "fruit: ( apple, banana, cherry );",
                                         ExpectedNode.ofSymbol("VariableDeclarationExpression", "fruit: ( apple, banana, cherry );",
                                             ExpectedNode.ofSymbol("IdentifierList", "fruit",
@@ -340,10 +342,10 @@ public class PascalParserTest {
                                             separator()))),
                                 ExpectedNode.ofSymbol("Declarations", ""))))),
                 ExpectedNode.ofSymbol("CompoundStatement", "BEGIN\nEND",
-                    ExpectedNode.ofSymbolAndContent("BEGIN"),
+                    keyword("BEGIN"),
                     ExpectedNode.ofSymbol("Statements", "",
                         ExpectedNode.ofSymbol("Statement", "")),
-                    ExpectedNode.ofSymbolAndContent("END")),
+                    keyword("END")),
                 ExpectedNode.ofSymbol("\\.", ".")),
             tree);
     }
@@ -532,23 +534,26 @@ public class PascalParserTest {
 
     @Test
     public void testMissingProgramKeyword() {
-        String output = parser.parse("""
-            (*PROGRAM*)program_name;
-            BEGIN
-            END.
-            """);
-        System.out.println(output);
-        assertError(output);
+        assertParseTree(
+            List.of(ExpectedNode.ofError("PROGRAM\\b", "No match")),
+            parser.buildTree("""
+                (*PROGRAM*)program_name;
+                BEGIN
+                END.
+                """));
     }
 
     @Test
     public void testMissingProgramName() {
-        String output = parser.parse("""
-            PROGRAM (*program_name*);
-            BEGIN
-            END.
-            """);
-        assertError(output);
+        assertParseTree(
+            List.of(
+                keyword("PROGRAM"),
+                ExpectedNode.ofError("Identifier", "No match")),
+            parser.buildTree("""
+                PROGRAM (*program_name*);
+                BEGIN
+                END.
+                """));
     }
 
     @Test
@@ -688,10 +693,23 @@ public class PascalParserTest {
             return new ExpectedNode(null, content, Collections.emptyList());
         }
 
+        public static ExpectedNode ofError(String symbol, String error, ExpectedNode... children) {
+            return new ExpectedNode(symbol, null, Arrays.asList(children), error);
+        }
+
+        public static ExpectedNode ofError(String symbol, String error) {
+            return new ExpectedNode(symbol, null, null, error);
+        }
+
         public ExpectedNode(String symbol, String content, List<ExpectedNode> children) {
+            this(symbol, content, children, null);
+        }
+
+        public ExpectedNode(String symbol, String content, List<ExpectedNode> children, String error) {
             this.symbol = symbol;
             this.content = content;
             this.children = children;
+            this.error = error;
         }
 
         public void assertParserNode(PascalParser.Node node) {
@@ -701,7 +719,12 @@ public class PascalParserTest {
             if (content != null) {
                 assertEquals("Line " + node.startLine() + ": Content", content, node.content());
             }
-            assertParseTree(node, children, node.getChildren());
+            if (children != null) {
+                assertParseTree(node, children, node.getChildren());
+            }
+            if (error != null) {
+                assertEquals("Line " + node.startLine() + ": Error", error, node.getError());
+            }
         }
 
         @Override
@@ -710,9 +733,14 @@ public class PascalParserTest {
             if (symbol != null) {
                 builder.append(symbol);
             }
-            builder.append(" (").append(children.size()).append(')');
+            if (children != null) {
+                builder.append(" (").append(children.size()).append(')');
+            }
             if (content != null) {
                 builder.append(" '").append(content).append('\'');
+            }
+            if (error != null) {
+                builder.append("Error: ").append(error);
             }
             return builder.toString();
         }
@@ -720,6 +748,7 @@ public class PascalParserTest {
         private final String symbol;
         private final String content;
         private final List<ExpectedNode> children;
+        private final String error;
     }
 
 

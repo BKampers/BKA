@@ -42,39 +42,43 @@ public class PascalParser {
 
     private List<Node> buildTree(int index, String symbol) {
         List<Node> tree = null;
-        final int i = skipWhitespaceAndComment(index);
-        Node node = new Node(symbol, i);
-        node.setError("Could not resolve");
+        List<Node> errorTree = null;
+        Node errorNode = null;
         List<List<String>> choice = grammar.get(symbol);
-        List<String> matchingExpression = null;
+        final int i = skipWhitespaceAndComment(index);
         for (List<String> expression : choice) {
-            if (matchingExpression == null) {
+            if (tree == null) {
                 List<Node> resolution = resolve(i, expression);
                 Optional<Node> error = findError(resolution);
                 if (error.isEmpty()) {
-                    matchingExpression = expression;
                     tree = resolution;
                 }
-                else if (error.get().getStart() >= node.getStart()) {
-                    node = error.get();
+                else if (errorNode == null || error.get().getStart() >= errorNode.getStart()) {
+                    errorNode = error.get();
+                    errorTree = resolution;
                 }
             }
-            else if (expression.size() >= 2 && symbol.equals(expression.get(0))) {
-                List<Node> resolution = resolve(skipWhitespaceAndComment(tree.get(tree.size() - 1).getEnd()), remainder(expression));
+            else if (expression.size() > 1 && symbol.equals(expression.getFirst())) {
+                List<Node> resolution = resolve(skipWhitespaceAndComment(tree.getLast().getEnd()), remainder(expression));
                 Optional<Node> error = findError(resolution);
                 if (error.isEmpty()) {
-                    matchingExpression = expression;
                     tree.addAll(resolution);
+                    return tree;
                 }
-                else if (error.get().getStart() >= node.getStart()) {
-                    node = error.get();
+                else if (errorNode == null || error.get().getStart() >= errorNode.getStart()) {
+                    errorNode = error.get();
+                    errorTree = resolution;
                 }
             }
         }
         if (tree == null) {
-            return List.of(node);
+            return errorTree;
         }
         return tree;
+    }
+
+    private static List<String> remainder(List<String> expression) {
+        return expression.stream().skip(1).collect(Collectors.toList());
     }
 
     private List<Node> resolve(int index, List<String> expression) {
@@ -100,7 +104,7 @@ public class PascalParser {
                 node.setError(error.get().getError());
             }
             else {
-                node.setEnd(node.getChildren().isEmpty() ? node.getStart() : node.getChildren().get(node.getChildren().size() - 1).getEnd());
+                node.setEnd((node.getChildren().isEmpty()) ? node.getStart() : node.getChildren().getLast().getEnd());
             }
             return node;
         }
@@ -113,6 +117,10 @@ public class PascalParser {
         }
         node.setError("No match");
         return node;
+    }
+
+    private static Optional<Node> findError(List<Node> nodes) {
+        return nodes.stream().filter(node -> node.getError() != null).findAny();
     }
 
     private Matcher createMatcher(String symbol) {
@@ -138,19 +146,21 @@ public class PascalParser {
         return index;
     }
 
-    private static List<String> remainder(List<String> expression) {
-        return expression.stream().skip(1).collect(Collectors.toList());
-    }
-
-    private static Optional<Node> findError(List<Node> nodes) {
-        return nodes.stream().filter(node -> node.getError() != null).findAny();
-    }
-
     public class Node {
 
         private Node(String symbol, int start) {
+            this(symbol, start, null);
+        }
+
+        private Node(String symbol, int start, String error) {
+            this(symbol, start, Collections.emptyList(), error);
+        }
+
+        private Node(String symbol, int start, List<Node> children, String error) {
             this.symbol = symbol;
             this.start = start;
+            this.children.addAll(children);
+            this.error = error;
         }
 
         public int getStart() {

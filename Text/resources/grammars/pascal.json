@@ -1,6 +1,6 @@
 {
     "Program": [
-        [ "PROGRAM", "Identifier", ";", "Declarations", "CompoundStatement", "\\." ]
+        [ "PROGRAM\\b", "Identifier", ";", "Declarations", "CompoundStatement", "\\." ]
     ],
     "Declarations": [
         [ "ConstDeclaration", "Declarations" ], 
@@ -11,19 +11,19 @@
         [ ]
     ],
     "ConstDeclaration": [
-        ["CONST", "Identifier", "\\=", "Expression", ";" ]
+        ["CONST\\b", "Identifier", "\\=", "Expression", ";" ]
     ],
     "TypeDeclaration": [
-        [ "TYPE", "Identifier", "\\=", "TypeDeclarationExpression", ";" ]
+        [ "TYPE\\b", "Identifier", "\\=", "TypeDeclarationExpression", ";" ]
     ],
     "VariableDeclaration": [
-        [ "VAR", "VariableDeclarationList" ]
+        [ "VAR\\b", "VariableDeclarationList" ]
     ],
     "ProcedureDeclaration": [
-        [ "PROCEDURE", "Identifier", "ParameterDeclaration", ";", "Declarations", "CompoundStatement", ";" ]
+        [ "PROCEDURE\\b", "Identifier", "ParameterDeclaration", ";", "Declarations", "CompoundStatement", ";" ]
     ],
     "FunctionDeclaration": [
-        [ "FUNCTION", "Identifier", "ParameterDeclaration", "\\:", "TypeExpression", ";", "Declarations", "CompoundStatement", ";" ]
+        [ "FUNCTION\\b", "Identifier", "ParameterDeclaration", "\\:", "TypeExpression", ";", "Declarations", "CompoundStatement", ";" ]
     ],
     "ParameterDeclaration": [
         [ "\\(", "ParameterList", "\\)" ],
@@ -35,11 +35,11 @@
     ],
     "ParameterExpression": [
         [ "Identifier", "\\:", "ParameterTypeExpression" ],
-        [ "VAR", "Identifier", "\\:", "ParameterTypeExpression" ]
+        [ "VAR\\b", "Identifier", "\\:", "ParameterTypeExpression" ]
     ],
     "ParameterTypeExpression": [
         [ "TypeExpression" ],
-        [ "ARRAY", "OF", "TypeExpression" ]
+        [ "ARRAY\\b", "OF\\b", "TypeExpression" ]
     ],
     "VariableDeclarationList": [
         [ "VariableDeclarationExpression", "VariableDeclarationList" ],
@@ -52,14 +52,14 @@
         [ "RangeExpression" ],
         [ "TypeExpression" ], 
         [ "\\(", "IdentifierList", "\\)" ],
-        [ "ARRAY", "\\[", "RangeExpression", "\\]", "OF", "TypeExpression" ],
-        [ "RECORD", "VariableDeclarationList", "END" ]
+        [ "ARRAY\\b", "\\[", "RangeExpression", "\\]", "OF\\b", "TypeExpression" ],
+        [ "RECORD\\b", "VariableDeclarationList", "END\\b" ]
     ],
     "TypeExpression": [
-        [ "BOOLEAN" ],
-        [ "INTEGER" ],
-        [ "REAL" ],
-        [ "STRING" ],
+        [ "BOOLEAN\\b" ],
+        [ "INTEGER\\b" ],
+        [ "REAL\\b" ],
+        [ "STRING\\b" ],
         [ "Identifier" ]
     ],
     "IdentifierList": [
@@ -71,7 +71,7 @@
         [ "Identifier", "\\.\\.", "Identifier" ]
     ],
     "CompoundStatement": [
-        [ "BEGIN", "Statements", "END" ]
+        [ "BEGIN\\b", "Statements", "END\\b" ]
     ],
     "Statements": [
         [ "Statement", ";", "Statements" ],
@@ -81,15 +81,15 @@
         [ "Assignable", "\\:\\=", "Expression" ],
         [ "Call" ],
         [ "Identifier" ],
-        [ "IF", "Expression", "THEN", "Statement", "ElseClause" ],
-        [ "WHILE", "Expression", "DO", "Statement" ],
-        [ "FOR", "Identifier", "\\:\\=", "Expression", "TO", "Expression", "DO", "Statement" ],
-        [ "REPEAT", "Statement", "UNTIL", "Expression" ],
+        [ "IF\\b", "Expression", "THEN\\b", "Statement", "ElseClause" ],
+        [ "WHILE\\b", "Expression", "DO\\b", "Statement" ],
+        [ "FOR\\b", "Identifier", "\\:\\=", "Expression", "TO\\b", "Expression", "DO\\b", "Statement" ],
+        [ "REPEAT\\b", "Statement", "UNTIL\\b", "Expression" ],
         [ "CompoundStatement" ],
         [ ]
     ],
     "ElseClause": [
-        [ "ELSE", "Statement" ],
+        [ "ELSE\\b", "Statement" ],
         [ ]
     ],
     "Call": [
@@ -116,14 +116,14 @@
     ],
     "UnaryOperator": [
         ["\\-"],
-        ["NOT"]
+        ["NOT\\b"]
     ],
     "BinaryOperator": [
         ["\\^"],
         ["\\*"],
         ["\\/"],
-        ["DIV"],
-        ["MOD"],
+        ["DIV\\b"],
+        ["MOD\\b"],
         ["\\+"],
         ["\\-"],
         ["\\="],
@@ -132,9 +132,9 @@
         ["\\>"],
         ["\\>\\="],
         ["\\<\\>"],
-        ["AND"],
-        ["OR"],
-        ["XOR"]
+        ["AND\\b"],
+        ["OR\\b"],
+        ["XOR\\b"]
     ],
     "Identifier": [
         [ "\\b(?!AND\\b|ARRAY\\b|BEGIN\\b|BOOLEAN\\b|BREAK\\b|CASE\\b|CONST\\b|DO\\b|ELSE\\b|END\\b|FALSE\\b|FOR\\b|FUNCTION\\b|INTEGER\\b|IF\\b|NOT\\b|OF\\b|OR\\b|OTHERWISE\\b|PROCEDURE\\b|PROGRAM\\b|REAL\\b|RECORD\\b|REPEAT\\b|STRING\\b|THEN\\b|TO\\b|TRUE\\b|TYPE\\b|UNTIL\\b|VAR\\b|WHILE\\b|XOR\\b)[A-Z_]+[A-Z_0-9]*" ]
@@ -143,8 +143,8 @@
         [ "RealLiteral" ],
         [ "IntegerLiteral" ],
         [ "'", "[^']*", "'" ],
-        [ "FALSE" ],
-        [ "TRUE" ]
+        [ "FALSE\\b" ],
+        [ "TRUE\\b" ]
     ],
     "IntegerLiteral": [
         [ "\\d+" ],

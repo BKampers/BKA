@@ -59,7 +59,7 @@ public class SolarEventCalculator {
     }
 
     private static LocalDateTime meanDateTime(LocalDate date, double hours) {
-        return LocalDateTime.of(date, LocalTime.MIDNIGHT).plusMinutes((int) Math.round(hours * MINUTES_PER_HOUR));
+        return LocalDateTime.of(date, LocalTime.MIDNIGHT).plusSeconds(Math.round(hours * SECONDS_PER_HOUR));
     }
 
     private double longitudeHour(LocalDate date, int eventHourOffset) {
@@ -162,8 +162,8 @@ public class SolarEventCalculator {
     private static final double HOUR_ANGLE = Math.PI / 12;
 
     private static final double HOURS_PER_DAY = 24;
-    private static final double MINUTES_PER_HOUR = 60;
-    private static final int MILLIS_PER_MINUTE = 60000;
+    private static final double SECONDS_PER_HOUR = 60 * 60;
+    private static final int MILLIS_PER_MINUTE = 60 * 1000;
 
     private static final int SUNRISE_HOUR_OFFSET = 6;
     private static final int SUNSET_HOUR_OFFSET = 18;

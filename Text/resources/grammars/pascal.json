@@ -17,7 +17,7 @@
         [ "TYPE\\b", "Identifier", "\\=", "TypeDeclarationExpression", ";" ]
     ],
     "VariableDeclaration": [
-        [ "VAR\\b", "VariableDeclarationList" ]
+        [ "VAR\\b", "VariableDeclarationList", ";" ]
     ],
     "ProcedureDeclaration": [
         [ "PROCEDURE\\b", "Identifier", "ParameterDeclaration", ";", "Declarations", "CompoundStatement", ";" ]
@@ -42,11 +42,11 @@
         [ "ARRAY\\b", "OF\\b", "TypeExpression" ]
     ],
     "VariableDeclarationList": [
-        [ "VariableDeclarationExpression", "VariableDeclarationList" ],
+        [ "VariableDeclarationExpression", ";", "VariableDeclarationList" ],
         [ "VariableDeclarationExpression" ]
     ],
     "VariableDeclarationExpression": [
-        [ "IdentifierList", "\\:", "TypeDeclarationExpression", ";" ]
+        [ "IdentifierList", "\\:", "TypeDeclarationExpression" ]
     ],
     "TypeDeclarationExpression": [
         [ "RangeExpression" ],

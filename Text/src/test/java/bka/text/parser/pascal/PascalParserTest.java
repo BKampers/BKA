@@ -59,8 +59,8 @@ public class PascalParserTest {
                 keyword("PROGRAM"),
                 identifier("program_name"),
                 separator(),
-                ExpectedNode.ofSymbol("Declarations", "TYPE Point = RECORD\n    x: REAL;\n    y: REAL;\n    END;\n\n",
-                    recordTypeDefinition("Point", sequencedMapOf("x", "REAL", "y", "REAL"), "TYPE Point = RECORD\n    x: REAL;\n    y: REAL;\n    END;"),
+                ExpectedNode.ofSymbol("Declarations", "TYPE Point = RECORD\n    x: REAL;\n    y: REAL\n    END;\n\n",
+                    recordTypeDefinition("Point", sequencedMapOf("x", "REAL", "y", "REAL"), "TYPE Point = RECORD\n    x: REAL;\n    y: REAL\n    END;"),
                     emptyNode("Declarations")),
                 emptyBody(),
                 endOfProgram()),
@@ -69,7 +69,7 @@ public class PascalParserTest {
                 
                 TYPE Point = RECORD
                     x: REAL;
-                    y: REAL;
+                    y: REAL
                     END;
 
                 BEGIN
@@ -90,8 +90,8 @@ public class PascalParserTest {
                             identifierList(List.of("byte")),
                             sign("\\:", ":"),
                             ExpectedNode.ofSymbol("TypeDeclarationExpression",
-                                rangeExpression("0", "255")),
-                            separator()))),
+                                rangeExpression("0", "255")))),
+                    separator()),
                 emptyNode("Declarations")),
             emptyBody(),
             endOfProgram()),
@@ -170,6 +170,7 @@ public class PascalParserTest {
         List<ExpectedNode> declarations = new ArrayList<>();
         declarations.add(variableDeclaration(variables.firstEntry().getKey(), variables.firstEntry().getValue()));
         if (variables.size() > 1) {
+            declarations.add(separator());
             LinkedHashMap<String, String> remainder = new LinkedHashMap<>(variables);
             remainder.remove(variables.firstEntry().getKey());
             declarations.add(variableDeclarationList(remainder));
@@ -178,14 +179,7 @@ public class PascalParserTest {
     }
 
     private static ExpectedNode variableDeclaration(String variableName, String variableType) {
-        return ExpectedNode.ofSymbol("VariableDeclarationExpression",
-            ExpectedNode.ofSymbol("IdentifierList", variableName,
-                identifier(variableName)),
-            sign("\\:", ":"),
-            ExpectedNode.ofSymbol("TypeDeclarationExpression", variableType,
-                ExpectedNode.ofSymbol("TypeExpression", variableType,
-                    keyword(variableType))),
-            separator());
+        return variableDeclaration(variableName, variableType, null);
     }
 
     private static ExpectedNode variableDeclaration(String variableName, String variableType, String content) {
@@ -195,8 +189,7 @@ public class PascalParserTest {
             sign("\\:", ":"),
             ExpectedNode.ofSymbol("TypeDeclarationExpression", variableType,
                 ExpectedNode.ofSymbol("TypeExpression", variableType,
-                    keyword(variableType))),
-            separator());
+                    keyword(variableType))));
     }
 
     private static ExpectedNode sign(String regex, String sign) {
@@ -237,7 +230,7 @@ public class PascalParserTest {
             VAR byte, word: 0 .. 255;
             VAR point: RECORD
                 x: REAL;
-                y: REAL;
+                y: REAL
                 END;
             VAR fruit: ( apple, banana, cherry );
             BEGIN
@@ -252,21 +245,21 @@ public class PascalParserTest {
                 ExpectedNode.ofSymbol("Declarations",
                     ExpectedNode.ofSymbol("VariableDeclaration", "VAR bool: BOOLEAN;",
                         keyword("VAR"),
-                        ExpectedNode.ofSymbol("VariableDeclarationList", "bool: BOOLEAN;",
-                            ExpectedNode.ofSymbol("VariableDeclarationExpression", "bool: BOOLEAN;",
+                        ExpectedNode.ofSymbol("VariableDeclarationList", "bool: BOOLEAN",
+                            ExpectedNode.ofSymbol("VariableDeclarationExpression", "bool: BOOLEAN",
                                 ExpectedNode.ofSymbol("IdentifierList", "bool",
                                     ExpectedNode.ofSymbol("Identifier", "bool",
                                         ExpectedNode.ofContent("bool"))),
                                 ExpectedNode.ofSymbol("\\:", ":"),
                                 ExpectedNode.ofSymbol("TypeDeclarationExpression", "BOOLEAN",
                                     ExpectedNode.ofSymbol("TypeExpression", "BOOLEAN",
-                                        keyword("BOOLEAN"))),
-                                separator()))),
+                                        keyword("BOOLEAN"))))),
+                        separator()),
                     ExpectedNode.ofSymbol("Declarations",
                         ExpectedNode.ofSymbol("VariableDeclaration", "VAR byte, word: 0 .. 255;",
                             keyword("VAR"),
-                            ExpectedNode.ofSymbol("VariableDeclarationList", "byte, word: 0 .. 255;",
-                                ExpectedNode.ofSymbol("VariableDeclarationExpression", "byte, word: 0 .. 255;",
+                            ExpectedNode.ofSymbol("VariableDeclarationList", "byte, word: 0 .. 255",
+                                ExpectedNode.ofSymbol("VariableDeclarationExpression", "byte, word: 0 .. 255",
                                     ExpectedNode.ofSymbol("IdentifierList", "byte, word",
                                         ExpectedNode.ofSymbol("Identifier", "byte",
                                             ExpectedNode.ofContent("byte")),
@@ -281,46 +274,46 @@ public class PascalParserTest {
                                                 ExpectedNode.ofContent("0")),
                                             ExpectedNode.ofSymbol("\\.\\.", ".."),
                                             ExpectedNode.ofSymbol("IntegerLiteral", "255",
-                                                ExpectedNode.ofContent("255")))),
-                                    separator()))),
+                                                ExpectedNode.ofContent("255")))))),
+                            separator()),
                         ExpectedNode.ofSymbol("Declarations",
-                            ExpectedNode.ofSymbol("VariableDeclaration", "VAR point: RECORD\n    x: REAL;\n    y: REAL;\n    END;",
+                            ExpectedNode.ofSymbol("VariableDeclaration", "VAR point: RECORD\n    x: REAL;\n    y: REAL\n    END;",
                                 keyword("VAR"),
-                                ExpectedNode.ofSymbol("VariableDeclarationList", "point: RECORD\n    x: REAL;\n    y: REAL;\n    END;",
-                                    ExpectedNode.ofSymbol("VariableDeclarationExpression", "point: RECORD\n    x: REAL;\n    y: REAL;\n    END;",
+                                ExpectedNode.ofSymbol("VariableDeclarationList", "point: RECORD\n    x: REAL;\n    y: REAL\n    END",
+                                    ExpectedNode.ofSymbol("VariableDeclarationExpression", "point: RECORD\n    x: REAL;\n    y: REAL\n    END",
                                         ExpectedNode.ofSymbol("IdentifierList", "point",
                                             ExpectedNode.ofSymbol("Identifier", "point",
                                                 ExpectedNode.ofContent("point"))),
                                         ExpectedNode.ofSymbol("\\:", ":"),
-                                        ExpectedNode.ofSymbol("TypeDeclarationExpression", "RECORD\n    x: REAL;\n    y: REAL;\n    END",
+                                        ExpectedNode.ofSymbol("TypeDeclarationExpression", "RECORD\n    x: REAL;\n    y: REAL\n    END",
                                             keyword("RECORD"),
-                                            ExpectedNode.ofSymbol("VariableDeclarationList", "x: REAL;\n    y: REAL;",
-                                                ExpectedNode.ofSymbol("VariableDeclarationExpression", "x: REAL;",
+                                            ExpectedNode.ofSymbol("VariableDeclarationList", "x: REAL;\n    y: REAL",
+                                                ExpectedNode.ofSymbol("VariableDeclarationExpression", "x: REAL",
                                                     ExpectedNode.ofSymbol("IdentifierList", "x",
                                                         ExpectedNode.ofSymbol("Identifier", "x",
                                                             ExpectedNode.ofContent("x"))),
                                                     ExpectedNode.ofSymbol("\\:", ":"),
                                                     ExpectedNode.ofSymbol("TypeDeclarationExpression", "REAL",
                                                         ExpectedNode.ofSymbol("TypeExpression", "REAL",
-                                                            keyword("REAL"))),
-                                                    separator()),
-                                                ExpectedNode.ofSymbol("VariableDeclarationList", "y: REAL;",
-                                                    ExpectedNode.ofSymbol("VariableDeclarationExpression", "y: REAL;",
+                                                            keyword("REAL")))
+                                                ),
+                                                separator(),
+                                                ExpectedNode.ofSymbol("VariableDeclarationList", "y: REAL",
+                                                    ExpectedNode.ofSymbol("VariableDeclarationExpression", "y: REAL",
                                                         ExpectedNode.ofSymbol("IdentifierList", "y",
                                                             ExpectedNode.ofSymbol("Identifier", "y",
                                                                 ExpectedNode.ofContent("y"))),
                                                         ExpectedNode.ofSymbol("\\:", ":"),
                                                         ExpectedNode.ofSymbol("TypeDeclarationExpression", "REAL",
                                                             ExpectedNode.ofSymbol("TypeExpression", "REAL",
-                                                                keyword("REAL"))),
-                                                        separator()))),
-                                            keyword("END")),
-                                        separator()))),
+                                                                keyword("REAL")))))),
+                                            keyword("END")))),
+                                separator()),
                             ExpectedNode.ofSymbol("Declarations",
                                 ExpectedNode.ofSymbol("VariableDeclaration", "VAR fruit: ( apple, banana, cherry );",
                                     keyword("VAR"),
-                                    ExpectedNode.ofSymbol("VariableDeclarationList", "fruit: ( apple, banana, cherry );",
-                                        ExpectedNode.ofSymbol("VariableDeclarationExpression", "fruit: ( apple, banana, cherry );",
+                                    ExpectedNode.ofSymbol("VariableDeclarationList", "fruit: ( apple, banana, cherry )",
+                                        ExpectedNode.ofSymbol("VariableDeclarationExpression", "fruit: ( apple, banana, cherry )",
                                             ExpectedNode.ofSymbol("IdentifierList", "fruit",
                                                 ExpectedNode.ofSymbol("Identifier", "fruit",
                                                     ExpectedNode.ofContent("fruit"))),
@@ -338,8 +331,8 @@ public class PascalParserTest {
                                                         ExpectedNode.ofSymbol("IdentifierList", "cherry",
                                                             ExpectedNode.ofSymbol("Identifier", "cherry",
                                                                 ExpectedNode.ofContent("cherry"))))),
-                                                ExpectedNode.ofSymbol("\\)", ")")),
-                                            separator()))),
+                                                ExpectedNode.ofSymbol("\\)", ")"))
+                                        )), separator()),
                                 ExpectedNode.ofSymbol("Declarations", ""))))),
                 ExpectedNode.ofSymbol("CompoundStatement", "BEGIN\nEND",
                     keyword("BEGIN"),
@@ -358,7 +351,7 @@ public class PascalParserTest {
             TYPE byte = 0 .. 255;
             TYPE point = RECORD
                 x: REAL;
-                y: REAL;
+                y: REAL
                 END;
             TYPE fruit = ( apple, banana, cherry );
             BEGIN

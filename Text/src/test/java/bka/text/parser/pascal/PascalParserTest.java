@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.*;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
+import org.junit.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import org.junit.*;
 
 public class PascalParserTest {
 

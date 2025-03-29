@@ -32,7 +32,15 @@ public class DiamondPaintable extends EdgeDecorationPaintable {
     public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
         paint(graphics, () -> drawBorder(graphics, paint, stroke));
     }
-    
+
+    @Override
+    protected Point location(Point start, Point end) {
+        if (isCentered()) {
+            return super.location(start, end);
+        }
+        return coordinateOnLine(start, end, 0f);
+    }
+
     @Override
     protected Polygon getPolygon() {
         return DIAMOND;

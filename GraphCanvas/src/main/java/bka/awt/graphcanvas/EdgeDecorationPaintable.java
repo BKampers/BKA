@@ -57,7 +57,7 @@ public abstract class EdgeDecorationPaintable extends Paintable {
         return coordinateOnLine(start, end, 0.5f);
     }
 
-    private Point coordinateOnLine(Point start, Point end, float position) {
+    protected Point coordinateOnLine(Point start, Point end, float position) {
         return new Point(
             Math.round(start.x + (end.x - start.x) * position),
             Math.round(start.y + (end.y - start.y) * position));
@@ -81,10 +81,19 @@ public abstract class EdgeDecorationPaintable extends Paintable {
     public Supplier<Point> getEndPoint() {
         return endPoint;
     }
-    
+
+    public void setCentered(boolean centered) {
+        this.centered = centered;
+    }
+
+    protected boolean isCentered() {
+        return centered;
+    }
+
     private final Supplier<Point> startPoint;
     private final Supplier<Point> endPoint;
 
+    private boolean centered;
 
     
 }

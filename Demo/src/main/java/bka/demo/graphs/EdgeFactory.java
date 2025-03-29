@@ -5,7 +5,6 @@
 package bka.demo.graphs;
 
 import bka.awt.graphcanvas.*;
-import bka.demo.graphs.EdgePaintable;
 import java.awt.*;
 import java.util.*;
 import java.util.function.*;
@@ -30,20 +29,22 @@ public class EdgeFactory implements Factory {
         }
 
         public EdgeDecorationPaintable createEdgeDecorationPaintable() {
-            return constructor.apply(ICON_LEFT, ICON_RIGHT);
-        }
-
-        public Consumer<EdgePaintable> getInitializer() {
-            return initializer;
+            EdgeDecorationPaintable paintable = constructor.apply(ICON_LEFT, ICON_RIGHT);
+            paintable.setCentered(true);
+            return paintable;
         }
 
         private final BiFunction<Supplier<Point>, Supplier<Point>, EdgeDecorationPaintable> constructor;
         private final Consumer<EdgePaintable> initializer;
     };
 
-    public EdgeFactory(EdgeComponent component) {
-        decoration = getDecoration(component);
+    public EdgeFactory(Decoration decoration) {
+        this.decoration = decoration;
         defaultInstance = decoration.createEdgePaintable();
+    }
+
+    public EdgeFactory(EdgeComponent component) {
+        this(getDecoration(component));
         copy(component.getPaintable(), defaultInstance);
         copy(component.getDecorationPaintable(), defaultInstance.getDecorationPaintable());
     }
@@ -52,23 +53,13 @@ public class EdgeFactory implements Factory {
         if (!component.isDirected()) {
             return Decoration.NONE;
         }
-        return getDecoration(component.getDecorationPaintable());
-    }
-
-    public static Decoration getDecoration(Paintable decorationPaintable) {
-        if (decorationPaintable instanceof ArrowheadPaintable) {
+        if (component.getDecorationPaintable() instanceof ArrowheadPaintable) {
             return Decoration.ARROWHEAD;
         }
-        if (decorationPaintable instanceof DiamondPaintable) {
+        if (component.getDecorationPaintable() instanceof DiamondPaintable) {
             return Decoration.DIAMOND;
         }
-        throw new IllegalStateException("Unsupported decoration: " + decorationPaintable.getClass());
-    }
-
-    public EdgeFactory(Decoration decoration) {
-        this.decoration = decoration;
-        defaultInstance = decoration.createEdgePaintable();
-        decoration.getInitializer().accept(defaultInstance);
+        throw new IllegalStateException("Unsupported decoration: " + component.getDecorationPaintable().getClass());
     }
 
     private static void initializeArrowhead(EdgePaintable edgePainatble) {
@@ -93,7 +84,7 @@ public class EdgeFactory implements Factory {
 
     @Override
     public EdgePaintable getCopyInstance() {
-        EdgeDecorationPaintable decorationPaintable = getDecoration(defaultInstance.getDecorationPaintable()).createEdgeDecorationPaintable();
+        EdgeDecorationPaintable decorationPaintable = decoration.createEdgeDecorationPaintable();
         EdgePaintable copyInstance = new EdgePaintable(ICON_LEFT, ICON_RIGHT, decorationPaintable, defaultInstance.isDirected());
         copy(defaultInstance.getPolygonPaintable(), copyInstance.getPolygonPaintable());
         copy(defaultInstance.getDecorationPaintable(), copyInstance.getDecorationPaintable());

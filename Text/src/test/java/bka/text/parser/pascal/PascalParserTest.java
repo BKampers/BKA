@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.*;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
-import org.junit.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import org.junit.*;
 
 public class PascalParserTest {
 
@@ -345,7 +345,7 @@ public class PascalParserTest {
 
     @Test
     public void testTypeDeclarations() {
-        String output = parser.parse("""
+        assertSuccess(parser.buildTree("""
             PROGRAM program_name;
             TYPE bool = BOOLEAN;
             TYPE byte = 0 .. 255;
@@ -356,14 +356,12 @@ public class PascalParserTest {
             TYPE fruit = ( apple, banana, cherry );
             BEGIN
             END.
-            """);
-        System.out.println(output);
-        assertSuccess(output);
+            """));
     }
 
     @Test
     public void testProcedureDeclaration() {
-        String output = parser.parse("""
+        assertSuccess(parser.buildTree("""
             PROGRAM program_name;
 
             VAR result: INTEGER;
@@ -376,13 +374,12 @@ public class PascalParserTest {
             BEGIN
             p1(result, 0);
             END.
-            """);
-        assertSuccess(output);
+            """));
     }
 
     @Test
     public void testFunctionDeclaration() {
-        String output = parser.parse("""
+        assertSuccess(parser.buildTree("""
             PROGRAM program_name;
 
             CONST pi = 3.14;
@@ -397,13 +394,12 @@ public class PascalParserTest {
             BEGIN
             result := getPi;
             END.
-            """);
-        assertSuccess(output);
+            """));
     }
 
     @Test
     public void testWhile() {
-        String output = parser.parse("""
+        assertSuccess(parser.buildTree("""
             PROGRAM program_name;
             VAR a: ARRAY [0 .. 9] OF INTEGER;
                 i: INTEGER;
@@ -415,26 +411,24 @@ public class PascalParserTest {
                     i := i + 1
                 END
             END.
-            """);
-        assertSuccess(output);
+            """));
     }
 
     @Test
     public void testFor() {
-        String output = parser.parse("""
+        assertSuccess(parser.buildTree("""
             PROGRAM program_name;
             VAR a: ARRAY [1 .. 10] OF INTEGER;
             VAR i: INTEGER;
             BEGIN
                 FOR i := 1 TO 10 DO a[i] := i
             END.
-            """);
-        assertSuccess(output);
+            """));
     }
 
     @Test
     public void testIfThenElse() {
-        String output = parser.parse("""
+        assertSuccess(parser.buildTree("""
             PROGRAM program_name;
             VAR i,j,s: INTEGER;
             BEGIN
@@ -457,13 +451,12 @@ public class PascalParserTest {
                 ELSE
                     j := i;
             END.
-            """);
-        assertSuccess(output);
+            """));
     }
 
     @Test
     public void testLiterals() {
-        String output = parser.parse("""
+        assertSuccess(parser.buildTree("""
             PROGRAM program_name;
             CONST float = 1.4e9;
             CONST greeting = 'Hello World!';
@@ -472,13 +465,12 @@ public class PascalParserTest {
             CONST no = FALSE;
             BEGIN
             END.
-            """);
-        assertSuccess(output);
+            """));
     }
 
     @Test
     public void testExpressions() {
-        String output = parser.parse("""
+        assertSuccess(parser.buildTree("""
             PROGRAM program_name;
             CONST c1 = 1 + 2;
             CONST c2 = -c1;
@@ -487,13 +479,12 @@ public class PascalParserTest {
             CONST c5 = (c1 - c2 < 0) OR c3 AND NOT c4;
             BEGIN
             END.
-            """);
-        assertSuccess(output);
+            """));
     }
 
     @Test
     public void testComment() {
-        String output = parser.parse("""
+        assertSuccess(parser.buildTree("""
             (*
             ** A Pascal Program
             *)
@@ -501,13 +492,12 @@ public class PascalParserTest {
             (* Main *)(* *)
             BEGIN
             END.
-            (**)""");
-        assertSuccess(output);
+            (**)"""));
     }
 
     @Test
     public void testRangeExpressions() {
-        String output = parser.parse("""
+        assertSuccess(parser.buildTree("""
             PROGRAM program_name;
             CONST s = 0;
             CONST e = 9;
@@ -521,8 +511,7 @@ public class PascalParserTest {
             VAR r8: s..e;
             BEGIN
             END.
-            """);
-        assertSuccess(output);
+            """));
     }
 
     @Test
@@ -630,14 +619,17 @@ public class PascalParserTest {
 
     }
 
-    private static void assertSuccess(String output) {
-        assertTrue("Parse error: " + output, output.startsWith("Program parsed successfully"));
-    }
-
     private static void assertError(String output) {
         assertTrue(output.startsWith("Error"));
     }
 
+    private static void assertSuccess(List<PascalParser.Node> actual) {
+        actual.forEach(node -> {
+            if (node.getError() != null) {
+                Assert.fail("Error in line" + node.startLine() + ", Symbol " + node.getSymbol());
+            }
+        });
+    }
 
     private static void assertParseTree(List<ExpectedNode> expected, List<PascalParser.Node> actual) {
         assertParseTree(null, expected, actual);

@@ -59,6 +59,18 @@ public class SolarDecorator {
         }
     }
 
+    public Optional<Double> calculateMidDayHour(LocalDate date) {
+        Optional<LocalDateTime> sunrise = solarEventCalculator.sunrise(Zenith.ASTRONOMICAL, date);
+        if (sunrise.isEmpty()) {
+            return Optional.empty();
+        }
+        Optional<LocalDateTime> sunset = solarEventCalculator.sunset(Zenith.ASTRONOMICAL, date);
+        if (sunset.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(decimalHour(sunrise.get().plusNanos(Duration.between(sunrise.get(), sunset.get()).toNanos() / 2)));
+    }
+
     private Optional<Double> calculateEndTime(LocalDate date, Period period) {
         return decimalHour(period.isBeforeSunrise()
             ? solarEventCalculator.sunrise(period.getZenith(), date)
@@ -70,6 +82,10 @@ public class SolarDecorator {
             return Optional.empty();
         }
         return Optional.of(dateTime.get().getHour() + dateTime.get().getMinute() / 60d);
+    }
+
+    private static double decimalHour(LocalDateTime dateTime) {
+        return dateTime.getHour() + dateTime.getMinute() / 60d + dateTime.getSecond() / (60d * 60d);
     }
 
     public class Arc {

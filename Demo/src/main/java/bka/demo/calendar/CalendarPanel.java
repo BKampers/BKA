@@ -29,11 +29,16 @@ public class CalendarPanel extends javax.swing.JPanel {
         clock.addNonTiltedMarkerRingRenderer(radius * 9 / 10, configuration.getHourInterval(), numberRenderer);
         decorator = configuration.getDecorator();
         decorator.ifPresent(initializeDecorator(radius - 35));
+        midDayIndicator = decorator.isEmpty() ? null : clock.addNeedleRenderer(indicatorRenderer(transparent(Color.YELLOW, 192), 12, radius - 35));
         hourHand = clock.addNeedleRenderer(needleRenderer(() -> hourHandPaint, 5, radius / 2));
         minuteHand = clock.addNeedleRenderer(needleRenderer(() -> minuteHandPaint, 3, radius - (fontSize + 10)));
         minuteHand.setScale(fractionScale);
         secondHand = clock.addNeedleRenderer(needleRenderer(() -> secondHandPaint, 1, radius - (fontSize + 5)));
         secondHand.setScale(fractionScale);
+    }
+
+    private static Color transparent(Color color, int alpha) {
+        return new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha);
     }
 
     private bka.awt.Renderer clockFaceRenderer(Point center, int radius) {
@@ -68,6 +73,16 @@ public class CalendarPanel extends javax.swing.JPanel {
             graphics.setPaint(paint.get());
             graphics.setStroke(stroke);
             graphics.drawLine(0, 5, 0, -length);
+        };
+    }
+
+    private bka.awt.Renderer indicatorRenderer(Paint paint, int size, int radius) {
+        return graphics -> {
+            graphics.setStroke(new BasicStroke(3f));
+            graphics.setPaint(paint);
+            graphics.translate(0, -radius);
+            graphics.drawOval(-size / 2, -size / 2, size, size);
+            graphics.translate(0, radius);
         };
     }
 
@@ -246,6 +261,8 @@ public class CalendarPanel extends javax.swing.JPanel {
             updateColors(currentPeriod, arcPaint);
         }
         solarDecorator.calculateArcs(LocalDate.now());
+        Optional<Double> midDay = decorator.get().calculateMidDayHour(LocalDate.now());
+        midDay.ifPresent(midDayIndicator::setValue);
     }
 
     private SolarDecorator.Period currentPeriod(SolarDecorator solarDecorator) {
@@ -342,6 +359,7 @@ public class CalendarPanel extends javax.swing.JPanel {
 
 
     private final ClockRenderer clock;
+    private final NeedleRenderer midDayIndicator;
     private final NeedleRenderer hourHand;
     private final NeedleRenderer minuteHand;
     private final NeedleRenderer secondHand;

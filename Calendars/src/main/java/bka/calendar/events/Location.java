@@ -5,7 +5,7 @@
 package bka.calendar.events;
 
 /**
- * Simple VO class to store latitude/longitude information.
+ * Value object to store latitude and longitude.
  */
 public class Location {
 

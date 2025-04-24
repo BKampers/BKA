@@ -150,24 +150,22 @@ public class WeatherStationPanel extends JPanel {
     }
 
     public void setStation(WeatherStation station) {
-        if (station != null) {
-            clocks.forEach(clock -> clock.update(station));
-            Logger.getLogger(WeatherStationPanel.class.getName()).log(
-                Level.FINE,
-                "{0}: {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}",
-                new Object[]{
-                    station.getStationName(),
-                    station.getTemperature(),
-                    station.getChill(),
-                    station.getHumidity(),
-                    station.getWindDirection(),
-                    station.getWindSpeed(),
-                    station.getSquall(),
-                    station.getPressure(),
-                    station.getVisibility()
-                }
-            );
-        }
+        clocks.forEach(clock -> clock.update(station));
+        Logger.getLogger(WeatherStationPanel.class.getName()).log(
+            Level.FINE,
+            "{0}: {1}; {2}; {3}; {4}; {5}; {6}; {7}; {8}",
+            new Object[]{
+                station.getStationName(),
+                station.getTemperature(),
+                station.getChill(),
+                station.getHumidity(),
+                station.getWindDirection(),
+                station.getWindSpeed(),
+                station.getSquall(),
+                station.getPressure(),
+                station.getVisibility()
+            }
+        );
     }
 
 

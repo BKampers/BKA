@@ -4,10 +4,13 @@ package bka.demo.clock.weatherstation;
 ** © Bart Kampers
 */
 
-
+import bka.demo.swing.*;
+import java.awt.*;
+import java.awt.image.*;
 import java.io.*;
 import java.time.*;
 import java.time.format.*;
+import java.util.List;
 import java.util.*;
 import java.util.logging.*;
 
@@ -33,7 +36,7 @@ public class WeatherStationDemo extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Weather Station");
-        setPreferredSize(new java.awt.Dimension(1200 + getFrameWitdhAdjustment(), 400));
+        setPreferredSize(new java.awt.Dimension(1200 + getFrameWidthAdjustment(), 400));
         setResizable(false);
 
         stationComboBox.setModel(stationComboBoxModel);
@@ -103,7 +106,7 @@ public class WeatherStationDemo extends javax.swing.JFrame {
     /**
      * @return OS dependent frame adjustment
      */
-    private static int getFrameWitdhAdjustment() {
+    private static int getFrameWidthAdjustment() {
         String osName = System.getProperty("os.name");
         if (osName.contains("Mac")) {
             return 3;
@@ -121,12 +124,30 @@ public class WeatherStationDemo extends javax.swing.JFrame {
                 WeatherStation station = stationsMap.get(selectedName);
                 timestampLabel.setText(timestampText(station.getTimestamp()));
                 weatherPanel.setStation(station);
-            }
-            else {
-                weatherPanel.setStation(null);
+                getDecorator(station).updateIcon();
             }
         }
     }//GEN-LAST:event_stationComboBoxActionPerformed
+
+    private static Image createImage(WeatherStation station, int size) {
+        Image image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = (Graphics2D) image.getGraphics();
+        FrameDecorator.drawIconBackground(graphics, size);
+        graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, size / 4));
+        FontMetrics metrics = graphics.getFontMetrics();
+        graphics.setColor(new Color(0, 0, 135));
+        String temperature = temperatureString(station) + '\u2103';
+        graphics.drawString(temperature, (size - metrics.stringWidth(temperature)) / 2, size / 2);
+        return image;
+    }
+
+    public static String temperatureString(WeatherStation station) {
+        if (station == null || station.getTemperature().isEmpty()) {
+            return "";
+        }
+        return String.format("%.1f", station.getTemperature().get());
+    }
 
     private void reloadButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_reloadButtonActionPerformed
         loadTimer.cancel();
@@ -171,6 +192,16 @@ public class WeatherStationDemo extends javax.swing.JFrame {
         });
     }
 
+    @Override
+    public void setVisible(boolean visible) {
+        super.setVisible(visible);
+        getDecorator(null).updateIcon();
+    }
+
+    private FrameDecorator getDecorator(WeatherStation station) {
+        return new FrameDecorator(this, size -> createImage(station, size));
+    }
+
     private static String normalizedForAlphabet(String string) {
         return PREFIXES.stream()
             .filter(prefix -> string.startsWith(prefix + ' '))
@@ -178,6 +209,7 @@ public class WeatherStationDemo extends javax.swing.JFrame {
             .findAny()
             .orElse(string);
     }
+
 
     private class DataReaderTask extends TimerTask {
 
@@ -204,6 +236,7 @@ public class WeatherStationDemo extends javax.swing.JFrame {
         }
 
     }
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton reloadButton;

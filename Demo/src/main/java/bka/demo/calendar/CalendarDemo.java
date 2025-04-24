@@ -4,6 +4,7 @@
 package bka.demo.calendar;
 
 import bka.calendar.*;
+import bka.demo.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.*;
@@ -115,38 +116,43 @@ public class CalendarDemo extends javax.swing.JFrame {
         }
     };
 
+    private FrameDecorator getDecorator(CalendarModel model) {
+        return new FrameDecorator(this, size -> createIcon(model, size));
+    }
+
     private void setIcon(CalendarModel model) {
         if (Objects.equals(iconDate, model.getDate()) && Objects.equals(iconMonth, model.getMonth())) {
             return;
         }
-        String osName = System.getProperty("os.name");
-        if (osName.contains("Mac")) {
-            setMacIcon(model);
-        }
-        else if (osName.contains("Windows")) {
-            setWindowsIcons(model);
-        }
-        else {
-            setIconImage(createDefaultImage(model, DEFAULT_ICON_SIZE));
-        }
+        getDecorator(model).updateIcon();
         iconDate = model.getDate();
         iconMonth = model.getMonth();
     }
 
-    private static void setMacIcon(CalendarModel model) {
-        Taskbar.getTaskbar().setIconImage(createDefaultImage(model, DEFAULT_ICON_SIZE));
+    private static Image createIcon(CalendarModel model, int size) {
+        if (size < DEFAULT_ICON_SIZE) {
+            return createSmallIcon(model, size);
+        }
+        return createDefaultIcon(model, size);
     }
 
-    private void setWindowsIcons(CalendarModel model) {
-        setIconImages(java.util.List.of(
-            createWindowsImage(model, THUMB_ICON_SIZE),
-            createWindowsImage(model, SMALL_ICON_SIZE)));
-    }
-
-    private static BufferedImage createDefaultImage(CalendarModel model, int size) {
-        BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+    private static Image createSmallIcon(CalendarModel model, int size) {
+        Image image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = (Graphics2D) image.getGraphics();
-        drawImageBackground(graphics, size);
+        FrameDecorator.drawIconBackground(graphics, size);
+        graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, size / 2));
+        FontMetrics metrics = graphics.getFontMetrics();
+        graphics.setColor(CalendarPanel.FONT_COLOR);
+        String date = model.getDate();
+        graphics.drawString(date, (size - metrics.stringWidth(date)) / 2, size / 16 * 10);
+        return image;
+    }
+
+    public static Image createDefaultIcon(CalendarModel model, int size) {
+        Image image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = (Graphics2D) image.getGraphics();
+        FrameDecorator.drawIconBackground(graphics, size);
         drawDayOfMonth(graphics, model, size);
         String month = model.getMonth();
         if (!month.isBlank()) {
@@ -191,7 +197,6 @@ public class CalendarDemo extends javax.swing.JFrame {
     }
 
     private static List<String> getLines(String dayOfYear) {
-        ArrayList<String> lines = new ArrayList<>();
         String[] text = dayOfYear.split("\\s");
         if (text.length > 1) {
             return List.of(concatWithoutLast(text), text[text.length - 1]);
@@ -201,28 +206,6 @@ public class CalendarDemo extends javax.swing.JFrame {
 
     private static String concatWithoutLast(String[] text) {
         return Arrays.stream(text).limit(text.length - 1).collect(Collectors.joining(" "));
-    }
-
-    private static BufferedImage createWindowsImage(CalendarModel model, int size) {
-        BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D graphics = (Graphics2D) image.getGraphics();
-        drawImageBackground(graphics, size);
-        graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, size / 2));
-        FontMetrics metrics = graphics.getFontMetrics();
-        graphics.setColor(CalendarPanel.FONT_COLOR);
-        String date = model.getMonth();
-        graphics.drawString(date, (size - metrics.stringWidth(date)) / 2, size / 16 * 10);
-        return image;
-    }
-
-    private static void drawImageBackground(Graphics2D graphics, int size) {
-        int margin = size / 16;
-        int innerSize = size - 2 * margin;
-        graphics.setColor(Color.WHITE);
-        graphics.fillRect(margin, margin, innerSize, innerSize);
-        graphics.setColor(Color.GRAY);
-        graphics.drawRect(margin, margin, innerSize, innerSize);
     }
 
     private CalendarPanel hoveredPanel;
@@ -243,8 +226,6 @@ public class CalendarDemo extends javax.swing.JFrame {
     private static final long MILLIS_PER_SECOND = 1000;
 
     private static final int DEFAULT_ICON_SIZE = 1024;
-    private static final int SMALL_ICON_SIZE = 256;
-    private static final int THUMB_ICON_SIZE = 32;
 
 
 }

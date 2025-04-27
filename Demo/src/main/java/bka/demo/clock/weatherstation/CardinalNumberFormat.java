@@ -4,91 +4,70 @@ package bka.demo.clock.weatherstation;
 ** © Bart Kampers
 */
 
-
-
 import java.text.*;
+import java.util.*;
 
 
 public class CardinalNumberFormat extends NumberFormat {
 
     @Override
-    public StringBuffer format(double number, StringBuffer toAppendTo, FieldPosition position) {
-        return format(Math.round(number), toAppendTo, position);
+    public StringBuffer format(long number, StringBuffer toAppendTo, FieldPosition position) {
+        return format((double) number, toAppendTo, position);
     }
 
     @Override
-    public StringBuffer format(long number, StringBuffer toAppendTo, FieldPosition position) {
-        String result = switch ((int) (number % 360)) {
-            case 0:
-                yield "N";
-            case 45:
-                yield "NO";
-            case 90:
-                yield "O";
-            case 135:
-                yield "ZO";
-            case 180:
-                yield "Z";
-            case 225:
-                yield "ZW";
-            case 270:
-                yield "W";
-            case 315:
-                yield "NW";
-            default:
-                throw new IllegalArgumentException("Cannot convert " + number + " to cardinal direction");
-        };
-        return toAppendTo.append(result);
+    public StringBuffer format(double number, StringBuffer toAppendTo, FieldPosition position) {
+        int index = (int) Math.round(degrees(number) / 22.5);
+        String key = DIRECTIONS.entrySet().stream()
+            .skip(index)
+            .findFirst()
+            .get().getKey();
+        return toAppendTo.append(key);
+    }
+
+    public double degrees(double number) {
+        return number - Math.floor(number / 360) * 360;
+    }
+
+    public static String nearest(double degrees, Map.Entry<String, Double> low, Map.Entry<String, Double> high) {
+        return (degrees - low.getValue() < high.getValue() - degrees) ? low.getKey() : high.getKey();
     }
 
     @Override
     public Number parse(String string, ParsePosition position) {
         Double degrees = degrees(string.substring(position.getIndex()));
-        if (degrees != null) {
-            position.setIndex(position.getIndex() + string.length());
-        }
-        else {
+        if (degrees == null) {
             position.setErrorIndex(position.getIndex());
+            return null;
         }
+        position.setIndex(position.getIndex() + string.length());
         return degrees;
     }
 
     private static Double degrees(String cardinalDirection) {
-        return switch (cardinalDirection) {
-            case "N" ->
-                0.0;
-            case "NNO" ->
-                22.5;
-            case "NO" ->
-                45.0;
-            case "ONO" ->
-                67.5;
-            case "O" ->
-                90.0;
-            case "OZO" ->
-                112.5;
-            case "ZO" ->
-                135.0;
-            case "ZZO" ->
-                157.5;
-            case "Z" ->
-                180.0;
-            case "ZZW" ->
-                202.5;
-            case "ZW" ->
-                225.0;
-            case "WZW" ->
-                247.5;
-            case "W" ->
-                270.0;
-            case "WNW" ->
-                292.5;
-            case "NW" ->
-                315.0;
-            case "NNW" ->
-                337.5;
-            default ->
-                null;
-        };
+        return DIRECTIONS.get(cardinalDirection);
     }
+
+
+    private static final Map<String, Double> DIRECTIONS = new LinkedHashMap<>();
+
+    static {
+        DIRECTIONS.put("N", 0.0);
+        DIRECTIONS.put("NNO", 22.5);
+        DIRECTIONS.put("NO", 45.0);
+        DIRECTIONS.put("ONO", 67.5);
+        DIRECTIONS.put("O", 90.0);
+        DIRECTIONS.put("OZO", 112.5);
+        DIRECTIONS.put("ZO", 135.0);
+        DIRECTIONS.put("ZZO", 157.5);
+        DIRECTIONS.put("Z", 180.0);
+        DIRECTIONS.put("ZZW", 202.5);
+        DIRECTIONS.put("ZW", 225.0);
+        DIRECTIONS.put("WZW", 247.5);
+        DIRECTIONS.put("W", 270.0);
+        DIRECTIONS.put("WNW", 292.5);
+        DIRECTIONS.put("NW", 315.0);
+        DIRECTIONS.put("NNW", 337.5);
+    }
+
 }

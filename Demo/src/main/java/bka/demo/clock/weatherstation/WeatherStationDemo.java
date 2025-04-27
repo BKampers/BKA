@@ -134,19 +134,49 @@ public class WeatherStationDemo extends javax.swing.JFrame {
         Graphics2D graphics = (Graphics2D) image.getGraphics();
         FrameDecorator.drawIconBackground(graphics, size);
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, size / 4));
-        FontMetrics metrics = graphics.getFontMetrics();
+        graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, size / 5));
         graphics.setColor(new Color(0, 0, 135));
-        String temperature = temperatureString(station) + '\u2103';
-        graphics.drawString(temperature, (size - metrics.stringWidth(temperature)) / 2, size / 2);
+        drawString(graphics, size, temperatureString(station), 1);
+        drawString(graphics, size, windString(station), 2);
         return image;
+    }
+
+    private static void drawString(Graphics2D graphics, int size, String string, int line) {
+        graphics.drawString(string, (size - graphics.getFontMetrics().stringWidth(string)) / 2, size / 10 + (size / 3) * line);
     }
 
     public static String temperatureString(WeatherStation station) {
         if (station == null || station.getTemperature().isEmpty()) {
+            return "\u2103";
+        }
+        return String.format("%.1f\u2103", station.getTemperature().get());
+    }
+
+    public static String windString(WeatherStation station) {
+        if (station == null) {
             return "";
         }
-        return String.format("%.1f", station.getTemperature().get());
+        StringBuilder wind = new StringBuilder();
+        station.getWindDirection().ifPresent(direction -> append(wind, new CardinalNumberFormat().format(direction)));
+        station.getWindSpeed().ifPresent(speed -> append(wind, beaufort(speed)));
+        return wind.toString();
+    }
+
+    private static void append(StringBuilder builder, Object object) {
+        if (!builder.isEmpty()) {
+            builder.append(' ');
+        }
+        builder.append(object);
+    }
+
+    private static int beaufort(double speed) {
+        double[] beaufortWindSpeeds = { 0.3, 1.6, 3.4, 5.5, 8.0, 10.8, 13.9, 17.2, 20.8, 24.5, 28.5, 32.7 };
+        for (int i = 0; i < beaufortWindSpeeds.length; ++i) {
+            if (speed < beaufortWindSpeeds[i]) {
+                return i;
+            }
+        }
+        return beaufortWindSpeeds.length;
     }
 
     private void reloadButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_reloadButtonActionPerformed

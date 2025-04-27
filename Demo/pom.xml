@@ -51,6 +51,18 @@
             <version>${project.version}</version>
             <type>jar</type>
         </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.7.2</version>
+            <scope>test</scope>
+            <type>jar</type>
+        </dependency>
     </dependencies>
     <properties>
         <maven.compiler.source>22</maven.compiler.source>
@@ -82,16 +94,13 @@
                     </outputDirectory>
                 </configuration>
             </plugin>
-            <!--
+           
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.0.0-M6</version>
-                <configuration>
-                    <argLine>- -enable-preview</argLine>
-                </configuration>
             </plugin>
-            -->
+          
         </plugins>
     </build>
     <name>Demo</name>

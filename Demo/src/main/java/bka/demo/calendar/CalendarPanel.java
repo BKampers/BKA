@@ -29,7 +29,7 @@ public class CalendarPanel extends javax.swing.JPanel {
         clock.addNonTiltedMarkerRingRenderer(radius * 9 / 10, configuration.getHourInterval(), numberRenderer);
         decorator = configuration.getDecorator();
         decorator.ifPresent(initializeDecorator(radius - 35));
-        midDayIndicator = decorator.isEmpty() ? null : clock.addNeedleRenderer(indicatorRenderer(transparent(Color.YELLOW, 192), 12, radius - 35));
+        midDayIndicator = decorator.isEmpty() ? null : clock.addNeedleRenderer(indicatorRenderer(transparent(Color.YELLOW, 192), 12, (radius + 12) / 2));
         hourHand = clock.addNeedleRenderer(needleRenderer(() -> hourHandPaint, 5, radius / 2));
         minuteHand = clock.addNeedleRenderer(needleRenderer(() -> minuteHandPaint, 3, radius - (fontSize + 10)));
         minuteHand.setScale(fractionScale);

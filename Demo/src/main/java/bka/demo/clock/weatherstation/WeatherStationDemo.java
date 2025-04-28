@@ -135,24 +135,38 @@ public class WeatherStationDemo extends javax.swing.JFrame {
         FrameDecorator.drawIconBackground(graphics, size);
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, size / 5));
-        graphics.setColor(new Color(0, 0, 135));
-        drawString(graphics, size, temperatureString(station), 1);
-        drawString(graphics, size, windString(station), 2);
+        drawString(graphics, size, 1, temperatureString(station), temperatureColor(station));
+        drawString(graphics, size, 2, windString(station), windColor(station));
         return image;
     }
 
-    private static void drawString(Graphics2D graphics, int size, String string, int line) {
+    private static void drawString(Graphics2D graphics, int size, int line, String string, Color color) {
+        graphics.setColor(color);
         graphics.drawString(string, (size - graphics.getFontMetrics().stringWidth(string)) / 2, size / 10 + (size / 3) * line);
     }
 
-    public static String temperatureString(WeatherStation station) {
+    private static Color temperatureColor(WeatherStation station) {
+        if (station == null || station.getTemperature().isEmpty()) {
+            return Color.GRAY;
+        }
+        return WeatherStationPanel.temperatureColor(station.getTemperature().get());
+    }
+
+    private static String temperatureString(WeatherStation station) {
         if (station == null || station.getTemperature().isEmpty()) {
             return "\u2103";
         }
         return String.format("%.1f\u2103", station.getTemperature().get());
     }
 
-    public static String windString(WeatherStation station) {
+    private static Color windColor(WeatherStation station) {
+        if (station == null || station.getWindSpeed().isEmpty()) {
+            return Color.GRAY;
+        }
+        return WeatherStationPanel.beaufortColor(beaufort(station.getWindSpeed().get()));
+    }
+
+    private static String windString(WeatherStation station) {
         if (station == null) {
             return "";
         }
@@ -170,13 +184,13 @@ public class WeatherStationDemo extends javax.swing.JFrame {
     }
 
     private static int beaufort(double speed) {
-        double[] beaufortWindSpeeds = { 0.3, 1.6, 3.4, 5.5, 8.0, 10.8, 13.9, 17.2, 20.8, 24.5, 28.5, 32.7 };
-        for (int i = 0; i < beaufortWindSpeeds.length; ++i) {
-            if (speed < beaufortWindSpeeds[i]) {
+        List<Double> beaufortWindSpeeds = BeaufortScale.getWindSpeeds();
+        for (int i = 0; i < beaufortWindSpeeds.size(); ++i) {
+            if (speed < beaufortWindSpeeds.get(i)) {
                 return i;
             }
         }
-        return beaufortWindSpeeds.length;
+        return beaufortWindSpeeds.size();
     }
 
     private void reloadButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_reloadButtonActionPerformed

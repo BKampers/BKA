@@ -42,9 +42,14 @@ public class WeatherStationPanel extends JPanel {
     }
 
     private static void addTemperatureArcs(ClockPanel thermometer) {
-        for (int t = MIN_TEMPERATURE; t < MAX_TEMPERATURE; t += 10) {
-            thermometer.addArc(t, t + 9, (t < 0) ? coldColor(t) : warmColor(t));
+        for (int temperature = MIN_TEMPERATURE; temperature < MAX_TEMPERATURE; temperature += 10) {
+            thermometer.addArc(temperature, temperature + 9, (temperature < 0) ? coldColor(temperature) : warmColor(temperature));
         }
+    }
+
+    public static Color temperatureColor(double temperature) {
+        int round = (int) Math.round(temperature);
+        return (round < 0) ? coldColor(round) : warmColor(round);
     }
 
     private static Color coldColor(int temperature) {
@@ -81,7 +86,7 @@ public class WeatherStationPanel extends JPanel {
     }
 
     private ClockPanel createAnonemeter() {
-        ClockPanel anonemeter = new ClockPanel(new Scale(0, 40, MIN_ANGLE, MAX_ANGLE), 5);
+        ClockPanel anonemeter = new ClockPanel(new Scale(0, MAX_WIND_SPEED, MIN_ANGLE, MAX_ANGLE), 5);
         anonemeter.addText("m/s");
         anonemeter.addFineMarkers(1d, value -> Math.round(value) % 5 == 0);
         addBeaufortArcs(anonemeter);
@@ -92,19 +97,20 @@ public class WeatherStationPanel extends JPanel {
 
     private static void addBeaufortArcs(ClockPanel anonemeter) {
         Font font = new Font(Font.SERIF, Font.ROMAN_BASELINE, 7);
-        double[] beaufortWindSpeeds = { 0.3, 1.6, 3.4, 5.5, 8.0, 10.8, 13.9, 17.2, 20.8, 24.5, 28.5, 32.7, 40.0 };
-        double capMargin = 0.2;
-        int ovalSize = 5;
-        for (int i = 1; i < beaufortWindSpeeds.length; ++i) {
+        ArrayList<Double> speeds = new ArrayList<>(BeaufortScale.getWindSpeeds());
+        speeds.add(MAX_WIND_SPEED);
+        final double capMargin = 0.2;
+        final int ovalSize = 5;
+        for (int i = 1; i < speeds.size(); ++i) {
             Color color = beaufortColor(i);
-            double startValue = beaufortWindSpeeds[i - 1];
-            double endValue = beaufortWindSpeeds[i];
+            double startValue = speeds.get(i - 1);
+            double endValue = speeds.get(i);
             anonemeter.addArc(startValue + capMargin, endValue - capMargin, color);
             anonemeter.addArcMarker(startValue + (endValue - startValue) / 2d, ovalMarkerRenderer(Integer.toString(i), font, Color.WHITE, ovalSize, color));
         }
     }
 
-    private static Color beaufortColor(int index) {
+    public static Color beaufortColor(int index) {
         return new Color(255 - (12 - index) * 20, (12 - index) * 15, 0);
     }
 
@@ -221,8 +227,10 @@ public class WeatherStationPanel extends JPanel {
     private static final double MIN_ANGLE = -0.4125;
     private static final double MAX_ANGLE = 0.4125;
 
-    private static final int MIN_TEMPERATURE = -50;
-    private static final int MAX_TEMPERATURE = 50;
     private static final double MIN_PRESSURE = 940;
     private static final double MAX_PRESSURE = 1040;
+    private static final int MIN_TEMPERATURE = -50;
+    private static final int MAX_TEMPERATURE = 50;
+    private static final double MAX_WIND_SPEED = 40.0;
+
 }

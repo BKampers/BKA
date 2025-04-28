@@ -17,20 +17,22 @@ public class CardinalNumberFormat extends NumberFormat {
 
     @Override
     public StringBuffer format(double number, StringBuffer toAppendTo, FieldPosition position) {
-        int index = (int) Math.round(degrees(number) / 22.5);
-        String key = DIRECTIONS.entrySet().stream()
-            .skip(index)
+        return toAppendTo.append(toCardinalString(number));
+    }
+
+    private static String toCardinalString(double number) {
+        return DIRECTIONS.entrySet().stream()
+            .skip(index(number))
             .findFirst()
             .get().getKey();
-        return toAppendTo.append(key);
     }
 
-    public double degrees(double number) {
+    private static long index(double number) {
+        return Math.round(degrees(number) / 22.5);
+    }
+
+    private static double degrees(double number) {
         return number - Math.floor(number / 360) * 360;
-    }
-
-    public static String nearest(double degrees, Map.Entry<String, Double> low, Map.Entry<String, Double> high) {
-        return (degrees - low.getValue() < high.getValue() - degrees) ? low.getKey() : high.getKey();
     }
 
     @Override

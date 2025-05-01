@@ -21,18 +21,15 @@ public class CardinalNumberFormat extends NumberFormat {
     }
 
     private static String toCardinalString(double number) {
-        return DIRECTIONS.entrySet().stream()
-            .skip(index(number))
-            .findFirst()
-            .get().getKey();
+        return DIRECTIONS.get(index(number));
     }
 
-    private static long index(double number) {
-        return Math.round(degrees(number) / 22.5);
+    private static int index(double number) {
+        return (int) Math.round(degrees(number) / INTERVAL);
     }
 
     private static double degrees(double number) {
-        return number - Math.floor(number / 360) * 360;
+        return number - Math.floor(number / MAX_DEGREES) * MAX_DEGREES;
     }
 
     @Override
@@ -47,29 +44,13 @@ public class CardinalNumberFormat extends NumberFormat {
     }
 
     private static Double degrees(String cardinalDirection) {
-        return DIRECTIONS.get(cardinalDirection);
+        int index = DIRECTIONS.indexOf(cardinalDirection);
+        return (index < 0) ? null : index * INTERVAL;
     }
 
 
-    private static final Map<String, Double> DIRECTIONS = new LinkedHashMap<>();
-
-    static {
-        DIRECTIONS.put("N", 0.0);
-        DIRECTIONS.put("NNO", 22.5);
-        DIRECTIONS.put("NO", 45.0);
-        DIRECTIONS.put("ONO", 67.5);
-        DIRECTIONS.put("O", 90.0);
-        DIRECTIONS.put("OZO", 112.5);
-        DIRECTIONS.put("ZO", 135.0);
-        DIRECTIONS.put("ZZO", 157.5);
-        DIRECTIONS.put("Z", 180.0);
-        DIRECTIONS.put("ZZW", 202.5);
-        DIRECTIONS.put("ZW", 225.0);
-        DIRECTIONS.put("WZW", 247.5);
-        DIRECTIONS.put("W", 270.0);
-        DIRECTIONS.put("WNW", 292.5);
-        DIRECTIONS.put("NW", 315.0);
-        DIRECTIONS.put("NNW", 337.5);
-    }
+    private static final List<String> DIRECTIONS = List.of("N", "NNO", "NO", "ONO", "O", "OZO", "ZO", "ZZO", "Z", "ZZW", "ZW", "WZW", "W", "WNW", "NW", "NNW");
+    private static final double MAX_DEGREES = 360;
+    private static final double INTERVAL = MAX_DEGREES / DIRECTIONS.size();
 
 }

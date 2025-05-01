@@ -140,9 +140,7 @@ public class WeatherStationPanel extends JPanel {
             }
             catch (IOException ex) {
                 Logger.getLogger(WeatherStationPanel.class.getName()).log(Level.WARNING, "Could not load " + symbol.getImageFilename(), ex);
-                barometer.addTiltedMarker(symbol.getValue(), graphics -> {
-                    TextRenderer.centerText(graphics, symbol.getFallbackText());
-                });
+                barometer.addTiltedMarker(symbol.getValue(), graphics -> TextRenderer.centerText(graphics, symbol.getFallbackText()));
             }
         }
     }

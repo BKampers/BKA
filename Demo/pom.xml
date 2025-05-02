@@ -77,12 +77,6 @@
                 <version>3.8.0</version>
                 <configuration>
                     <compilerArgument>-Xlint:unchecked</compilerArgument>
-                    <!-- - 1.10, 11, 12, 13- ->
-                    <release>15</release>
-                    <compilerArgs>
-                        - -enable-preview
-                    </compilerArgs>
-                    -->
                 </configuration>
             </plugin>
             <plugin>
@@ -94,13 +88,11 @@
                     </outputDirectory>
                 </configuration>
             </plugin>
-           
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.0.0-M6</version>
-            </plugin>
-          
+            </plugin>          
         </plugins>
     </build>
     <name>Demo</name>

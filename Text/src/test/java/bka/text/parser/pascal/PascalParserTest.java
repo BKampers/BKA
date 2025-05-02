@@ -4,13 +4,15 @@ import com.fasterxml.jackson.databind.*;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import org.junit.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import org.junit.jupiter.api.*;
+
 
 public class PascalParserTest {
 
-    @Before
+    @BeforeEach
     public void init() {
         parser = new PascalParser(getPascalGrammar());
     }
@@ -626,7 +628,7 @@ public class PascalParserTest {
     private static void assertSuccess(List<PascalParser.Node> actual) {
         actual.forEach(node -> {
             if (node.getError() != null) {
-                Assert.fail("Error in line" + node.startLine() + ", Symbol " + node.getSymbol());
+                fail("Error in line" + node.startLine() + ", Symbol " + node.getSymbol());
             }
         });
     }
@@ -637,7 +639,7 @@ public class PascalParserTest {
 
     private static void assertParseTree(PascalParser.Node parent, List<ExpectedNode> expected, List<PascalParser.Node> actual) {
         int line = (parent == null) ? 0 : parent.startLine();
-        assertEquals("Line " + line + ": Child count of '" + ((parent == null) ? "root" : parent.getSymbol()) + '\'', expected.size(), actual.size());
+        assertEquals(expected.size(), actual.size(), () -> "Line " + line + ": Child count of '" + ((parent == null) ? "root" : parent.getSymbol()) + '\'');
         for (int i = 0; i < expected.size(); ++i) {
             expected.get(i).assertParserNode(actual.get(i));
         }
@@ -699,16 +701,16 @@ public class PascalParserTest {
 
         public void assertParserNode(PascalParser.Node node) {
             if (symbol != null) {
-                assertEquals("Line " + node.startLine() + ": Symbol", symbol, node.getSymbol());
+                assertEquals(symbol, node.getSymbol(), () -> "Line " + node.startLine() + ": Symbol");
             }
             if (content != null) {
-                assertEquals("Line " + node.startLine() + ": Content", content, node.content());
+                assertEquals(content, node.content(), () -> "Line " + node.startLine() + ": Content");
             }
             if (children != null) {
                 assertParseTree(node, children, node.getChildren());
             }
             if (error != null) {
-                assertEquals("Line " + node.startLine() + ": Error", error, node.getError());
+                assertEquals(error, node.getError(), () -> "Line " + node.startLine() + ": Error");
             }
         }
 

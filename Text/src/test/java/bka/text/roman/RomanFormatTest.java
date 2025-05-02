@@ -5,9 +5,8 @@ package bka.text.roman;
  */
 
 import java.text.*;
-import static org.junit.Assert.assertEquals;
-import org.junit.*;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.*;
 
 public class RomanFormatTest {
 

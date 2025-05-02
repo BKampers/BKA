@@ -9,14 +9,14 @@ import java.math.*;
 import java.time.*;
 import java.util.*;
 import javax.xml.parsers.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import org.junit.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import org.junit.jupiter.api.*;
 import org.xml.sax.*;
 
 public class PListSaxHandlerTest {
 
-    @Before
+    @BeforeEach
     public void init() {
         handler = new PListSaxHandler();
     }

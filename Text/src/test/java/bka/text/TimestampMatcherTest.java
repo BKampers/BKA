@@ -4,15 +4,16 @@
 package bka.text;
 
 import java.text.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import org.junit.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import org.junit.jupiter.api.*;
+
 
 public class TimestampMatcherTest {
 
 
 
-    @Before
+    @BeforeEach
     public void setUp() {
         matcher = new TimestampMatcher();
     }

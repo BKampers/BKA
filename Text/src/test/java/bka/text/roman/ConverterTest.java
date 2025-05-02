@@ -4,15 +4,19 @@ package bka.text.roman;
  * Copyright © Bart Kampers
  */
 
-import org.junit.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.*;
+
 
 /**
  */
 public class ConverterTest {
     
     
-    @Before
+    @BeforeEach
     public void setUp() {
         converter = new Converter();
     }
@@ -109,24 +113,16 @@ public class ConverterTest {
         assertEquals(10000000000L, converter.parseLong("CCCCCCCCIƆƆƆƆƆƆƆƆ"));
     }
 
-    @Test (expected = IllegalArgumentException.class)
-    public void negativeNumber() {
-        converter.standard(-1);
+    @Test
+    public void outOfStandard() {
+        assertThrows(IllegalArgumentException.class, () -> converter.standard(-1));
+        assertThrows(IllegalArgumentException.class, () -> converter.standard(0));
+        assertThrows(IllegalArgumentException.class, () -> converter.standard(4000));
     }
 
-    @Test (expected = IllegalArgumentException.class)
-    public void zero() {
-        converter.standard(0);
-    }
-    
-    @Test (expected = IllegalArgumentException.class)
-    public void outOfStandardRange() {
-        converter.standard(4000);
-    }
-    
-    @Test (expected = IllegalArgumentException.class)
+    @Test
     public void empty() {
-        converter.parseInt("");
+        assertThrows(IllegalArgumentException.class, () -> converter.parseInt(""));
     }
 
     private Object[] reverse(Object[] array) {

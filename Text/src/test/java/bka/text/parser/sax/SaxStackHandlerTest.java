@@ -8,8 +8,8 @@ import java.io.*;
 import java.util.*;
 import java.util.function.*;
 import javax.xml.parsers.*;
-import static org.junit.Assert.assertEquals;
-import org.junit.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.*;
 import org.xml.sax.*;
 
 public class SaxStackHandlerTest {

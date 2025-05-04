@@ -3,6 +3,7 @@
 */
 package bka.demo.clock.weatherstation;
 
+import bka.text.cardinal.*;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.dataformat.xml.*;
 import com.fasterxml.jackson.dataformat.xml.annotation.*;

@@ -6,6 +6,7 @@ package bka.demo.clock.weatherstation;
 
 import bka.awt.clock.*;
 import bka.demo.clock.*;
+import bka.text.cardinal.*;
 import java.awt.*;
 import java.io.*;
 import java.util.*;

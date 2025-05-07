@@ -26,7 +26,9 @@ public class WeatherStationReader {
         xmlMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         final TableHeadRow tableHead = xmlMapper.readValue(getTableHead(page), TableHead.class).getRows().get(0);
         return xmlMapper.readValue(getTable(page), TableBody.class)
-            .getRows().stream().map(row -> new Station(tableHead, row, timestamp)).collect(Collectors.toList());
+            .getRows().stream()
+            .map(row -> new Station(tableHead, row, timestamp))
+            .collect(Collectors.toList());
     }
 
     private static LocalDateTime getTimestamp(String page) throws IOException {
@@ -251,7 +253,7 @@ public class WeatherStationReader {
             }
             String cardinal = directionData.substring(0, directionData.indexOf(' '));
             try {
-                return Optional.of(new CardinalNumberFormat().parse(cardinal).doubleValue());
+                return Optional.of(new CardinalNumberFormat(Locale.of("nl")).parse(cardinal).doubleValue());
             }
             catch (ParseException ex) {
                 throw new IllegalStateException("Invalid cardinal direction: " + cardinal);

@@ -5,7 +5,7 @@ package bka.demo.clock.weatherstation;
 */
 
 import bka.demo.swing.*;
-import bka.text.cardinal.CardinalNumberFormat;
+import bka.text.cardinal.*;
 import java.awt.*;
 import java.awt.image.*;
 import java.io.*;

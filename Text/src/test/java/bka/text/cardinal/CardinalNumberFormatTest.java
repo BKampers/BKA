@@ -28,17 +28,17 @@ public class CardinalNumberFormatTest {
             CardinalNumberFormat.cardinalFieldPostion());
         testBoundaries(
             new String[]{ "N", "NE", "E", "SE", "S", "SW", "W", "NW" },
-            CardinalNumberFormat.interCardinalFieldPostion());
+            CardinalNumberFormat.intercardinalFieldPostion());
         testBoundaries(
             new String[]{ "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW" },
-            CardinalNumberFormat.secondaryInterCardinalFieldPostion());
+            CardinalNumberFormat.secondaryIntercardinalFieldPostion());
         testBoundaries(
             new String[]{
                 "N", "NbE", "NNE", "NEbN", "NE", "NEbE", "ENE", "EbN",
                 "E", "EbS", "ESE", "SEbE", "SE", "SEbS", "SSE", "SbE",
                 "S", "SbW", "SSW", "SWbS", "SW", "SWbW", "WSW", "WbS",
                 "W", "WbN", "WNW", "NWbW", "NW", "NWbN", "NNW", "NbW" },
-            CardinalNumberFormat.tertiaryInterCardinalFieldPostion());
+            CardinalNumberFormat.tertiaryIntercardinalFieldPostion());
     }
 
     private void testBoundaries(String[] expected, FieldPosition fieldPosition) {

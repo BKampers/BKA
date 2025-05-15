@@ -1,36 +1,62 @@
 /*
 ** © Bart Kampers
 ** This code may not be used for any purpose that harms humans, humanity, the environment or the universe.
- */
+*/
 package bka.text.cardinal;
 
 import java.text.*;
 import java.util.*;
 import java.util.stream.*;
 
-
+/**
+ * Concrete subclass of java.text.NumberFormat that converts between degrees (absolute bearing) and cardinal (compass) directions like N, E, S, W, NE,
+ * WSW, WbN, etc.<p/>
+ * Supports translation of the direcitons to English, German and Dutch. Other locales default to English.<br/>
+ * Supports formatting up to tertiary intercardinal direction. The default is secondary intercardinal direction.<br/>
+ * See https://en.wikipedia.org/wiki/Cardinal_direction
+ */
 public class CardinalNumberFormat extends NumberFormat {
 
+    /**
+     * @return FieldPosition to format to cardinal directions.
+     */
     public static FieldPosition cardinalFieldPostion() {
         return new FieldPosition(CARDINAL);
     }
 
-    public static FieldPosition interCardinalFieldPostion() {
+    /**
+     * @return FieldPosition to format to intercardinal directions.
+     */
+    public static FieldPosition intercardinalFieldPostion() {
         return new FieldPosition(INTERCARDINAL);
     }
 
-    public static FieldPosition secondaryInterCardinalFieldPostion() {
+    /**
+     * @return FieldPosition to format to secondary intercardinal directions.
+     */
+    public static FieldPosition secondaryIntercardinalFieldPostion() {
         return new FieldPosition(SECONDARY_INTERCARDINAL);
     }
 
-    public static FieldPosition tertiaryInterCardinalFieldPostion() {
+    /**
+     * @return FieldPosition to format to tertiary intercardinal directions.
+     */
+    public static FieldPosition tertiaryIntercardinalFieldPostion() {
         return new FieldPosition(TERTIARY_INTERCARDINAL);
     }
 
+    /**
+     * Creates an instance for the default locale
+     */
     public CardinalNumberFormat() {
         this(Locale.getDefault());
     }
 
+    /**
+     * Creates an instance for given locale.
+     *
+     * @param locale
+     */
     public CardinalNumberFormat(Locale locale) {
         bundle = ResourceBundle.getBundle(CardinalNumberFormat.class.getSimpleName(), locale);
     }

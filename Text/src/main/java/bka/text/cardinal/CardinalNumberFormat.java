@@ -4,6 +4,8 @@
 */
 package bka.text.cardinal;
 
+import java.io.*;
+import java.net.*;
 import java.text.*;
 import java.util.*;
 import java.util.stream.*;
@@ -59,6 +61,17 @@ public class CardinalNumberFormat extends NumberFormat {
      */
     public CardinalNumberFormat(Locale locale) {
         bundle = ResourceBundle.getBundle(CardinalNumberFormat.class.getSimpleName(), locale);
+    }
+    
+    /**
+     * Creates an instance with given translation bundle. The bundle may contain an incomplete 
+     * set of keys, for example only N, E, S and W. In that case this instance will not be able 
+     * to convert to or from any intercardinal format, but only to or from cardinal format.
+     *
+     * @param bundle
+     */
+    public CardinalNumberFormat(ResourceBundle bundle) {
+        this.bundle = Objects.requireNonNull(bundle);
     }
 
     @Override

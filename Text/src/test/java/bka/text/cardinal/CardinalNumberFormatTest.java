@@ -4,9 +4,12 @@
 
 package bka.text.cardinal;
 
+import java.io.*;
+import java.net.*;
 import java.text.*;
 import java.util.*;
 import java.util.function.*;
+import java.util.stream.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -188,6 +191,18 @@ public class CardinalNumberFormatTest {
         position = new ParsePosition(0);
         assertNull(format.parse("12345", position));
         assertEquals(0, position.getErrorIndex());
+    }
+    
+    @Test
+    public void testLocalBundle() throws URISyntaxException, MalformedURLException, ParseException {
+        CardinalNumberFormat format = new CardinalNumberFormat(ResourceBundle.getBundle(
+            CardinalNumberFormat.class.getSimpleName(), 
+            Locale.of("mock"), 
+            new URLClassLoader(new URL[] {new File("src/test/resources/cardinal").toURI().toURL()})));
+        assertEquals(90d, format.parse("90"));
+        assertEquals(270d, format.parse("270"));
+        assertEquals("180", format.format(180));
+        assertEquals("0", format.format(0));
     }
 
     private static String translated(String direction, String locale) {

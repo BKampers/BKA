@@ -29,7 +29,7 @@ public class CalendarPanel extends javax.swing.JPanel {
         clock.addNonTiltedMarkerRingRenderer(radius * 9 / 10, configuration.getHourInterval(), numberRenderer);
         decorator = configuration.getDecorator();
         decorator.ifPresent(initializeDecorator(radius - 35));
-        midDayIndicator = decorator.isEmpty() ? null : clock.addNeedleRenderer(indicatorRenderer(transparent(Color.YELLOW, 192), 12, (radius + 12) / 2));
+        solarNoonIndicator = decorator.isEmpty() ? null : clock.addNeedleRenderer(indicatorRenderer(() -> solarNoonIndicatorPaint, 12, (radius + 12) / 2));
         hourHand = clock.addNeedleRenderer(needleRenderer(() -> hourHandPaint, 5, radius / 2));
         minuteHand = clock.addNeedleRenderer(needleRenderer(() -> minuteHandPaint, 3, radius - (fontSize + 10)));
         minuteHand.setScale(fractionScale);
@@ -76,10 +76,10 @@ public class CalendarPanel extends javax.swing.JPanel {
         };
     }
 
-    private bka.awt.Renderer indicatorRenderer(Paint paint, int size, int radius) {
+    private bka.awt.Renderer indicatorRenderer(Supplier<Paint> paint, int size, int radius) {
         return graphics -> {
             graphics.setStroke(new BasicStroke(3f));
-            graphics.setPaint(paint);
+            graphics.setPaint(paint.get());
             graphics.translate(0, -radius);
             graphics.drawOval(-size / 2, -size / 2, size, size);
             graphics.translate(0, radius);
@@ -261,8 +261,14 @@ public class CalendarPanel extends javax.swing.JPanel {
             updateColors(currentPeriod, arcPaint);
         }
         solarDecorator.calculateArcs(LocalDate.now());
-        Optional<Double> midDay = decorator.get().calculateMidDayHour(LocalDate.now());
-        midDay.ifPresent(midDayIndicator::setValue);
+        Optional<Double> solarNoon = decorator.get().calculateSolarNoonHour(LocalDate.now());
+        if (solarNoon.isPresent()) {
+            solarNoonIndicator.setValue(solarNoon.get());
+            solarNoonIndicatorPaint = SOLAR_NOON_INDICATOR_COLOR;
+        }
+        else {
+            solarNoonIndicatorPaint = new Color(0, 0, 0, 0);
+        }
     }
 
     private SolarDecorator.Period currentPeriod(SolarDecorator solarDecorator) {
@@ -359,7 +365,7 @@ public class CalendarPanel extends javax.swing.JPanel {
 
 
     private final ClockRenderer clock;
-    private final NeedleRenderer midDayIndicator;
+    private final NeedleRenderer solarNoonIndicator;
     private final NeedleRenderer hourHand;
     private final NeedleRenderer minuteHand;
     private final NeedleRenderer secondHand;
@@ -371,15 +377,16 @@ public class CalendarPanel extends javax.swing.JPanel {
     private Paint minuteHandPaint = Color.BLACK;
     private Paint secondHandPaint = Color.RED;
     private Paint markerPaint = Color.BLUE;
+    private Paint solarNoonIndicatorPaint = SOLAR_NOON_INDICATOR_COLOR;
 
     private static final Color BRIGHT_COLOR = Color.YELLOW.darker();
-
 
     private static final Color DAYTIME_COLOR = new Color(0xb1d0fd);
     private static final Color CIVIL_TWILIGHT_COLOR = new Color(0x99b3e4);
     private static final Color NAUTICAL_TWILIGHT_COLOR = new Color(0x7c96c9);
     private static final Color ASTRONOMICAL_TWILIGHT_COLOR = new Color(0x6c82ba);
     private static final Color NIGHTTIME_COLOR = new Color(0x4b5b97);
+    private static final Color SOLAR_NOON_INDICATOR_COLOR = transparent(Color.YELLOW, 192);
 
     private static final Map<SolarDecorator.Period, Paint> arcPaints = Map.of(
         SolarDecorator.Period.NIGHTTIME, NIGHTTIME_COLOR,

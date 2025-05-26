@@ -7,6 +7,7 @@ import bka.calendar.events.*;
 import java.time.*;
 import java.util.*;
 import java.util.logging.*;
+import java.util.stream.*;
 
 
 public class SolarDecorator {
@@ -33,6 +34,29 @@ public class SolarDecorator {
             return ordinal() < DAYTIME.ordinal();
         }
 
+        public Period complement() {
+            return switch (this) {
+                case ASTRONOMICAL_SUNRISE_TWILIGHT ->
+                    ASTRONOMICAL_SUNSET_TWILIGHT;
+                case NAUTICAL_SUNRISE_TWILIGHT ->
+                    NAUTICAL_SUNSET_TWILIGHT;
+                case CIVIL_SUNRISE_TWILIGHT ->
+                    CIVIL_SUNSET_TWILIGHT;
+                case DAYTIME ->
+                    NIGHTTIME;
+                case CIVIL_SUNSET_TWILIGHT ->
+                    CIVIL_SUNRISE_TWILIGHT;
+                case NAUTICAL_SUNSET_TWILIGHT ->
+                    NAUTICAL_SUNRISE_TWILIGHT;
+                case ASTRONOMICAL_SUNSET_TWILIGHT ->
+                    ASTRONOMICAL_SUNRISE_TWILIGHT;
+                case NIGHTTIME ->
+                    DAYTIME;
+                default ->
+                    throw new IllegalStateException(name());
+            };
+        }
+
         private final double zenith;
     }
 
@@ -41,30 +65,58 @@ public class SolarDecorator {
     }
 
     public SortedMap<Period, Arc> getArcs() {
-        return Collections.unmodifiableSortedMap(arcs);
+        synchronized (arcs) {
+            return new TreeMap<>(arcs.entrySet().stream()
+                .filter(this::hasEnd)
+                .collect(Collectors.toMap(Map.Entry::getKey, this::createArc)));
+        }
+    }
+
+    private boolean hasEnd(Map.Entry<Period, Arc> entry) {
+        return entry.getValue().getEnd().isPresent();
+    }
+
+    private Arc createArc(Map.Entry<Period, Arc> entry) {
+        Arc arc = new Arc();
+        arc.setStart(getStart(entry));
+        arc.setEnd(entry.getValue().getEnd());
+        return arc;
+    }
+
+    private Optional<Double> getStart(Map.Entry<Period, Arc> entry) {
+        if (entry.getValue().getStart().isPresent()) {
+            return entry.getValue().getStart();
+        }
+        Arc complement = arcs.get(entry.getKey().complement());
+        if (complement.getStart().isEmpty()) {
+            throw new IllegalStateException("Start time for arc not available");
+        }
+        return complement.getStart();
     }
 
     public void calculateArcs(LocalDate date) {
         if (!date.equals(this.date)) {
-            Optional<Double> start = decimalHour(solarEventCalculator.sunset(Period.NIGHTTIME.getZenith(), date));
-            for (Period period : Period.values()) {
-                Optional<Double> end = calculateEndTime(date, period);
-                Logger.getLogger(SolarDecorator.class.getName()).log(Level.FINE, "{0}: {1} .. {2}", new Object[]{ period, start, end });
-                Arc arc = arcs.computeIfAbsent(period, p -> new Arc());
-                arc.setStart(start);
-                arc.setEnd(end);
-                start = end;
+            synchronized (arcs) {
+                Optional<Double> start = decimalHour(solarEventCalculator.sunset(Period.NIGHTTIME.getZenith(), date));
+                for (Period period : Period.values()) {
+                    Optional<Double> end = calculateEndTime(date, period);
+                    Logger.getLogger(SolarDecorator.class.getName()).log(Level.FINE, "{0}: {1} .. {2}", new Object[]{ period, start, end });
+                    Arc arc = arcs.computeIfAbsent(period, p -> new Arc());
+                    arc.setStart(start);
+                    arc.setEnd(end);
+                    start = end;
+                }
+                this.date = date;
             }
-            this.date = date;
         }
     }
 
-    public Optional<Double> calculateMidDayHour(LocalDate date) {
-        Optional<LocalDateTime> sunrise = solarEventCalculator.sunrise(Zenith.ASTRONOMICAL, date);
+    public Optional<Double> calculateSolarNoonHour(LocalDate date) {
+        Optional<LocalDateTime> sunrise = solarEventCalculator.sunrise(Zenith.CIVIL, date);
         if (sunrise.isEmpty()) {
             return Optional.empty();
         }
-        Optional<LocalDateTime> sunset = solarEventCalculator.sunset(Zenith.ASTRONOMICAL, date);
+        Optional<LocalDateTime> sunset = solarEventCalculator.sunset(Zenith.CIVIL, date);
         if (sunset.isEmpty()) {
             return Optional.empty();
         }

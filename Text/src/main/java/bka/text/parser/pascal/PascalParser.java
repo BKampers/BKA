@@ -18,7 +18,6 @@ public class PascalParser {
         long startTime = System.nanoTime();
         List<Node> nodes = buildTree(sourceCode);
         long duration = System.nanoTime() - startTime;
-//        nodes.forEach(node -> dump(node, 0));
         Optional<Node> error = findError(nodes);
         if (error.isPresent()) {
             return "Error: " + error.get().toString();
@@ -30,14 +29,6 @@ public class PascalParser {
         source = sourceCode;
         matchers.clear();
         return buildTree(0, "Program");
-    }
-
-    private static void dump(Node node, int depth) {
-        for (int i = 0; i < depth; ++i) {
-            System.out.print('\t');
-        }
-        System.out.println(node);
-        node.getChildren().forEach(child -> dump(child, depth + 1));
     }
 
     private List<Node> buildTree(int index, String symbol) {

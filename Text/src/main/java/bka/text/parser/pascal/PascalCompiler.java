@@ -456,32 +456,6 @@ public class PascalCompiler {
         };
     }
 
-//    private Decision<Expression> createDecision(Expression expression, Type type) {
-//        return new Decision() {
-//
-//            @Override
-//            public Expression getExpression() {
-//                return expression;
-//            }
-//
-//            @Override
-//            public Optional<Type> getType() {
-//                return Optional.of(type);
-//            }
-//
-//            @Override
-//            public Optional<String> getName() {
-//                return Optional.of(expression.toString());
-//            }
-//
-//            @Override
-//            public String toString() {
-//                return "Decision (" + type.toString() + ") " + expression;
-//            }
-//
-//        };
-//    }
-
     private static Transition<Event, GuardCondition, Action> createTransition(TransitionSource source, TransitionTarget target) {
         return createTransition(source, target, Collections.emptySet());
     }
@@ -611,19 +585,21 @@ public class PascalCompiler {
             else if ("WHILE\\b".equals(expression.getChildren().getFirst().getSymbol())) {
                 Decision decision = createDecision(createParseTreeExpression(expression.getChildren().get(1).getSymbol(), expression.getChildren().get(1).getChildren()));
                 transitions.add(createTransition(createInitialState(), decision));
-                for (Transition<Event, GuardCondition, Action> transition : createBody(expression.getChildren().get(3).getChildren().getFirst().getChildren().get(1))) {
-                    if ("Initial state".equals(transition.getSource().toString())) {
-                        GuardCondition condition = memory -> ((ParseTreeExpression) decision.getExpression()).evaluate(memory).get().equals(true);
-                        Transition<Event, GuardCondition, Action> enterLoop = createTransition(decision, transition.getTarget(), condition);
-                        transitions.add(enterLoop);
+                Collection<Transition<Event, GuardCondition, Action>> statementTransitions = ("CompoundStatement".equals(expression.getChildren().get(3).getChildren().getFirst().getSymbol()))
+                    ? createBody(expression.getChildren().get(3).getChildren().getFirst().getChildren().get(1))
+                    : new Statement(expression.getChildren().get(3)).getTransitions();
+                for (Transition<Event, GuardCondition, Action> transition : statementTransitions) {
+                        if ("Initial state".equals(transition.getSource().toString())) {
+                            GuardCondition condition = memory -> ((ParseTreeExpression) decision.getExpression()).evaluate(memory).get().equals(true);
+                            transitions.add(createTransition(decision, transition.getTarget(), condition));
+                        }
+                        else if ("Final state".equals(transition.getTarget().toString())) {
+                            transitions.add(createTransition(transition.getSource(), decision));
+                        }
+                        else {
+                            transitions.add(transition);
+                        }
                     }
-                    else if ("Final state".equals(transition.getTarget().toString())) {
-                        transitions.add(createTransition(transition.getSource(), decision));
-                    }
-                    else {
-                        transitions.add(transition);
-                    }
-                }
                 transitions.add(createTransition(decision, createFinalState(), createStereotypes("end-while")));
             }
             else if ("REPEAT\\b".equals(expression.getChildren().getFirst().getSymbol())) {

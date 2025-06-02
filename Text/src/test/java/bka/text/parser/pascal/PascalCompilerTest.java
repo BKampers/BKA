@@ -40,7 +40,7 @@ public class PascalCompilerTest {
             BEGIN
                 i := 8;
                 WHILE i > 0 DO
-                    BEGIN i := i - 1 END;
+                    i := i - 1;
             END.
             """);
         assertNotNull(tree);

@@ -89,23 +89,8 @@ public class StateMachine {
                 }
             }
         }
-//        Map<Boolean, List<Transition<Event, GuardCondition, Action>>> map = diagram.stream()
-//            .filter(transition -> state.equals(transition.getSource()))
-//            .filter(transition -> event.equals(transition.getEvent()))
-//            .filter(transition -> transition.getGuardCondition().isEmpty() || transition.getGuardCondition().get().applies())
-//            .collect(Collectors.partitioningBy(transition -> transition.getGuardCondition().isPresent()));
-//        List<Transition<Event, GuardCondition, Action>> transitions = diagram.stream()
-//            .filter(transition -> state.equals(transition.getSource()))
-//            .filter(transition -> event.equals(transition.getEvent()))
-//            .filter(transition -> transition.getGuardCondition().isPresent() && transition.getGuardCondition().get().applies())
-//            .collect(Collectors.toList());
         List<Transition<Event, GuardCondition, Action>> transitions = guardedTransitions;
         if (transitions.isEmpty()) {
-//            transitions = diagram.stream()
-//                .filter(transition -> state.equals(transition.getSource()))
-//                .filter(transition -> event.equals(transition.getEvent()))
-//                .filter(transition -> transition.getGuardCondition().isEmpty())
-//                .collect(Collectors.toList());
             transitions = unguardedTransitions;
         }
         if (transitions.size() > 1) {
@@ -152,6 +137,10 @@ public class StateMachine {
                 throw new StateMachineException(ex);
             }
         }
+    }
+
+    public Object getMemoryObject(String identifier) throws StateMachineException {
+        return memory.load(identifier);
     }
 
     private final Memory memory = new Memory() {

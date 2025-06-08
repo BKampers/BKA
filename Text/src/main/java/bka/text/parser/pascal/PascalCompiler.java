@@ -555,17 +555,31 @@ public class PascalCompiler {
             }
             Collection<Transition<Event, GuardCondition, Action>> transitions = new ArrayList<>();
             if ("IF\\b".equals(expression.getChildren().getFirst().getSymbol())) {
-                ParseTreeExpression condition = createParseTreeExpression(expression.getChildren().get(1).getSymbol(), expression.getChildren().get(1).getChildren());
-                Decision decision = createDecision(condition);
+                Decision decision = createDecision(createParseTreeExpression(expression.getChildren().get(1).getSymbol(), expression.getChildren().get(1).getChildren()));
                 transitions.add(createTransition(createInitialState(), decision));
-                ActionState<Action> ifClause = createActionState(new Statement(expression.getChildren().get(3)));
-// FIXME     transitions.add(createTransition(decision, ifClause, condition, createStereotypes("then")));
-                FinalState finalState = createFinalState();
-                transitions.add(createTransition(ifClause, finalState));
-                if (expression.getChildren().size() == 6) {
-                    ActionState<Action> elseClause = createActionState(new Statement(expression.getChildren().get(5)));
-                    transitions.add(createTransition(decision, elseClause, createStereotypes("else")));
-                    transitions.add(createTransition(elseClause, finalState));
+                Collection<Transition<Event, GuardCondition, Action>> thenTransitions = createTransitions(expression.getChildren().get(3));
+                for (Transition<Event, GuardCondition, Action> transition : thenTransitions) {
+                    if ("Initial state".equals(transition.getSource().toString())) {
+                        GuardCondition condition = memory -> ((ParseTreeExpression) decision.getExpression()).evaluate(memory).get().equals(true);
+                        transitions.add(createTransition(decision, transition.getTarget(), condition, createStereotypes("then")));
+                    }
+                    else {
+                        transitions.add(transition);
+                    }
+                }
+                if (expression.getChildren().get(4).getChildren().isEmpty()) {
+                    transitions.add(createTransition(decision, createFinalState(), createStereotypes("else")));
+                }
+                else {
+                    Collection<Transition<Event, GuardCondition, Action>> elseTransitions = createTransitions(expression.getChildren().get(4).getChildren().get(1));
+                    for (Transition<Event, GuardCondition, Action> transition : elseTransitions) {
+                        if ("Initial state".equals(transition.getSource().toString())) {
+                            transitions.add(createTransition(decision, transition.getTarget(), createStereotypes("else")));
+                        }
+                        else {
+                            transitions.add(transition);
+                        }
+                    }
                 }
             }
             else if ("FOR\\b".equals(expression.getChildren().getFirst().getSymbol())) {
@@ -585,21 +599,19 @@ public class PascalCompiler {
             else if ("WHILE\\b".equals(expression.getChildren().getFirst().getSymbol())) {
                 Decision decision = createDecision(createParseTreeExpression(expression.getChildren().get(1).getSymbol(), expression.getChildren().get(1).getChildren()));
                 transitions.add(createTransition(createInitialState(), decision));
-                Collection<Transition<Event, GuardCondition, Action>> statementTransitions = ("CompoundStatement".equals(expression.getChildren().get(3).getChildren().getFirst().getSymbol()))
-                    ? createBody(expression.getChildren().get(3).getChildren().getFirst().getChildren().get(1))
-                    : new Statement(expression.getChildren().get(3)).getTransitions();
-                for (Transition<Event, GuardCondition, Action> transition : statementTransitions) {
-                        if ("Initial state".equals(transition.getSource().toString())) {
-                            GuardCondition condition = memory -> ((ParseTreeExpression) decision.getExpression()).evaluate(memory).get().equals(true);
-                            transitions.add(createTransition(decision, transition.getTarget(), condition));
-                        }
-                        else if ("Final state".equals(transition.getTarget().toString())) {
-                            transitions.add(createTransition(transition.getSource(), decision));
-                        }
-                        else {
-                            transitions.add(transition);
-                        }
+                Collection<Transition<Event, GuardCondition, Action>> loopTransitions = createTransitions(expression.getChildren().get(3));
+                for (Transition<Event, GuardCondition, Action> transition : loopTransitions) {
+                    if ("Initial state".equals(transition.getSource().toString())) {
+                        GuardCondition condition = memory -> ((ParseTreeExpression) decision.getExpression()).evaluate(memory).get().equals(true);
+                        transitions.add(createTransition(decision, transition.getTarget(), condition));
                     }
+                    else if ("Final state".equals(transition.getTarget().toString())) {
+                        transitions.add(createTransition(transition.getSource(), decision));
+                    }
+                    else {
+                        transitions.add(transition);
+                    }
+                }
                 transitions.add(createTransition(decision, createFinalState(), createStereotypes("end-while")));
             }
             else if ("REPEAT\\b".equals(expression.getChildren().getFirst().getSymbol())) {
@@ -620,6 +632,12 @@ public class PascalCompiler {
                 throw new IllegalStateException("Unexpected symbol " + expression.getChildren().getFirst().getSymbol());
             }
             return transitions;
+        }
+
+        private Collection<Transition<Event, GuardCondition, Action>> createTransitions(PascalParser.Node statements) {
+            return ("CompoundStatement".equals(statements.getChildren().getFirst().getSymbol()))
+                ? createBody(statements.getChildren().getFirst().getChildren().get(1))
+                : new Statement(statements).getTransitions();
         }
 
         private static String typeOf(List<PascalParser.Node> expression) {
@@ -970,7 +988,7 @@ public class PascalCompiler {
 
 
     private static BinaryOperator getBinaryOperator(PascalParser.Node node) {
-        switch (node.content()) {
+        switch (node.content().toLowerCase()) {
             case "^":
                 return createArithmicOperator((left, right) -> power(left, right));
             case "*":
@@ -997,6 +1015,12 @@ public class PascalCompiler {
                 return createRelationalOperator((left, right) -> left.compareTo(right) > 0);
             case ">=":
                 return createRelationalOperator((left, right) -> left.compareTo(right) > 0);
+            case "and":
+                return createLogicalOperator((left, right) -> left && right);
+            case "or":
+                return createLogicalOperator((left, right) -> left || right);
+            case "xor":
+                return createLogicalOperator((left, right) -> !left.equals(right));
             default:
                 throw new IllegalStateException("Unsupported binary operator: '" + node.content() + "'");
         }
@@ -1071,6 +1095,33 @@ public class PascalCompiler {
             return number;
         }
         throw new StateMachineException(expression.type() + "is not a comparable");
+    }
+
+    private static BinaryOperator createLogicalOperator(BiFunction<Boolean, Boolean, Boolean> function) {
+        return new BinaryOperator() {
+            @Override
+            public Value evaluate(ParseTreeExpression leftOperand, ParseTreeExpression rightOperand, Memory memory) throws StateMachineException {
+                return new Value() {
+
+                    @Override
+                    public java.lang.Object get() throws StateMachineException {
+                        return function.apply(requireBoolean(leftOperand, memory), requireBoolean(rightOperand, memory));
+                    }
+
+                    @Override
+                    public String type() {
+                        return "Boolean";
+                    }
+                };
+            }
+        };
+    }
+
+    private static Boolean requireBoolean(ParseTreeExpression expression, Memory memory) throws StateMachineException {
+        if (expression.evaluate(memory).get() instanceof Boolean bool) {
+            return bool;
+        }
+        throw new StateMachineException(expression.type() + "is not a boolean");
     }
 
     private static BinaryOperator createRelationalOperator(BiFunction<Comparable, Comparable, Boolean> function) {

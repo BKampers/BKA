@@ -9,7 +9,6 @@ import java.net.*;
 import java.text.*;
 import java.util.*;
 import java.util.function.*;
-import java.util.stream.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -194,7 +193,7 @@ public class CardinalNumberFormatTest {
     }
     
     @Test
-    public void testLocalBundle() throws URISyntaxException, MalformedURLException, ParseException {
+    public void testCustomBundle() throws URISyntaxException, MalformedURLException, ParseException {
         CardinalNumberFormat format = new CardinalNumberFormat(ResourceBundle.getBundle(
             CardinalNumberFormat.class.getSimpleName(), 
             Locale.of("mock"), 

@@ -34,7 +34,7 @@ public class SolarDecorator {
             return ordinal() < DAYTIME.ordinal();
         }
 
-        public Period complement() {
+        public Period opposite() {
             return switch (this) {
                 case ASTRONOMICAL_SUNRISE_TWILIGHT ->
                     ASTRONOMICAL_SUNSET_TWILIGHT;
@@ -87,11 +87,11 @@ public class SolarDecorator {
         if (entry.getValue().getStart().isPresent()) {
             return entry.getValue().getStart();
         }
-        Arc complement = arcs.get(entry.getKey().complement());
-        if (complement.getStart().isEmpty()) {
+        Arc opposite = arcs.get(entry.getKey().opposite());
+        if (opposite.getStart().isEmpty()) {
             throw new IllegalStateException("Start time for arc not available");
         }
-        return complement.getStart();
+        return opposite.getStart();
     }
 
     public void calculateArcs(LocalDate date) {

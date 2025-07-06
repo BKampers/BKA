@@ -6,8 +6,10 @@ package bka.text.parser.pascal;
 
 import java.util.*;
 import java.util.function.*;
+import java.util.logging.*;
 import java.util.stream.*;
 import run.*;
+import uml.*;
 import uml.annotation.*;
 import uml.statechart.*;
 import uml.structure.*;
@@ -321,41 +323,19 @@ public class PascalCompiler {
 
     private Collection<Transition<Event, GuardCondition, Action>> createBody(PascalParser.Node compoundStatement) {
         Collection<Transition<Event, GuardCondition, Action>> body = new ArrayList<>();
+        Collection<TransitionSource> leaves = new ArrayList<>(List.of(createInitialState()));
+        createBody(compoundStatement, body, leaves);
+        leaves.forEach(leave -> body.add(createTransition(leave, createFinalState())));
+        return body;
+    }
+
+    private void createBody(PascalParser.Node compoundStatement, Collection<Transition<Event, GuardCondition, Action>> body, Collection<TransitionSource> leaves) {
         PascalParser.Node statements = compoundStatement;
-        Collection<TransitionSource> sources = List.of(createInitialState());
         while (statements != null) {
             Statement statement = new Statement(statements.getChildren().getFirst());
-            Collection<Transition<Event, GuardCondition, Action>> transitions = statement.getTransitions();
-            if (!transitions.isEmpty()) {
-                Collection<Transition<Event, GuardCondition, Action>> finals = new ArrayList<>();
-                for (Transition<Event, GuardCondition, Action> transition : transitions) {
-                    if ("Initial state".equals(transition.getSource().toString())) {
-                        sources.forEach(source -> body.add(createTransition(source, transition.getTarget(), transition.getGuardCondition(), transition.getAction(), transition.getStereotypes())));
-                        //body.addAll(createTransitions(sources, transition.getTarget()));
-                    }
-                    else if ("Final state".equals(transition.getTarget().toString())) {
-                        finals.add(transition);
-                    }
-                    else {
-                        body.add(transition);
-                    }
-                }
-                sources = finals.stream().map(Transition::getSource).collect(Collectors.toList());
-            }
-            else {
-//                ActionState<Action> actionState = createActionState(statement);
-//                body.addAll(createTransitions(sources, actionState));
-//                sources = List.of(actionState);
-            }
-            if (statements.getChildren().size() > 1) {
-                statements = statements.getChildren().getLast();
-            }
-            else {
-                body.addAll(createTransitions(sources, createFinalState()));
-                statements = null;
-            }
+            statement.getTransitions(body, leaves);
+            statements = (statements.getChildren().size() > 1) ? statements.getChildren().getLast() : null;
         }
-        return body;
     }
 
     private static Collection<Transition<Event, GuardCondition, Action>> createTransitions(Collection<TransitionSource> sources, TransitionTarget target) {
@@ -475,15 +455,15 @@ public class PascalCompiler {
     }
 
     private static Transition<Event, GuardCondition, Action> createTransition(TransitionSource source, TransitionTarget target, GuardCondition guardCondition, Set<Stereotype> stereotypes) {
-        return createTransition(source, target, Optional.ofNullable(guardCondition), Optional.empty(), stereotypes);
+        return createTransition(source, target, Optional.of(guardCondition), Optional.empty(), stereotypes);
     }
 
     private static Transition<Event, GuardCondition, Action> createTransition(TransitionSource source, TransitionTarget target, GuardCondition guardCondition) {
-        return createTransition(source, target, Optional.ofNullable(guardCondition), Optional.empty(), Collections.emptySet());
+        return createTransition(source, target, Optional.of(guardCondition), Optional.empty(), Collections.emptySet());
     }
 
     private static Transition<Event, GuardCondition, Action> createTransition(TransitionSource source, TransitionTarget target, Action action) {
-        return createTransition(source, target, Optional.empty(), Optional.ofNullable(action), Collections.emptySet());
+        return createTransition(source, target, Optional.empty(), Optional.of(action), Collections.emptySet());
     }
 
     private static Transition<Event, GuardCondition, Action> createTransition(TransitionSource source, TransitionTarget target, Optional<GuardCondition> guardCondition, Optional<Action> action, Set<Stereotype> stereotypes) {
@@ -523,7 +503,9 @@ public class PascalCompiler {
             public String toString() {
                 StringBuilder string = new StringBuilder();
                 guardCondition.ifPresent(condition -> string.append('[').append(condition).append("] "));
-                return string.append(getSource()).append(" \u279D ").append(getTarget()).toString();
+                string.append(getSource()).append(" \u279D ").append(getTarget());
+                string.append(stereotypes.stream().map(Util::display).collect(Collectors.joining()));
+                return string.toString();
             }
 
         };
@@ -541,10 +523,8 @@ public class PascalCompiler {
     private Statement createIncrementStatement(PascalParser.Node identifier) {
         return new Statement(identifier, identifier) {
             @Override
-            public Collection<Transition<Event, GuardCondition, Action>> getTransitions() {
-                Collection<Transition<Event, GuardCondition, Action>> transitions = new ArrayList<>();
+            public void getTransitions(Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
 //               TODO
-                return transitions;
             }
 
             @Override
@@ -581,34 +561,26 @@ public class PascalCompiler {
             return builder.toString();
         }
 
-        public Collection<Transition<Event, GuardCondition, Action>> getTransitions() {
+        public void getTransitions(Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
             if (expression.getChildren().isEmpty()) {
-                return Collections.emptyList();
+                Logger.getLogger(PascalCompiler.class.getName()).log(Level.WARNING, "Empty statenemt: {0}", toString());
+                return;
             }
-            Collection<Transition<Event, GuardCondition, Action>> transitions = new ArrayList<>();
             if ("IF\\b".equals(expression.getChildren().getFirst().getSymbol())) {
                 Decision decision = createDecision(createParseTreeExpression(expression.getChildren().get(1).getSymbol(), expression.getChildren().get(1).getChildren()));
-                transitions.add(createTransition(createInitialState(), decision));
-                createTransitions(expression.getChildren().get(3)).forEach(transition -> {
-                    if ("Initial state".equals(transition.getSource().toString())) {
-                        transitions.add(createTransition(decision, transition.getTarget(), pass(decision), createStereotypes("then")));
-                    }
-                    else {
-                        transitions.add(transition);
-                    }
-                });
+                leaves.forEach(leave -> transitions.add(createTransition(leave, decision)));
+                leaves.clear();
+                leaves.add(decision);
+                createTransitions(expression.getChildren().get(3), transitions, leaves);
+                addGuardCondition(transitions, transition -> decision.equals(transition.getSource()), pass(decision), "then");
                 if (expression.getChildren().get(4).getChildren().isEmpty()) {
-                    transitions.add(createTransition(decision, createFinalState(), createStereotypes("else")));
+                    leaves.add(decision);
                 }
                 else {
-                    createTransitions(expression.getChildren().get(4).getChildren().get(1)).forEach(transition -> {
-                        if ("Initial state".equals(transition.getSource().toString())) {
-                            transitions.add(createTransition(decision, transition.getTarget(), createStereotypes("else")));
-                        }
-                        else {
-                            transitions.add(transition);
-                        }
-                    });
+                    Collection<TransitionSource> elseLeaves = new ArrayList<>(List.of(decision));
+                    createTransitions(expression.getChildren().get(4).getChildren().get(1), transitions, elseLeaves);
+                    addStereotype(transitions, transition -> decision.equals(transition.getSource()) && transition.getGuardCondition().isEmpty(), "else");
+                    leaves.addAll(elseLeaves);
                 }
             }
             else if ("FOR\\b".equals(expression.getChildren().getFirst().getSymbol())) {
@@ -620,47 +592,42 @@ public class PascalCompiler {
 //                ActionState<Action> body = createActionState(new Statement(expression.getChildren().get(7)));
 // FIXME                transitions.add(createTransition(decision, body, condition));
 //                ActionState<Action> incrementAction = createActionState(createIncrementStatement(identifier));
-                Collection<Transition<Event, GuardCondition, Action>> body = createTransitions(expression.getChildren().get(7));
-                body.forEach(transition -> {
-                    if ("Initial state".equals(transition.getSource().toString())) {
-                        transitions.add(createTransition(decision, transition.getTarget(), pass(decision)));
-                    }
-                    else if ("Final state".equals(transition.getTarget().toString())) {
-                        Action incrementAction = new Action() {
-                            @Override
-                            public void perform(Memory memory) throws StateMachineException {
-                                ParseTreeExpression expression = createIncrementExpression(identifier);
-                                Value value = expression.evaluate(memory);
-                                memory.store(identifier.content(), ((Integer) value.get()) + 1);
-                            }
-                        };
-                        transitions.add(createTransition(transition.getSource(), decision, incrementAction));
+                createTransitions(expression.getChildren().get(7), transitions, leaves);
+//                body.forEach(transition -> {
+//                    if ("Initial state".equals(transition.getSource().toString())) {
+//                        transitions.add(createTransition(decision, transition.getTarget(), pass(decision)));
+//                    }
+//                    else if ("Final state".equals(transition.getTarget().toString())) {
+//                        Action incrementAction = new Action() {
+//                            @Override
+//                            public void perform(Memory memory) throws StateMachineException {
+//                                ParseTreeExpression expression = createIncrementExpression(identifier);
+//                                Value value = expression.evaluate(memory);
+//                                memory.store(identifier.content(), ((Integer) value.get()) + 1);
+//                            }
+//                        };
+//                        transitions.add(createTransition(transition.getSource(), decision, incrementAction));
 //                        transitions.add(createTransition(transition.getSource(), incrementAction));
 //                        transitions.add(createTransition(incrementAction, decision));
-                    }
-                    else {
-                        transitions.add(transition);
-                    }
-                });
-                transitions.add(createTransition(decision, createFinalState(), createStereotypes("end-for")));
+//                    }
+//                    else {
+//                        transitions.add(transition);
+//                    }
+//                });
+//                transitions.add(createTransition(decision, createFinalState(), createStereotypes("end-for")));
 //                transitions.add(createTransition(body, incrementState));
 //                transitions.add(createTransition(incrementState, decision, createStereotypes("loop")));
             }
             else if ("WHILE\\b".equals(expression.getChildren().getFirst().getSymbol())) {
                 Decision decision = createDecision(createParseTreeExpression(expression.getChildren().get(1).getSymbol(), expression.getChildren().get(1).getChildren()));
-                transitions.add(createTransition(createInitialState(), decision));
-                createTransitions(expression.getChildren().get(3)).forEach(transition -> {
-                    if ("Initial state".equals(transition.getSource().toString())) {
-                        transitions.add(createTransition(decision, transition.getTarget(), pass(decision)));
-                    }
-                    else if ("Final state".equals(transition.getTarget().toString())) {
-                        transitions.add(createTransition(transition.getSource(), decision));
-                    }
-                    else {
-                        transitions.add(transition);
-                    }
-                });
-                transitions.add(createTransition(decision, createFinalState(), createStereotypes("end-while")));
+                leaves.forEach(leave -> transitions.add(createTransition(leave, decision)));
+                leaves.clear();
+                leaves.add(decision);
+                createTransitions(expression.getChildren().get(3), transitions, leaves);
+                addGuardCondition(transitions, transition -> decision.equals(transition.getSource()), pass(decision), "while");
+                leaves.forEach(leave -> transitions.add(createTransition(leave, decision, createStereotypes("loop"))));
+                leaves.clear();
+                leaves.add(decision);
             }
             else if ("REPEAT\\b".equals(expression.getChildren().getFirst().getSymbol())) {
                 ActionState<Action> body = createActionState(new Statement(expression.getChildren().get(1)));
@@ -673,13 +640,25 @@ public class PascalCompiler {
             }
             else if ("Assignable".equals(expression.getChildren().getFirst().getSymbol())) {
                 ActionState<Action> assignment = createActionState(new Statement(expression.getChildren().getFirst(), expression.getChildren().get(2)));
-                transitions.add(createTransition(createInitialState(), assignment));
-                transitions.add(createTransition(assignment, createFinalState()));
+                leaves.forEach(leave -> transitions.add(createTransition(leave, assignment)));
+                leaves.clear();
+                leaves.add(assignment);
             }
             else {
                 throw new IllegalStateException("Unexpected symbol " + expression.getChildren().getFirst().getSymbol());
             }
-            return transitions;
+        }
+
+        private void addGuardCondition(Collection<Transition<Event, GuardCondition, Action>> transitions, Predicate<Transition<Event, GuardCondition, Action>> predicate, GuardCondition guardCondition, String stereotype) {
+            Transition<Event, GuardCondition, Action> transition = transitions.stream().filter(predicate).findAny().get();
+            transitions.remove(transition);
+            transitions.add(createTransition(transition.getSource(), transition.getTarget(), Optional.of(guardCondition), transition.getAction(), createStereotypes(stereotype)));
+        }
+
+        private void addStereotype(Collection<Transition<Event, GuardCondition, Action>> transitions, Predicate<Transition<Event, GuardCondition, Action>> predicate, String stereotype) {
+            Transition<Event, GuardCondition, Action> transition = transitions.stream().filter(predicate).findAny().get();
+            transitions.remove(transition);
+            transitions.add(createTransition(transition.getSource(), transition.getTarget(), transition.getGuardCondition(), transition.getAction(), createStereotypes(stereotype)));
         }
 
         private static GuardCondition pass(Decision decision) {
@@ -696,10 +675,13 @@ public class PascalCompiler {
             };
         }
 
-        private Collection<Transition<Event, GuardCondition, Action>> createTransitions(PascalParser.Node statements) {
-            return ("CompoundStatement".equals(statements.getChildren().getFirst().getSymbol()))
-                ? createBody(statements.getChildren().getFirst().getChildren().get(1))
-                : new Statement(statements).getTransitions();
+        private void createTransitions(PascalParser.Node statements, Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
+            if ("CompoundStatement".equals(statements.getChildren().getFirst().getSymbol())) {
+                createBody(statements.getChildren().getFirst().getChildren().get(1), transitions, leaves);
+            }
+            else {
+                new Statement(statements).getTransitions(transitions, leaves);
+            }
         }
 
         private static String typeOf(List<PascalParser.Node> expression) {
@@ -727,27 +709,9 @@ public class PascalCompiler {
 
         private static ParseTreeExpression getExpressionTree(PascalParser.Node expression) {
             if ("Expression".equals(expression.getSymbol())) {
-//                switch (expression.getChildren().getFirst().getSymbol()) {
-//                    case "Literal":
-//                        switch (expression.getChildren().getFirst().getChildren().getFirst().getSymbol()) {
-//                            case "IntegerLiteral":
-//                                return createParseTreeExpression("Integer", expression.getChildren().getFirst().getChildren().getFirst().getChildren().getFirst().content());
-//                            case "RealLiteral":
-//                                return createParseTreeExpression("Real", expression.getChildren().getFirst().getChildren().getFirst().getChildren().getFirst().content());
-//                            case "'":
-//                                return createParseTreeExpression("String", expression.getChildren().getFirst().getChildren().get(1).content());
-//                            case "FALSE\\b":
-//                                return createParseTreeExpression("Boolean", "false");
-//                            case "TRUE\\b":
-//                                return createParseTreeExpression("Boolean", "true");
-//                        }
-//                        throw new IllegalStateException("Unrecognized literal: " + expression);
-//                    case "Identifier":
-                        return createParseTreeExpression(expression.getSymbol(), expression.getChildren());
-//                }
+                return createParseTreeExpression(expression.getSymbol(), expression.getChildren());
             }
             if ("Identifier".equals(expression.getSymbol())) {
-//                return createIdentifierExpression(expression.content());
                 return createParseTreeExpression(expression.getSymbol(), expression.getChildren());
             }
             throw new IllegalStateException("Not an expression: " + expression);
@@ -922,35 +886,6 @@ public class PascalCompiler {
 //                    return createParseTreeExpression(expression.getFirst().getSymbol(), expression.getFirst().getChildren());
 //                }
                 throw new IllegalStateException("Cannot create parse tree expression");
-//                return new ParseTreeExpression() {
-//
-//                    @Override
-//                    public String type() {
-//                        return "Integer";
-//                    }
-//
-//                    @Override
-//                    public String value() {
-//                        return "0";
-//                    }
-//
-//                    @Override
-//                    public Value evaluate() {
-//                        return new Value() {
-//                            @Override
-//                            public java.lang.Object get() {
-//                                return 0;
-//                            }
-//
-//                            @Override
-//                            public String type() {
-//                                return "Integer";
-//                            }
-//
-//                        };
-//                    }
-//                };
-//                return createParseTreeExpression("*", expression.getFirst().content());
             }
             String type = typeOf(expression);
             if (expression.size() == 3 && "BinaryOperator".equals(expression.get(1).getSymbol())) {
@@ -977,76 +912,6 @@ public class PascalCompiler {
             }
             throw new IllegalStateException("Invalid expression");
         }
-
-//        private static ParseTreeExpression createIdentifierExpression(String identifier) {
-//            return new ParseTreeExpression() {
-//                @Override
-//                public String type() {
-//                    return "Integer";
-//                }
-//
-//                @Override
-//                public String value() {
-//                    return identifier;
-//                }
-//
-//                @Override
-//                public Value evaluate() {
-//                    return new Value() {
-//                        @Override
-//                        public java.lang.Object get() {
-//                            return 0;
-//                        }
-//
-//                        @Override
-//                        public String type() {
-//                            return "Integer";
-//                        }
-//
-//                    };
-//                }
-//
-//            };
-//        }
-
-//        private static ParseTreeExpression createParseTreeExpression(String type, String value) {
-//            return new ParseTreeExpression() {
-//                @Override
-//                public String type() {
-//                    return type;
-//                }
-//
-//                @Override
-//                public String value() {
-//                    return value;
-//                }
-//
-//                @Override
-//                public Value evaluate() {
-//                    return new Value() {
-//                        @Override
-//                        public java.lang.Object get() {
-//                            switch (type) {
-//                                case "Integer":
-//                                    return Integer.valueOf(value);
-//                                case "Real":
-//                                    return Double.valueOf(value);
-//                                case "String":
-//                                    return value;
-//                                default:
-//                                    throw new IllegalStateException("Unsuppored type: " + type);
-//                            }
-//                        }
-//
-//                        @Override
-//                        public String type() {
-//                            return type;
-//                        }
-//
-//                    };
-//                }
-//            };
-//        }
 
         public Optional<PascalParser.Node> getAssignable() {
             return assignable;

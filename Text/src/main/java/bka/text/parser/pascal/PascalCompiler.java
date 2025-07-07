@@ -364,6 +364,20 @@ public class PascalCompiler {
         };
     }
 
+    private ActionState<Action> createActionState(Action action) {
+        return new ActionState() {
+            @Override
+            public Optional<Action> getAction() {
+                return Optional.of(action);
+            }
+
+            @Override
+            public String toString() {
+                return String.format("Action state (%s)", action);
+            }
+        };
+    }
+
     private ActionState<Action> createActionState(Statement statement) {
         return new ActionState() {
 
@@ -586,37 +600,29 @@ public class PascalCompiler {
             else if ("FOR\\b".equals(expression.getChildren().getFirst().getSymbol())) {
                 PascalParser.Node identifier = expression.getChildren().get(1);
                 ActionState<Action> loopInitialization = createActionState(new Statement(identifier, expression.getChildren().get(3)));
-                transitions.add(createTransition(createInitialState(), loopInitialization));
+                leaves.forEach(leave -> transitions.add(createTransition(leave, loopInitialization)));
+                leaves.clear();
                 Decision decision = createDecision(createLessEqualExpression(identifier, expression.getChildren().get(5)));
                 transitions.add(createTransition(loopInitialization, decision));
-//                ActionState<Action> body = createActionState(new Statement(expression.getChildren().get(7)));
-// FIXME                transitions.add(createTransition(decision, body, condition));
-//                ActionState<Action> incrementAction = createActionState(createIncrementStatement(identifier));
+                leaves.add(decision);
                 createTransitions(expression.getChildren().get(7), transitions, leaves);
-//                body.forEach(transition -> {
-//                    if ("Initial state".equals(transition.getSource().toString())) {
-//                        transitions.add(createTransition(decision, transition.getTarget(), pass(decision)));
-//                    }
-//                    else if ("Final state".equals(transition.getTarget().toString())) {
-//                        Action incrementAction = new Action() {
-//                            @Override
-//                            public void perform(Memory memory) throws StateMachineException {
-//                                ParseTreeExpression expression = createIncrementExpression(identifier);
-//                                Value value = expression.evaluate(memory);
-//                                memory.store(identifier.content(), ((Integer) value.get()) + 1);
-//                            }
-//                        };
-//                        transitions.add(createTransition(transition.getSource(), decision, incrementAction));
-//                        transitions.add(createTransition(transition.getSource(), incrementAction));
-//                        transitions.add(createTransition(incrementAction, decision));
-//                    }
-//                    else {
-//                        transitions.add(transition);
-//                    }
-//                });
-//                transitions.add(createTransition(decision, createFinalState(), createStereotypes("end-for")));
-//                transitions.add(createTransition(body, incrementState));
-//                transitions.add(createTransition(incrementState, decision, createStereotypes("loop")));
+                Action incrementAction = new Action() {
+                    @Override
+                    public void perform(Memory memory) throws StateMachineException {
+                        memory.store(identifier.content(), ((Integer) memory.load(identifier.content())) + 1);
+                    }
+
+                    @Override
+                    public String toString() {
+                        return ".INC. " + identifier.content();
+                    }
+                };
+                ActionState<Action> incrementActionState = createActionState(incrementAction);
+                leaves.forEach(leave -> transitions.add(createTransition(leave, incrementActionState)));
+                leaves.clear();
+                addGuardCondition(transitions, transition -> decision.equals(transition.getSource()), pass(decision), "for");
+                transitions.add(createTransition(incrementActionState, decision));
+                leaves.add(decision);
             }
             else if ("WHILE\\b".equals(expression.getChildren().getFirst().getSymbol())) {
                 Decision decision = createDecision(createParseTreeExpression(expression.getChildren().get(1).getSymbol(), expression.getChildren().get(1).getChildren()));
@@ -847,6 +853,36 @@ public class PascalCompiler {
 //                                    };
                                 default ->
                                     throw new IllegalArgumentException("Cannot evaluate literal: " + expression.getFirst().getChildren().getFirst().getSymbol());
+                            };
+                        }
+
+                    };
+                }
+                if ("Identifier".equals(expression.getFirst().getSymbol())) {
+                    return new ParseTreeExpression() {
+                        @Override
+                        public String type() {
+                            return "*";
+                        }
+
+                        @Override
+                        public String value() {
+                            return expression.getFirst().getChildren().getFirst().content();
+                        }
+
+                        @Override
+                        public Value evaluate(Memory memory) {
+                            return new Value() {
+                                @Override
+                                public java.lang.Object get() throws StateMachineException {
+                                    return memory.load(value());
+                                }
+
+                                @Override
+                                public String type() {
+                                    return "*";
+                                }
+
                             };
                         }
 

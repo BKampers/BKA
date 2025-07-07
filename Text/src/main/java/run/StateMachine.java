@@ -103,7 +103,7 @@ public class StateMachine {
     }
 
     private void enter(TransitionNode<Action> state) throws StateMachineException {
-        this.currentState = state;
+        currentState = state;
         listeners.forEach(listener -> listener.stateEntered(state));
         if (state.getEntryAction().isPresent()) {
             execute(state.getEntryAction().get());
@@ -117,7 +117,7 @@ public class StateMachine {
         if (state.getExitAction().isPresent()) {
             execute(state.getExitAction().get());
         }
-        this.currentState = null;
+        currentState = null;
         listeners.forEach(listener -> listener.stateLeft(state));
     }
 

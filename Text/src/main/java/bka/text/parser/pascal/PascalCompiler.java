@@ -415,15 +415,6 @@ public class PascalCompiler {
         };
     }
 
-//    private static Action createIncrementAction(PascalParser.Node identifier) {
-//        return new Action() {
-//            @Override
-//            public void perform(Memory memory) throws StateMachineException {
-//                ParseTreeExpression expression = createIncrementExpression(identifier);
-//            }
-//        };
-//    }
-
     private static Decision<Expression> createDecision(ParseTreeExpression expression) {
         return new Decision() {
 
@@ -534,21 +525,6 @@ public class PascalCompiler {
     }
 
 
-    private Statement createIncrementStatement(PascalParser.Node identifier) {
-        return new Statement(identifier, identifier) {
-            @Override
-            public void getTransitions(Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
-//               TODO
-            }
-
-            @Override
-            public String toString() {
-                return ".INC. " + identifier;
-            }
-        };
-    }
-
-
     public class Statement {
 
         public Statement(PascalParser.Node node) {
@@ -569,7 +545,7 @@ public class PascalCompiler {
         public String toString() {
             StringBuilder builder = new StringBuilder().append('(').append(expression.getSymbol()).append(") ");
             if (assignable.isPresent()) {
-                builder.append(assignable.get().content()).append(" ← ");
+                builder.append(assignable.get().content()).append(" \u21D0 ");
             }
             builder.append(expression.content());
             return builder.toString();
@@ -636,13 +612,15 @@ public class PascalCompiler {
                 leaves.add(decision);
             }
             else if ("REPEAT\\b".equals(expression.getChildren().getFirst().getSymbol())) {
-                ActionState<Action> body = createActionState(new Statement(expression.getChildren().get(1)));
-                transitions.add(createTransition(createInitialState(), body));
+                TransitionSource loopRoot = leaves.stream().findAny().get();
+                createTransitions(expression.getChildren().get(1), transitions, leaves);
                 ParseTreeExpression condition = createParseTreeExpression(expression.getChildren().get(3).getSymbol(), expression.getChildren().get(3).getChildren());
                 Decision decision = createDecision(condition);
-                transitions.add(createTransition(body, decision));
-// FIXME                transitions.add(createTransition(decision, body, condition, createStereotypes("loop")));
-                transitions.add(createTransition(decision, createFinalState(), createStereotypes("end-repeat")));
+                leaves.forEach(leave -> transitions.add(createTransition(leave, decision)));
+                TransitionTarget loopStart = transitions.stream().filter(transition -> loopRoot.equals(transition.getSource())).findAny().get().getTarget();
+                transitions.add(createTransition(decision, loopStart, fail(decision), createStereotypes("repeat")));
+                leaves.clear();
+                leaves.add(decision);
             }
             else if ("Assignable".equals(expression.getChildren().getFirst().getSymbol())) {
                 ActionState<Action> assignment = createActionState(new Statement(expression.getChildren().getFirst(), expression.getChildren().get(2)));
@@ -677,6 +655,20 @@ public class PascalCompiler {
                 @Override
                 public String toString() {
                     return decision.getExpression().toString();
+                }
+            };
+        }
+
+        private static GuardCondition fail(Decision decision) {
+            return new GuardCondition() {
+                @Override
+                public boolean applies(Memory memory) throws StateMachineException {
+                    return ((ParseTreeExpression) decision.getExpression()).evaluate(memory).get().equals(false);
+                }
+
+                @Override
+                public String toString() {
+                    return "\u00AC (" + decision.getExpression().toString() + ')';
                 }
             };
         }

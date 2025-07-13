@@ -114,6 +114,46 @@ public class PascalCompilerTest {
         assertEquals(16, stateMachine.getMemoryObject("i"));
     }
 
+    @Test
+    public void testForLoop() throws StateMachineException {
+        List<PascalParser.Node> tree = parser.buildTree("""
+            PROGRAM for_loop;
+            VAR i, sum: INTEGER;
+            BEGIN
+                sum := 0;
+                FOR i := 1 TO 3 DO
+                    BEGIN
+                    sum := sum + i
+                    END
+            END.
+            """);
+        uml.structure.Class program = (uml.structure.Class) compiler.createObject(tree);
+        Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(program.getOperations().getFirst());
+        StateMachine stateMachine = new StateMachine(transitions);
+        stateMachine.start();
+        assertEquals(6, stateMachine.getMemoryObject("sum"));
+        assertEquals(4, stateMachine.getMemoryObject("i"));
+    }
+
+    @Test
+    public void testRepeatLoop() throws StateMachineException {
+        List<PascalParser.Node> tree = parser.buildTree("""
+            PROGRAM for_loop;
+            VAR sum: INTEGER;
+            BEGIN
+                sum := 0;
+                REPEAT
+                    sum := sum + 1
+                    UNTIL sum = 7
+            END.
+            """);
+        uml.structure.Class program = (uml.structure.Class) compiler.createObject(tree);
+        Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(program.getOperations().getFirst());
+        StateMachine stateMachine = new StateMachine(transitions);
+        stateMachine.start();
+        assertEquals(7, stateMachine.getMemoryObject("sum"));
+    }
+
     private PascalParser parser;
     private PascalCompiler compiler;
 

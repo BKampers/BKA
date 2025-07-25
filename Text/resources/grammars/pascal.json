@@ -84,7 +84,7 @@
         [ "IF\\b", "Expression", "THEN\\b", "Statement", "ElseClause" ],
         [ "WHILE\\b", "Expression", "DO\\b", "Statement" ],
         [ "FOR\\b", "Identifier", "\\:\\=", "Expression", "TO\\b", "Expression", "DO\\b", "Statement" ],
-        [ "REPEAT\\b", "Statement", "UNTIL\\b", "Expression" ],
+        [ "REPEAT\\b", "Statements", "UNTIL\\b", "Expression" ],
         [ "CompoundStatement" ],
         [ ]
     ],

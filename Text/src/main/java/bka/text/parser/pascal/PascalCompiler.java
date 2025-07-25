@@ -324,22 +324,17 @@ public class PascalCompiler {
     private Collection<Transition<Event, GuardCondition, Action>> createBody(PascalParser.Node compoundStatement) {
         Collection<Transition<Event, GuardCondition, Action>> body = new ArrayList<>();
         Collection<TransitionSource> leaves = new ArrayList<>(List.of(createInitialState()));
-        createBody(compoundStatement, body, leaves);
+        createStatementSequence(compoundStatement, body, leaves);
         leaves.forEach(leave -> body.add(createTransition(leave, createFinalState())));
         return body;
     }
 
-    private void createBody(PascalParser.Node compoundStatement, Collection<Transition<Event, GuardCondition, Action>> body, Collection<TransitionSource> leaves) {
-        PascalParser.Node statements = compoundStatement;
+    private void createStatementSequence(PascalParser.Node statements, Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
         while (statements != null) {
             Statement statement = new Statement(statements.getChildren().getFirst());
-            statement.getTransitions(body, leaves);
+            statement.getTransitions(transitions, leaves);
             statements = (statements.getChildren().size() > 1) ? statements.getChildren().getLast() : null;
         }
-    }
-
-    private static Collection<Transition<Event, GuardCondition, Action>> createTransitions(Collection<TransitionSource> sources, TransitionTarget target) {
-        return sources.stream().map(source -> createTransition(source, target)).collect(Collectors.toList());
     }
 
     private static InitialState createInitialState() {
@@ -628,6 +623,9 @@ public class PascalCompiler {
                 leaves.clear();
                 leaves.add(assignment);
             }
+//            else if ("Statements".equals(expression.getChildren().getFirst().getSymbol())) {
+//                createStatementSequence(expression.getChildren().getFirst().getChildren().get(1), transitions, leaves);
+//            }
             else {
                 throw new IllegalStateException("Unexpected symbol " + expression.getChildren().getFirst().getSymbol());
             }
@@ -675,7 +673,10 @@ public class PascalCompiler {
 
         private void createTransitions(PascalParser.Node statements, Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
             if ("CompoundStatement".equals(statements.getChildren().getFirst().getSymbol())) {
-                createBody(statements.getChildren().getFirst().getChildren().get(1), transitions, leaves);
+                createStatementSequence(statements.getChildren().getFirst().getChildren().get(1), transitions, leaves);
+            }
+            else if ("Statements".equals(statements.getSymbol())) {
+                createStatementSequence(statements, transitions, leaves);
             }
             else {
                 new Statement(statements).getTransitions(transitions, leaves);

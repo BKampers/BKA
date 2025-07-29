@@ -154,6 +154,28 @@ public class PascalCompilerTest {
         assertEquals(7, stateMachine.getMemoryObject("sum"));
     }
 
+    @Test
+    public void testFunctionCall() throws StateMachineException {
+        List<PascalParser.Node> tree = parser.buildTree("""
+            PROGRAM function_call;
+            VAR result : INTEGER;
+
+            FUNCTION get_result: INTEGER;
+                BEGIN
+                get_result := $F;
+                END;
+
+            BEGIN
+            result := get_result;
+            END.
+            """);
+        uml.structure.Class program = (uml.structure.Class) compiler.createObject(tree);
+        Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(program.getOperations().getFirst());
+        StateMachine stateMachine = new StateMachine(transitions);
+        stateMachine.start();
+        assertEquals(0xF, stateMachine.getMemoryObject("result"));
+    }
+
     private PascalParser parser;
     private PascalCompiler compiler;
 

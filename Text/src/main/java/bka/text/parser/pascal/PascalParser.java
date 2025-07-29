@@ -1,7 +1,6 @@
 /*
 ** © Bart Kampers
 */
-
 package bka.text.parser.pascal;
 
 import java.util.*;

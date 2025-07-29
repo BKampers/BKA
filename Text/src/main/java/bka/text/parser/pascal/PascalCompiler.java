@@ -76,6 +76,18 @@ public class PascalCompiler {
         return createAttributes(owner, variableDeclaration.getChildren().get(variableDeclaration.getChildren().size() - 2));
     }
 
+    private void createFunctionOperations(Type owner, PascalParser.Node declarations) {
+        if (declarations.getChildren().isEmpty()) {
+            return;
+        }
+        if ("FunctionDeclaration".equals(declarations.getChildren().getFirst().getSymbol())) {
+            methods.put(
+                createPrivateOperation(owner, declarations.getChildren().getFirst().getChildren().get(1).content()),
+                createBody(declarations.getChildren().getFirst().getChildren().get(7).getChildren().get(1)));
+        }
+        createFunctionOperations(owner, declarations.getChildren().getLast());
+    }
+
     private Type createType(PascalParser.Node typeDeclarationExpression) {
         final PascalParser.Node expression = typeDeclarationExpression.getChildren().getFirst();
         return switch (expression.getSymbol()) {
@@ -272,11 +284,20 @@ public class PascalCompiler {
         Operation main = createMainOperation(owner);
         methods.put(main, createBody(mainBody.getChildren().get(1)));
         operations.add(main);
+        createFunctionOperations(owner, declarations);
         return operations;
     }
 
 
     private Operation createMainOperation(Type owner) {
+        return createOperation(owner, Member.Visibility.PUBLIC, Optional.empty(), createStereotypes("Main"));
+    }
+
+    private Operation createPrivateOperation(Type owner, String name) {
+        return createOperation(owner, Member.Visibility.PRIVATE, Optional.of(name), Collections.emptySet());
+    }
+
+    private Operation createOperation(Type owner, Member.Visibility visibility, Optional<String> name, Set<Stereotype> stereotypes) {
         return new Operation() {
 
             @Override
@@ -286,12 +307,12 @@ public class PascalCompiler {
 
             @Override
             public Member.Visibility getVisibility() {
-                return Member.Visibility.PUBLIC;
+                return visibility;
             }
 
             @Override
             public Optional<String> getName() {
-                return Optional.empty();
+                return name;
             }
 
             @Override
@@ -316,7 +337,7 @@ public class PascalCompiler {
 
             @Override
             public Set<Stereotype> getStereotypes() {
-                return createStereotypes("Main");
+                return stereotypes;
             }
         };
     }
@@ -683,7 +704,7 @@ public class PascalCompiler {
             }
         }
 
-        private static String typeOf(List<PascalParser.Node> expression) {
+        private String typeOf(List<PascalParser.Node> expression) {
             if (expression.size() == 1) {
                 return "*";
             }
@@ -706,7 +727,7 @@ public class PascalCompiler {
             throw new IllegalStateException("Not an expression: " + expression);
         }
 
-        private static ParseTreeExpression getExpressionTree(PascalParser.Node expression) {
+        private ParseTreeExpression getExpressionTree(PascalParser.Node expression) {
             if ("Expression".equals(expression.getSymbol())) {
                 return createParseTreeExpression(expression.getSymbol(), expression.getChildren());
             }
@@ -716,7 +737,7 @@ public class PascalCompiler {
             throw new IllegalStateException("Not an expression: " + expression);
         }
 
-        private static ParseTreeExpression createIncrementExpression(PascalParser.Node operand) {
+        private ParseTreeExpression createIncrementExpression(PascalParser.Node operand) {
             return new ParseTreeExpression() {
                 @Override
                 public String type() {
@@ -747,7 +768,7 @@ public class PascalCompiler {
             };
         }
 
-        private static ParseTreeExpression createLessEqualExpression(PascalParser.Node leftOperand, PascalParser.Node rightOperand) {
+        private ParseTreeExpression createLessEqualExpression(PascalParser.Node leftOperand, PascalParser.Node rightOperand) {
             return new ParseTreeExpression() {
                 @Override
                 public String type() {
@@ -783,7 +804,7 @@ public class PascalCompiler {
             };
         }
 
-        private static ParseTreeExpression createParseTreeExpression(String symbol, List<PascalParser.Node> expression) {
+        private ParseTreeExpression createParseTreeExpression(String symbol, List<PascalParser.Node> expression) {
             if (expression.size() == 1) {
                 if ("Literal".equals(expression.getFirst().getSymbol())) {
                     return new ParseTreeExpression() {
@@ -809,7 +830,10 @@ public class PascalCompiler {
                                     new Value() {
                                         @Override
                                         public java.lang.Object get() {
-                                            return Integer.valueOf(expression.getFirst().content());
+                                            String literal = value();
+                                            return (literal.startsWith("$"))
+                                                ? Integer.parseInt(literal, 1, literal.length(), 0x10)
+                                                : Integer.valueOf(literal);
                                         }
 
                                         @Override
@@ -822,7 +846,7 @@ public class PascalCompiler {
                                     new Value() {
                                         @Override
                                         public java.lang.Object get() {
-                                            return Integer.valueOf(expression.get(1).content());
+                                            return value();
                                         }
 
                                         @Override
@@ -852,6 +876,8 @@ public class PascalCompiler {
                     };
                 }
                 if ("Identifier".equals(expression.getFirst().getSymbol())) {
+                    if (methods.containsKey(expression.getFirst().getSymbol())) {
+                    }
                     return new ParseTreeExpression() {
                         @Override
                         public String type() {
@@ -868,6 +894,16 @@ public class PascalCompiler {
                             return new Value() {
                                 @Override
                                 public java.lang.Object get() throws StateMachineException {
+                                    String value = value();
+                                    Optional<Collection<Transition<Event, GuardCondition, Action>>> method = methods.entrySet().stream()
+                                        .filter(entry -> entry.getKey().getName().equals(Optional.of(value)))
+                                        .map(entry -> entry.getValue())
+                                        .findAny();
+                                    if (method.isPresent()) {
+                                        StateMachine stateMachine = new StateMachine(method.get());
+                                        stateMachine.start();
+                                        return stateMachine.getMemoryObject(value);
+                                    }
                                     return memory.load(value());
                                 }
 

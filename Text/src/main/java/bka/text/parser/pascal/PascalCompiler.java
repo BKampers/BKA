@@ -9,7 +9,6 @@ import java.util.function.*;
 import java.util.logging.*;
 import java.util.stream.*;
 import run.*;
-import uml.*;
 import uml.annotation.*;
 import uml.statechart.*;
 import uml.structure.*;
@@ -31,70 +30,61 @@ public class PascalCompiler {
     }
 
     public Collection<Transition<Event, GuardCondition, Action>> getMethod(Operation operation) {
-        return Collections.unmodifiableCollection(methods.get(operation));
+        return Collections.unmodifiableCollection(methods.get(operation.getName().get()));
     }
 
     private uml.structure.Class createProgramClass(List<PascalParser.Node> nodes) {
-        return new uml.structure.Class() {
-
-            @Override
-            public Optional<String> getName() {
-                return Optional.of(nodes.get(1).content());
-            }
-
-            @Override
-            public List<Attribute> getAttributes() {
-                return createProgramVariables(this, nodes.get(3));
-            }
-
-            @Override
-            public List<Operation> getOperations() {
-                return createOperations(this, nodes.get(3), nodes.get(4));
-            }
-
-            @Override
-            public boolean isAbstract() {
-                return false;
-            }
-
-        };
+        UmlClassBuilder builder = new UmlClassBuilder(nodes.get(1).content());
+        addProgramVariables(builder, nodes.get(3));
+        String programName = nodes.get(1).content();
+        buildOperations(builder, programName, nodes.get(3));
+        methods.put(programName, createBody(nodes.get(4).getChildren().get(1)));
+        return builder.build();
     }
 
-    private List<Attribute> createProgramVariables(Type owner, PascalParser.Node declarations) {
-        if (declarations.getChildren().isEmpty()) {
-            return Collections.emptyList();
+    private void addProgramVariables(UmlClassBuilder builder, PascalParser.Node declarations) {
+        if (!declarations.getChildren().isEmpty()) {
+            if ("VariableDeclaration".equals(declarations.getChildren().getFirst().getSymbol())) {
+                addVariables(builder, declarations.getChildren().getFirst());
+            }
+            addProgramVariables(builder, declarations.getChildren().getLast());
         }
-        ArrayList<Attribute> attributes = new ArrayList<>();
-        if ("VariableDeclaration".equals(declarations.getChildren().getFirst().getSymbol())) {
-            attributes.addAll(createVariables(owner, declarations.getChildren().getFirst()));
-        }
-        attributes.addAll(createProgramVariables(owner, declarations.getChildren().getLast()));
-        return attributes;
     }
 
-    private List<Attribute> createVariables(Type owner, PascalParser.Node variableDeclaration) {
-        return createAttributes(owner, variableDeclaration.getChildren().get(variableDeclaration.getChildren().size() - 2));
+    private void addVariables(UmlClassBuilder builder, PascalParser.Node variableDeclaration) {
+        createAttributes(builder, variableDeclaration.getChildren().get(variableDeclaration.getChildren().size() - 2));
     }
 
-    private void createFunctionOperations(Type owner, PascalParser.Node declarations) {
-        if (declarations.getChildren().isEmpty()) {
-            return;
+    private void createAttributes(UmlClassBuilder builder, PascalParser.Node variableDeclarationList) {
+        addAttributesFromExpression(builder, variableDeclarationList.getChildren().getFirst());
+        if (variableDeclarationList.getChildren().size() > 1) {
+            createAttributes(builder, variableDeclarationList.getChildren().getLast());
         }
-        if ("FunctionDeclaration".equals(declarations.getChildren().getFirst().getSymbol())) {
-            methods.put(
-                createPrivateOperation(owner, declarations.getChildren().getFirst().getChildren().get(1).content()),
-                createBody(declarations.getChildren().getFirst().getChildren().get(7).getChildren().get(1)));
+    }
+
+    private void addAttributesFromExpression(UmlClassBuilder builder, PascalParser.Node variableDeclarationExpression) {
+        Type type = createType(variableDeclarationExpression.getChildren().get(2));
+        createIdentifiers(variableDeclarationExpression.getChildren().getFirst()).forEach(name -> builder.withAttribute(name, type));
+    }
+
+    private void addPrivateFunctionOperations(UmlClassBuilder builder, PascalParser.Node declarations) {
+        if (!declarations.getChildren().isEmpty()) {
+            if ("FunctionDeclaration".equals(declarations.getChildren().getFirst().getSymbol())) {
+                String functionName = declarations.getChildren().getFirst().getChildren().get(1).content();
+                builder.withOperation(functionName, UmlTypeFactory.create(declarations.getChildren().getFirst().getChildren().get(4).content()), Member.Visibility.PRIVATE);
+                methods.put(functionName, createBody(declarations.getChildren().getFirst().getChildren().get(7).getChildren().get(1)));
+            }
+            addPrivateFunctionOperations(builder, declarations.getChildren().getLast());
         }
-        createFunctionOperations(owner, declarations.getChildren().getLast());
     }
 
     private Type createType(PascalParser.Node typeDeclarationExpression) {
         final PascalParser.Node expression = typeDeclarationExpression.getChildren().getFirst();
         return switch (expression.getSymbol()) {
             case "TypeExpression" ->
-                createType(expression.getChildren().getFirst().content());
+                UmlTypeFactory.create(expression.getChildren().getFirst().content());
             case "RangeExpression" ->
-                createRangeType(expression);
+                UmlTypeFactory.create(rangeString(expression));
             case "\\(" ->
                 createEnumerationType(typeDeclarationExpression.getChildren().get(1));
             case "ARRAY\\b" ->
@@ -106,88 +96,12 @@ public class PascalCompiler {
         };
     }
 
-    private static Type createType(String name) {
-        return new Type() {
-
-            @Override
-            public boolean isAbstract() {
-                return false;
-            }
-
-            @Override
-            public Optional<String> getName() {
-                return Optional.of(name);
-            }
-
-            @Override
-            public String toString() {
-                return "Type " + name;
-            }
-
-        };
-    }
-
-    private Type createRangeType(PascalParser.Node rangeExpression) {
-        return new Type() {
-
-            @Override
-            public boolean isAbstract() {
-                return false;
-            }
-
-            @Override
-            public Optional<String> getName() {
-                return Optional.of(rangeString(rangeExpression));
-            }
-
-            @Override
-            public String toString() {
-                return "Type " + rangeString(rangeExpression);
-            }
-
-        };
-    }
-
-    private Type createEnumerationType(PascalParser.Node identifierList) {
-        return new Type() {
-
-            @Override
-            public boolean isAbstract() {
-                return false;
-            }
-
-            @Override
-            public Optional<String> getName() {
-                return Optional.of(createIdentifiers(identifierList).stream().collect(Collectors.joining(", ", "( ", " )")));
-            }
-
-            @Override
-            public String toString() {
-                return "Type " + getName().get();
-            }
-
-        };
+    private static Type createEnumerationType(PascalParser.Node identifierList) {
+        return UmlTypeFactory.create(createIdentifiers(identifierList).stream().collect(Collectors.joining(", ", "( ", " )")));
     }
 
     private static Type createArrayType(PascalParser.Node rangeExpression, PascalParser.Node typeExpression) {
-        return new Type() {
-
-            @Override
-            public boolean isAbstract() {
-                return false;
-            }
-
-            @Override
-            public Optional<String> getName() {
-                return Optional.of("ARRAY [" + rangeString(rangeExpression) + "] OF " + typeExpression.content());
-            }
-
-            @Override
-            public String toString() {
-                return "Type " + getName().get();
-            }
-
-        };
+        return UmlTypeFactory.create("ARRAY [" + rangeString(rangeExpression) + "] OF " + typeExpression.content());
     }
 
     private uml.structure.Class createRecordType(PascalParser.Node typeDeclarationExpression) {
@@ -250,103 +164,19 @@ public class PascalCompiler {
     }
 
     private Attribute createAttribute(Type owner, String name, Type type) {
-        return new Attribute() {
-
-            @Override
-            public Type getOwner() {
-                return owner;
-            }
-
-            @Override
-            public Member.Visibility getVisibility() {
-                return Member.Visibility.PRIVATE;
-            }
-
-            @Override
-            public boolean isClassScoped() {
-                return false;
-            }
-
-            @Override
-            public Optional<String> getName() {
-                return Optional.of(name);
-            }
-
-            @Override
-            public Optional<Type> getType() {
-                return Optional.of(type);
-            }
-        };
+        return UmlAttributeFactory.createPrivate(name, type, owner);
     }
 
-    private List<Operation> createOperations(Type owner, PascalParser.Node declarations, PascalParser.Node mainBody) {
-        List<Operation> operations = new ArrayList<>();
-        Operation main = createMainOperation(owner);
-        methods.put(main, createBody(mainBody.getChildren().get(1)));
-        operations.add(main);
-        createFunctionOperations(owner, declarations);
-        return operations;
-    }
-
-
-    private Operation createMainOperation(Type owner) {
-        return createOperation(owner, Member.Visibility.PUBLIC, Optional.empty(), createStereotypes("Main"));
-    }
-
-    private Operation createPrivateOperation(Type owner, String name) {
-        return createOperation(owner, Member.Visibility.PRIVATE, Optional.of(name), Collections.emptySet());
-    }
-
-    private Operation createOperation(Type owner, Member.Visibility visibility, Optional<String> name, Set<Stereotype> stereotypes) {
-        return new Operation() {
-
-            @Override
-            public Type getOwner() {
-                return owner;
-            }
-
-            @Override
-            public Member.Visibility getVisibility() {
-                return visibility;
-            }
-
-            @Override
-            public Optional<String> getName() {
-                return name;
-            }
-
-            @Override
-            public boolean isClassScoped() {
-                return false;
-            }
-
-            @Override
-            public boolean isAbstract() {
-                return false;
-            }
-
-            @Override
-            public List<Parameter> getParameters() {
-                return Collections.emptyList();
-            }
-
-            @Override
-            public Optional<Type> getType() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Set<Stereotype> getStereotypes() {
-                return stereotypes;
-            }
-        };
+    private void buildOperations(UmlClassBuilder builder, String programName, PascalParser.Node declarations) {
+        builder.withOperation(programName, Member.Visibility.PUBLIC, createStereotypes("Main"));
+        addPrivateFunctionOperations(builder, declarations);
     }
 
     private Collection<Transition<Event, GuardCondition, Action>> createBody(PascalParser.Node compoundStatement) {
         Collection<Transition<Event, GuardCondition, Action>> body = new ArrayList<>();
-        Collection<TransitionSource> leaves = new ArrayList<>(List.of(createInitialState()));
+        Collection<TransitionSource> leaves = new ArrayList<>(List.of(UmlStateFactory.getInitialState()));
         createStatementSequence(compoundStatement, body, leaves);
-        leaves.forEach(leave -> body.add(createTransition(leave, createFinalState())));
+        leaves.forEach(leave -> body.add(UmlTransitionFactory.createTransition(leave, UmlStateFactory.getFinalState())));
         return body;
     }
 
@@ -358,56 +188,8 @@ public class PascalCompiler {
         }
     }
 
-    private static InitialState createInitialState() {
-        return new InitialState() {
-
-            @Override
-            public String toString() {
-                return "Initial state";
-            }
-
-        };
-    }
-
-    private static FinalState createFinalState() {
-        return new FinalState() {
-
-            @Override
-            public String toString() {
-                return "Final state";
-            }
-
-        };
-    }
-
-    private ActionState<Action> createActionState(Action action) {
-        return new ActionState() {
-            @Override
-            public Optional<Action> getAction() {
-                return Optional.of(action);
-            }
-
-            @Override
-            public String toString() {
-                return String.format("Action state (%s)", action);
-            }
-        };
-    }
-
     private ActionState<Action> createActionState(Statement statement) {
-        return new ActionState() {
-
-            @Override
-            public Optional<Action> getAction() {
-                return Optional.of(createAction(statement));
-            }
-
-            @Override
-            public String toString() {
-                return String.format("Action state (%s)", statement);
-            }
-
-        };
+        return UmlStateFactory.createActionState(createAction(statement));
     }
 
     private static Action createAction(Statement statement) {
@@ -428,107 +210,6 @@ public class PascalCompiler {
             public String toString() {
                 return String.format("Action (%s)", statement);
             }
-        };
-    }
-
-    private static Decision<Expression> createDecision(ParseTreeExpression expression) {
-        return new Decision() {
-
-            @Override
-            public Expression getExpression() {
-                return expression;
-            }
-
-            @Override
-            public Optional<Type> getType() {
-                return Optional.of(createType(expression.type()));
-            }
-
-            @Override
-            public Optional<String> getName() {
-                return Optional.of(expression.toString());
-            }
-
-            @Override
-            public String toString() {
-                return "Decision (" + typeString(getType()) + ") " + expression.value();
-            }
-
-            private String typeString(Optional<Type> type) {
-                if (type.isEmpty()) {
-                    return "Void";
-                }
-                if (type.get().getName().isEmpty()) {
-                    return "Anonimous";
-                }
-                return type.get().getName().get();
-            }
-
-        };
-    }
-
-    private static Transition<Event, GuardCondition, Action> createTransition(TransitionSource source, TransitionTarget target) {
-        return createTransition(source, target, Optional.empty(), Optional.empty(), Collections.emptySet());
-    }
-
-    private static Transition<Event, GuardCondition, Action> createTransition(TransitionSource source, TransitionTarget target, Set<Stereotype> stereotypes) {
-        return createTransition(source, target, Optional.empty(), Optional.empty(), stereotypes);
-    }
-
-    private static Transition<Event, GuardCondition, Action> createTransition(TransitionSource source, TransitionTarget target, GuardCondition guardCondition, Set<Stereotype> stereotypes) {
-        return createTransition(source, target, Optional.of(guardCondition), Optional.empty(), stereotypes);
-    }
-
-    private static Transition<Event, GuardCondition, Action> createTransition(TransitionSource source, TransitionTarget target, GuardCondition guardCondition) {
-        return createTransition(source, target, Optional.of(guardCondition), Optional.empty(), Collections.emptySet());
-    }
-
-    private static Transition<Event, GuardCondition, Action> createTransition(TransitionSource source, TransitionTarget target, Action action) {
-        return createTransition(source, target, Optional.empty(), Optional.of(action), Collections.emptySet());
-    }
-
-    private static Transition<Event, GuardCondition, Action> createTransition(TransitionSource source, TransitionTarget target, Optional<GuardCondition> guardCondition, Optional<Action> action, Set<Stereotype> stereotypes) {
-        return new Transition<>() {
-
-            @Override
-            public TransitionSource getSource() {
-                return source;
-            }
-
-            @Override
-            public TransitionTarget getTarget() {
-                return target;
-            }
-
-            @Override
-            public Optional getEvent() {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<GuardCondition> getGuardCondition() {
-                return guardCondition;
-            }
-
-            @Override
-            public Optional<Action> getAction() {
-                return action;
-            }
-
-            @Override
-            public Set<Stereotype> getStereotypes() {
-                return stereotypes;
-            }
-
-            @Override
-            public String toString() {
-                StringBuilder string = new StringBuilder();
-                guardCondition.ifPresent(condition -> string.append('[').append(condition).append("] "));
-                string.append(getSource()).append(" \u279D ").append(getTarget());
-                string.append(stereotypes.stream().map(Util::display).collect(Collectors.joining()));
-                return string.toString();
-            }
-
         };
     }
 
@@ -573,12 +254,12 @@ public class PascalCompiler {
                 return;
             }
             if ("IF\\b".equals(expression.getChildren().getFirst().getSymbol())) {
-                Decision decision = createDecision(createParseTreeExpression(expression.getChildren().get(1).getSymbol(), expression.getChildren().get(1).getChildren()));
-                leaves.forEach(leave -> transitions.add(createTransition(leave, decision)));
+                Decision decision = UmlStateFactory.createDecision(createParseTreeExpression(expression.getChildren().get(1).getSymbol(), expression.getChildren().get(1).getChildren()));
+                leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, decision)));
                 leaves.clear();
                 leaves.add(decision);
                 createTransitions(expression.getChildren().get(3), transitions, leaves);
-                addGuardCondition(transitions, transition -> decision.equals(transition.getSource()), pass(decision), "then");
+                addGuardCondition(transitions, transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), "then");
                 if (expression.getChildren().get(4).getChildren().isEmpty()) {
                     leaves.add(decision);
                 }
@@ -592,10 +273,10 @@ public class PascalCompiler {
             else if ("FOR\\b".equals(expression.getChildren().getFirst().getSymbol())) {
                 PascalParser.Node identifier = expression.getChildren().get(1);
                 ActionState<Action> loopInitialization = createActionState(new Statement(identifier, expression.getChildren().get(3)));
-                leaves.forEach(leave -> transitions.add(createTransition(leave, loopInitialization)));
+                leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, loopInitialization)));
                 leaves.clear();
-                Decision decision = createDecision(createLessEqualExpression(identifier, expression.getChildren().get(5)));
-                transitions.add(createTransition(loopInitialization, decision));
+                Decision decision = UmlStateFactory.createDecision(createLessEqualExpression(identifier, expression.getChildren().get(5)));
+                transitions.add(UmlTransitionFactory.createTransition(loopInitialization, decision));
                 leaves.add(decision);
                 createTransitions(expression.getChildren().get(7), transitions, leaves);
                 Action incrementAction = new Action() {
@@ -609,21 +290,21 @@ public class PascalCompiler {
                         return ".INC. " + identifier.content();
                     }
                 };
-                ActionState<Action> incrementActionState = createActionState(incrementAction);
-                leaves.forEach(leave -> transitions.add(createTransition(leave, incrementActionState)));
+                ActionState<Action> incrementActionState = UmlStateFactory.createActionState(incrementAction);
+                leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, incrementActionState)));
                 leaves.clear();
-                addGuardCondition(transitions, transition -> decision.equals(transition.getSource()), pass(decision), "for");
-                transitions.add(createTransition(incrementActionState, decision));
+                addGuardCondition(transitions, transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), "for");
+                transitions.add(UmlTransitionFactory.createTransition(incrementActionState, decision));
                 leaves.add(decision);
             }
             else if ("WHILE\\b".equals(expression.getChildren().getFirst().getSymbol())) {
-                Decision decision = createDecision(createParseTreeExpression(expression.getChildren().get(1).getSymbol(), expression.getChildren().get(1).getChildren()));
-                leaves.forEach(leave -> transitions.add(createTransition(leave, decision)));
+                Decision decision = UmlStateFactory.createDecision(createParseTreeExpression(expression.getChildren().get(1).getSymbol(), expression.getChildren().get(1).getChildren()));
+                leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, decision)));
                 leaves.clear();
                 leaves.add(decision);
                 createTransitions(expression.getChildren().get(3), transitions, leaves);
-                addGuardCondition(transitions, transition -> decision.equals(transition.getSource()), pass(decision), "while");
-                leaves.forEach(leave -> transitions.add(createTransition(leave, decision, createStereotypes("loop"))));
+                addGuardCondition(transitions, transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), "while");
+                leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, decision, createStereotypes("loop"))));
                 leaves.clear();
                 leaves.add(decision);
             }
@@ -631,22 +312,19 @@ public class PascalCompiler {
                 TransitionSource loopRoot = leaves.stream().findAny().get();
                 createTransitions(expression.getChildren().get(1), transitions, leaves);
                 ParseTreeExpression condition = createParseTreeExpression(expression.getChildren().get(3).getSymbol(), expression.getChildren().get(3).getChildren());
-                Decision decision = createDecision(condition);
-                leaves.forEach(leave -> transitions.add(createTransition(leave, decision)));
+                Decision decision = UmlStateFactory.createDecision(condition);
+                leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, decision)));
                 TransitionTarget loopStart = transitions.stream().filter(transition -> loopRoot.equals(transition.getSource())).findAny().get().getTarget();
-                transitions.add(createTransition(decision, loopStart, fail(decision), createStereotypes("repeat")));
+                transitions.add(UmlTransitionFactory.createTransition(decision, loopStart, UmlGuardConditionFactory.fail(decision), createStereotypes("repeat")));
                 leaves.clear();
                 leaves.add(decision);
             }
             else if ("Assignable".equals(expression.getChildren().getFirst().getSymbol())) {
                 ActionState<Action> assignment = createActionState(new Statement(expression.getChildren().getFirst(), expression.getChildren().get(2)));
-                leaves.forEach(leave -> transitions.add(createTransition(leave, assignment)));
+                leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, assignment)));
                 leaves.clear();
                 leaves.add(assignment);
             }
-//            else if ("Statements".equals(expression.getChildren().getFirst().getSymbol())) {
-//                createStatementSequence(expression.getChildren().getFirst().getChildren().get(1), transitions, leaves);
-//            }
             else {
                 throw new IllegalStateException("Unexpected symbol " + expression.getChildren().getFirst().getSymbol());
             }
@@ -655,41 +333,13 @@ public class PascalCompiler {
         private void addGuardCondition(Collection<Transition<Event, GuardCondition, Action>> transitions, Predicate<Transition<Event, GuardCondition, Action>> predicate, GuardCondition guardCondition, String stereotype) {
             Transition<Event, GuardCondition, Action> transition = transitions.stream().filter(predicate).findAny().get();
             transitions.remove(transition);
-            transitions.add(createTransition(transition.getSource(), transition.getTarget(), Optional.of(guardCondition), transition.getAction(), createStereotypes(stereotype)));
+            transitions.add(UmlTransitionFactory.copyTransition(transition, Optional.of(guardCondition), createStereotypes(stereotype)));
         }
 
         private void addStereotype(Collection<Transition<Event, GuardCondition, Action>> transitions, Predicate<Transition<Event, GuardCondition, Action>> predicate, String stereotype) {
             Transition<Event, GuardCondition, Action> transition = transitions.stream().filter(predicate).findAny().get();
             transitions.remove(transition);
-            transitions.add(createTransition(transition.getSource(), transition.getTarget(), transition.getGuardCondition(), transition.getAction(), createStereotypes(stereotype)));
-        }
-
-        private static GuardCondition pass(Decision decision) {
-            return new GuardCondition() {
-                @Override
-                public boolean applies(Memory memory) throws StateMachineException {
-                    return ((ParseTreeExpression) decision.getExpression()).evaluate(memory).get().equals(true);
-                }
-
-                @Override
-                public String toString() {
-                    return decision.getExpression().toString();
-                }
-            };
-        }
-
-        private static GuardCondition fail(Decision decision) {
-            return new GuardCondition() {
-                @Override
-                public boolean applies(Memory memory) throws StateMachineException {
-                    return ((ParseTreeExpression) decision.getExpression()).evaluate(memory).get().equals(false);
-                }
-
-                @Override
-                public String toString() {
-                    return "\u00AC (" + decision.getExpression().toString() + ')';
-                }
-            };
+            transitions.add(UmlTransitionFactory.copyTransition(transition, transition.getGuardCondition(), createStereotypes(stereotype)));
         }
 
         private void createTransitions(PascalParser.Node statements, Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
@@ -737,37 +387,6 @@ public class PascalCompiler {
             throw new IllegalStateException("Not an expression: " + expression);
         }
 
-        private ParseTreeExpression createIncrementExpression(PascalParser.Node operand) {
-            return new ParseTreeExpression() {
-                @Override
-                public String type() {
-                    return "Boolean";
-                }
-
-                @Override
-                public String value() {
-                    return ".INC. " + operand.content();
-                }
-
-                @Override
-                public Value evaluate(Memory memory) throws StateMachineException {
-                    return new Value() {
-                        @Override
-                        public java.lang.Object get() throws StateMachineException {
-                            Value value = createParseTreeExpression(operand.getSymbol(), operand.getChildren()).evaluate(memory);
-                            return ((Integer) value.get()) + 1;
-                        }
-
-                        @Override
-                        public String type() {
-                            return "Integer";
-                        }
-
-                    };
-                }
-            };
-        }
-
         private ParseTreeExpression createLessEqualExpression(PascalParser.Node leftOperand, PascalParser.Node rightOperand) {
             return new ParseTreeExpression() {
                 @Override
@@ -779,22 +398,16 @@ public class PascalCompiler {
                 public String value() {
                     return leftOperand.content() + " .LE. " + rightOperand.content();
                 }
+
                 @Override
                 public Value evaluate(Memory memory) throws StateMachineException {
-                    return new Value() {
-                        @Override
-                        public java.lang.Object get() throws StateMachineException {
-                            Value left = createParseTreeExpression(leftOperand.getSymbol(), leftOperand.getChildren()).evaluate(memory);
-                            Value right = createParseTreeExpression(rightOperand.getSymbol(), rightOperand.getChildren()).evaluate(memory);
-                            return ((Comparable) left.get()).compareTo((Comparable) right.get()) <= 0;
-                        }
+                    return Value.of(() -> lessOrEqual(memory), "Boolean");
+                }
 
-                        @Override
-                        public String type() {
-                            return "Boolean";
-                        }
-
-                    };
+                private java.lang.Object lessOrEqual(Memory memory) throws StateMachineException {
+                    Value left = createParseTreeExpression(leftOperand.getSymbol(), leftOperand.getChildren()).evaluate(memory);
+                    Value right = createParseTreeExpression(rightOperand.getSymbol(), rightOperand.getChildren()).evaluate(memory);
+                    return ((Comparable) left.get()).compareTo((Comparable) right.get()) <= 0;
                 }
 
                 @Override
@@ -827,47 +440,9 @@ public class PascalCompiler {
                         public Value evaluate(Memory memory) {
                             return switch (expression.getFirst().getChildren().getFirst().getSymbol()) {
                                 case "IntegerLiteral" ->
-                                    new Value() {
-                                        @Override
-                                        public java.lang.Object get() {
-                                            String literal = value();
-                                            return (literal.startsWith("$"))
-                                                ? Integer.parseInt(literal, 1, literal.length(), 0x10)
-                                                : Integer.valueOf(literal);
-                                        }
-
-                                        @Override
-                                        public String type() {
-                                            return "Integer";
-                                        }
-
-                                    };
+                                    Value.of(() -> parseInteger(value()), "Integer");
                                 case "'" ->
-                                    new Value() {
-                                        @Override
-                                        public java.lang.Object get() {
-                                            return value();
-                                        }
-
-                                        @Override
-                                        public String type() {
-                                            return "String";
-                                        }
-
-                                    };
-//                                case "Identifier" ->
-//                                    new Value() {
-//                                        @Override
-//                                        public java.lang.Object get() {
-//                                            return 0;
-//                                        }
-//
-//                                        @Override
-//                                        public String type() {
-//                                            return "Integer";
-//                                        }
-//
-//                                    };
+                                    Value.of(() -> value(), "String");
                                 default ->
                                     throw new IllegalArgumentException("Cannot evaluate literal: " + expression.getFirst().getChildren().getFirst().getSymbol());
                             };
@@ -876,8 +451,6 @@ public class PascalCompiler {
                     };
                 }
                 if ("Identifier".equals(expression.getFirst().getSymbol())) {
-                    if (methods.containsKey(expression.getFirst().getSymbol())) {
-                    }
                     return new ParseTreeExpression() {
                         @Override
                         public String type() {
@@ -891,28 +464,29 @@ public class PascalCompiler {
 
                         @Override
                         public Value evaluate(Memory memory) {
-                            return new Value() {
-                                @Override
-                                public java.lang.Object get() throws StateMachineException {
-                                    String value = value();
-                                    Optional<Collection<Transition<Event, GuardCondition, Action>>> method = methods.entrySet().stream()
-                                        .filter(entry -> entry.getKey().getName().equals(Optional.of(value)))
-                                        .map(entry -> entry.getValue())
-                                        .findAny();
-                                    if (method.isPresent()) {
-                                        StateMachine stateMachine = new StateMachine(method.get());
-                                        stateMachine.start();
-                                        return stateMachine.getMemoryObject(value);
-                                    }
-                                    return memory.load(value());
-                                }
+                            return Value.of(() -> invokeFunction(memory), "*");
+                        }
 
-                                @Override
-                                public String type() {
-                                    return "*";
-                                }
+                        private java.lang.Object invokeFunction(Memory memory) throws StateMachineException {
+                            String functionName = value();
+                            Optional<Collection<Transition<Event, GuardCondition, Action>>> method = findMethod(functionName);
+                            if (method.isPresent()) {
+                                return invoke(method.get(), functionName);
+                            }
+                            return memory.load(value());
+                        }
 
-                            };
+                        private java.lang.Object invoke(Collection<Transition<Event, GuardCondition, Action>> method, String resultName) throws StateMachineException {
+                            StateMachine stateMachine = new StateMachine(method);
+                            stateMachine.start();
+                            return stateMachine.getMemoryObject(resultName);
+                        }
+
+                        private Optional<Collection<Transition<Event, GuardCondition, Action>>> findMethod(String name) {
+                            return methods.entrySet().stream()
+                                .filter(entry -> name.equals(entry.getKey()))
+                                .map(entry -> entry.getValue())
+                                .findAny();
                         }
 
                     };
@@ -931,25 +505,11 @@ public class PascalCompiler {
 
                         @Override
                         public Value evaluate(Memory memory) {
-                            return new Value() {
-                                @Override
-                                public java.lang.Object get() throws StateMachineException {
-                                    return memory.load(value());
-                                }
-
-                                @Override
-                                public String type() {
-                                    return "*";
-                                }
-
-                            };
+                            return Value.of(() -> memory.load(value()), "*");
                         }
 
                     };
                 }
-//                if ("Expression".equals(symbol)) {
-//                    return createParseTreeExpression(expression.getFirst().getSymbol(), expression.getFirst().getChildren());
-//                }
                 throw new IllegalStateException("Cannot create parse tree expression");
             }
             String type = typeOf(expression);
@@ -968,7 +528,7 @@ public class PascalCompiler {
                     }
                     @Override
                     public Value evaluate(Memory memory) throws StateMachineException {
-                        return getBinaryOperator(expression.get(1)).evaluate(
+                        return getDyadicOperator(expression.get(1)).evaluate(
                             createParseTreeExpression(expression.getFirst().getSymbol(), expression.getFirst().getChildren()),
                             createParseTreeExpression(expression.getLast().getSymbol(), expression.getLast().getChildren()),
                             memory);
@@ -976,6 +536,12 @@ public class PascalCompiler {
                 };
             }
             throw new IllegalStateException("Invalid expression");
+        }
+
+        private java.lang.Object parseInteger(String literal) {
+            return (literal.startsWith("$"))
+                ? Integer.parseInt(literal, 1, literal.length(), 0x10)
+                : Integer.valueOf(literal);
         }
 
         public Optional<PascalParser.Node> getAssignable() {
@@ -1002,25 +568,7 @@ public class PascalCompiler {
         throw new IllegalStateException("Cannot determine general type");
     }
 
-
-    public interface ParseTreeExpression extends Expression {
-
-        String type();
-
-        String value();
-
-        Value evaluate(Memory memory) throws StateMachineException;
-    }
-
-    public interface Value {
-
-        java.lang.Object get() throws StateMachineException;
-
-        String type();
-    }
-
-
-    private static BinaryOperator getBinaryOperator(PascalParser.Node node) {
+    private static DyadicOperator getDyadicOperator(PascalParser.Node node) {
         switch (node.content().toLowerCase()) {
             case "^":
                 return createArithmicOperator((left, right) -> power(left, right));
@@ -1103,22 +651,12 @@ public class PascalCompiler {
         return left.doubleValue() - right.doubleValue();
     }
 
-    private static BinaryOperator createArithmicOperator(BiFunction<Number, Number, Number> function) {
-        return new BinaryOperator() {
+    private static DyadicOperator createArithmicOperator(BiFunction<Number, Number, Number> function) {
+        return new DyadicOperator() {
             @Override
             public Value evaluate(ParseTreeExpression leftOperand, ParseTreeExpression rightOperand, Memory memory) throws StateMachineException {
                 Number value = function.apply(requireNumber(leftOperand, memory), requireNumber(rightOperand, memory));
-                return new Value() {
-                    @Override
-                    public java.lang.Object get() throws StateMachineException {
-                        return value;
-                    }
-
-                    @Override
-                    public String type() {
-                        return (value instanceof Integer) ? "Integer" : "Real";
-                    }
-                };
+                return Value.of(() -> value, (value instanceof Integer) ? "Integer" : "Real");
             }
         };
     }
@@ -1127,25 +665,14 @@ public class PascalCompiler {
         if (expression.evaluate(memory).get() instanceof Number number) {
             return number;
         }
-        throw new StateMachineException(expression.type() + "is not a comparable");
+        throw new StateMachineException(expression.type() + " is not a number");
     }
 
-    private static BinaryOperator createLogicalOperator(BiFunction<Boolean, Boolean, Boolean> function) {
-        return new BinaryOperator() {
+    private static DyadicOperator createLogicalOperator(BiFunction<Boolean, Boolean, Boolean> function) {
+        return new DyadicOperator() {
             @Override
             public Value evaluate(ParseTreeExpression leftOperand, ParseTreeExpression rightOperand, Memory memory) throws StateMachineException {
-                return new Value() {
-
-                    @Override
-                    public java.lang.Object get() throws StateMachineException {
-                        return function.apply(requireBoolean(leftOperand, memory), requireBoolean(rightOperand, memory));
-                    }
-
-                    @Override
-                    public String type() {
-                        return "Boolean";
-                    }
-                };
+                return Value.of(() -> function.apply(requireBoolean(leftOperand, memory), requireBoolean(rightOperand, memory)), "Boolean");
             }
         };
     }
@@ -1157,22 +684,11 @@ public class PascalCompiler {
         throw new StateMachineException(expression.type() + "is not a boolean");
     }
 
-    private static BinaryOperator createRelationalOperator(BiFunction<Comparable, Comparable, Boolean> function) {
-        return new BinaryOperator() {
+    private static DyadicOperator createRelationalOperator(BiFunction<Comparable, Comparable, Boolean> function) {
+        return new DyadicOperator() {
             @Override
             public Value evaluate(ParseTreeExpression leftOperand, ParseTreeExpression rightOperand, Memory memory) throws StateMachineException {
-                return new Value() {
-
-                    @Override
-                    public java.lang.Object get() throws StateMachineException {
-                        return function.apply(requireComparable(leftOperand, memory), requireComparable(rightOperand, memory));
-                    }
-
-                    @Override
-                    public String type() {
-                        return "Boolean";
-                    }
-                };
+                return Value.of(() -> function.apply(requireComparable(leftOperand, memory), requireComparable(rightOperand, memory)), "Boolean");
             }
         };
     }
@@ -1181,14 +697,9 @@ public class PascalCompiler {
         if (expression.evaluate(memory).get() instanceof Comparable comparable) {
             return comparable;
         }
-        throw new StateMachineException(expression.type() + "is not a comparable");
+        throw new StateMachineException(expression.type() + " is not a comparable");
     }
 
-    private interface BinaryOperator {
-
-        Value evaluate(ParseTreeExpression leftOperand, ParseTreeExpression rightOperand, Memory memory) throws StateMachineException;
-    }
-
-    private final Map<Operation, Collection<Transition<Event, GuardCondition, Action>>> methods = new HashMap<>();
+    private final Map<String, Collection<Transition<Event, GuardCondition, Action>>> methods = new HashMap<>();
 
 }

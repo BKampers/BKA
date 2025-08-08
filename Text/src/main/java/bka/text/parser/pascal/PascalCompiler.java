@@ -652,12 +652,9 @@ public class PascalCompiler {
     }
 
     private static DyadicOperator createArithmicOperator(BiFunction<Number, Number, Number> function) {
-        return new DyadicOperator() {
-            @Override
-            public Value evaluate(ParseTreeExpression leftOperand, ParseTreeExpression rightOperand, Memory memory) throws StateMachineException {
-                Number value = function.apply(requireNumber(leftOperand, memory), requireNumber(rightOperand, memory));
-                return Value.of(() -> value, (value instanceof Integer) ? "Integer" : "Real");
-            }
+        return (ParseTreeExpression leftOperand, ParseTreeExpression rightOperand, Memory memory) -> {
+            Number value = function.apply(requireNumber(leftOperand, memory), requireNumber(rightOperand, memory));
+            return Value.of(() -> value, (value instanceof Integer) ? "Integer" : "Real");
         };
     }
 
@@ -669,11 +666,8 @@ public class PascalCompiler {
     }
 
     private static DyadicOperator createLogicalOperator(BiFunction<Boolean, Boolean, Boolean> function) {
-        return new DyadicOperator() {
-            @Override
-            public Value evaluate(ParseTreeExpression leftOperand, ParseTreeExpression rightOperand, Memory memory) throws StateMachineException {
-                return Value.of(() -> function.apply(requireBoolean(leftOperand, memory), requireBoolean(rightOperand, memory)), "Boolean");
-            }
+        return (ParseTreeExpression leftOperand, ParseTreeExpression rightOperand, Memory memory) -> {
+            return Value.of(() -> function.apply(requireBoolean(leftOperand, memory), requireBoolean(rightOperand, memory)), "Boolean");
         };
     }
 
@@ -681,15 +675,12 @@ public class PascalCompiler {
         if (expression.evaluate(memory).get() instanceof Boolean bool) {
             return bool;
         }
-        throw new StateMachineException(expression.type() + "is not a boolean");
+        throw new StateMachineException(expression.type() + " is not a boolean");
     }
 
     private static DyadicOperator createRelationalOperator(BiFunction<Comparable, Comparable, Boolean> function) {
-        return new DyadicOperator() {
-            @Override
-            public Value evaluate(ParseTreeExpression leftOperand, ParseTreeExpression rightOperand, Memory memory) throws StateMachineException {
-                return Value.of(() -> function.apply(requireComparable(leftOperand, memory), requireComparable(rightOperand, memory)), "Boolean");
-            }
+        return (ParseTreeExpression leftOperand, ParseTreeExpression rightOperand, Memory memory) -> {
+            return Value.of(() -> function.apply(requireComparable(leftOperand, memory), requireComparable(rightOperand, memory)), "Boolean");
         };
     }
 

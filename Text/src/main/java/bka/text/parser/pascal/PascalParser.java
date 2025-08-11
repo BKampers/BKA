@@ -147,9 +147,9 @@ public class PascalParser {
         }
 
         private Node(String symbol, int start, List<Node> children, String error) {
-            this.symbol = symbol;
+            this.symbol = Objects.requireNonNull(symbol);
             this.start = start;
-            this.children.addAll(children);
+            this.children = new ArrayList<>(children);
             this.error = error;
         }
 
@@ -213,7 +213,7 @@ public class PascalParser {
         private final String symbol;
         private final int start;
         private int end;
-        private final List<Node> children = new ArrayList<>();
+        private final List<Node> children;
         private String error;
     }
 

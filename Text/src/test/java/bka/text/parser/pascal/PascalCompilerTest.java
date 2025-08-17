@@ -4,6 +4,7 @@
 
 package bka.text.parser.pascal;
 
+import bka.text.parser.*;
 import com.fasterxml.jackson.databind.*;
 import java.io.*;
 import java.nio.file.*;
@@ -34,7 +35,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testWhileLoop() throws StateMachineException {
-        List<PascalParser.Node> tree = parser.buildTree("""
+        List<Node> tree = parser.buildTree("""
             PROGRAM while_loop;
             VAR i: INTEGER;
             BEGIN
@@ -52,7 +53,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testThenBranch() throws StateMachineException {
-        List<PascalParser.Node> tree = parser.buildTree("""
+        List<Node> tree = parser.buildTree("""
             PROGRAM then_branch;
             VAR i: INTEGER;
             BEGIN
@@ -70,7 +71,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testSkipThenBranch() throws StateMachineException {
-        List<PascalParser.Node> tree = parser.buildTree("""
+        List<Node> tree = parser.buildTree("""
             PROGRAM skip_then;
             VAR i: INTEGER;
             BEGIN
@@ -88,7 +89,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testElseBranch() throws StateMachineException {
-        List<PascalParser.Node> tree = parser.buildTree("""
+        List<Node> tree = parser.buildTree("""
             PROGRAM else_branch;
             VAR i: INTEGER;
             BEGIN
@@ -108,7 +109,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testForLoop() throws StateMachineException {
-        List<PascalParser.Node> tree = parser.buildTree("""
+        List<Node> tree = parser.buildTree("""
             PROGRAM for_loop;
             VAR i, sum: INTEGER;
             BEGIN
@@ -129,7 +130,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testRepeatLoop() throws StateMachineException {
-        List<PascalParser.Node> tree = parser.buildTree("""
+        List<Node> tree = parser.buildTree("""
             PROGRAM for_loop;
             VAR sum: INTEGER;
             BEGIN
@@ -148,7 +149,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testFunctionCall() throws StateMachineException {
-        List<PascalParser.Node> tree = parser.buildTree("""
+        List<Node> tree = parser.buildTree("""
             PROGRAM function_call;
             VAR result : INTEGER;
 

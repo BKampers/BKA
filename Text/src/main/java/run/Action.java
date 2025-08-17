@@ -4,7 +4,7 @@
 
 package run;
 
-import bka.text.parser.pascal.*;
+import bka.text.parser.*;
 import java.util.*;
 
 
@@ -24,7 +24,7 @@ public interface Action {
                 Optional<ParseTreeExpression> expression = statement.getExpressionTree();
                 if (expression.isPresent()) {
                     Value value = expression.get().evaluate(memory);
-                    Optional<PascalParser.Node> assignable = statement.getAssignable();
+                    Optional<Node> assignable = statement.getAssignable();
                     if (assignable.isPresent()) {
                         memory.store(assignable.get().content(), value.get());
                     }

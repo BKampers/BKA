@@ -3,6 +3,7 @@
 */
 package bka.text.parser.pascal;
 
+import bka.text.parser.Node;
 import java.util.*;
 import java.util.regex.*;
 import java.util.stream.*;
@@ -73,44 +74,44 @@ public class PascalParser {
 
     private List<Node> resolve(int index, List<String> expression) {
         List<Node> resolution = new ArrayList<>();
-        int i = index;
+        int sourceIndex = index;
         for (String symbol : expression) {
-            Node node = buildNode(i, symbol);
+            Node node = createNode(sourceIndex, symbol);
             resolution.add(node);
-            if (node.getError() != null) {
+            if (node.getError().isPresent()) {
                 return resolution;
             }
-            i = skipWhitespaceAndComment(node.getEnd());
+            sourceIndex = skipWhitespaceAndComment(node.getEnd());
         }
         return resolution;
     }
 
-    private Node buildNode(int index, String symbol) {
-        Node node = new Node(symbol, index);
+    private Node createNode(int index, String symbol) {
         if (grammar.keySet().contains(symbol)) {
-            node.setChildren(buildTree(index, symbol));
-            Optional<Node> error = findError(node.getChildren());
-            if (error.isPresent()) {
-                node.setError(error.get().getError());
-            }
-            else {
-                node.setEnd((node.getChildren().isEmpty()) ? node.getStart() : node.getChildren().getLast().getEnd());
-            }
-            return node;
+            return createTreeNode(index, symbol);
         }
-        else {
-            Matcher matcher = matchers.computeIfAbsent(symbol, this::createMatcher);
-            if (matcher.find(index) && matcher.start() == index) {
-                node.setEnd(matcher.end());
-                return node;
-            }
+        return createMatchNode(symbol, index);
+    }
+
+    private Node createTreeNode(int index, String symbol) {
+        List<Node> children = buildTree(index, symbol);
+        Optional<Node> error = findError(children);
+        if (error.isPresent()) {
+            return new Node(source, symbol, index, children, error.get().getError().get());
         }
-        node.setError("No match");
-        return node;
+        return new Node(source, symbol, index, children);
+    }
+
+    private Node createMatchNode(String symbol, int index) {
+        Matcher matcher = matchers.computeIfAbsent(symbol, this::createMatcher);
+        if (matcher.find(index) && matcher.start() == index) {
+            return new Node(source, symbol, index, matcher.end());
+        }
+        return new Node(source, symbol, index, "No match");
     }
 
     private static Optional<Node> findError(List<Node> nodes) {
-        return nodes.stream().filter(node -> node.getError() != null).findAny();
+        return nodes.stream().filter(node -> node.getError().isPresent()).findAny();
     }
 
     private Matcher createMatcher(String symbol) {
@@ -134,87 +135,6 @@ public class PascalParser {
             }
         }
         return index;
-    }
-
-    public class Node {
-
-        private Node(String symbol, int start) {
-            this(symbol, start, null);
-        }
-
-        private Node(String symbol, int start, String error) {
-            this(symbol, start, Collections.emptyList(), error);
-        }
-
-        private Node(String symbol, int start, List<Node> children, String error) {
-            this.symbol = Objects.requireNonNull(symbol);
-            this.start = start;
-            this.children = new ArrayList<>(children);
-            this.error = error;
-        }
-
-        public int getStart() {
-            return start;
-        }
-
-        public int getEnd() {
-            return end;
-        }
-
-        public String getSymbol() {
-            return symbol;
-        }
-
-        public List<Node> getChildren() {
-            return children;
-        }
-
-        public String getError() {
-            return error;
-        }
-
-        private void setEnd(int end) {
-            this.end = end;
-        }
-
-        private void setChildren(List<Node> children) {
-            this.children.addAll(children);
-        }
-
-        private void setError(String error) {
-            this.error = error;
-        }
-
-        @Override
-        public String toString() {
-            StringBuilder builder = new StringBuilder();
-            if (error != null) {
-                builder.append("Error: ").append(error).append(' ');
-            }
-            builder.append(symbol);
-            builder.append(" (").append(children.size()).append(')');
-            if (0 <= start && start <= end && end < source.length()) {
-                builder.append(" '").append(source.substring(start, end)).append('\'');
-            }
-            return builder.toString();
-        }
-
-        public String content() {
-            if (0 <= start && start <= end && end <= source.length()) {
-                return source.substring(start, end);
-            }
-            return "";
-        }
-
-        public int startLine() {
-            return source.substring(0, start).split("\n").length;
-        }
-
-        private final String symbol;
-        private final int start;
-        private int end;
-        private final List<Node> children;
-        private String error;
     }
 
     private final Map<String, List<List<String>>> grammar;

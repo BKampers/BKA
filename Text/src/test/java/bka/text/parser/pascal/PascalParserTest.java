@@ -1,5 +1,6 @@
 package bka.text.parser.pascal;
 
+import bka.text.parser.*;
 import com.fasterxml.jackson.databind.*;
 import java.io.*;
 import java.nio.file.*;
@@ -226,7 +227,7 @@ public class PascalParserTest {
 
     @Test
     public void testVariableDeclarations() {
-        List<PascalParser.Node> tree = parser.buildTree("""
+        List<Node> tree = parser.buildTree("""
             PROGRAM program_name;
             VAR bool: BOOLEAN;
             VAR byte, word: 0 .. 255;
@@ -625,19 +626,19 @@ public class PascalParserTest {
         assertTrue(output.startsWith("Error"));
     }
 
-    private static void assertSuccess(List<PascalParser.Node> actual) {
+    private static void assertSuccess(List<Node> actual) {
         actual.forEach(node -> {
-            if (node.getError() != null) {
+            if (node.getError().isPresent()) {
                 fail("Error in line" + node.startLine() + ", Symbol " + node.getSymbol());
             }
         });
     }
 
-    private static void assertParseTree(List<ExpectedNode> expected, List<PascalParser.Node> actual) {
+    private static void assertParseTree(List<ExpectedNode> expected, List<Node> actual) {
         assertParseTree(null, expected, actual);
     }
 
-    private static void assertParseTree(PascalParser.Node parent, List<ExpectedNode> expected, List<PascalParser.Node> actual) {
+    private static void assertParseTree(Node parent, List<ExpectedNode> expected, List<Node> actual) {
         int line = (parent == null) ? 0 : parent.startLine();
         assertEquals(expected.size(), actual.size(), () -> "Line " + line + ": Child count of '" + ((parent == null) ? "root" : parent.getSymbol()) + '\'');
         for (int i = 0; i < expected.size(); ++i) {
@@ -699,7 +700,7 @@ public class PascalParserTest {
             this.error = error;
         }
 
-        public void assertParserNode(PascalParser.Node node) {
+        public void assertParserNode(Node node) {
             if (symbol != null) {
                 assertEquals(symbol, node.getSymbol(), () -> "Line " + node.startLine() + ": Symbol");
             }
@@ -710,7 +711,7 @@ public class PascalParserTest {
                 assertParseTree(node, children, node.getChildren());
             }
             if (error != null) {
-                assertEquals(error, node.getError(), () -> "Line " + node.startLine() + ": Error");
+                assertEquals(Optional.of(error), node.getError(), () -> "Line " + node.startLine() + ": Error");
             }
         }
 

@@ -3,6 +3,7 @@
 */
 package run;
 
+import bka.text.parser.*;
 import bka.text.parser.pascal.*;
 import java.util.*;
 import java.util.function.*;
@@ -12,15 +13,15 @@ import uml.statechart.*;
 
 public class Statement {
 
-    public Statement(PascalParser.Node node, Function<String, Optional<Collection<Transition<Event, GuardCondition, Action>>>> methods) {
+    public Statement(Node node, Function<String, Optional<Collection<Transition<Event, GuardCondition, Action>>>> methods) {
         this(Optional.empty(), Objects.requireNonNull(node), Objects.requireNonNull(methods));
     }
 
-    private Statement(PascalParser.Node assignable, PascalParser.Node expression, Function<String, Optional<Collection<Transition<Event, GuardCondition, Action>>>> methods) {
+    private Statement(Node assignable, Node expression, Function<String, Optional<Collection<Transition<Event, GuardCondition, Action>>>> methods) {
         this(Optional.of(assignable), expression, methods);
     }
 
-    private Statement(Optional<PascalParser.Node> assignable, PascalParser.Node expression, Function<String, Optional<Collection<Transition<Event, GuardCondition, Action>>>> methods) {
+    private Statement(Optional<Node> assignable, Node expression, Function<String, Optional<Collection<Transition<Event, GuardCondition, Action>>>> methods) {
         this.assignable = assignable;
         this.expression = expression;
         this.methodSupplier = methods;
@@ -67,7 +68,7 @@ public class Statement {
     }
 
     private void addForLoopTransitions(Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
-        PascalParser.Node identifier = expression.getChildren().get(1);
+        Node identifier = expression.getChildren().get(1);
         ActionState<Action> loopInitialization = createActionState(new Statement(identifier, expression.getChildren().get(3), methodSupplier));
         leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, loopInitialization)));
         leaves.clear();
@@ -141,7 +142,7 @@ public class Statement {
         transitions.add(UmlTransitionFactory.copyTransition(transition, transition.getGuardCondition(), UmlStereotypeFactory.createStereotypes(stereotype)));
     }
 
-    private void createTransitions(PascalParser.Node statements, Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
+    private void createTransitions(Node statements, Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
         if ("CompoundStatement".equals(statements.getChildren().getFirst().getSymbol())) {
             createStatementSequence(statements.getChildren().getFirst().getChildren().get(1), transitions, leaves);
         }
@@ -153,7 +154,7 @@ public class Statement {
         }
     }
 
-    private void createStatementSequence(PascalParser.Node statements, Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
+    private void createStatementSequence(Node statements, Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
         while (statements != null) {
             Statement statement = new Statement(statements.getChildren().getFirst(), methodSupplier);
             statement.getTransitions(transitions, leaves);
@@ -161,7 +162,7 @@ public class Statement {
         }
     }
 
-    private String typeOf(List<PascalParser.Node> expression) {
+    private String typeOf(List<Node> expression) {
         if (expression.size() == 1) {
             return "*";
         }
@@ -194,7 +195,7 @@ public class Statement {
         throw new IllegalStateException("Not an expression: " + expression);
     }
 
-    private ParseTreeExpression getExpressionTree(PascalParser.Node expression) {
+    private ParseTreeExpression getExpressionTree(Node expression) {
         if ("Expression".equals(expression.getSymbol())) {
             return createParseTreeExpression(expression.getSymbol(), expression.getChildren());
         }
@@ -204,7 +205,7 @@ public class Statement {
         throw new IllegalStateException("Not an expression: " + expression);
     }
 
-    private ParseTreeExpression createLessEqualExpression(PascalParser.Node leftOperand, PascalParser.Node rightOperand) {
+    private ParseTreeExpression createLessEqualExpression(Node leftOperand, Node rightOperand) {
         Evaluator evaluator = memory -> {
             Value left = createParseTreeExpression(leftOperand.getSymbol(), leftOperand.getChildren()).evaluate(memory);
             Value right = createParseTreeExpression(rightOperand.getSymbol(), rightOperand.getChildren()).evaluate(memory);
@@ -213,7 +214,7 @@ public class Statement {
         return ParseTreeExpression.of("Boolean", leftOperand.content() + " .LE. " + rightOperand.content(), evaluator);
     }
 
-    private ParseTreeExpression createParseTreeExpression(String symbol, List<PascalParser.Node> expression) {
+    private ParseTreeExpression createParseTreeExpression(String symbol, List<Node> expression) {
         if (expression.size() == 1) {
             if ("Literal".equals(expression.getFirst().getSymbol())) {
                 String type = switch (expression.getFirst().getChildren().getFirst().getSymbol()) {
@@ -281,7 +282,7 @@ public class Statement {
             : Integer.valueOf(literal);
     }
 
-    private static DyadicOperator getDyadicOperator(PascalParser.Node node) {
+    private static DyadicOperator getDyadicOperator(Node node) {
         switch (node.content().toLowerCase()) {
             case "^":
                 return createArithmicOperator((left, right) -> power(left, right));
@@ -404,7 +405,7 @@ public class Statement {
         throw new StateMachineException(expression.type() + " is not a comparable");
     }
 
-    public Optional<PascalParser.Node> getAssignable() {
+    public Optional<Node> getAssignable() {
         return assignable;
     }
 
@@ -418,8 +419,8 @@ public class Statement {
         return builder.toString();
     }
 
-    private final Optional<PascalParser.Node> assignable;
-    private final PascalParser.Node expression;
+    private final Optional<Node> assignable;
+    private final Node expression;
 
     private final Function<String, Optional<Collection<Transition<Event, GuardCondition, Action>>>> methodSupplier;
 

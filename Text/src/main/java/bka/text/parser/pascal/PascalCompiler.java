@@ -4,6 +4,7 @@
 
 package bka.text.parser.pascal;
 
+import bka.text.parser.Node;
 import java.util.*;
 import java.util.stream.*;
 import run.*;
@@ -13,7 +14,7 @@ import uml.structure.*;
 
 public class PascalCompiler {
 
-    public java.lang.Object createObject(List<PascalParser.Node> tree) {
+    public java.lang.Object createObject(List<Node> tree) {
         return switch (tree.getFirst().getSymbol()) {
             case "PROGRAM\\b" ->
                 createProgramClass(tree);
@@ -30,7 +31,7 @@ public class PascalCompiler {
         return Collections.unmodifiableCollection(methods.get(operation.getName().get()));
     }
 
-    private uml.structure.Class createProgramClass(List<PascalParser.Node> nodes) {
+    private uml.structure.Class createProgramClass(List<Node> nodes) {
         UmlClassBuilder builder = new UmlClassBuilder(nodes.get(1).content());
         addProgramVariables(builder, nodes.get(3));
         String programName = nodes.get(1).content();
@@ -39,7 +40,7 @@ public class PascalCompiler {
         return builder.build();
     }
 
-    private void addProgramVariables(UmlClassBuilder builder, PascalParser.Node declarations) {
+    private void addProgramVariables(UmlClassBuilder builder, Node declarations) {
         if (!declarations.getChildren().isEmpty()) {
             if ("VariableDeclaration".equals(declarations.getChildren().getFirst().getSymbol())) {
                 addVariables(builder, declarations.getChildren().getFirst());
@@ -48,23 +49,23 @@ public class PascalCompiler {
         }
     }
 
-    private void addVariables(UmlClassBuilder builder, PascalParser.Node variableDeclaration) {
+    private void addVariables(UmlClassBuilder builder, Node variableDeclaration) {
         createAttributes(builder, variableDeclaration.getChildren().get(variableDeclaration.getChildren().size() - 2));
     }
 
-    private void createAttributes(UmlClassBuilder builder, PascalParser.Node variableDeclarationList) {
+    private void createAttributes(UmlClassBuilder builder, Node variableDeclarationList) {
         addAttributesFromExpression(builder, variableDeclarationList.getChildren().getFirst());
         if (variableDeclarationList.getChildren().size() > 1) {
             createAttributes(builder, variableDeclarationList.getChildren().getLast());
         }
     }
 
-    private void addAttributesFromExpression(UmlClassBuilder builder, PascalParser.Node variableDeclarationExpression) {
+    private void addAttributesFromExpression(UmlClassBuilder builder, Node variableDeclarationExpression) {
         Type type = createType(variableDeclarationExpression.getChildren().get(2));
         createIdentifiers(variableDeclarationExpression.getChildren().getFirst()).forEach(name -> builder.withAttribute(name, type));
     }
 
-    private void addPrivateFunctionOperations(UmlClassBuilder builder, PascalParser.Node declarations) {
+    private void addPrivateFunctionOperations(UmlClassBuilder builder, Node declarations) {
         if (!declarations.getChildren().isEmpty()) {
             if ("FunctionDeclaration".equals(declarations.getChildren().getFirst().getSymbol())) {
                 String functionName = declarations.getChildren().getFirst().getChildren().get(1).content();
@@ -75,8 +76,8 @@ public class PascalCompiler {
         }
     }
 
-    private Type createType(PascalParser.Node typeDeclarationExpression) {
-        final PascalParser.Node expression = typeDeclarationExpression.getChildren().getFirst();
+    private Type createType(Node typeDeclarationExpression) {
+        final Node expression = typeDeclarationExpression.getChildren().getFirst();
         return switch (expression.getSymbol()) {
             case "TypeExpression" ->
                 UmlTypeFactory.create(expression.getChildren().getFirst().content());
@@ -93,37 +94,37 @@ public class PascalCompiler {
         };
     }
 
-    private static Type createEnumerationType(PascalParser.Node identifierList) {
+    private static Type createEnumerationType(Node identifierList) {
         return UmlTypeFactory.create(createIdentifiers(identifierList).stream().collect(Collectors.joining(", ", "( ", " )")));
     }
 
-    private static Type createArrayType(PascalParser.Node rangeExpression, PascalParser.Node typeExpression) {
+    private static Type createArrayType(Node rangeExpression, Node typeExpression) {
         return UmlTypeFactory.create("ARRAY [" + rangeString(rangeExpression) + "] OF " + typeExpression.content());
     }
 
-    private uml.structure.Class createRecordType(PascalParser.Node typeDeclarationExpression) {
+    private uml.structure.Class createRecordType(Node typeDeclarationExpression) {
         UmlClassBuilder builder = new UmlClassBuilder(typeDeclarationExpression.content());
         addRecordFields(builder, typeDeclarationExpression.getChildren().get(1));
         return builder.build();
     }
 
-    private void addRecordFields(UmlClassBuilder builder, PascalParser.Node variableDeclarationList) {
+    private void addRecordFields(UmlClassBuilder builder, Node variableDeclarationList) {
         addRecordField(builder, variableDeclarationList.getChildren().getFirst());
         if (variableDeclarationList.getChildren().size() > 1) {
             addRecordFields(builder, variableDeclarationList.getChildren().getLast());
         }
     }
 
-    private void addRecordField(UmlClassBuilder builder, PascalParser.Node variableDeclarationExpression) {
+    private void addRecordField(UmlClassBuilder builder, Node variableDeclarationExpression) {
         Type type = createType(variableDeclarationExpression.getChildren().get(2));
         createIdentifiers(variableDeclarationExpression.getChildren().getFirst()).forEach(name -> builder.withAttribute(name, type));
     }
 
-    private static String rangeString(PascalParser.Node rangeExpression) {
+    private static String rangeString(Node rangeExpression) {
         return rangeExpression.getChildren().getFirst().content() + " .. " + rangeExpression.getChildren().getLast().content();
     }
 
-    private static List<String> createIdentifiers(PascalParser.Node identifierList) {
+    private static List<String> createIdentifiers(Node identifierList) {
         List<String> identifiers = new ArrayList<>();
         identifiers.add(identifierList.getChildren().getFirst().content());
         if (identifierList.getChildren().size() > 1) {
@@ -132,12 +133,12 @@ public class PascalCompiler {
         return identifiers;
     }
 
-    private void buildOperations(UmlClassBuilder builder, String programName, PascalParser.Node declarations) {
+    private void buildOperations(UmlClassBuilder builder, String programName, Node declarations) {
         builder.withOperation(programName, Member.Visibility.PUBLIC, UmlStereotypeFactory.createStereotypes("Main"));
         addPrivateFunctionOperations(builder, declarations);
     }
 
-    private Collection<Transition<Event, GuardCondition, Action>> createBody(PascalParser.Node compoundStatement) {
+    private Collection<Transition<Event, GuardCondition, Action>> createBody(Node compoundStatement) {
         Collection<Transition<Event, GuardCondition, Action>> body = new ArrayList<>();
         Collection<TransitionSource> leaves = new ArrayList<>(List.of(UmlStateFactory.getInitialState()));
         createStatementSequence(compoundStatement, body, leaves);
@@ -145,7 +146,7 @@ public class PascalCompiler {
         return body;
     }
 
-    private void createStatementSequence(PascalParser.Node statements, Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
+    private void createStatementSequence(Node statements, Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
         while (statements != null) {
             Statement statement = new Statement(statements.getChildren().getFirst(), name -> Optional.ofNullable(methods.get(name)));
             statement.getTransitions(transitions, leaves);

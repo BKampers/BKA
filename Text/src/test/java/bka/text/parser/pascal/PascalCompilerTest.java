@@ -35,7 +35,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testWhileLoop() throws StateMachineException {
-        List<Node> tree = parser.buildTree("""
+        Node tree = parser.buildTree("""
             PROGRAM while_loop;
             VAR i: INTEGER;
             BEGIN
@@ -44,7 +44,7 @@ public class PascalCompilerTest {
                     i := i - 1;
             END.
             """);
-        uml.structure.Class program = (uml.structure.Class) compiler.createObject(tree);
+        uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
         Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
         StateMachine stateMachine = new StateMachine(transitions);
         stateMachine.start();
@@ -53,7 +53,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testThenBranch() throws StateMachineException {
-        List<Node> tree = parser.buildTree("""
+        Node tree = parser.buildTree("""
             PROGRAM then_branch;
             VAR i: INTEGER;
             BEGIN
@@ -62,7 +62,7 @@ public class PascalCompilerTest {
                     i := i DIV 2
             END.
             """);
-        uml.structure.Class program = (uml.structure.Class) compiler.createObject(tree);
+        uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
         Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
         StateMachine stateMachine = new StateMachine(transitions);
         stateMachine.start();
@@ -71,7 +71,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testSkipThenBranch() throws StateMachineException {
-        List<Node> tree = parser.buildTree("""
+        Node tree = parser.buildTree("""
             PROGRAM skip_then;
             VAR i: INTEGER;
             BEGIN
@@ -80,7 +80,7 @@ public class PascalCompilerTest {
                     i := i DIV 2
             END.
             """);
-        uml.structure.Class program = (uml.structure.Class) compiler.createObject(tree);
+        uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
         Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
         StateMachine stateMachine = new StateMachine(transitions);
         stateMachine.start();
@@ -89,7 +89,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testElseBranch() throws StateMachineException {
-        List<Node> tree = parser.buildTree("""
+        Node tree = parser.buildTree("""
             PROGRAM else_branch;
             VAR i: INTEGER;
             BEGIN
@@ -100,7 +100,7 @@ public class PascalCompilerTest {
                     i := i * 2
             END.
             """);
-        uml.structure.Class program = (uml.structure.Class) compiler.createObject(tree);
+        uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
         Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
         StateMachine stateMachine = new StateMachine(transitions);
         stateMachine.start();
@@ -109,7 +109,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testForLoop() throws StateMachineException {
-        List<Node> tree = parser.buildTree("""
+        Node tree = parser.buildTree("""
             PROGRAM for_loop;
             VAR i, sum: INTEGER;
             BEGIN
@@ -120,7 +120,7 @@ public class PascalCompilerTest {
                     END
             END.
             """);
-        uml.structure.Class program = (uml.structure.Class) compiler.createObject(tree);
+        uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
         Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
         StateMachine stateMachine = new StateMachine(transitions);
         stateMachine.start();
@@ -130,7 +130,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testRepeatLoop() throws StateMachineException {
-        List<Node> tree = parser.buildTree("""
+        Node tree = parser.buildTree("""
             PROGRAM for_loop;
             VAR sum: INTEGER;
             BEGIN
@@ -140,7 +140,7 @@ public class PascalCompilerTest {
                     UNTIL sum = 7
             END.
             """);
-        uml.structure.Class program = (uml.structure.Class) compiler.createObject(tree);
+        uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
         Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
         StateMachine stateMachine = new StateMachine(transitions);
         stateMachine.start();
@@ -149,7 +149,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testFunctionCall() throws StateMachineException {
-        List<Node> tree = parser.buildTree("""
+        Node tree = parser.buildTree("""
             PROGRAM function_call;
             VAR result : INTEGER;
 
@@ -162,7 +162,7 @@ public class PascalCompilerTest {
             result := get_result;
             END.
             """);
-        uml.structure.Class program = (uml.structure.Class) compiler.createObject(tree);
+        uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
         Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
         StateMachine stateMachine = new StateMachine(transitions);
         stateMachine.start();

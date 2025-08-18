@@ -14,30 +14,22 @@ import uml.structure.*;
 
 public class PascalCompiler {
 
-    public java.lang.Object createObject(List<Node> tree) {
-        return switch (tree.getFirst().getSymbol()) {
-            case "PROGRAM\\b" ->
-                createProgramClass(tree);
-            case "IdentifierList" ->
-                createIdentifiers(tree.getFirst());
-            case "Identifier" ->
-                tree.getFirst().getChildren().getFirst().content();
-            default ->
-                tree.getFirst().content();
-        };
+    public uml.structure.Class createProgramClass(Node node) {
+        if (!"Program".equals(node.getSymbol())) {
+            throw new IllegalArgumentException("Program keyword is missing");
+        }
+        List<Node> nodes = node.getChildren();
+        String programName = findNode(node.getChildren(), "Identifier").content();
+        UmlClassBuilder builder = new UmlClassBuilder(programName);
+        final Node declarationsNode = findNode(nodes, "Declarations");
+        addProgramVariables(builder, declarationsNode);
+        buildOperations(builder, programName, declarationsNode);
+        methods.put(programName, createBody(findNode(findNode(nodes, "CompoundStatement").getChildren(), "Statements")));
+        return builder.build();
     }
 
     public Collection<Transition<Event, GuardCondition, Action>> getMethod(Operation operation) {
         return Collections.unmodifiableCollection(methods.get(operation.getName().get()));
-    }
-
-    private uml.structure.Class createProgramClass(List<Node> nodes) {
-        UmlClassBuilder builder = new UmlClassBuilder(nodes.get(1).content());
-        addProgramVariables(builder, nodes.get(3));
-        String programName = nodes.get(1).content();
-        buildOperations(builder, programName, nodes.get(3));
-        methods.put(programName, createBody(nodes.get(4).getChildren().get(1)));
-        return builder.build();
     }
 
     private void addProgramVariables(UmlClassBuilder builder, Node declarations) {
@@ -77,7 +69,7 @@ public class PascalCompiler {
     }
 
     private Type createType(Node typeDeclarationExpression) {
-        final Node expression = typeDeclarationExpression.getChildren().getFirst();
+        Node expression = typeDeclarationExpression.getChildren().getFirst();
         return switch (expression.getSymbol()) {
             case "TypeExpression" ->
                 UmlTypeFactory.create(expression.getChildren().getFirst().content());
@@ -152,6 +144,13 @@ public class PascalCompiler {
             statement.getTransitions(transitions, leaves);
             statements = (statements.getChildren().size() > 1) ? statements.getChildren().getLast() : null;
         }
+    }
+
+    private static Node findNode(List<Node> nodes, String symbol) {
+        return nodes.stream()
+            .filter(node -> symbol.equals(node.getSymbol()))
+            .findFirst()
+            .orElseThrow(() -> new NoSuchElementException(symbol));
     }
 
     private final Map<String, Collection<Transition<Event, GuardCondition, Action>>> methods = new HashMap<>();

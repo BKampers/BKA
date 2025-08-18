@@ -16,19 +16,18 @@ public class PascalParser {
 
     public String parse(String sourceCode) {
         long startTime = System.nanoTime();
-        List<Node> nodes = buildTree(sourceCode);
+        Node tree = buildTree(sourceCode);
         long duration = System.nanoTime() - startTime;
-        Optional<Node> error = findError(nodes);
-        if (error.isPresent()) {
-            return "Error: " + error.get().toString();
+        if (tree.getError().isPresent()) {
+            return "Error: " + tree.getError().get();
         }
-        return ("Program parsed successfully in " + (duration / 1000) + " microseconds");
+        return "Program parsed successfully in " + (duration / 1000) + " microseconds";
     }
 
-    public List<Node> buildTree(String sourceCode) {
+    public Node buildTree(String sourceCode) {
         source = sourceCode;
         matchers.clear();
-        return buildTree(0, "Program");
+        return createTreeNode(0, "Program");
     }
 
     private List<Node> buildTree(int index, String symbol) {

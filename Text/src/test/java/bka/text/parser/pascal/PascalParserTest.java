@@ -28,7 +28,7 @@ public class PascalParserTest {
                 emptyNode("Declarations"),
                 emptyBody(" "),
                 endOfProgram()),
-            parser.buildTree("PROGRAM empty; BEGIN END."));
+            parser.buildTree("PROGRAM empty; BEGIN END.").getChildren());
     }
 
     private static ExpectedNode separator() {
@@ -52,7 +52,7 @@ public class PascalParserTest {
                 TYPE fruit = ( apple, banana, cherry );
                 BEGIN
                 END.
-                """));
+                """).getChildren());
     }
 
     @Test
@@ -77,7 +77,7 @@ public class PascalParserTest {
 
                 BEGIN
                 END.
-                """));
+                """).getChildren());
     }
 
     @Test
@@ -103,7 +103,7 @@ public class PascalParserTest {
                 VAR byte : 0..255;
                 BEGIN
                 END.
-                """));
+                """).getChildren());
     }
 
     private static ExpectedNode rangeExpression(String start, String end) {
@@ -227,7 +227,7 @@ public class PascalParserTest {
 
     @Test
     public void testVariableDeclarations() {
-        List<Node> tree = parser.buildTree("""
+        Node tree = parser.buildTree("""
             PROGRAM program_name;
             VAR bool: BOOLEAN;
             VAR byte, word: 0 .. 255;
@@ -343,7 +343,7 @@ public class PascalParserTest {
                         ExpectedNode.ofSymbol("Statement", "")),
                     keyword("END")),
                 ExpectedNode.ofSymbol("\\.", ".")),
-            tree);
+            tree.getChildren());
     }
 
     @Test
@@ -525,7 +525,7 @@ public class PascalParserTest {
                 (*PROGRAM*)program_name;
                 BEGIN
                 END.
-                """));
+                """).getChildren());
     }
 
     @Test
@@ -538,7 +538,7 @@ public class PascalParserTest {
                 PROGRAM (*program_name*);
                 BEGIN
                 END.
-                """));
+                """).getChildren());
     }
 
     @Test
@@ -626,8 +626,8 @@ public class PascalParserTest {
         assertTrue(output.startsWith("Error"));
     }
 
-    private static void assertSuccess(List<Node> actual) {
-        actual.forEach(node -> {
+    private static void assertSuccess(Node actual) {
+        actual.getChildren().forEach(node -> {
             if (node.getError().isPresent()) {
                 fail("Error in line" + node.startLine() + ", Symbol " + node.getSymbol());
             }

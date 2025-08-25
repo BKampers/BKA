@@ -19,12 +19,12 @@ public class PascalCompiler {
         if (!"Program".equals(node.getSymbol())) {
             throw new IllegalArgumentException("Program keyword is missing");
         }
-        String programName = getNode(node.getChildren(), "Identifier").content();
+        String programName = node.getChild("Identifier").content();
         UmlClassBuilder builder = new UmlClassBuilder(programName);
-        Node declarationsNode = getNode(node.getChildren(), "Declarations");
+        Node declarationsNode = node.getChild("Declarations");
         addProgramVariables(builder, declarationsNode);
         buildOperations(builder, programName, declarationsNode);
-        methods.put(programName, createBody(getNode(getNode(node.getChildren(), "CompoundStatement").getChildren(), "Statements")));
+        methods.put(programName, createBody(node.getChild("CompoundStatement").getChild("Statements")));
         return builder.build();
     }
 
@@ -33,40 +33,40 @@ public class PascalCompiler {
     }
 
     private void addProgramVariables(UmlClassBuilder builder, Node declarations) {
-        findNode(declarations.getChildren(), "VariableDeclaration")
+        declarations.findChild("VariableDeclaration")
             .ifPresent(declaration -> addVariables(builder, declaration));
-        findNode(declarations.getChildren(), "Declaration")
+        declarations.findChild("Declaration")
             .ifPresent(next -> addVariables(builder, next));
     }
 
     private void addVariables(UmlClassBuilder builder, Node variableDeclaration) {
-        createAttributes(builder, getNode(variableDeclaration.getChildren(), "VariableDeclarationList"));
+        createAttributes(builder, variableDeclaration.getChild("VariableDeclarationList"));
     }
 
     private void createAttributes(UmlClassBuilder builder, Node variableDeclarationList) {
-        addAttributesFromExpression(builder, getNode(variableDeclarationList.getChildren(), "VariableDeclarationExpression"));
-        findNode(variableDeclarationList.getChildren(), "VariableDeclarationList")
+        addAttributesFromExpression(builder, variableDeclarationList.getChild("VariableDeclarationExpression"));
+        variableDeclarationList.findChild("VariableDeclarationList")
             .ifPresent(next -> createAttributes(builder, next));
     }
 
     private void addAttributesFromExpression(UmlClassBuilder builder, Node variableDeclarationExpression) {
-        Type type = createType(getNode(variableDeclarationExpression.getChildren(), "TypeDeclarationExpression"));
-        createIdentifiers(getNode(variableDeclarationExpression.getChildren(), "IdentifierList"))
+        Type type = createType(variableDeclarationExpression.getChild("TypeDeclarationExpression"));
+        createIdentifiers(variableDeclarationExpression.getChild("IdentifierList"))
             .forEach(name -> builder.withAttribute(name, type));
     }
 
     private void addPrivateFunctionOperations(UmlClassBuilder builder, Node declarations) {
-        findNode(declarations.getChildren(), "FunctionDeclaration")
+        declarations.findChild("FunctionDeclaration")
             .ifPresent(addFunctionDeclaration(builder));
-        findNode(declarations.getChildren(), "Declarations")
+        declarations.findChild("Declarations")
             .ifPresent(next -> addPrivateFunctionOperations(builder, next));
     }
 
     private Consumer<Node> addFunctionDeclaration(UmlClassBuilder builder) {
         return functionDeclaration -> {
-            String functionName = getNode(functionDeclaration.getChildren(), "Identifier").content();
-            builder.withOperation(functionName, UmlTypeFactory.create(getNode(functionDeclaration.getChildren(), "TypeExpression").content()), Member.Visibility.PRIVATE);
-            methods.put(functionName, createBody(getNode(getNode(functionDeclaration.getChildren(), "CompoundStatement").getChildren(), "Statements")));
+            String functionName = functionDeclaration.getChild("Identifier").content();
+            builder.withOperation(functionName, UmlTypeFactory.create(functionDeclaration.getChild("TypeExpression").content()), Member.Visibility.PRIVATE);
+            methods.put(functionName, createBody(functionDeclaration.getChild("CompoundStatement").getChild("Statements")));
         };
     }
 
@@ -78,9 +78,9 @@ public class PascalCompiler {
             case "RangeExpression" ->
                 UmlTypeFactory.create(rangeString(expression));
             case "\\(" ->
-                createEnumerationType(getNode(typeDeclarationExpression.getChildren(), "IdentifierList"));
+                createEnumerationType(typeDeclarationExpression.getChild("IdentifierList"));
             case "ARRAY\\b" ->
-                createArrayType(getNode(typeDeclarationExpression.getChildren(), "TypeExpression"), typeDeclarationExpression.getChildren().get(5));
+                createArrayType(typeDeclarationExpression.getChild("TypeExpression"), typeDeclarationExpression.getChild("TypeExpression"));
             case "RECORD\\b" ->
                 createRecordType(typeDeclarationExpression);
             default ->
@@ -98,19 +98,19 @@ public class PascalCompiler {
 
     private uml.structure.Class createRecordType(Node typeDeclarationExpression) {
         UmlClassBuilder builder = new UmlClassBuilder(typeDeclarationExpression.content());
-        addRecordFields(builder, typeDeclarationExpression.getChildren().get(1));
+        addRecordFields(builder, typeDeclarationExpression.getChild("VariableDeclarationList"));
         return builder.build();
     }
 
     private void addRecordFields(UmlClassBuilder builder, Node variableDeclarationList) {
-        addRecordField(builder, getNode(variableDeclarationList.getChildren(), "VariableDeclarationExpression"));
-        findNode(variableDeclarationList.getChildren(), "VariableDeclarationList")
+        addRecordField(builder, variableDeclarationList.getChild("VariableDeclarationExpression"));
+        variableDeclarationList.findChild("VariableDeclarationList")
             .ifPresent(next -> addRecordFields(builder, next));
     }
 
     private void addRecordField(UmlClassBuilder builder, Node variableDeclarationExpression) {
-        Type type = createType(getNode(variableDeclarationExpression.getChildren(), "TypeDeclarationExpression"));
-        createIdentifiers(getNode(variableDeclarationExpression.getChildren(), "IdentifierList"))
+        Type type = createType(variableDeclarationExpression.getChild("TypeDeclarationExpression"));
+        createIdentifiers(variableDeclarationExpression.getChild("IdentifierList"))
             .forEach(name -> builder.withAttribute(name, type));
     }
 
@@ -120,8 +120,8 @@ public class PascalCompiler {
 
     private static List<String> createIdentifiers(Node identifierList) {
         List<String> identifiers = new ArrayList<>();
-        identifiers.add(getNode(identifierList.getChildren(), "Identifier").content());
-        findNode(identifierList.getChildren(), "IdentifierList")
+        identifiers.add(identifierList.getChild("Identifier").content());
+        identifierList.findChild("IdentifierList")
             .ifPresent(next -> identifiers.addAll(createIdentifiers(next)));
         return identifiers;
     }
@@ -142,20 +142,10 @@ public class PascalCompiler {
     private void createStatementSequence(Node statements, Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
         Optional<Node> statementNode = Optional.of(statements);
         while (statementNode.isPresent()) {
-            Statement statement = new Statement(getNode(statementNode.get().getChildren(), "Statement"), name -> Optional.ofNullable(methods.get(name)));
+            Statement statement = new Statement(statementNode.get().getChild("Statement"), name -> Optional.ofNullable(methods.get(name)));
             statement.getTransitions(transitions, leaves);
-            statementNode = findNode(statementNode.get().getChildren(), "Statements");
+            statementNode = statementNode.get().findChild("Statements");
         }
-    }
-
-    private static Node getNode(List<Node> nodes, String symbol) {
-        return findNode(nodes, symbol).orElseThrow(() -> new NoSuchElementException(symbol));
-    }
-
-    private static Optional<Node> findNode(List<Node> nodes, String symbol) {
-        return nodes.stream()
-            .filter(node -> symbol.equals(node.getSymbol()))
-            .findFirst();
     }
 
     private final Map<String, Collection<Transition<Event, GuardCondition, Action>>> methods = new HashMap<>();

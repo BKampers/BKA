@@ -72,6 +72,16 @@ public class Node {
         return source.substring(0, start).split("\n").length;
     }
 
+    public Node getChild(String symbol) {
+        return findChild(symbol).orElseThrow(() -> new NoSuchElementException(symbol));
+    }
+
+    public Optional<Node> findChild(String symbol) {
+        return children.stream()
+            .filter(node -> symbol.equals(node.symbol))
+            .findFirst();
+    }
+
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();

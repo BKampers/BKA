@@ -37,7 +37,7 @@ public class Node {
         this.symbol = Objects.requireNonNull(symbol);
         this.start = start;
         this.end = end;
-        this.children = (children.isEmpty()) ? Collections.emptyList() : Collections.unmodifiableList(new ArrayList<>(children));
+        this.children = children.stream().collect(Collectors.toUnmodifiableList());
         this.error = error;
     }
 
@@ -68,10 +68,6 @@ public class Node {
         return source.substring(start, end);
     }
 
-    public int startLine() {
-        return source.substring(0, start).split("\n").length;
-    }
-
     public Node getChild(String symbol) {
         return findChild(symbol).orElseThrow(() -> new NoSuchElementException(symbol));
     }
@@ -80,6 +76,13 @@ public class Node {
         return children.stream()
             .filter(node -> symbol.equals(node.symbol))
             .findFirst();
+    }
+
+    public int startLine() {
+        return (int) source.chars()
+            .limit(start)
+            .filter(ch -> ch == '\n')
+            .count();
     }
 
     @Override

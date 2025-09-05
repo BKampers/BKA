@@ -1,14 +1,14 @@
 /*
 ** © Bart Kampers
+** This code may not be used for any purpose that harms humans, humanity, the environment or the universe.
 */
 package bka.text.parser;
 
-import bka.text.parser.Node;
 import java.util.*;
 import java.util.stream.*;
 
 
-public class Node {
+public final class Node {
 
     public Node(String source, String symbol, int start, int end) {
         this(source, symbol, start, end, Collections.emptyList(), Optional.empty());
@@ -67,11 +67,15 @@ public class Node {
         }
         return source.substring(start, end);
     }
+    
+    public boolean startsWith(String symbol) {
+        return !children.isEmpty() && symbol.equals(children.getFirst().getSymbol());
+    }
 
     public Node getChild(String symbol) {
         return findChild(symbol).orElseThrow(() -> new NoSuchElementException(symbol));
     }
-
+    
     public Optional<Node> findChild(String symbol) {
         return children.stream()
             .filter(node -> symbol.equals(node.symbol))
@@ -85,13 +89,19 @@ public class Node {
             .count();
     }
 
+    public List<Node> findChildren(String symbol) {
+        return children.stream()
+            .filter(node -> symbol.equals(node.symbol))
+            .collect(Collectors.toList());
+    }
+
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        error.ifPresent(message -> builder.append("Error: ").append(message).append(" "));
+        error.ifPresent(message -> builder.append("Error: '").append(message).append("' "));
         builder.append(symbol);
         builder.append(children.stream().map(Node::getSymbol).collect(Collectors.joining(", ", " (", ") ")));
-        builder.append('\'').append(content()).append('\'');
+        builder.append("```").append(content()).append("```");
         return builder.toString();
     }
 

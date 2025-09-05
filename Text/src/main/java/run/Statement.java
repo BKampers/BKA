@@ -1,5 +1,6 @@
 /*
 ** © Bart Kampers
+** This code may not be used for any purpose that harms humans, humanity, the environment or the universe.
 */
 package run;
 
@@ -11,10 +12,10 @@ import java.util.logging.*;
 import uml.statechart.*;
 
 
-public class Statement {
+public final class Statement {
 
-    public Statement(Node node, Function<String, Optional<Collection<Transition<Event, GuardCondition, Action>>>> methods) {
-        this(Optional.empty(), Objects.requireNonNull(node), Objects.requireNonNull(methods));
+    public Statement(Node expression, Function<String, Optional<Collection<Transition<Event, GuardCondition, Action>>>> methods) {
+        this(Optional.empty(), expression, methods);
     }
 
     private Statement(Node assignable, Node expression, Function<String, Optional<Collection<Transition<Event, GuardCondition, Action>>>> methods) {
@@ -23,8 +24,8 @@ public class Statement {
 
     private Statement(Optional<Node> assignable, Node expression, Function<String, Optional<Collection<Transition<Event, GuardCondition, Action>>>> methods) {
         this.assignable = assignable;
-        this.expression = expression;
-        this.methodSupplier = methods;
+        this.expression = Objects.requireNonNull(expression);
+        this.methodSupplier = Objects.requireNonNull(methods);
     }
 
     public void getTransitions(Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
@@ -50,43 +51,37 @@ public class Statement {
     }
 
     private void addIfThenElseTransitions(Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
-        Decision decision = UmlStateFactory.createDecision(createParseTreeExpression(expression.getChildren().get(1).getSymbol(), expression.getChildren().get(1).getChildren()));
+        Decision decision = UmlStateFactory.createDecision(createParseTreeExpression());
         leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, decision)));
         leaves.clear();
         leaves.add(decision);
-        createTransitions(expression.getChildren().get(3), transitions, leaves);
+        createTransitions(expression.getChild("Statement"), transitions, leaves);
         addGuardCondition(transitions, transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), "then");
-        if (expression.getChildren().get(4).getChildren().isEmpty()) {
+        Node elseClause = expression.getChild("ElseClause");
+        if (elseClause.getChildren().isEmpty()) {
             leaves.add(decision);
         }
         else {
             Collection<TransitionSource> elseLeaves = new ArrayList<>(List.of(decision));
-            createTransitions(expression.getChildren().get(4).getChildren().get(1), transitions, elseLeaves);
+            createTransitions(elseClause.getChild("Statement"), transitions, elseLeaves);
             addStereotype(transitions, transition -> decision.equals(transition.getSource()) && transition.getGuardCondition().isEmpty(), "else");
             leaves.addAll(elseLeaves);
         }
     }
 
     private void addForLoopTransitions(Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
-        Node identifier = expression.getChildren().get(1);
-        ActionState<Action> loopInitialization = createActionState(new Statement(identifier, expression.getChildren().get(3), methodSupplier));
+        Node identifier = expression.getChild("Identifier");
+        List<Node> expressions = expression.findChildren("Expression");
+        ActionState<Action> loopInitialization = createActionState(new Statement(identifier, expressions.getFirst(), methodSupplier));
         leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, loopInitialization)));
         leaves.clear();
-        Decision decision = UmlStateFactory.createDecision(createLessEqualExpression(identifier, expression.getChildren().get(5)));
+        Decision decision = UmlStateFactory.createDecision(createLessEqualExpression(identifier, expressions.getLast()));
         transitions.add(UmlTransitionFactory.createTransition(loopInitialization, decision));
         leaves.add(decision);
-        createTransitions(expression.getChildren().get(7), transitions, leaves);
-        Action incrementAction = new Action() {
-            @Override
-            public void perform(Memory memory) throws StateMachineException {
-                memory.store(identifier.content(), ((Integer) memory.load(identifier.content())) + 1);
-            }
-
-            @Override
-            public String toString() {
-                return ".INC. " + identifier.content();
-            }
-        };
+        createTransitions(expression.getChild("Statement"), transitions, leaves);
+        Action incrementAction = createAction(
+            memory -> memory.store(identifier.content(), ((Integer) memory.load(identifier.content())) + 1),
+            () -> ".INC. " + identifier.content());
         ActionState<Action> incrementActionState = UmlStateFactory.createActionState(incrementAction);
         leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, incrementActionState)));
         leaves.clear();
@@ -94,13 +89,26 @@ public class Statement {
         transitions.add(UmlTransitionFactory.createTransition(incrementActionState, decision));
         leaves.add(decision);
     }
-
+    
+    private static Action createAction(Action action, Supplier<String> toString) {
+        return new Action() {
+            @Override 
+            public void perform(Memory memory)  throws StateMachineException {
+                action.perform(memory);
+            }
+            @Override 
+            public String toString() {
+                return toString.get();
+            }
+        };
+    }
+    
     private void addWhileLoopTransitions(Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
-        Decision decision = UmlStateFactory.createDecision(createParseTreeExpression(expression.getChildren().get(1).getSymbol(), expression.getChildren().get(1).getChildren()));
+        Decision decision = UmlStateFactory.createDecision(createParseTreeExpression());
         leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, decision)));
         leaves.clear();
         leaves.add(decision);
-        createTransitions(expression.getChildren().get(3), transitions, leaves);
+        createTransitions(expression.getChild("Statement"), transitions, leaves);
         addGuardCondition(transitions, transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), "while");
         leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, decision, UmlStereotypeFactory.createStereotypes("loop"))));
         leaves.clear();
@@ -109,8 +117,8 @@ public class Statement {
 
     private void addRepeatLoopTransitions(Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
         TransitionSource loopRoot = leaves.stream().findAny().get();
-        createTransitions(expression.getChildren().get(1), transitions, leaves);
-        ParseTreeExpression condition = createParseTreeExpression(expression.getChildren().get(3).getSymbol(), expression.getChildren().get(3).getChildren());
+        createTransitions(expression.getChild("Statements"), transitions, leaves);
+        ParseTreeExpression condition = createParseTreeExpression();
         Decision decision = UmlStateFactory.createDecision(condition);
         leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, decision)));
         TransitionTarget loopStart = transitions.stream().filter(transition -> loopRoot.equals(transition.getSource())).findAny().get().getTarget();
@@ -120,7 +128,7 @@ public class Statement {
     }
 
     private void addAssignementTransitions(Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
-        ActionState<Action> assignment = createActionState(new Statement(expression.getChildren().getFirst(), expression.getChildren().get(2), methodSupplier));
+        ActionState<Action> assignment = createActionState(new Statement(expression.getChild("Assignable"), expression.getChild("Expression"), methodSupplier));
         leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, assignment)));
         leaves.clear();
         leaves.add(assignment);
@@ -143,8 +151,8 @@ public class Statement {
     }
 
     private void createTransitions(Node statements, Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
-        if ("CompoundStatement".equals(statements.getChildren().getFirst().getSymbol())) {
-            createStatementSequence(statements.getChildren().getFirst().getChildren().get(1), transitions, leaves);
+        if (statements.startsWith("CompoundStatement")) {
+            createStatementSequence(statements.getChild("CompoundStatement").getChild("Statements"), transitions, leaves);
         }
         else if ("Statements".equals(statements.getSymbol())) {
             createStatementSequence(statements, transitions, leaves);
@@ -155,10 +163,11 @@ public class Statement {
     }
 
     private void createStatementSequence(Node statements, Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
-        while (statements != null) {
-            Statement statement = new Statement(statements.getChildren().getFirst(), methodSupplier);
+        Optional<Node> next = Optional.of(statements);
+        while (next.isPresent()) {
+            Statement statement = new Statement(next.get().getChild("Statement"), methodSupplier);
             statement.getTransitions(transitions, leaves);
-            statements = (statements.getChildren().size() > 1) ? statements.getChildren().getLast() : null;
+            next = next.get().findChild("Statements");
         }
     }
 
@@ -214,32 +223,41 @@ public class Statement {
         return ParseTreeExpression.of("Boolean", leftOperand.content() + " .LE. " + rightOperand.content(), evaluator);
     }
 
+    private ParseTreeExpression createParseTreeExpression() {
+        return createParseTreeExpression("Expression", expression.getChild("Expression").getChildren());
+    }
+    
+    private ParseTreeExpression createParseTreeExpression(Node node) {
+        return createParseTreeExpression(node.getSymbol(), node.getChildren());
+    }
+
     private ParseTreeExpression createParseTreeExpression(String symbol, List<Node> expression) {
         if (expression.size() == 1) {
-            if ("Literal".equals(expression.getFirst().getSymbol())) {
-                String type = switch (expression.getFirst().getChildren().getFirst().getSymbol()) {
+            Node first = expression.getFirst();
+            if ("Literal".equals(first.getSymbol())) {
+                String type = switch (first.getChildren().getFirst().getSymbol()) {
                     case "IntegerLiteral" ->
                         "Integer";
                     case "'" ->
                         "String";
                     default ->
-                        throw new IllegalArgumentException("Unexpected literal: " + expression.getFirst().getChildren().getFirst().getSymbol());
+                        throw new IllegalArgumentException("Unexpected literal: " + first.getChildren().getFirst().getSymbol());
                 };
-                String value = expression.getFirst().content();
+                String value = first.content();
                 Evaluator evaluator = memory -> {
-                    return switch (expression.getFirst().getChildren().getFirst().getSymbol()) {
+                    return switch (first.getChildren().getFirst().getSymbol()) {
                         case "IntegerLiteral" ->
                             parseInteger(value);
                         case "'" ->
                             value;
                         default ->
-                            throw new IllegalArgumentException("Cannot evaluate literal: " + expression.getFirst().getChildren().getFirst().getSymbol());
+                            throw new IllegalArgumentException("Cannot evaluate literal: " + first.getChildren().getFirst().getSymbol());
                     };
                 };
                 return ParseTreeExpression.of(type, value, evaluator);
             }
-            if ("Identifier".equals(expression.getFirst().getSymbol())) {
-                String value = expression.getFirst().getChildren().getFirst().content();
+            if ("Identifier".equals(first.getSymbol())) {
+                String value = first.getChildren().getFirst().content();
                 Evaluator evaluator = memory -> {
                     String functionName = value;
                     Optional<Collection<Transition<Event, GuardCondition, Action>>> method = methodSupplier.apply(functionName);
@@ -253,21 +271,22 @@ public class Statement {
                 return ParseTreeExpression.of("*", value, evaluator);
             }
             if ("Identifier".equals(symbol)) {
-                String value = expression.getFirst().content();
+                String value = first.content();
                 return ParseTreeExpression.of("*", value, memory -> memory.load(value));
             }
             throw new IllegalStateException("Cannot create parse tree expression");
         }
         String type = typeOf(expression);
         if (expression.size() == 3 && "BinaryOperator".equals(expression.get(1).getSymbol())) {
+            Node first = expression.getFirst();
             String value
-                = createParseTreeExpression(expression.getFirst().getSymbol(), expression.getFirst().getChildren()).value()
+                = createParseTreeExpression(first).value()
                 + " (Operator)" + expression.get(1).content() + " "
-                + createParseTreeExpression(expression.getLast().getSymbol(), expression.getLast().getChildren()).value() + ")";
+                + createParseTreeExpression(expression.getLast()).value() + ")";
             Evaluator evaluator = memory -> {
                 Value v = getDyadicOperator(expression.get(1)).evaluate(
-                    createParseTreeExpression(expression.getFirst().getSymbol(), expression.getFirst().getChildren()),
-                    createParseTreeExpression(expression.getLast().getSymbol(), expression.getLast().getChildren()),
+                    createParseTreeExpression(first),
+                    createParseTreeExpression(expression.getLast()),
                     memory);
                 return v.get();
             };

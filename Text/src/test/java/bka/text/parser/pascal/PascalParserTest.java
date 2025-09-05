@@ -548,7 +548,6 @@ public class PascalParserTest {
             BEGIN
             END.
             """);
-        System.out.println(output);
         assertError(output);
     }
 
@@ -569,7 +568,6 @@ public class PascalParserTest {
             (*BEGIN*)
             END.
             """);
-        System.out.println(output);
         assertError(output);
     }
 

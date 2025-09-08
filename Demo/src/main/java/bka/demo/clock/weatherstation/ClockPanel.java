@@ -100,11 +100,11 @@ public class ClockPanel extends javax.swing.JPanel {
 
     public void update(WeatherStation station) {
         needles.forEach((measurement, needle) -> {
-            Optional<Double> value = measurement.getValue(station);
+            OptionalDouble value = measurement.getValue(station);
             if (value.isPresent()) {
                 mainMarkerRenderer.setPaint(MARKER_COLOR);
                 needle.applyPaint();
-                updateTask.setValue(measurement, value.get());
+                updateTask.setValue(measurement, value.getAsDouble());
             }
             else {
                 mainMarkerRenderer.setPaint(NO_DATA_COLOR);

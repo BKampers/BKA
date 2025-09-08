@@ -1,6 +1,6 @@
 /*
 ** © Bart Kampers
- */
+*/
 package bka.demo.clock.weatherstation;
 
 import java.util.*;
@@ -8,7 +8,7 @@ import java.util.function.*;
 
 public enum Measurement {
     TEMPERATURE(station -> station.getTemperature()),
-    CHILL(station -> station.getChill().or(station::getTemperature)),
+    CHILL(station -> getValue(station.getChill(), () -> station.getTemperature())),
     HUMIDITY(station -> station.getHumidity()),
     WIND_DIRECTION(station -> station.getWindDirection()),
     WIND_SPEED(station -> station.getWindSpeed()),
@@ -16,33 +16,40 @@ public enum Measurement {
     PRESSURE(station -> station.getPressure()),
     VISIBILITY(station -> computeValue(station.getVisibility(), Measurement::toKilometers));
 
-    private static Double toMetersPerSecond(Double kilomertersPerHour) {
+    private static double toMetersPerSecond(double kilomertersPerHour) {
         return kilomertersPerHour / 3.6;
     }
 
-    private static Double toKilometers(Double meters) {
+    private static double toKilometers(double meters) {
         return meters / 1000;
     }
 
-    private Measurement(Function<WeatherStation, Optional<Double>> provider) {
+    private Measurement(Function<WeatherStation, OptionalDouble> provider) {
         this.provider = provider;
     }
 
-    public Optional<Double> getValue(WeatherStation station) {
+    public OptionalDouble getValue(WeatherStation station) {
         return provider.apply(station);
     }
 
-    private static Optional<Double> computeValue(Optional<Double> value, UnaryOperator<Double> processor) {
-        return computeValue(value, processor, Optional::empty);
-    }
-
-
-    private static Optional<Double> computeValue(Optional<Double> value, UnaryOperator<Double> processor, Supplier<Optional<Double>> alternative) {
+    private static OptionalDouble getValue(OptionalDouble value, Supplier<OptionalDouble> alternative) {
         if (value.isEmpty()) {
             return alternative.get();
         }
-        return Optional.of(processor.apply(value.get()));
+        return value;
+    }
+    
+    private static OptionalDouble computeValue(OptionalDouble value, DoubleUnaryOperator processor) {
+        return computeValue(value, processor, OptionalDouble::empty);
     }
 
-    private final Function<WeatherStation, Optional<Double>> provider;
+
+    private static OptionalDouble computeValue(OptionalDouble value, DoubleUnaryOperator processor, Supplier<OptionalDouble> alternative) {
+        if (value.isEmpty()) {
+            return alternative.get();
+        }
+        return OptionalDouble.of(processor.applyAsDouble(value.getAsDouble()));
+    }
+
+    private final Function<WeatherStation, OptionalDouble> provider;
 }

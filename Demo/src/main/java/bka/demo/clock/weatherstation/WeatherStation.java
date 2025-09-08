@@ -14,20 +14,20 @@ public interface WeatherStation {
 
     Optional<String> getWeatherSummary();
 
-    Optional<Double> getTemperature(); //* celcius
+    OptionalDouble getTemperature(); //* celcius
 
-    Optional<Double> getChill(); //* celcius
+    OptionalDouble getChill(); //* celcius
 
-    Optional<Double> getHumidity(); //* percent
+    OptionalDouble getHumidity(); //* percent
 
-    Optional<Double> getWindDirection(); // degrees clockwise
+    OptionalDouble getWindDirection(); // degrees clockwise
 
-    Optional<Double> getWindSpeed(); //* m/s
+    OptionalDouble getWindSpeed(); //* m/s
 
-    Optional<Double> getSquall(); //* km/h
+    OptionalDouble getSquall(); //* km/h
 
-    Optional<Double> getVisibility(); //* meters
+    OptionalDouble getVisibility(); //* meters
 
-    Optional<Double> getPressure(); //* hPa
+    OptionalDouble getPressure(); //* hPa
 
 }

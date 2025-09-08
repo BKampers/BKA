@@ -150,21 +150,21 @@ public class WeatherStationDemo extends javax.swing.JFrame {
         if (station == null || station.getTemperature().isEmpty()) {
             return Color.GRAY;
         }
-        return WeatherStationPanel.temperatureColor(station.getTemperature().get());
+        return WeatherStationPanel.temperatureColor(station.getTemperature().getAsDouble());
     }
 
     private static String temperatureString(WeatherStation station) {
         if (station == null || station.getTemperature().isEmpty()) {
             return "\u2103";
         }
-        return String.format("%.1f\u2103", station.getTemperature().get());
+        return String.format("%.1f\u2103", station.getTemperature().getAsDouble());
     }
 
     private static Color windColor(WeatherStation station) {
         if (station == null || station.getWindSpeed().isEmpty()) {
             return Color.GRAY;
         }
-        return WeatherStationPanel.beaufortColor(beaufort(station.getWindSpeed().get()));
+        return WeatherStationPanel.beaufortColor(beaufort(station.getWindSpeed().getAsDouble()));
     }
 
     private static String windString(WeatherStation station) {

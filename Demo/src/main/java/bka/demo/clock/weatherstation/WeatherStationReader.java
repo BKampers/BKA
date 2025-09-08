@@ -231,29 +231,29 @@ public class WeatherStationReader {
         }
 
         @Override
-        public Optional<Double> getTemperature() {
+        public OptionalDouble getTemperature() {
             return parseDouble(data.get(TEMPERATURE_HEADER));
         }
 
         @Override
-        public Optional<Double> getChill() {
+        public OptionalDouble getChill() {
             return parseDouble(data.get(CHILL_HEADER));
         }
 
         @Override
-        public Optional<Double> getHumidity() {
+        public OptionalDouble getHumidity() {
             return parseDouble(data.get(HUMIDITY_HEADER));
         }
 
         @Override
-        public Optional<Double> getWindDirection() {
+        public OptionalDouble getWindDirection() {
             String directionData = data.get(WIND_DIRECTION_HEADER);
             if (directionData == null) {
-                return Optional.empty();
+                return OptionalDouble.empty();
             }
             String cardinal = directionData.substring(0, directionData.indexOf(' '));
             try {
-                return Optional.of(new CardinalNumberFormat(Locale.of("nl")).parse(cardinal).doubleValue());
+                return OptionalDouble.of(new CardinalNumberFormat(Locale.of("nl")).parse(cardinal).doubleValue());
             }
             catch (ParseException ex) {
                 throw new IllegalStateException("Invalid cardinal direction: " + cardinal);
@@ -261,30 +261,30 @@ public class WeatherStationReader {
         }
 
         @Override
-        public Optional<Double> getWindSpeed() {
+        public OptionalDouble getWindSpeed() {
             return parseDouble(data.get(WIND_SPEED_HEADER));
         }
 
         @Override
-        public Optional<Double> getSquall() {
+        public OptionalDouble getSquall() {
             return parseDouble(data.get(SQUALL_HEADER));
         }
 
         @Override
-        public Optional<Double> getVisibility() {
+        public OptionalDouble getVisibility() {
             return parseDouble(data.get(VISIBILITY_HEADER));
         }
 
         @Override
-        public Optional<Double> getPressure() {
+        public OptionalDouble getPressure() {
             return parseDouble(data.get(PRESSURE_HEADER));
         }
 
-        private Optional<Double> parseDouble(String data) {
+        private OptionalDouble parseDouble(String data) {
             if (data == null) {
-                return Optional.empty();
+                return OptionalDouble.empty();
             }
-            return Optional.of(Double.valueOf(data));
+            return OptionalDouble.of(Double.valueOf(data));
         }
 
         private final LocalDateTime timestamp;

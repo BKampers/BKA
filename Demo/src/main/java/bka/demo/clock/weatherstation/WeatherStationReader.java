@@ -223,11 +223,7 @@ public class WeatherStationReader {
 
         @Override
         public Optional<String> getWeatherSummary() {
-            String summary = data.get(WEATHER_SUMMARY_HEADER);
-            if (summary == null) {
-                return Optional.empty();
-            }
-            return Optional.of(summary);
+            return Optional.ofNullable(data.get(WEATHER_SUMMARY_HEADER));
         }
 
         @Override

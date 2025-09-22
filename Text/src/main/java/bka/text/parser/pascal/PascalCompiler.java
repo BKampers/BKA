@@ -1,5 +1,6 @@
 /*
 ** © Bart Kampers
+** This code may not be used for any purpose that harms humans, humanity, the environment or the universe.
 */
 
 package bka.text.parser.pascal;
@@ -132,9 +133,11 @@ public class PascalCompiler {
     }
 
     private Collection<Transition<Event, GuardCondition, Action>> createBody(Node compoundStatement) {
+        ActivityDiagramBuilder diagram = new ActivityDiagramBuilder();
         Collection<Transition<Event, GuardCondition, Action>> body = new ArrayList<>();
         Collection<TransitionSource> leaves = new ArrayList<>(List.of(UmlStateFactory.getInitialState()));
         createStatementSequence(compoundStatement, body, leaves);
+        diagram.addFinalState();
         leaves.forEach(leave -> body.add(UmlTransitionFactory.createTransition(leave, UmlStateFactory.getFinalState())));
         return body;
     }

@@ -50,6 +50,27 @@ public final class Statement {
         }
     }
 
+    public void getTransitions(ActivityDiagramBuilder diagram) {
+        if (!expression.getChildren().isEmpty()) {
+            switch (expression.getChildren().getFirst().getSymbol()) {
+                case "IF\\b" ->
+                    addIfThenElseTransitions(diagram);
+                case "FOR\\b" ->
+                    addForLoopTransitions(diagram);
+                case "WHILE\\b" ->
+                    addWhileLoopTransitions(diagram);
+                case "REPEAT\\b" ->
+                    addRepeatLoopTransitions(diagram);
+                case "Assignable" ->
+                    addAssignementTransitions(diagram);
+                default ->
+                    throw new IllegalStateException("Unexpected symbol " + expression.getChildren().getFirst().getSymbol());
+            }
+        } else {
+            Logger.getLogger(PascalCompiler.class.getName()).log(Level.WARNING, "Empty statenemt: {0}", toString());
+        }
+    }
+
     private void addIfThenElseTransitions(Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
         Decision decision = UmlStateFactory.createDecision(createParseTreeExpression());
         leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, decision)));
@@ -66,6 +87,30 @@ public final class Statement {
             createTransitions(elseClause.getChild("Statement"), transitions, elseLeaves);
             addStereotype(transitions, transition -> decision.equals(transition.getSource()) && transition.getGuardCondition().isEmpty(), "else");
             leaves.addAll(elseLeaves);
+        }
+    }
+
+    private void addIfThenElseTransitions(ActivityDiagramBuilder diagram) {
+        Decision decision = UmlStateFactory.createDecision(createParseTreeExpression());
+        diagram.add(leave -> UmlTransitionFactory.createTransition(leave, decision), decision);
+//        leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, decision)));
+//        leaves.clear();
+//        leaves.add(decision);
+        createTransitions(expression.getChild("Statement"), diagram);
+        //addGuardCondition(transitions, transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), "then");
+        diagram.addGuardCondition(transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), "then");
+        Node elseClause = expression.getChild("ElseClause");
+        if (elseClause.getChildren().isEmpty()) {
+            //leaves.add(decision);
+            diagram.addLeaf(decision);
+        }        
+        else {
+            Collection<TransitionSource> ifBranchLeaves = diagram.replaceLeaves(List.of(decision));
+//            Collection<TransitionSource> elseLeaves = new ArrayList<>(List.of(decision));
+            createTransitions(elseClause.getChild("Statement"), diagram);
+            diagram.addStereotype(transition -> decision.equals(transition.getSource()) && transition.getGuardCondition().isEmpty(), "else");
+            //leaves.addAll(elseLeaves);
+            diagram.addLeaves(ifBranchLeaves);
         }
     }
 
@@ -89,7 +134,30 @@ public final class Statement {
         transitions.add(UmlTransitionFactory.createTransition(incrementActionState, decision));
         leaves.add(decision);
     }
-    
+
+    private void addForLoopTransitions(ActivityDiagramBuilder diagram) {
+        Node identifier = expression.getChild("Identifier");
+        List<Node> expressions = expression.findChildren("Expression");
+        ActionState<Action> loopInitialization = createActionState(new Statement(identifier, expressions.getFirst(), methodSupplier));
+        Decision decision = UmlStateFactory.createDecision(createLessEqualExpression(identifier, expressions.getLast()));
+        diagram.add(loopInitialization, decision);
+//        leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, loopInitialization)));
+//        leaves.clear();
+//        transitions.add(UmlTransitionFactory.createTransition(loopInitialization, decision));
+//        leaves.add(decision);
+        createTransitions(expression.getChild("Statement"), diagram);
+        Action incrementAction = createAction(
+            memory -> memory.store(identifier.content(), ((Integer) memory.load(identifier.content())) + 1),
+            () -> ".INC. " + identifier.content());
+        ActionState<Action> incrementActionState = UmlStateFactory.createActionState(incrementAction);
+        diagram.add(incrementActionState, decision, "for");
+//        leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, incrementActionState)));
+//        leaves.clear();
+//        addGuardCondition(transitions, transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), "for");
+//        transitions.add(UmlTransitionFactory.createTransition(incrementActionState, decision));
+//        leaves.add(decision);
+    }
+
     private static Action createAction(Action action, Supplier<String> toString) {
         return new Action() {
             @Override 
@@ -115,6 +183,21 @@ public final class Statement {
         leaves.add(decision);
     }
 
+    private void addWhileLoopTransitions(ActivityDiagramBuilder diagram) {
+        Decision decision = UmlStateFactory.createDecision(createParseTreeExpression());
+        diagram.add(leave -> UmlTransitionFactory.createTransition(leave, decision), decision);
+//        leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, decision)));
+//        leaves.clear();
+//        leaves.add(decision);
+        createTransitions(expression.getChild("Statement"), diagram);
+//        addGuardCondition(transitions, transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), "while");
+        diagram.addGuardCondition(transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), "while");
+//        leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, decision, UmlStereotypeFactory.createStereotypes("loop"))));
+//        leaves.clear();
+//        leaves.add(decision);
+        diagram.add(decision, UmlStereotypeFactory.createStereotypes("loop"));
+    }
+
     private void addRepeatLoopTransitions(Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
         TransitionSource loopRoot = leaves.stream().findAny().get();
         createTransitions(expression.getChild("Statements"), transitions, leaves);
@@ -127,11 +210,33 @@ public final class Statement {
         leaves.add(decision);
     }
 
+    private void addRepeatLoopTransitions(ActivityDiagramBuilder diagram) {
+        TransitionSource loopRoot = diagram.anyLeaf();//leaves.stream().findAny().get();
+        createTransitions(expression.getChild("Statements"), diagram);
+        ParseTreeExpression condition = createParseTreeExpression();
+        Decision decision = UmlStateFactory.createDecision(condition);
+        diagram.add(leave -> UmlTransitionFactory.createTransition(leave, decision), decision);
+        //leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, decision)));
+        TransitionTarget loopStart = diagram.targetOf(loopRoot);//transitions.stream().filter(transition -> loopRoot.equals(transition.getSource())).findAny().get().getTarget();
+//        transitions.add(UmlTransitionFactory.createTransition(decision, loopStart, UmlGuardConditionFactory.fail(decision), UmlStereotypeFactory.createStereotypes("repeat")));
+//        leaves.clear();
+//        leaves.add(decision);
+        diagram.addTransition(decision, loopStart, UmlGuardConditionFactory.fail(decision), "repeat");
+    }
+
     private void addAssignementTransitions(Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
         ActionState<Action> assignment = createActionState(new Statement(expression.getChild("Assignable"), expression.getChild("Expression"), methodSupplier));
         leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, assignment)));
         leaves.clear();
         leaves.add(assignment);
+    }
+
+    private void addAssignementTransitions(ActivityDiagramBuilder diagram) {
+        diagram.add(createActionState(new Statement(expression.getChild("Assignable"), expression.getChild("Expression"), methodSupplier)));
+//        ActionState<Action> assignment = createActionState(new Statement(expression.getChild("Assignable"), expression.getChild("Expression"), methodSupplier));
+//        leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, assignment)));
+//        leaves.clear();
+//        leaves.add(assignment);
     }
 
     private static ActionState<Action> createActionState(Statement statement) {
@@ -162,11 +267,30 @@ public final class Statement {
         }
     }
 
+    private void createTransitions(Node statements, ActivityDiagramBuilder diagram) {
+        if (statements.startsWith("CompoundStatement")) {
+            createStatementSequence(statements.getChild("CompoundStatement").getChild("Statements"), diagram);
+        } else if ("Statements".equals(statements.getSymbol())) {
+            createStatementSequence(statements, diagram);
+        } else {
+            new Statement(statements, methodSupplier).getTransitions(diagram);
+        }
+    }
+
     private void createStatementSequence(Node statements, Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
         Optional<Node> next = Optional.of(statements);
         while (next.isPresent()) {
             Statement statement = new Statement(next.get().getChild("Statement"), methodSupplier);
             statement.getTransitions(transitions, leaves);
+            next = next.get().findChild("Statements");
+        }
+    }
+
+    private void createStatementSequence(Node statements, ActivityDiagramBuilder diagram) {
+        Optional<Node> next = Optional.of(statements);
+        while (next.isPresent()) {
+            Statement statement = new Statement(next.get().getChild("Statement"), methodSupplier);
+            statement.getTransitions(diagram);
             next = next.get().findChild("Statements");
         }
     }

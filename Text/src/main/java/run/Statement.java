@@ -60,10 +60,10 @@ public final class Statement {
             diagram.addLeaf(decision);
         }        
         else {
-            Collection<TransitionSource> ifBranchLeaves = diagram.replaceLeaves(List.of(decision));
+            diagram.fork(decision);
             createTransitions(elseClause.getChild("Statement"), diagram);
             diagram.addStereotype(transition -> decision.equals(transition.getSource()) && transition.getGuardCondition().isEmpty(), "else");
-            diagram.addLeaves(ifBranchLeaves);
+            diagram.join();
         }
     }
 
@@ -103,12 +103,12 @@ public final class Statement {
     }
 
     private void addRepeatLoopTransitions(ActivityDiagramBuilder diagram) {
-        TransitionSource loopRoot = diagram.anyLeaf();//leaves.stream().findAny().get();
+        TransitionSource loopRoot = diagram.anyLeaf();
         createTransitions(expression.getChild("Statements"), diagram);
         ParseTreeExpression condition = createParseTreeExpression();
         Decision decision = UmlStateFactory.createDecision(condition);
         diagram.add(leave -> UmlTransitionFactory.createTransition(leave, decision), decision);
-        TransitionTarget loopStart = diagram.targetOf(loopRoot);//transitions.stream().filter(transition -> loopRoot.equals(transition.getSource())).findAny().get().getTarget();
+        TransitionTarget loopStart = diagram.targetOf(loopRoot);
         diagram.addTransition(decision, loopStart, UmlGuardConditionFactory.fail(decision), "repeat");
     }
 

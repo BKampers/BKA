@@ -134,19 +134,16 @@ public class PascalCompiler {
 
     private Collection<Transition<Event, GuardCondition, Action>> createBody(Node compoundStatement) {
         ActivityDiagramBuilder diagram = new ActivityDiagramBuilder();
-        Collection<Transition<Event, GuardCondition, Action>> body = new ArrayList<>();
-        Collection<TransitionSource> leaves = new ArrayList<>(List.of(UmlStateFactory.getInitialState()));
-        createStatementSequence(compoundStatement, body, leaves);
+        createStatementSequence(compoundStatement, diagram);
         diagram.addFinalState();
-        leaves.forEach(leave -> body.add(UmlTransitionFactory.createTransition(leave, UmlStateFactory.getFinalState())));
-        return body;
+        return diagram.getTransitions();
     }
 
-    private void createStatementSequence(Node statements, Collection<Transition<Event, GuardCondition, Action>> transitions, Collection<TransitionSource> leaves) {
+    private void createStatementSequence(Node statements, ActivityDiagramBuilder diagram) {
         Optional<Node> statementNode = Optional.of(statements);
         while (statementNode.isPresent()) {
             Statement statement = new Statement(statementNode.get().getChild("Statement"), name -> Optional.ofNullable(methods.get(name)));
-            statement.getTransitions(transitions, leaves);
+            statement.getTransitions(diagram);
             statementNode = statementNode.get().findChild("Statements");
         }
     }

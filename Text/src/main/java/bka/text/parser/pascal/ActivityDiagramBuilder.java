@@ -41,14 +41,16 @@ public final class ActivityDiagramBuilder {
     }
 
     public void add(ActionState<Action> incrementActionState, Decision decision, String strerotype) {
+        requireNotFinished();
         leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, incrementActionState)));
-        leaves.clear();
         addGuardCondition(transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), "for");
         transitions.add(UmlTransitionFactory.createTransition(incrementActionState, decision));
+        leaves.clear();
         leaves.add(decision);
     }
 
     public void add(ActionState<Action> assignment) {
+        requireNotFinished();
         leaves.forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, assignment)));
         leaves.clear();
         leaves.add(assignment);

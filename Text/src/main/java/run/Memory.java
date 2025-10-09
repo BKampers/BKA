@@ -9,6 +9,6 @@ public interface Memory {
 
     Object load(String name) throws StateMachineException;
 
-    void store(String name, Object value);
+    void store(String name, Object value) throws StateMachineException;
 
 }

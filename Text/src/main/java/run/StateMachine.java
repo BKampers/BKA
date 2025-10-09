@@ -6,17 +6,18 @@ package run;
 
 
 import java.util.*;
+import java.util.function.*;
+import java.util.stream.*;
 import uml.statechart.*;
 
 
 public class StateMachine {
 
-
     public interface Listener {
 
-        public void stateEntered(TransitionNode<Action> state);
+        void stateEntered(TransitionNode<Action> state);
 
-        public void stateLeft(TransitionNode<Action> state);
+        void stateLeft(TransitionNode<Action> state);
     }
 
 
@@ -24,13 +25,25 @@ public class StateMachine {
         RUN, STEP
     }
 
+    public StateMachine(Collection<Transition<Event, GuardCondition, Action>> diagram, Collection<String> identifiers) throws StateMachineException {
+        this(diagram, null, initial(identifiers));
+    }
 
-    public StateMachine(Collection<Transition<Event, GuardCondition, Action>> diagram) {
+    public StateMachine(Collection<Transition<Event, GuardCondition, Action>> diagram, Memory parent, Collection<String> identifiers) throws StateMachineException {
+        this(diagram, parent, initial(identifiers));
+    }
+
+    private static Map<String, Object> initial(Collection<String> identifiers) {
+        return identifiers.stream().collect(Collectors.toMap(Function.identity(), value -> UNINITIALIZED));
+    }
+
+    public StateMachine(Collection<Transition<Event, GuardCondition, Action>> diagram, Memory parent, Map<String, Object> initial) throws StateMachineException {
         long initialStates = diagram.stream().filter(transition -> transition.getSource() instanceof InitialState).count();
         if (initialStates != 1) {
             throw new IllegalArgumentException("Illegal number of initial states: " + initialStates);
         }
         this.diagram = new ArrayList<>(diagram);
+        memory = new Scope(parent, initial);
     }
 
     public synchronized void start() throws StateMachineException {
@@ -143,33 +156,55 @@ public class StateMachine {
         return memory.load(identifier);
     }
 
-    private final Memory memory = new Memory() {
+    private class Scope implements Memory {
+
+        public Scope(Memory parent, Map<String, Object> initial) {
+            this.parent = parent;
+            initial.forEach((identifier, value) -> map.put(identifier, value));
+        }
 
         @Override
         public Object load(String identifier) throws StateMachineException {
             Object value = map.get(identifier);
             if (value == null) {
-                throw new StateMachineException("Memory does not contain value for identifier '" + identifier + "'");
+                if (parent == null) {
+                    throw new StateMachineException("Memory does not contain value for identifier '" + identifier + "'");
+                }
+                return parent.load(identifier);
             }
             return value;
         }
 
         @Override
-        public void store(String identifier, Object value) {
-            map.put(identifier, value);
+        public void store(String identifier, Object value) throws StateMachineException {
+            if (!map.containsKey(identifier)) {
+                if (parent == null) {
+                    throw new StateMachineException("Memory does not contain identifier '" + identifier + "'");
+                }
+                parent.store(identifier, value);
+            }
+            else {
+                map.put(identifier, value);
+            }
         }
 
         private final Map<String, Object> map = new HashMap<>();
+        private final Memory parent;
 
-    };
 
+    }
 
+    private final Memory memory;
     private final Collection<Transition<Event, GuardCondition, Action>> diagram;
+
     private Mode mode = Mode.RUN;
 
     private TransitionNode<Action> currentState;
     private Transition<Event, GuardCondition, Action> currentTransition;
 
     private final Collection<Listener> listeners = new ArrayList<>();
-    private final java.lang.Object semaphore = new java.lang.Object();
+    private final Object semaphore = new Object();
+
+    public static final Object UNINITIALIZED = new Object();
+
 }

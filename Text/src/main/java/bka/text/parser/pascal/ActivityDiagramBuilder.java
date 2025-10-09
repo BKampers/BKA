@@ -21,23 +21,20 @@ public final class ActivityDiagramBuilder {
     public void add(Function<TransitionSource, Transition<Event, GuardCondition, Action>> consumer, Decision decision) {
         requireNotFinished();
         leaves().forEach(leave -> transitions.add(consumer.apply(leave)));
-        leaves().clear();
-        leaves().add(decision);
+        setLeaf(decision);
     }
 
     public void add(Decision decision, Set<Stereotype> stereotypes) {
         requireNotFinished();
         leaves().forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, decision, stereotypes)));
-        leaves().clear();
-        leaves().add(decision);
+        setLeaf(decision);
     }
 
-    public void add(ActionState<Action> loopInitialization, Decision decision) {
+    public void add(ActionState<Action> initializer, Decision decision) {
         requireNotFinished();
-        leaves().forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, loopInitialization)));
-        leaves().clear();
-        transitions.add(UmlTransitionFactory.createTransition(loopInitialization, decision));
-        leaves().add(decision);
+        leaves().forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, initializer)));
+        transitions.add(UmlTransitionFactory.createTransition(initializer, decision));
+        setLeaf(decision);
     }
 
     public void add(ActionState<Action> incrementActionState, Decision decision, String strerotype) {
@@ -45,15 +42,13 @@ public final class ActivityDiagramBuilder {
         leaves().forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, incrementActionState)));
         addGuardCondition(transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), "for");
         transitions.add(UmlTransitionFactory.createTransition(incrementActionState, decision));
-        leaves().clear();
-        leaves().add(decision);
+        setLeaf(decision);
     }
 
     public void add(ActionState<Action> assignment) {
         requireNotFinished();
         leaves().forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, assignment)));
-        leaves().clear();
-        leaves().add(assignment);
+        setLeaf(assignment);
     }
 
     public void addLeaf(Decision decision) {
@@ -67,7 +62,8 @@ public final class ActivityDiagramBuilder {
     }
 
     public void join() {
-        if (leavesStack.size() <= 1) {
+        requireNotFinished();
+        if (leavesStack.size() == 1) {
             throw new IllegalStateException("Diagram is not forked");
         }
         Collection<TransitionSource> branchLeaves = leavesStack.pop();
@@ -77,13 +73,21 @@ public final class ActivityDiagramBuilder {
     public void addTransition(Decision decision, TransitionTarget loopTarget, GuardCondition guardCondition, String stereotype) {
         requireNotFinished();
         transitions.add(UmlTransitionFactory.createTransition(decision, loopTarget, UmlGuardConditionFactory.fail(decision), UmlStereotypeFactory.createStereotypes(stereotype)));
-        leaves().clear();
-        leaves().add(decision);
+        setLeaf(decision);
     }
 
     public void addGuardCondition(Predicate<Transition<Event, GuardCondition, Action>> predicate, GuardCondition guardCondition, String stereotype) {
         requireNotFinished();
         Transition<Event, GuardCondition, Action> transition = transitions.stream().filter(predicate).findAny().get();
+        transitions.remove(transition);
+        transitions.add(UmlTransitionFactory.copyTransition(transition, Optional.of(guardCondition), UmlStereotypeFactory.createStereotypes(stereotype)));
+    }
+
+    public void addGuardCondition(TransitionSource source, GuardCondition guardCondition, String stereotype) {
+        requireNotFinished();
+        Transition<Event, GuardCondition, Action> transition = transitions.stream()
+            .filter(t -> source.equals(t.getSource()))
+            .findAny().get();
         transitions.remove(transition);
         transitions.add(UmlTransitionFactory.copyTransition(transition, Optional.of(guardCondition), UmlStereotypeFactory.createStereotypes(stereotype)));
     }
@@ -102,7 +106,7 @@ public final class ActivityDiagramBuilder {
         leavesStack.pop().forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, UmlStateFactory.getFinalState())));
     }
 
-    private void requireNotFinished() throws IllegalStateException {
+    private void requireNotFinished() {
         if (leavesStack.isEmpty()) {
             throw new IllegalStateException("Diagram finished");
         }
@@ -112,8 +116,8 @@ public final class ActivityDiagramBuilder {
         return leaves().stream().findAny().get();
     }
 
-    public TransitionTarget targetOf(TransitionSource loopRoot) {
-        return transitions.stream().filter(transition -> loopRoot.equals(transition.getSource())).findAny().get().getTarget();
+    public TransitionTarget targetOf(TransitionSource source) {
+        return transitions.stream().filter(transition -> source.equals(transition.getSource())).findAny().get().getTarget();
     }
 
     public Collection<Transition<Event, GuardCondition, Action>> getTransitions() {
@@ -123,14 +127,19 @@ public final class ActivityDiagramBuilder {
         return Collections.unmodifiableCollection(transitions);
     }
 
-    private static Collection<TransitionSource> leavesOf(TransitionSource leaf) {
-        Collection<TransitionSource> leaves = new ArrayList<>();
-        leaves.add(leaf);
-        return leaves;
+    private void setLeaf(TransitionSource decision) {
+        leaves().clear();
+        leaves().add(decision);
     }
 
     private Collection<TransitionSource> leaves() {
         return leavesStack.peek();
+    }
+
+    private static Collection<TransitionSource> leavesOf(TransitionSource leaf) {
+        Collection<TransitionSource> leaves = new ArrayList<>();
+        leaves.add(leaf);
+        return leaves;
     }
 
     private final Collection<Transition<Event, GuardCondition, Action>> transitions = new ArrayList<>();

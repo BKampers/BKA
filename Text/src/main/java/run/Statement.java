@@ -41,6 +41,8 @@ public final class Statement {
                     addRepeatLoopTransitions(diagram);
                 case "Assignable" ->
                     addAssignementTransitions(diagram);
+                case "Call" ->
+                    addProcedureCall(diagram);
                 default ->
                     throw new IllegalStateException("Unexpected symbol " + expression.getChildren().getFirst().getSymbol());
             }
@@ -116,6 +118,10 @@ public final class Statement {
         diagram.add(createActionState(new Statement(expression.getChild("Assignable"), expression.getChild("Expression"), methodSupplier)));
     }
 
+    private void addProcedureCall(ActivityDiagramBuilder diagram) {
+        diagram.add(createActionState(new Statement(expression.getChild("Call"), methodSupplier)));
+    }
+
     private static ActionState<Action> createActionState(Statement statement) {
         return UmlStateFactory.createActionState(Action.of(statement));
     }
@@ -124,7 +130,7 @@ public final class Statement {
         if (statements.startsWith("CompoundStatement")) {
             createStatementSequence(statements.getChild("CompoundStatement").getChild("Statements"), diagram);
         }
-        else if ("Statements".equals(statements.getSymbol())) {
+        else if (statements.getSymbol().equals("Statements")) {
             createStatementSequence(statements, diagram);
         }
         else {
@@ -171,11 +177,17 @@ public final class Statement {
         if ("Expression".equals(expression.getSymbol())) {
             return Optional.of(getExpressionTree(expression));
         }
+        if ("Call".equals(expression.getSymbol())) {
+            return Optional.of(getExpressionTree(expression));
+        }
         throw new IllegalStateException("Not an expression: " + expression);
     }
 
     private ParseTreeExpression getExpressionTree(Node expression) {
         if ("Expression".equals(expression.getSymbol())) {
+            return createParseTreeExpression(expression.getSymbol(), expression.getChildren());
+        }
+        if ("Call".equals(expression.getSymbol())) {
             return createParseTreeExpression(expression.getSymbol(), expression.getChildren());
         }
         if ("Identifier".equals(expression.getSymbol())) {
@@ -232,7 +244,7 @@ public final class Statement {
                     String functionName = value;
                     Optional<Collection<Transition<Event, GuardCondition, Action>>> method = methodSupplier.apply(functionName);
                     if (method.isPresent()) {
-                        StateMachine stateMachine = new StateMachine(method.get());
+                        StateMachine stateMachine = new StateMachine(method.get(), memory, List.of(functionName)); // FIXME pass parameters
                         stateMachine.start();
                         return stateMachine.getMemoryObject(functionName);
                     }
@@ -245,6 +257,25 @@ public final class Statement {
                 return ParseTreeExpression.of("*", value, memory -> memory.load(value));
             }
             throw new IllegalStateException("Cannot create parse tree expression");
+        }
+        if ("Call".equals(symbol)) {
+            String name = expression.getFirst().content();
+            Evaluator evaluator = memory -> {
+                Optional<Collection<Transition<Event, GuardCondition, Action>>> method = methodSupplier.apply(name);
+                Map<String, Object> parameters = new HashMap<>();
+                if (method.isPresent()) {
+                    if (expression.size() > 2 && "ArgumentList".equals(expression.get(2).getSymbol())) {
+                        // FIXME initialize state machine's memory with global variables
+                        parameters.put("input", 10); // FIXME fill parameters with values from node
+                    }
+                    StateMachine stateMachine = new StateMachine(method.get(), memory, parameters);
+                    stateMachine.start();
+                    memory.store("result", stateMachine.getMemoryObject("result")); // FIXME global variables must be present in memory before main method starts
+                    return VOID;
+                }
+                throw new IllegalStateException("No such procedure: '" + name + '\'');
+            };
+            return ParseTreeExpression.of("Void", name, evaluator);
         }
         String type = typeOf(expression);
         if (expression.size() == 3 && "BinaryOperator".equals(expression.get(1).getSymbol())) {
@@ -272,42 +303,42 @@ public final class Statement {
     }
 
     private static DyadicOperator getDyadicOperator(Node node) {
-        switch (node.content().toLowerCase()) {
-            case "^":
-                return createArithmicOperator((left, right) -> power(left, right));
-            case "*":
-                return createArithmicOperator((left, right) -> product(left, right));
-            case "/":
-                return createArithmicOperator((left, right) -> quotient(left, right));
-            case "div":
-                return createArithmicOperator((left, right) -> division(left, right));
-            case "mod":
-                return createArithmicOperator((left, right) -> modulus(left, right));
-            case "+":
-                return createArithmicOperator((left, right) -> sum(left, right));
-            case "-":
-                return createArithmicOperator((left, right) -> difference(left, right));
-            case "=":
-                return createRelationalOperator((left, right) -> left.compareTo(right) == 0);
-            case "<>":
-                return createRelationalOperator((left, right) -> left.compareTo(right) != 0);
-            case "<":
-                return createRelationalOperator((left, right) -> left.compareTo(right) < 0);
-            case "<=":
-                return createRelationalOperator((left, right) -> left.compareTo(right) <= 0);
-            case ">":
-                return createRelationalOperator((left, right) -> left.compareTo(right) > 0);
-            case ">=":
-                return createRelationalOperator((left, right) -> left.compareTo(right) > 0);
-            case "and":
-                return createLogicalOperator((left, right) -> left && right);
-            case "or":
-                return createLogicalOperator((left, right) -> left || right);
-            case "xor":
-                return createLogicalOperator((left, right) -> !left.equals(right));
-            default:
+        return switch (node.content().toLowerCase()) {
+            case "^" ->
+                createArithmicOperator((left, right) -> power(left, right));
+            case "*" ->
+                createArithmicOperator((left, right) -> product(left, right));
+            case "/" ->
+                createArithmicOperator((left, right) -> quotient(left, right));
+            case "div" ->
+                createArithmicOperator((left, right) -> division(left, right));
+            case "mod" ->
+                createArithmicOperator((left, right) -> modulus(left, right));
+            case "+" ->
+                createArithmicOperator((left, right) -> sum(left, right));
+            case "-" ->
+                createArithmicOperator((left, right) -> difference(left, right));
+            case "=" ->
+                createRelationalOperator((left, right) -> left.compareTo(right) == 0);
+            case "<>" ->
+                createRelationalOperator((left, right) -> left.compareTo(right) != 0);
+            case "<" ->
+                createRelationalOperator((left, right) -> left.compareTo(right) < 0);
+            case "<=" ->
+                createRelationalOperator((left, right) -> left.compareTo(right) <= 0);
+            case ">" ->
+                createRelationalOperator((left, right) -> left.compareTo(right) > 0);
+            case ">=" ->
+                createRelationalOperator((left, right) -> left.compareTo(right) > 0);
+            case "and" ->
+                createLogicalOperator((left, right) -> left && right);
+            case "or" ->
+                createLogicalOperator((left, right) -> left || right);
+            case "xor" ->
+                createLogicalOperator((left, right) -> !left.equals(right));
+            default ->
                 throw new IllegalStateException("Unsupported binary operator: '" + node.content() + "'");
-        }
+        };
     }
 
     private static Number power(Number left, Number right) {
@@ -414,5 +445,23 @@ public final class Statement {
     private final Function<String, Optional<Collection<Transition<Event, GuardCondition, Action>>>> methodSupplier;
 
     private static final List<String> RELATIONAL_OPERATORS = List.of("<", "<=", "=", ">", ">=", "<>");
+
+    private static final ParseTreeExpression VOID = new ParseTreeExpression() {
+        @Override
+        public String type() {
+            return "Void";
+        }
+
+        @Override
+        public String value() {
+            throw new UnsupportedOperationException("Void expressions have no value");
+        }
+
+        @Override
+        public Value evaluate(Memory memory) throws StateMachineException {
+            throw new UnsupportedOperationException("Void expression cannot be evaluated");
+        }
+
+    };
 
 }

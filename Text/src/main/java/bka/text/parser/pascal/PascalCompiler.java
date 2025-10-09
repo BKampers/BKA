@@ -57,10 +57,20 @@ public class PascalCompiler {
     }
 
     private void addPrivateFunctionOperations(UmlClassBuilder builder, Node declarations) {
+        declarations.findChild("ProcedureDeclaration")
+            .ifPresent(addProcedureDeclaration(builder));
         declarations.findChild("FunctionDeclaration")
             .ifPresent(addFunctionDeclaration(builder));
         declarations.findChild("Declarations")
             .ifPresent(next -> addPrivateFunctionOperations(builder, next));
+    }
+
+    private Consumer<Node> addProcedureDeclaration(UmlClassBuilder builder) {
+        return procedureDeclaration -> {
+            String procedureName = procedureDeclaration.getChild("Identifier").content();
+            builder.withOperation(procedureName, UmlTypeFactory.create("Void"), Member.Visibility.PRIVATE);
+            methods.put(procedureName, createBody(procedureDeclaration.getChild("CompoundStatement").getChild("Statements")));
+        };
     }
 
     private Consumer<Node> addFunctionDeclaration(UmlClassBuilder builder) {

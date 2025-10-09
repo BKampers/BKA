@@ -9,8 +9,9 @@ import com.fasterxml.jackson.databind.*;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import java.util.stream.*;
 import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import run.*;
 import uml.statechart.*;
 import uml.structure.*;
@@ -44,9 +45,7 @@ public class PascalCompilerTest {
                     i := i - 1;
             END.
             """);
-        uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
-        Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
-        StateMachine stateMachine = new StateMachine(transitions);
+        StateMachine stateMachine = createStateMachine(tree);
         stateMachine.start();
         assertEquals(0, stateMachine.getMemoryObject("i"));
     }
@@ -62,9 +61,7 @@ public class PascalCompilerTest {
                     i := i DIV 2
             END.
             """);
-        uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
-        Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
-        StateMachine stateMachine = new StateMachine(transitions);
+        StateMachine stateMachine = createStateMachine(tree);
         stateMachine.start();
         assertEquals(4, stateMachine.getMemoryObject("i"));
     }
@@ -80,9 +77,7 @@ public class PascalCompilerTest {
                     i := i DIV 2
             END.
             """);
-        uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
-        Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
-        StateMachine stateMachine = new StateMachine(transitions);
+        StateMachine stateMachine = createStateMachine(tree);
         stateMachine.start();
         assertEquals(8, stateMachine.getMemoryObject("i"));
     }
@@ -100,9 +95,7 @@ public class PascalCompilerTest {
                     i := i * 2
             END.
             """);
-        uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
-        Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
-        StateMachine stateMachine = new StateMachine(transitions);
+        StateMachine stateMachine = createStateMachine(tree);
         stateMachine.start();
         assertEquals(16, stateMachine.getMemoryObject("i"));
     }
@@ -120,9 +113,7 @@ public class PascalCompilerTest {
                     END
             END.
             """);
-        uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
-        Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
-        StateMachine stateMachine = new StateMachine(transitions);
+        StateMachine stateMachine = createStateMachine(tree);
         stateMachine.start();
         assertEquals(6, stateMachine.getMemoryObject("sum"));
         assertEquals(4, stateMachine.getMemoryObject("i"));
@@ -140,9 +131,7 @@ public class PascalCompilerTest {
                     UNTIL sum = 7
             END.
             """);
-        uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
-        Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
-        StateMachine stateMachine = new StateMachine(transitions);
+        StateMachine stateMachine = createStateMachine(tree);
         stateMachine.start();
         assertEquals(7, stateMachine.getMemoryObject("sum"));
     }
@@ -162,17 +151,45 @@ public class PascalCompilerTest {
             result := get_result;
             END.
             """);
-        uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
-        Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
-        StateMachine stateMachine = new StateMachine(transitions);
+        StateMachine stateMachine = createStateMachine(tree);
         stateMachine.start();
         assertEquals(0xF, stateMachine.getMemoryObject("result"));
+    }
+
+//        @Test
+    public void testProcedureCall() throws StateMachineException {
+        Node tree = parser.buildTree("""
+            PROGRAM procedure_call;
+            VAR result : INTEGER;
+
+            PROCEDURE compute(input: INTEGER);
+                BEGIN
+                result := input * 2;
+                END;
+
+            BEGIN
+            compute(10);
+            END.
+            """);
+        StateMachine stateMachine = createStateMachine(tree);
+        stateMachine.start();
+        assertEquals(20, stateMachine.getMemoryObject("result"));
+    }
+
+    private StateMachine createStateMachine(Node tree) throws StateMachineException {
+        uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
+        Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
+        return new StateMachine(transitions, getVariables(program));
     }
 
     private static Operation getMain(uml.structure.Class program) {
         return program.getOperations().stream()
             .filter(operation -> operation.getStereotypes().stream().anyMatch(stereotype -> "Main".equals(stereotype.getName())))
             .findAny().get();
+    }
+
+    private static Collection<String> getVariables(uml.structure.Class program) {
+        return program.getAttributes().stream().map(attribute -> attribute.getName().get()).collect(Collectors.toList());
     }
 
     private PascalParser parser;

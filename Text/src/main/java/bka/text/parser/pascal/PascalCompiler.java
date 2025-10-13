@@ -68,7 +68,11 @@ public class PascalCompiler {
     private Consumer<Node> addProcedureDeclaration(UmlClassBuilder builder) {
         return procedureDeclaration -> {
             String procedureName = procedureDeclaration.getChild("Identifier").content();
-            builder.withOperation(procedureName, UmlTypeFactory.create("Void"), Member.Visibility.PRIVATE);
+            builder.withOperation(
+                procedureName,
+                createParameterList(procedureDeclaration.getChild("ParameterDeclaration")),
+                UmlTypeFactory.create("Void"),
+                Member.Visibility.PRIVATE);
             methods.put(procedureName, createBody(procedureDeclaration.getChild("CompoundStatement").getChild("Statements")));
         };
     }
@@ -76,9 +80,54 @@ public class PascalCompiler {
     private Consumer<Node> addFunctionDeclaration(UmlClassBuilder builder) {
         return functionDeclaration -> {
             String functionName = functionDeclaration.getChild("Identifier").content();
-            builder.withOperation(functionName, UmlTypeFactory.create(functionDeclaration.getChild("TypeExpression").content()), Member.Visibility.PRIVATE);
+            builder.withOperation(
+                functionName,
+                createParameterList(functionDeclaration.getChild("ParameterDeclaration")),
+                UmlTypeFactory.create(functionDeclaration.getChild("TypeExpression").content()),
+                Member.Visibility.PRIVATE);
             methods.put(functionName, createBody(functionDeclaration.getChild("CompoundStatement").getChild("Statements")));
         };
+    }
+
+    private List<Parameter> createParameterList(Node parameterDeclaration) {
+        if (parameterDeclaration.getChildren().isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Parameter> parameters = new ArrayList<>();
+        Node parameterList = parameterDeclaration.getChild("ParameterList");
+        while (parameterList != null) {
+            parameters.add(createParameter(parameterList));
+            Optional<Node> remainder = parameterList.findChild("ParameterList");
+            parameterList = remainder.orElse(null);
+        }
+        return parameters;
+    }
+
+    private Parameter createParameter(Node parameterList) {
+        Node parameterExpression = parameterList.getChild("ParameterExpression");
+        return new Parameter() {
+            @Override
+            public Parameter.Direction getDirection() {
+                return (parameterExpression.findChild("VAR\\b").isPresent()) ? Parameter.Direction.INOUT : Parameter.Direction.IN;
+            }
+
+            @Override
+            public Optional<Type> getType() {
+                return Optional.of(createParameterType(parameterExpression.getChild("parameterTypeExpression")));
+            }
+
+            @Override
+            public Optional<String> getName() {
+                return Optional.of(parameterExpression.getChild("identifier").content());
+            }
+        };
+    }
+
+    private Type createParameterType(Node parameterTypeExpression) {
+        if (parameterTypeExpression.findChild("ARRAY\\b").isPresent()) {
+            UmlTypeFactory.create("ARRAY OF " + parameterTypeExpression.getChild("TypeExpression").getChildren().getFirst().content());
+        }
+        return UmlTypeFactory.create(parameterTypeExpression.getChild("TypeExpression").getChildren().getFirst().content());
     }
 
     private Type createType(Node typeDeclarationExpression) {
@@ -91,7 +140,7 @@ public class PascalCompiler {
             case "\\(" ->
                 createEnumerationType(typeDeclarationExpression.getChild("IdentifierList"));
             case "ARRAY\\b" ->
-                createArrayType(typeDeclarationExpression.getChild("TypeExpression"), typeDeclarationExpression.getChild("TypeExpression"));
+                createArrayType(typeDeclarationExpression.getChild("RangeExpression"), typeDeclarationExpression.getChild("TypeExpression"));
             case "RECORD\\b" ->
                 createRecordType(typeDeclarationExpression);
             default ->

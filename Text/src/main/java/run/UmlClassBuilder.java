@@ -34,9 +34,9 @@ public class UmlClassBuilder {
         return this;
     }
 
-    public UmlClassBuilder withOperation(String name, Type type, Member.Visibility visibility) {
+    public UmlClassBuilder withOperation(String name, List<Parameter> parameters, Type type, Member.Visibility visibility) {
         checkBuilt();
-        umlClass.addOperation(new UmlOperation(Optional.of(name), Collections.emptyList(), Optional.of(type), visibility, false, false, Collections.emptySet()));
+        umlClass.addOperation(new UmlOperation(Optional.of(name), parameters, Optional.of(type), visibility, false, false, Collections.emptySet()));
         return this;
     }
 

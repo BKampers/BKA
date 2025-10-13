@@ -244,7 +244,7 @@ public final class Statement {
                     String functionName = value;
                     Optional<Collection<Transition<Event, GuardCondition, Action>>> method = methodSupplier.apply(functionName);
                     if (method.isPresent()) {
-                        StateMachine stateMachine = new StateMachine(method.get(), memory, List.of(functionName)); // FIXME pass parameters
+                        StateMachine stateMachine = new StateMachine(method.get(), memory, List.of(functionName)); // TODO pass parameters
                         stateMachine.start();
                         return stateMachine.getMemoryObject(functionName);
                     }
@@ -265,8 +265,8 @@ public final class Statement {
                 Map<String, Object> parameters = new HashMap<>();
                 if (method.isPresent()) {
                     if (expression.size() > 2 && "ArgumentList".equals(expression.get(2).getSymbol())) {
-                        // FIXME initialize state machine's memory with global variables
-                        parameters.put("input", 10); // FIXME fill parameters with values from node
+                        List<ParseTreeExpression> arguments = createArguments(expression.get(1));
+
                     }
                     StateMachine stateMachine = new StateMachine(method.get(), memory, parameters);
                     stateMachine.start();
@@ -295,6 +295,17 @@ public final class Statement {
         }
         throw new IllegalStateException("Invalid expression");
     }
+
+    private List<ParseTreeExpression> createArguments(Node argumentList) {
+        List<ParseTreeExpression> arguments = new ArrayList<>();
+        arguments.add(createParseTreeExpression(argumentList.getChild("Expression")));
+        Optional<Node> remainder = argumentList.findChild("ArgumentList");
+        if (remainder.isPresent()) {
+            arguments.addAll(createArguments(remainder.get()));
+        }
+        return arguments;
+    }
+
 
     private static java.lang.Object parseInteger(String literal) {
         return (literal.startsWith("$"))

@@ -25,12 +25,12 @@ public class PascalCompiler {
         Node declarationsNode = node.getChild("Declarations");
         addProgramVariables(builder, declarationsNode);
         buildOperations(builder, programName, declarationsNode);
-        methods.put(programName, createBody(node.getChild("CompoundStatement").getChild("Statements")));
+        methodBodies.put(programName, createBody(node.getChild("CompoundStatement").getChild("Statements")));
         return builder.build();
     }
 
     public Collection<Transition<Event, GuardCondition, Action>> getMethod(Operation operation) {
-        return Collections.unmodifiableCollection(methods.get(operation.getName().get()));
+        return Collections.unmodifiableCollection(methodBodies.get(operation.getName().get()));
     }
 
     private void addProgramVariables(UmlClassBuilder builder, Node declarations) {
@@ -68,35 +68,39 @@ public class PascalCompiler {
     private Consumer<Node> addProcedureDeclaration(UmlClassBuilder builder) {
         return procedureDeclaration -> {
             String procedureName = procedureDeclaration.getChild("Identifier").content();
+            Map<Node, Parameter> parameters = createParameterList(procedureDeclaration.getChild("ParameterDeclaration"));
             builder.withOperation(
                 procedureName,
-                createParameterList(procedureDeclaration.getChild("ParameterDeclaration")),
+                new ArrayList<>(parameters.values()),
                 UmlTypeFactory.create("Void"),
                 Member.Visibility.PRIVATE);
-            methods.put(procedureName, createBody(procedureDeclaration.getChild("CompoundStatement").getChild("Statements")));
+            methodBodies.put(procedureName, createBody(procedureDeclaration.getChild("CompoundStatement").getChild("Statements")));
+            methodParameters.put(procedureName, new ArrayList<>(parameters.keySet()));
         };
     }
 
     private Consumer<Node> addFunctionDeclaration(UmlClassBuilder builder) {
         return functionDeclaration -> {
             String functionName = functionDeclaration.getChild("Identifier").content();
+            Map<Node, Parameter> parameters = createParameterList(functionDeclaration.getChild("ParameterDeclaration"));
             builder.withOperation(
                 functionName,
-                createParameterList(functionDeclaration.getChild("ParameterDeclaration")),
+                new ArrayList<>(parameters.values()),
                 UmlTypeFactory.create(functionDeclaration.getChild("TypeExpression").content()),
                 Member.Visibility.PRIVATE);
-            methods.put(functionName, createBody(functionDeclaration.getChild("CompoundStatement").getChild("Statements")));
+            methodBodies.put(functionName, createBody(functionDeclaration.getChild("CompoundStatement").getChild("Statements")));
+            methodParameters.put(functionName, new ArrayList<>(parameters.keySet()));
         };
     }
 
-    private List<Parameter> createParameterList(Node parameterDeclaration) {
+    private Map<Node, Parameter> createParameterList(Node parameterDeclaration) {
         if (parameterDeclaration.getChildren().isEmpty()) {
-            return Collections.emptyList();
+            return Collections.emptyMap();
         }
-        List<Parameter> parameters = new ArrayList<>();
+        Map<Node, Parameter> parameters = new LinkedHashMap<>();
         Node parameterList = parameterDeclaration.getChild("ParameterList");
         while (parameterList != null) {
-            parameters.add(createParameter(parameterList));
+            parameters.put(parameterList.getChild("ParameterExpression").getChild("Identifier"), createParameter(parameterList));
             Optional<Node> remainder = parameterList.findChild("ParameterList");
             parameterList = remainder.orElse(null);
         }
@@ -201,12 +205,24 @@ public class PascalCompiler {
     private void createStatementSequence(Node statements, ActivityDiagramBuilder diagram) {
         Optional<Node> statementNode = Optional.of(statements);
         while (statementNode.isPresent()) {
-            Statement statement = new Statement(statementNode.get().getChild("Statement"), name -> Optional.ofNullable(methods.get(name)));
+            Statement statement = new Statement(statementNode.get().getChild("Statement"), new MethodProperties());
             statement.getTransitions(diagram);
             statementNode = statementNode.get().findChild("Statements");
         }
     }
 
-    private final Map<String, Collection<Transition<Event, GuardCondition, Action>>> methods = new HashMap<>();
+    public class MethodProperties {
+
+        public Collection<Transition<Event, GuardCondition, Action>> getBody(String name) {
+            return methodBodies.get(name);
+        }
+
+        public List<Node> getParameters(String name) {
+            return methodParameters.get(name);
+        }
+    }
+
+    private final Map<String, Collection<Transition<Event, GuardCondition, Action>>> methodBodies = new HashMap<>();
+    private final Map<String, List<Node>> methodParameters = new HashMap<>();
 
 }

@@ -9,23 +9,25 @@ import bka.text.parser.pascal.*;
 import java.util.*;
 import java.util.function.*;
 import java.util.logging.*;
+import java.util.stream.Collectors;
 import uml.statechart.*;
 
 
 public final class Statement {
 
-    public Statement(Node expression, Function<String, Optional<Collection<Transition<Event, GuardCondition, Action>>>> methods) {
-        this(Optional.empty(), expression, methods);
+    public Statement(Node expression, PascalCompiler.MethodProperties properties) {
+        this(Optional.empty(), expression, properties);
     }
 
-    private Statement(Node assignable, Node expression, Function<String, Optional<Collection<Transition<Event, GuardCondition, Action>>>> methods) {
-        this(Optional.of(assignable), expression, methods);
+    private Statement(Node assignable, Node expression, PascalCompiler.MethodProperties properties) {
+        this(Optional.of(assignable), expression, properties);
     }
 
-    private Statement(Optional<Node> assignable, Node expression, Function<String, Optional<Collection<Transition<Event, GuardCondition, Action>>>> methods) {
+    private Statement(Optional<Node> assignable, Node expression, PascalCompiler.MethodProperties properties) {
         this.assignable = assignable;
         this.expression = Objects.requireNonNull(expression);
-        this.methodSupplier = Objects.requireNonNull(methods);
+        this.methodProperties = Objects.requireNonNull(properties);
+        this.methodSupplier = name -> Optional.ofNullable(properties.getBody(name));
     }
 
     public void getTransitions(ActivityDiagramBuilder diagram) {
@@ -72,7 +74,7 @@ public final class Statement {
     private void addForLoopTransitions(ActivityDiagramBuilder diagram) {
         Node identifier = expression.getChild("Identifier");
         List<Node> expressions = expression.findChildren("Expression");
-        ActionState<Action> loopInitialization = createActionState(new Statement(identifier, expressions.getFirst(), methodSupplier));
+        ActionState<Action> loopInitialization = createActionState(new Statement(identifier, expressions.getFirst(), methodProperties));
         Decision decision = UmlStateFactory.createDecision(createLessEqualExpression(identifier, expressions.getLast()));
         diagram.add(loopInitialization, decision);
         createTransitions(expression.getChild("Statement"), diagram);
@@ -115,11 +117,11 @@ public final class Statement {
     }
 
     private void addAssignementTransitions(ActivityDiagramBuilder diagram) {
-        diagram.add(createActionState(new Statement(expression.getChild("Assignable"), expression.getChild("Expression"), methodSupplier)));
+        diagram.add(createActionState(new Statement(expression.getChild("Assignable"), expression.getChild("Expression"), methodProperties)));
     }
 
     private void addProcedureCall(ActivityDiagramBuilder diagram) {
-        diagram.add(createActionState(new Statement(expression.getChild("Call"), methodSupplier)));
+        diagram.add(createActionState(new Statement(expression.getChild("Call"), methodProperties)));
     }
 
     private static ActionState<Action> createActionState(Statement statement) {
@@ -134,14 +136,14 @@ public final class Statement {
             createStatementSequence(statements, diagram);
         }
         else {
-            new Statement(statements, methodSupplier).getTransitions(diagram);
+            new Statement(statements, methodProperties).getTransitions(diagram);
         }
     }
 
     private void createStatementSequence(Node statements, ActivityDiagramBuilder diagram) {
         Optional<Node> next = Optional.of(statements);
         while (next.isPresent()) {
-            Statement statement = new Statement(next.get().getChild("Statement"), methodSupplier);
+            Statement statement = new Statement(next.get().getChild("Statement"), methodProperties);
             statement.getTransitions(diagram);
             next = next.get().findChild("Statements");
         }
@@ -265,12 +267,28 @@ public final class Statement {
                 Map<String, Object> parameters = new HashMap<>();
                 if (method.isPresent()) {
                     if (expression.size() > 2 && "ArgumentList".equals(expression.get(2).getSymbol())) {
-                        List<ParseTreeExpression> arguments = createArguments(expression.get(1));
-
+                        List<Node> arguments = createArguments(expression.get(2));
+                        List<Node> methodParameters = methodProperties.getParameters(name);
+                        if (methodParameters.size() != arguments.size()) {
+                            throw new IllegalStateException("Invalid number of arguments.");
+                        }
+                        List<Statement> parameterStatements = new ArrayList<>();
+                        for (int i = 0; i < methodParameters.size(); ++i) {
+                            parameterStatements.add(new Statement(methodParameters.get(i), arguments.get(i), methodProperties));
+                        }
+                        ActivityDiagramBuilder diagram = new ActivityDiagramBuilder();
+                        parameterStatements.stream().forEach(statement -> diagram.add(UmlStateFactory.createActionState(Action.of(statement))));
+                        diagram.addFinalState();
+                        Collection<String> parameterNames = methodParameters.stream().map(Node::content).collect(Collectors.toList());
+                        StateMachine parameterEvaluator = new StateMachine(diagram.getTransitions(), memory, parameterNames);
+                        parameterEvaluator.start();
+                        for (String parameterName : parameterNames) {
+                            parameters.put(parameterName, parameterEvaluator.getMemoryObject(parameterName));
+                        }
                     }
                     StateMachine stateMachine = new StateMachine(method.get(), memory, parameters);
                     stateMachine.start();
-                    memory.store("result", stateMachine.getMemoryObject("result")); // FIXME global variables must be present in memory before main method starts
+//                    memory.store("result", stateMachine.getMemoryObject("result"));
                     return VOID;
                 }
                 throw new IllegalStateException("No such procedure: '" + name + '\'');
@@ -296,9 +314,9 @@ public final class Statement {
         throw new IllegalStateException("Invalid expression");
     }
 
-    private List<ParseTreeExpression> createArguments(Node argumentList) {
-        List<ParseTreeExpression> arguments = new ArrayList<>();
-        arguments.add(createParseTreeExpression(argumentList.getChild("Expression")));
+    private List<Node> createArguments(Node argumentList) {
+        List<Node> arguments = new ArrayList<>();
+        arguments.add(argumentList.getChild("Expression"));
         Optional<Node> remainder = argumentList.findChild("ArgumentList");
         if (remainder.isPresent()) {
             arguments.addAll(createArguments(remainder.get()));
@@ -453,6 +471,7 @@ public final class Statement {
     private final Optional<Node> assignable;
     private final Node expression;
 
+    private final PascalCompiler.MethodProperties methodProperties;
     private final Function<String, Optional<Collection<Transition<Event, GuardCondition, Action>>>> methodSupplier;
 
     private static final List<String> RELATIONAL_OPERATORS = List.of("<", "<=", "=", ">", ">=", "<>");

@@ -156,7 +156,7 @@ public class PascalCompilerTest {
         assertEquals(0xF, stateMachine.getMemoryObject("result"));
     }
 
-//        @Test
+    @Test
     public void testProcedureCall() throws StateMachineException {
         Node tree = parser.buildTree("""
             PROGRAM procedure_call;

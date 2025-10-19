@@ -100,7 +100,7 @@ public class PascalCompiler {
         Map<Node, Parameter> parameters = new LinkedHashMap<>();
         Node parameterList = parameterDeclaration.getChild("ParameterList");
         while (parameterList != null) {
-            parameters.put(parameterList.getChild("ParameterExpression").getChild("Identifier"), createParameter(parameterList));
+            parameters.put(parameterList.getChild("ParameterExpression"), createParameter(parameterList));
             Optional<Node> remainder = parameterList.findChild("ParameterList");
             parameterList = remainder.orElse(null);
         }

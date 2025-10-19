@@ -27,7 +27,7 @@ public final class Statement {
         this.assignable = assignable;
         this.expression = Objects.requireNonNull(expression);
         this.methodProperties = Objects.requireNonNull(properties);
-        this.methodSupplier = name -> Optional.ofNullable(properties.getBody(name));
+//        this.methodSupplier = name -> Optional.ofNullable(properties.getBody(name));
     }
 
     public void getTransitions(ActivityDiagramBuilder diagram) {
@@ -244,9 +244,9 @@ public final class Statement {
                 String value = first.getChildren().getFirst().content();
                 Evaluator evaluator = memory -> {
                     String functionName = value;
-                    Optional<Collection<Transition<Event, GuardCondition, Action>>> method = methodSupplier.apply(functionName);
-                    if (method.isPresent()) {
-                        StateMachine stateMachine = new StateMachine(method.get(), memory, List.of(functionName)); // TODO pass parameters
+                    Collection<Transition<Event, GuardCondition, Action>> method = methodProperties.getBody(functionName);
+                    if (method != null) {
+                        StateMachine stateMachine = new StateMachine(method, memory, List.of(functionName)); // TODO pass parameters
                         stateMachine.start();
                         return stateMachine.getMemoryObject(functionName);
                     }
@@ -263,9 +263,9 @@ public final class Statement {
         if ("Call".equals(symbol)) {
             String name = expression.getFirst().content();
             Evaluator evaluator = memory -> {
-                Optional<Collection<Transition<Event, GuardCondition, Action>>> method = methodSupplier.apply(name);
+                Collection<Transition<Event, GuardCondition, Action>> method = methodProperties.getBody(name);
                 Map<String, Object> parameters = new HashMap<>();
-                if (method.isPresent()) {
+                if (method != null) {
                     if (expression.size() > 2 && "ArgumentList".equals(expression.get(2).getSymbol())) {
                         List<Node> arguments = createArguments(expression.get(2));
                         List<Node> methodParameters = methodProperties.getParameters(name);
@@ -279,16 +279,15 @@ public final class Statement {
                         ActivityDiagramBuilder diagram = new ActivityDiagramBuilder();
                         parameterStatements.stream().forEach(statement -> diagram.add(UmlStateFactory.createActionState(Action.of(statement))));
                         diagram.addFinalState();
-                        Collection<String> parameterNames = methodParameters.stream().map(Node::content).collect(Collectors.toList());
+                        List<String> parameterNames = methodParameters.stream().map(Node::content).collect(Collectors.toList());
                         StateMachine parameterEvaluator = new StateMachine(diagram.getTransitions(), memory, parameterNames);
                         parameterEvaluator.start();
-                        for (String parameterName : parameterNames) {
-                            parameters.put(parameterName, parameterEvaluator.getMemoryObject(parameterName));
+                        for (int i = 0; i < parameterNames.size(); ++i) {
+                            parameters.put(methodParameters.get(i).getChild("Identifier").content(), parameterEvaluator.getMemoryObject(parameterNames.get(i)));
                         }
                     }
-                    StateMachine stateMachine = new StateMachine(method.get(), memory, parameters);
+                    StateMachine stateMachine = new StateMachine(method, memory, parameters);
                     stateMachine.start();
-//                    memory.store("result", stateMachine.getMemoryObject("result"));
                     return VOID;
                 }
                 throw new IllegalStateException("No such procedure: '" + name + '\'');
@@ -470,9 +469,7 @@ public final class Statement {
 
     private final Optional<Node> assignable;
     private final Node expression;
-
     private final PascalCompiler.MethodProperties methodProperties;
-    private final Function<String, Optional<Collection<Transition<Event, GuardCondition, Action>>>> methodSupplier;
 
     private static final List<String> RELATIONAL_OPERATORS = List.of("<", "<=", "=", ">", ">=", "<>");
 

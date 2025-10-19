@@ -205,6 +205,11 @@ public class StateMachine {
     private final Collection<Listener> listeners = new ArrayList<>();
     private final Object semaphore = new Object();
 
-    public static final Object UNINITIALIZED = new Object();
+    public static final Object UNINITIALIZED = new Object() {
+        @Override
+        public String toString() {
+            return "@uninitialized";
+        }
+    };
 
 }

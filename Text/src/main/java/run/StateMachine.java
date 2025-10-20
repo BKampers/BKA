@@ -33,17 +33,27 @@ public class StateMachine {
         this(diagram, parent, initial(identifiers));
     }
 
+    public StateMachine(Collection<Transition<Event, GuardCondition, Action>> diagram, Memory parent, Map<String, Object> parameters, Collection<String> identifiers) throws StateMachineException {
+        this(diagram, parent, merge(identifiers, parameters));
+    }
+
+    private static Map<String, Object> merge(Collection<String> identifiers, Map<String, Object> parameters) {
+        Map<String, Object> initial = initial(identifiers);
+        initial.putAll(parameters);
+        return initial;
+    }
+
     private static Map<String, Object> initial(Collection<String> identifiers) {
         return identifiers.stream().collect(Collectors.toMap(Function.identity(), value -> UNINITIALIZED));
     }
 
-    public StateMachine(Collection<Transition<Event, GuardCondition, Action>> diagram, Memory parent, Map<String, Object> initial) throws StateMachineException {
+    public StateMachine(Collection<Transition<Event, GuardCondition, Action>> diagram, Memory parent, Map<String, Object> parameters) throws StateMachineException {
         long initialStates = diagram.stream().filter(transition -> transition.getSource() instanceof InitialState).count();
         if (initialStates != 1) {
             throw new IllegalArgumentException("Illegal number of initial states: " + initialStates);
         }
         this.diagram = new ArrayList<>(diagram);
-        memory = new Scope(parent, initial);
+        memory = new Scope(parent, parameters);
     }
 
     public synchronized void start() throws StateMachineException {

@@ -137,9 +137,9 @@ public class PascalCompilerTest {
     }
 
     @Test
-    public void testFunctionCall() throws StateMachineException {
+    public void testFunctionCallWithoutParameters() throws StateMachineException {
         Node tree = parser.buildTree("""
-            PROGRAM function_call;
+            PROGRAM function_call_without_parameters;
             VAR result : INTEGER;
 
             FUNCTION get_result: INTEGER;
@@ -154,6 +154,31 @@ public class PascalCompilerTest {
         StateMachine stateMachine = createStateMachine(tree);
         stateMachine.start();
         assertEquals(0xF, stateMachine.getMemoryObject("result"));
+    }
+
+    @Test
+    public void testFunctionCallWithParameters() throws StateMachineException {
+        Node tree = parser.buildTree("""
+            PROGRAM function_call_with_parameters;
+            VAR result : INTEGER;
+
+            FUNCTION sum(left: INTEGER; right: INTEGER): INTEGER;
+                BEGIN
+                sum := left + right
+                END;
+
+            FUNCTION one : INTEGER;
+                BEGIN
+                one := 1
+                END;
+
+            BEGIN
+            result := sum(1000, one);
+            END.
+            """);
+        StateMachine stateMachine = createStateMachine(tree);
+        stateMachine.start();
+        assertEquals(1001, stateMachine.getMemoryObject("result"));
     }
 
     @Test

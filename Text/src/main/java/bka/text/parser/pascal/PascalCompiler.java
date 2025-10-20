@@ -76,6 +76,7 @@ public class PascalCompiler {
                 Member.Visibility.PRIVATE);
             methodBodies.put(procedureName, createBody(procedureDeclaration.getChild("CompoundStatement").getChild("Statements")));
             methodParameters.put(procedureName, new ArrayList<>(parameters.keySet()));
+            methodTypes.put(procedureName, "Void");
         };
     }
 
@@ -90,6 +91,7 @@ public class PascalCompiler {
                 Member.Visibility.PRIVATE);
             methodBodies.put(functionName, createBody(functionDeclaration.getChild("CompoundStatement").getChild("Statements")));
             methodParameters.put(functionName, new ArrayList<>(parameters.keySet()));
+            methodTypes.put(functionName, functionDeclaration.getChild("TypeExpression").content());
         };
     }
 
@@ -220,9 +222,15 @@ public class PascalCompiler {
         public List<Node> getParameters(String name) {
             return methodParameters.get(name);
         }
+
+        public String getType(String name) {
+            return methodTypes.get(name);
+        }
+
     }
 
     private final Map<String, Collection<Transition<Event, GuardCondition, Action>>> methodBodies = new HashMap<>();
     private final Map<String, List<Node>> methodParameters = new HashMap<>();
+    private final Map<String, String> methodTypes = new HashMap();
 
 }

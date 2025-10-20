@@ -187,37 +187,33 @@ public final class Statement {
 
     private ParseTreeExpression getExpressionTree(Node expression) {
         if ("Expression".equals(expression.getSymbol())) {
-            return createParseTreeExpression(expression.getSymbol(), expression.getChildren());
+            return createParseTreeExpression(expression);
         }
         if ("Call".equals(expression.getSymbol())) {
-            return createParseTreeExpression(expression.getSymbol(), expression.getChildren());
+            return createParseTreeExpression(expression);
         }
         if ("Identifier".equals(expression.getSymbol())) {
-            return createParseTreeExpression(expression.getSymbol(), expression.getChildren());
+            return createParseTreeExpression(expression);
         }
         throw new IllegalStateException("Not an expression: " + expression);
     }
 
     private ParseTreeExpression createLessEqualExpression(Node leftOperand, Node rightOperand) {
         Evaluator evaluator = memory -> {
-            Value left = createParseTreeExpression(leftOperand.getSymbol(), leftOperand.getChildren()).evaluate(memory);
-            Value right = createParseTreeExpression(rightOperand.getSymbol(), rightOperand.getChildren()).evaluate(memory);
+            Value left = createParseTreeExpression(leftOperand).evaluate(memory);
+            Value right = createParseTreeExpression(rightOperand).evaluate(memory);
             return ((Comparable) left.get()).compareTo((Comparable) right.get()) <= 0;
         };
         return ParseTreeExpression.of("Boolean", leftOperand.content() + " .LE. " + rightOperand.content(), evaluator);
     }
 
     private ParseTreeExpression createParseTreeExpression() {
-        return createParseTreeExpression("Expression", expression.getChild("Expression").getChildren());
-    }
-    
-    private ParseTreeExpression createParseTreeExpression(Node node) {
-        return createParseTreeExpression(node.getSymbol(), node.getChildren());
+        return createParseTreeExpression(expression.getChild("Expression"));
     }
 
-    private ParseTreeExpression createParseTreeExpression(String symbol, List<Node> expression) {
-        if (expression.size() == 1) {
-            Node first = expression.getFirst();
+    private ParseTreeExpression createParseTreeExpression(Node node) {
+        if (node.getChildren().size() == 1) {
+            Node first = node.getChildren().getFirst();
             if ("Literal".equals(first.getSymbol())) {
                 String type = switch (first.getChildren().getFirst().getSymbol()) {
                     case "IntegerLiteral" ->
@@ -241,84 +237,101 @@ public final class Statement {
                 return ParseTreeExpression.of(type, value, evaluator);
             }
             if ("Identifier".equals(first.getSymbol())) {
-                String value = first.getChildren().getFirst().content();
-                Evaluator evaluator = memory -> {
-                    String functionName = value;
-                    Collection<Transition<Event, GuardCondition, Action>> method = methodProperties.getBody(functionName);
-                    if (method != null) {
-                        StateMachine stateMachine = new StateMachine(method, memory, List.of(functionName)); // TODO pass parameters
-                        stateMachine.start();
-                        return stateMachine.getMemoryObject(functionName);
-                    }
-                    return memory.load(value);
-                };
-                return ParseTreeExpression.of("*", value, evaluator);
+                String name = first.getChildren().getFirst().content();
+                return ParseTreeExpression.of("*", name, identifierEvaluator(name));
             }
-            if ("Identifier".equals(symbol)) {
-                String value = first.content();
-                return ParseTreeExpression.of("*", value, memory -> memory.load(value));
+            if ("Identifier".equals(node.getSymbol())) {
+                String name = first.content();
+                return ParseTreeExpression.of("*", name, memory -> memory.load(name));
+            }
+            if ("Expression".equals(node.getSymbol())) {
+                return createParseTreeExpression(node.getChildren().getFirst());
             }
             throw new IllegalStateException("Cannot create parse tree expression");
         }
-        if ("Call".equals(symbol)) {
-            String name = expression.getFirst().content();
+        if ("Call".equals(node.getSymbol())) {
+            String name = node.getChildren().getFirst().content();
             Evaluator evaluator = memory -> {
+                boolean isProcedure = "Void".equals(methodProperties.getType(name));
                 Collection<Transition<Event, GuardCondition, Action>> method = methodProperties.getBody(name);
-                Map<String, Object> parameters = new HashMap<>();
-                if (method != null) {
-                    if (expression.size() > 2 && "ArgumentList".equals(expression.get(2).getSymbol())) {
-                        List<Node> arguments = createArguments(expression.get(2));
-                        List<Node> methodParameters = methodProperties.getParameters(name);
-                        if (methodParameters.size() != arguments.size()) {
-                            throw new IllegalStateException("Invalid number of arguments.");
-                        }
-                        List<Statement> parameterStatements = new ArrayList<>();
-                        for (int i = 0; i < methodParameters.size(); ++i) {
-                            parameterStatements.add(new Statement(methodParameters.get(i), arguments.get(i), methodProperties));
-                        }
-                        ActivityDiagramBuilder diagram = new ActivityDiagramBuilder();
-                        parameterStatements.stream().forEach(statement -> diagram.add(UmlStateFactory.createActionState(Action.of(statement))));
-                        diagram.addFinalState();
-                        List<String> parameterNames = methodParameters.stream().map(Node::content).collect(Collectors.toList());
-                        StateMachine parameterEvaluator = new StateMachine(diagram.getTransitions(), memory, parameterNames);
-                        parameterEvaluator.start();
-                        for (int i = 0; i < parameterNames.size(); ++i) {
-                            parameters.put(methodParameters.get(i).getChild("Identifier").content(), parameterEvaluator.getMemoryObject(parameterNames.get(i)));
-                        }
-                    }
-                    StateMachine stateMachine = new StateMachine(method, memory, parameters);
-                    stateMachine.start();
-                    return VOID;
+                if (method == null) {
+                    throw new IllegalStateException("No such procedure or function: '" + name + '\'');
                 }
-                throw new IllegalStateException("No such procedure: '" + name + '\'');
+                StateMachine stateMachine = new StateMachine(method, memory, evaluateArguments(node.getChildren(), name, memory), (isProcedure) ? List.of() : List.of(name));
+                stateMachine.start();
+                return (isProcedure) ? VOID : stateMachine.getMemoryObject(name);
             };
-            return ParseTreeExpression.of("Void", name, evaluator);
+            return ParseTreeExpression.of(methodProperties.getType(name), name, evaluator);
         }
-        String type = typeOf(expression);
-        if (expression.size() == 3 && "BinaryOperator".equals(expression.get(1).getSymbol())) {
-            Node first = expression.getFirst();
+        if (node.getChildren().size() == 3 && "BinaryOperator".equals(node.getChildren().get(1).getSymbol())) {
+            Node first = node.getChildren().getFirst();
             String value
                 = createParseTreeExpression(first).value()
-                + " (Operator)" + expression.get(1).content() + " "
-                + createParseTreeExpression(expression.getLast()).value() + ")";
+                + " (Operator)" + node.getChildren().get(1).content() + " "
+                + createParseTreeExpression(node.getChildren().getLast()).value() + ")";
             Evaluator evaluator = memory -> {
-                Value v = getDyadicOperator(expression.get(1)).evaluate(
+                Value v = getDyadicOperator(node.getChildren().get(1)).evaluate(
                     createParseTreeExpression(first),
-                    createParseTreeExpression(expression.getLast()),
+                    createParseTreeExpression(node.getChildren().getLast()),
                     memory);
                 return v.get();
             };
-            return ParseTreeExpression.of(type, value, evaluator);
+            return ParseTreeExpression.of(typeOf(node.getChildren()), value, evaluator);
         }
         throw new IllegalStateException("Invalid expression");
     }
 
-    private List<Node> createArguments(Node argumentList) {
+    private Evaluator identifierEvaluator(String name) {
+        return memory -> {
+            Collection<Transition<Event, GuardCondition, Action>> method = methodProperties.getBody(name);
+            if (method != null) {
+                StateMachine stateMachine = new StateMachine(method, memory, List.of(name));
+                stateMachine.start();
+                return stateMachine.getMemoryObject(name);
+            }
+            return memory.load(name);
+        };
+    }
+
+    private Map<String, Object> evaluateArguments(List<Node> expression, String name, Memory memory) throws StateMachineException {
+        List<Node> arguments = createArgumentList(expression);
+        if (arguments != null) {
+            List<Node> methodParameters = methodProperties.getParameters(name);
+            if (methodParameters.size() != arguments.size()) {
+                throw new IllegalStateException("Invalid number of arguments.");
+            }
+            List<Statement> parameterStatements = new ArrayList<>();
+            for (int i = 0; i < methodParameters.size(); ++i) {
+                parameterStatements.add(new Statement(methodParameters.get(i), arguments.get(i), methodProperties));
+            }
+            ActivityDiagramBuilder diagram = new ActivityDiagramBuilder();
+            parameterStatements.stream().forEach(statement -> diagram.add(UmlStateFactory.createActionState(Action.of(statement))));
+            diagram.addFinalState();
+            List<String> parameterNames = methodParameters.stream().map(Node::content).collect(Collectors.toList());
+            StateMachine parameterEvaluator = new StateMachine(diagram.getTransitions(), memory, parameterNames);
+            parameterEvaluator.start();
+            Map<String, Object> parameters = new HashMap<>();
+            for (int i = 0; i < parameterNames.size(); ++i) {
+                parameters.put(methodParameters.get(i).getChild("Identifier").content(), parameterEvaluator.getMemoryObject(parameterNames.get(i)));
+            }
+            return parameters;
+        }
+        return Collections.emptyMap();
+    }
+
+    private List<Node> createArgumentList(List<Node> expression) {
+        if (expression.size() > 2 && "ArgumentList".equals(expression.get(2).getSymbol())) {
+            return createArgumentList(expression.get(2));
+        }
+        return null;
+    }
+
+    private List<Node> createArgumentList(Node argumentList) {
         List<Node> arguments = new ArrayList<>();
         arguments.add(argumentList.getChild("Expression"));
         Optional<Node> remainder = argumentList.findChild("ArgumentList");
         if (remainder.isPresent()) {
-            arguments.addAll(createArguments(remainder.get()));
+            arguments.addAll(createArgumentList(remainder.get()));
         }
         return arguments;
     }

@@ -73,7 +73,7 @@ public final class Node {
     }
 
     public Node getChild(String symbol) {
-        return findChild(symbol).orElseThrow(() -> new NoSuchElementException(symbol));
+        return findChild(symbol).orElseThrow(() -> new NoSuchElementException("Node ```" + toString() + "``` has no child of '" + symbol + '\''));
     }
     
     public Optional<Node> findChild(String symbol) {

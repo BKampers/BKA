@@ -27,18 +27,26 @@ public final class Node {
     }
 
     private Node(String source, String symbol, int start, int end, List<Node> children, Optional<String> error) {
-        if (start < 0 || source.length() < start) {
-            throw new IndexOutOfBoundsException(start);
-        }
-        if (end < start || source.length() < end) {
-            throw new IndexOutOfBoundsException(end);
-        }
         this.source = Objects.requireNonNull(source);
         this.symbol = Objects.requireNonNull(symbol);
-        this.start = start;
-        this.end = end;
+        this.start = requireValidStartIndex(start);
+        this.end = requireValidEndIndex(end);
         this.children = children.stream().collect(Collectors.toUnmodifiableList());
         this.error = error;
+    }
+
+    private int requireValidStartIndex(int index) {
+        if (index < 0 || source.length() < index) {
+            throw new IndexOutOfBoundsException(index);
+        }
+        return index;
+    }
+
+    private int requireValidEndIndex(int index) {
+        if (index < start || source.length() < index) {
+            throw new IndexOutOfBoundsException(index);
+        }
+        return index;
     }
 
     public int getStart() {
@@ -73,7 +81,7 @@ public final class Node {
     }
 
     public Node getChild(String symbol) {
-        return findChild(symbol).orElseThrow(() -> new NoSuchElementException("Node ```" + toString() + "``` has no child of '" + symbol + '\''));
+        return findChild(symbol).orElseThrow(() -> new NoSuchElementException("Node ```" + content() + "``` has no child of '" + symbol + '\''));
     }
     
     public Optional<Node> findChild(String symbol) {

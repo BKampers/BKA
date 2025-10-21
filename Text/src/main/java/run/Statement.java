@@ -27,7 +27,6 @@ public final class Statement {
         this.assignable = assignable;
         this.expression = Objects.requireNonNull(expression);
         this.methodProperties = Objects.requireNonNull(properties);
-//        this.methodSupplier = name -> Optional.ofNullable(properties.getBody(name));
     }
 
     public void getTransitions(ActivityDiagramBuilder diagram) {
@@ -252,13 +251,24 @@ public final class Statement {
         if ("Call".equals(node.getSymbol())) {
             String name = node.getChildren().getFirst().content();
             Evaluator evaluator = memory -> {
-                boolean isProcedure = "Void".equals(methodProperties.getType(name));
-                Collection<Transition<Event, GuardCondition, Action>> method = methodProperties.getBody(name);
-                if (method == null) {
+                final boolean isProcedure = "Void".equals(methodProperties.getType(name));
+                Collection<Transition<Event, GuardCondition, Action>> methodBody = methodProperties.getBody(name);
+                if (methodBody == null) {
                     throw new IllegalStateException("No such procedure or function: '" + name + '\'');
                 }
-                StateMachine stateMachine = new StateMachine(method, memory, evaluateArguments(node.getChildren(), name, memory), (isProcedure) ? List.of() : List.of(name));
+                List<Node> arguments = createArgumentList(node.getChildren());
+                Map<String, Object> parameters = evaluateArguments(arguments, node.getChildren(), name, memory);
+                StateMachine stateMachine = (isProcedure)
+                    ? new StateMachine(methodBody, memory, parameters)
+                    : new StateMachine(methodBody, memory, parameters, List.of(name));
                 stateMachine.start();
+                for (int i = 0; i < methodProperties.getParameters(name).size(); ++i) {
+                    if (methodProperties.getParameters(name).get(i).findChild("VAR\\b").isPresent()) {
+                        memory.store(
+                            identifier(arguments.get(i)),
+                            stateMachine.getMemoryObject(identifier(methodProperties.getParameters(name).get(i))));
+                    }
+                }
                 return (isProcedure) ? VOID : stateMachine.getMemoryObject(name);
             };
             return ParseTreeExpression.of(methodProperties.getType(name), name, evaluator);
@@ -293,37 +303,35 @@ public final class Statement {
         };
     }
 
-    private Map<String, Object> evaluateArguments(List<Node> expression, String name, Memory memory) throws StateMachineException {
-        List<Node> arguments = createArgumentList(expression);
-        if (arguments != null) {
-            List<Node> methodParameters = methodProperties.getParameters(name);
-            if (methodParameters.size() != arguments.size()) {
-                throw new IllegalStateException("Invalid number of arguments.");
-            }
-            List<Statement> parameterStatements = new ArrayList<>();
-            for (int i = 0; i < methodParameters.size(); ++i) {
-                parameterStatements.add(new Statement(methodParameters.get(i), arguments.get(i), methodProperties));
-            }
-            ActivityDiagramBuilder diagram = new ActivityDiagramBuilder();
-            parameterStatements.stream().forEach(statement -> diagram.add(UmlStateFactory.createActionState(Action.of(statement))));
-            diagram.addFinalState();
-            List<String> parameterNames = methodParameters.stream().map(Node::content).collect(Collectors.toList());
-            StateMachine parameterEvaluator = new StateMachine(diagram.getTransitions(), memory, parameterNames);
-            parameterEvaluator.start();
-            Map<String, Object> parameters = new HashMap<>();
-            for (int i = 0; i < parameterNames.size(); ++i) {
-                parameters.put(methodParameters.get(i).getChild("Identifier").content(), parameterEvaluator.getMemoryObject(parameterNames.get(i)));
-            }
-            return parameters;
+    private Map<String, Object> evaluateArguments(List<Node> arguments, List<Node> expression, String name, Memory memory) throws StateMachineException {
+        List<Node> methodParameters = methodProperties.getParameters(name);
+        final int parameterCount = methodParameters.size();
+        if (parameterCount != arguments.size()) {
+            throw new IllegalStateException("Invalid number of arguments.");
         }
-        return Collections.emptyMap();
+        if (parameterCount == 0) {
+            return Collections.emptyMap();
+        }
+        ActivityDiagramBuilder diagram = new ActivityDiagramBuilder();
+        for (int i = 0; i < parameterCount; ++i) {
+            diagram.add(UmlStateFactory.createActionState(Action.of(new Statement(methodParameters.get(i), arguments.get(i), methodProperties))));
+        }
+        diagram.addFinalState();
+        List<String> parameterNames = methodParameters.stream().map(Node::content).collect(Collectors.toList());
+        StateMachine parameterEvaluator = new StateMachine(diagram.getTransitions(), memory, parameterNames);
+        parameterEvaluator.start();
+        Map<String, Object> parameters = new HashMap<>();
+        for (int i = 0; i < parameterCount; ++i) {
+            parameters.put(identifier(methodParameters.get(i)), parameterEvaluator.getMemoryObject(parameterNames.get(i)));
+        }
+        return parameters;
     }
 
     private List<Node> createArgumentList(List<Node> expression) {
         if (expression.size() > 2 && "ArgumentList".equals(expression.get(2).getSymbol())) {
             return createArgumentList(expression.get(2));
         }
-        return null;
+        return Collections.emptyList();
     }
 
     private List<Node> createArgumentList(Node argumentList) {
@@ -336,6 +344,9 @@ public final class Statement {
         return arguments;
     }
 
+    private static String identifier(Node node) {
+        return node.getChild("Identifier").content();
+    }
 
     private static java.lang.Object parseInteger(String literal) {
         return (literal.startsWith("$"))

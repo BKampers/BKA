@@ -182,9 +182,9 @@ public class PascalCompilerTest {
     }
 
     @Test
-    public void testProcedureCall() throws StateMachineException {
+    public void testProcedureCallWithInputParameter() throws StateMachineException {
         Node tree = parser.buildTree("""
-            PROGRAM procedure_call;
+            PROGRAM procedure_call_with_input;
             VAR result : INTEGER;
 
             PROCEDURE compute(input: INTEGER);
@@ -199,6 +199,27 @@ public class PascalCompilerTest {
         StateMachine stateMachine = createStateMachine(tree);
         stateMachine.start();
         assertEquals(20, stateMachine.getMemoryObject("result"));
+    }
+
+    @Test
+    public void testProcedureCallWithInOutParameter() throws StateMachineException {
+        Node tree = parser.buildTree("""
+            PROGRAM procedure_call_with_inout;
+            VAR result : INTEGER;
+
+            PROCEDURE increase(VAR inout: INTEGER);
+                BEGIN
+                inout := inout + 1;
+                END;
+
+            BEGIN
+            result := 10;
+            increase(result);
+            END.
+            """);
+        StateMachine stateMachine = createStateMachine(tree);
+        stateMachine.start();
+        assertEquals(11, stateMachine.getMemoryObject("result"));
     }
 
     private StateMachine createStateMachine(Node tree) throws StateMachineException {

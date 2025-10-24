@@ -208,7 +208,7 @@ public class PascalCompiler {
         Optional<Node> statementNode = Optional.of(statements);
         while (statementNode.isPresent()) {
             Statement statement = new Statement(statementNode.get().getChild("Statement"), new MethodProperties());
-            statement.getTransitions(diagram);
+            statement.createTransitions(diagram);
             statementNode = statementNode.get().findChild("Statements");
         }
     }

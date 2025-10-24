@@ -29,7 +29,7 @@ public final class Statement {
         this.methodProperties = Objects.requireNonNull(properties);
     }
 
-    public void getTransitions(ActivityDiagramBuilder diagram) {
+    public void createTransitions(ActivityDiagramBuilder diagram) {
         if (!expression.getChildren().isEmpty()) {
             switch (expression.getChildren().getFirst().getSymbol()) {
                 case "IF\\b" ->
@@ -48,15 +48,15 @@ public final class Statement {
                     throw new IllegalStateException("Unexpected symbol " + expression.getChildren().getFirst().getSymbol());
             }
         }
-        else {
-            Logger.getLogger(PascalCompiler.class.getName()).log(Level.WARNING, "Empty statenemt: {0}", toString());
+        else if (!"Statement".equals(expression.getSymbol())) {
+            Logger.getLogger(PascalCompiler.class.getName()).log(Level.WARNING, "Empty statenemt: {0}", expression);
         }
     }
 
     private void addIfThenElseTransitions(ActivityDiagramBuilder diagram) {
         Decision decision = UmlStateFactory.createDecision(createParseTreeExpression());
         diagram.add(leave -> UmlTransitionFactory.createTransition(leave, decision), decision);
-        createTransitions(expression.getChild("Statement"), diagram);
+        Statement.this.createTransitions(expression.getChild("Statement"), diagram);
         diagram.addGuardCondition(transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), "then");
         Node elseClause = expression.getChild("ElseClause");
         if (elseClause.getChildren().isEmpty()) {
@@ -64,7 +64,7 @@ public final class Statement {
         }        
         else {
             diagram.fork(decision);
-            createTransitions(elseClause.getChild("Statement"), diagram);
+            Statement.this.createTransitions(elseClause.getChild("Statement"), diagram);
             diagram.addStereotype(transition -> decision.equals(transition.getSource()) && transition.getGuardCondition().isEmpty(), "else");
             diagram.join();
         }
@@ -76,12 +76,14 @@ public final class Statement {
         ActionState<Action> loopInitialization = createActionState(new Statement(identifier, expressions.getFirst(), methodProperties));
         Decision decision = UmlStateFactory.createDecision(createLessEqualExpression(identifier, expressions.getLast()));
         diagram.add(loopInitialization, decision);
-        createTransitions(expression.getChild("Statement"), diagram);
-        Action incrementAction = createAction(
+        Statement.this.createTransitions(expression.getChild("Statement"), diagram);
+        diagram.add(UmlStateFactory.createActionState(createIncrementAction(identifier)), decision, "for");
+    }
+
+    private Action createIncrementAction(Node identifier) {
+        return createAction(
             memory -> memory.store(identifier.content(), ((Integer) memory.load(identifier.content())) + 1),
             () -> ".INC. " + identifier.content());
-        ActionState<Action> incrementActionState = UmlStateFactory.createActionState(incrementAction);
-        diagram.add(incrementActionState, decision, "for");
     }
 
     private static Action createAction(Action action, Supplier<String> toString) {
@@ -135,7 +137,7 @@ public final class Statement {
             createStatementSequence(statements, diagram);
         }
         else {
-            new Statement(statements, methodProperties).getTransitions(diagram);
+            new Statement(statements, methodProperties).createTransitions(diagram);
         }
     }
 
@@ -143,7 +145,7 @@ public final class Statement {
         Optional<Node> next = Optional.of(statements);
         while (next.isPresent()) {
             Statement statement = new Statement(next.get().getChild("Statement"), methodProperties);
-            statement.getTransitions(diagram);
+            statement.createTransitions(diagram);
             next = next.get().findChild("Statements");
         }
     }
@@ -212,83 +214,99 @@ public final class Statement {
 
     private ParseTreeExpression createParseTreeExpression(Node node) {
         if (node.getChildren().size() == 1) {
-            Node first = node.getChildren().getFirst();
-            if ("Literal".equals(first.getSymbol())) {
-                String type = switch (first.getChildren().getFirst().getSymbol()) {
-                    case "IntegerLiteral" ->
-                        "Integer";
-                    case "'" ->
-                        "String";
-                    default ->
-                        throw new IllegalArgumentException("Unexpected literal: " + first.getChildren().getFirst().getSymbol());
-                };
-                String value = first.content();
-                Evaluator evaluator = memory -> {
-                    return switch (first.getChildren().getFirst().getSymbol()) {
-                        case "IntegerLiteral" ->
-                            parseInteger(value);
-                        case "'" ->
-                            value;
-                        default ->
-                            throw new IllegalArgumentException("Cannot evaluate literal: " + first.getChildren().getFirst().getSymbol());
-                    };
-                };
-                return ParseTreeExpression.of(type, value, evaluator);
-            }
-            if ("Identifier".equals(first.getSymbol())) {
-                String name = first.getChildren().getFirst().content();
-                return ParseTreeExpression.of("*", name, identifierEvaluator(name));
-            }
-            if ("Identifier".equals(node.getSymbol())) {
-                String name = first.content();
-                return ParseTreeExpression.of("*", name, memory -> memory.load(name));
-            }
-            if ("Expression".equals(node.getSymbol())) {
-                return createParseTreeExpression(node.getChildren().getFirst());
-            }
-            throw new IllegalStateException("Cannot create parse tree expression");
+            return createSimpleParseTreeExpression(node);
         }
         if ("Call".equals(node.getSymbol())) {
-            String name = node.getChildren().getFirst().content();
-            Evaluator evaluator = memory -> {
-                final boolean isProcedure = "Void".equals(methodProperties.getType(name));
-                Collection<Transition<Event, GuardCondition, Action>> methodBody = methodProperties.getBody(name);
-                if (methodBody == null) {
-                    throw new IllegalStateException("No such procedure or function: '" + name + '\'');
-                }
-                List<Node> arguments = createArgumentList(node.getChildren());
-                Map<String, Object> parameters = evaluateArguments(arguments, node.getChildren(), name, memory);
-                StateMachine stateMachine = (isProcedure)
-                    ? new StateMachine(methodBody, memory, parameters)
-                    : new StateMachine(methodBody, memory, parameters, List.of(name));
-                stateMachine.start();
-                for (int i = 0; i < methodProperties.getParameters(name).size(); ++i) {
-                    if (methodProperties.getParameters(name).get(i).findChild("VAR\\b").isPresent()) {
-                        memory.store(
-                            identifier(arguments.get(i)),
-                            stateMachine.getMemoryObject(identifier(methodProperties.getParameters(name).get(i))));
-                    }
-                }
-                return (isProcedure) ? VOID : stateMachine.getMemoryObject(name);
-            };
-            return ParseTreeExpression.of(methodProperties.getType(name), name, evaluator);
+            return createCallParseTreeExpression(node);
         }
         if (node.getChildren().size() == 3 && "BinaryOperator".equals(node.getChildren().get(1).getSymbol())) {
-            Node first = node.getChildren().getFirst();
-            String value
-                = createParseTreeExpression(first).value()
-                + " (Operator)" + node.getChildren().get(1).content() + " "
-                + createParseTreeExpression(node.getChildren().getLast()).value() + ")";
-            Evaluator evaluator = memory -> {
-                Value v = getDyadicOperator(node.getChildren().get(1)).evaluate(
-                    createParseTreeExpression(first),
-                    createParseTreeExpression(node.getChildren().getLast()),
-                    memory);
-                return v.get();
-            };
-            return ParseTreeExpression.of(typeOf(node.getChildren()), value, evaluator);
+            return createOperatorParseTreeExpression(node);
         }
         throw new IllegalStateException("Invalid expression");
+    }
+
+    private ParseTreeExpression createSimpleParseTreeExpression(Node node) {
+        Node first = node.getChildren().getFirst();
+        if ("Literal".equals(first.getSymbol())) {
+            return createLiteralParseTreeExpression(first);
+        }
+        if ("Identifier".equals(first.getSymbol())) {
+            String name = first.getChildren().getFirst().content();
+            return ParseTreeExpression.of("*", name, identifierEvaluator(name));
+        }
+        if ("Identifier".equals(node.getSymbol())) {
+            String name = first.content();
+            return ParseTreeExpression.of("*", name, memory -> memory.load(name));
+        }
+        if ("Expression".equals(node.getSymbol())) {
+            return createParseTreeExpression(node.getChildren().getFirst());
+        }
+        throw new IllegalStateException("Cannot create parse tree expression");
+    }
+
+    private ParseTreeExpression createLiteralParseTreeExpression(Node first) throws IllegalArgumentException {
+        String type = switch (first.getChildren().getFirst().getSymbol()) {
+            case "IntegerLiteral" ->
+                "Integer";
+            case "'" ->
+                "String";
+            default ->
+                throw new IllegalArgumentException("Unexpected literal: " + first.getChildren().getFirst().getSymbol());
+        };
+        String value = first.content();
+        Evaluator evaluator = memory -> {
+            return switch (first.getChildren().getFirst().getSymbol()) {
+                case "IntegerLiteral" ->
+                    parseInteger(value);
+                case "'" ->
+                    value;
+                default ->
+                    throw new IllegalArgumentException("Cannot evaluate literal: " + first.getChildren().getFirst().getSymbol());
+            };
+        };
+        return ParseTreeExpression.of(type, value, evaluator);
+    }
+
+    private ParseTreeExpression createCallParseTreeExpression(Node node) {
+        String name = node.getChildren().getFirst().content();
+        Evaluator evaluator = memory -> {
+            final boolean isProcedure = "Void".equals(methodProperties.getType(name));
+            Collection<Transition<Event, GuardCondition, Action>> methodBody = methodProperties.getBody(name);
+            if (methodBody == null) {
+                throw new IllegalStateException("No such procedure or function: '" + name + '\'');
+            }
+            List<Node> arguments = createArgumentList(node.getChildren());
+            Map<String, Object> parameters = evaluateArguments(arguments, node.getChildren(), name, memory);
+            StateMachine stateMachine = (isProcedure)
+                ? new StateMachine(methodBody, memory, parameters)
+                : new StateMachine(methodBody, memory, parameters, List.of(name));
+            stateMachine.start();
+            for (int i = 0; i < methodProperties.getParameters(name).size(); ++i) {
+                if (methodProperties.getParameters(name).get(i).findChild("VAR\\b").isPresent()) {
+                    memory.store(
+                        identifier(arguments.get(i)),
+                        stateMachine.getMemoryObject(identifier(methodProperties.getParameters(name).get(i))));
+                }
+            }
+            return (isProcedure) ? VOID : stateMachine.getMemoryObject(name);
+        };
+        return ParseTreeExpression.of(methodProperties.getType(name), name, evaluator);
+    }
+
+    private ParseTreeExpression createOperatorParseTreeExpression(Node node) {
+        Node first = node.getChildren().getFirst();
+        String value
+            = createParseTreeExpression(first).value()
+            + " (Operator)" + node.getChildren().get(1).content() + " "
+            + createParseTreeExpression(node.getChildren().getLast()).value() + ")";
+        Evaluator evaluator = memory -> {
+            Value v = getDyadicOperator(node.getChildren().get(1)).evaluate(
+                createParseTreeExpression(first),
+                createParseTreeExpression(node.getChildren().getLast()),
+                memory);
+            return v.get();
+        };
+        return ParseTreeExpression.of(typeOf(node.getChildren()), value, evaluator);
     }
 
     private Evaluator identifierEvaluator(String name) {

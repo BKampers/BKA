@@ -77,6 +77,34 @@ public class PascalCompiler {
             methodBodies.put(procedureName, createBody(procedureDeclaration.getChild("CompoundStatement").getChild("Statements")));
             methodParameters.put(procedureName, new ArrayList<>(parameters.keySet()));
             methodTypes.put(procedureName, "Void");
+            methodLocals.put(procedureName, createLocals(procedureDeclaration.getChild("Declarations")));
+        };
+    }
+
+    private Collection<uml.structure.Object> createLocals(Node declarations) {
+        if (declarations.getChildren().isEmpty()) {
+            return Collections.emptyList();
+        }
+        return createVariables(declarations.getChild("VariableDeclaration").getChild("VariableDeclarationList"));
+    }
+
+    private static uml.structure.Object createObject(String name, Type type) {
+        return new uml.structure.Object() {
+            @Override
+            public Optional<String> getName() {
+                return Optional.of(name);
+            }
+
+            @Override
+            public Optional<Type> getType() {
+                return Optional.of(type);
+            }
+
+            @Override
+            public Map<Attribute, Expression> getAttributeValues() {
+                return Collections.emptyMap();
+            }
+
         };
     }
 
@@ -92,6 +120,7 @@ public class PascalCompiler {
             methodBodies.put(functionName, createBody(functionDeclaration.getChild("CompoundStatement").getChild("Statements")));
             methodParameters.put(functionName, new ArrayList<>(parameters.keySet()));
             methodTypes.put(functionName, functionDeclaration.getChild("TypeExpression").content());
+            methodLocals.put(functionName, createLocals(functionDeclaration.getChild("Declarations")));
         };
     }
 
@@ -180,6 +209,21 @@ public class PascalCompiler {
             .forEach(name -> builder.withAttribute(name, type));
     }
 
+    private Collection<uml.structure.Object> createVariables(Node variableDeclarationList) {
+        Collection<uml.structure.Object> variables = new ArrayList<>();
+        variables.addAll(createObjects(variableDeclarationList.getChild("VariableDeclarationExpression")));
+        variableDeclarationList.findChild("VariableDeclarationList")
+            .ifPresent(next -> variables.addAll(createVariables(next)));
+        return variables;
+    }
+
+    private Collection<uml.structure.Object> createObjects(Node variableDeclarationExpression) {
+        Type type = createType(variableDeclarationExpression.getChild("TypeDeclarationExpression"));
+        return createIdentifiers(variableDeclarationExpression.getChild("IdentifierList")).stream()
+            .map(identifier -> createObject(identifier, type))
+            .collect(Collectors.toList());
+    }
+
     private static String rangeString(Node rangeExpression) {
         return rangeExpression.getChildren().getFirst().content() + " .. " + rangeExpression.getChildren().getLast().content();
     }
@@ -220,17 +264,22 @@ public class PascalCompiler {
         }
 
         public List<Node> getParameters(String name) {
-            return methodParameters.get(name);
+            return Collections.unmodifiableList(methodParameters.get(name));
         }
 
         public String getType(String name) {
             return methodTypes.get(name);
         }
 
+        public Collection<uml.structure.Object> getLocals(String name) {
+            return Collections.unmodifiableCollection(methodLocals.get(name));
+        }
+
     }
 
     private final Map<String, Collection<Transition<Event, GuardCondition, Action>>> methodBodies = new HashMap<>();
     private final Map<String, List<Node>> methodParameters = new HashMap<>();
+    private final Map<String, Collection<uml.structure.Object>> methodLocals = new HashMap<>();
     private final Map<String, String> methodTypes = new HashMap();
 
 }

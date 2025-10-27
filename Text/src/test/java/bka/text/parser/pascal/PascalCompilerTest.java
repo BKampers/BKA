@@ -222,6 +222,29 @@ public class PascalCompilerTest {
         assertEquals(11, stateMachine.getMemoryObject("result"));
     }
 
+    @Test
+    public void testLocalVariable() throws StateMachineException {
+        Node tree = parser.buildTree("""
+            PROGRAM procedure_call_local;
+            VAR result : INTEGER;
+
+            PROCEDURE task;
+                VAR local: INTEGER;
+                BEGIN
+                local := result;
+                result := local * local
+                END;
+
+            BEGIN
+            result := 12;
+            task
+            END.
+            """);
+        StateMachine stateMachine = createStateMachine(tree);
+        stateMachine.start();
+        assertEquals(144, stateMachine.getMemoryObject("result"));
+    }
+
     private StateMachine createStateMachine(Node tree) throws StateMachineException {
         uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
         Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));

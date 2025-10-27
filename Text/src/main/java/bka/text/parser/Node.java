@@ -91,10 +91,10 @@ public final class Node {
     }
 
     public int startLine() {
-        return (int) source.chars()
+        return ((int) source.chars()
             .limit(start)
             .filter(ch -> ch == '\n')
-            .count();
+            .count()) + 1;
     }
 
     public List<Node> findChildren(String symbol) {

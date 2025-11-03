@@ -37,11 +37,20 @@ public final class ActivityDiagramBuilder {
         setLeaf(decision);
     }
 
-    public void add(ActionState<Action> incrementActionState, Decision decision, String strerotype) {
+    public void add(ActionState<Action> incrementActionState, Decision decision, String stereotype) {
         requireNotFinished();
         leaves().forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, incrementActionState)));
-        addGuardCondition(transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), "for");
+        addGuardCondition(transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), stereotype);
         transitions.add(UmlTransitionFactory.createTransition(incrementActionState, decision));
+        setLeaf(decision);
+    }
+
+    public void add(Decision decision, ActionState<Action> incrementActionState, TransitionTarget loopStart, String stereotype) {
+        requireNotFinished();
+        leaves().forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, decision)));
+        transitions.add(UmlTransitionFactory.createTransition(decision, incrementActionState));
+        transitions.add(UmlTransitionFactory.createTransition(incrementActionState, loopStart));
+        addGuardCondition(transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), stereotype);
         setLeaf(decision);
     }
 

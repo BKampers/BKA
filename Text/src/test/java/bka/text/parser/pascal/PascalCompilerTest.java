@@ -116,6 +116,64 @@ public class PascalCompilerTest {
         StateMachine stateMachine = createStateMachine(tree);
         stateMachine.start();
         assertEquals(6, stateMachine.getMemoryObject("sum"));
+        assertEquals(3, stateMachine.getMemoryObject("i"));
+    }
+
+    @Test
+    public void testForLoopOneIteration() throws StateMachineException {
+        Node tree = parser.buildTree("""
+            PROGRAM for_loop_one_iteration;
+            VAR i, sum: INTEGER;
+            BEGIN
+                sum := 0;
+                FOR i := 1 TO 1 DO
+                    BEGIN
+                    sum := sum + i
+                    END
+            END.
+            """);
+        StateMachine stateMachine = createStateMachine(tree);
+        stateMachine.start();
+        assertEquals(1, stateMachine.getMemoryObject("sum"));
+        assertEquals(1, stateMachine.getMemoryObject("i"));
+    }
+
+    @Test
+    public void testForLoopNoIterations() throws StateMachineException {
+        Node tree = parser.buildTree("""
+            PROGRAM for_loop_no_iterations;
+            VAR i, sum: INTEGER;
+            BEGIN
+                sum := 0;
+                FOR i := 1 TO 0 DO
+                    BEGIN
+                    sum := sum + i
+                    END
+            END.
+            """);
+        StateMachine stateMachine = createStateMachine(tree);
+        stateMachine.start();
+        assertEquals(0, stateMachine.getMemoryObject("sum"));
+        assertEquals(1, stateMachine.getMemoryObject("i"));
+    }
+
+    @Test
+    public void testForLoopWithStep() throws StateMachineException {
+        Node tree = parser.buildTree("""
+            PROGRAM for_loop_with_step;
+            VAR i, sum: INTEGER;
+            BEGIN
+                sum := 0;
+                FOR i := 1 TO 3 DO
+                    BEGIN
+                    sum := sum + i;
+                    i := i + 1
+                    END
+            END.
+            """);
+        StateMachine stateMachine = createStateMachine(tree);
+        stateMachine.start();
+        assertEquals(4, stateMachine.getMemoryObject("sum"));
         assertEquals(4, stateMachine.getMemoryObject("i"));
     }
 

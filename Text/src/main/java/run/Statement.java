@@ -76,10 +76,14 @@ public final class Statement {
         Node identifier = expression.getChild("Identifier");
         List<Node> expressions = expression.findChildren("Expression");
         ActionState<Action> loopInitialization = createActionState(new Statement(identifier, expressions.getFirst(), methodProperties));
-        Decision decision = UmlStateFactory.createDecision(createLessEqualExpression(identifier, expressions.getLast()));
-        diagram.add(loopInitialization, decision);
-        Statement.this.createTransitions(expression.getChild("Statement"), diagram);
-        diagram.add(UmlStateFactory.createActionState(createIncrementAction(identifier)), decision, "for");
+        Decision loopStartDecision = UmlStateFactory.createDecision(createLessEqualExpression(identifier, expressions.getLast()));
+        diagram.add(loopInitialization, loopStartDecision);
+        createTransitions(expression.getChild("Statement"), diagram);
+        diagram.addGuardCondition(loopStartDecision, UmlGuardConditionFactory.pass(loopStartDecision), "for");
+        TransitionTarget loopStart = diagram.targetOf(loopStartDecision);
+        Decision loopEndDecision = UmlStateFactory.createDecision(createLessThanExpression(identifier, expressions.getLast()));
+        diagram.add(loopEndDecision, UmlStateFactory.createActionState(createIncrementAction(identifier)), loopStart, "for");
+        diagram.addLeaf(loopStartDecision);
     }
 
     private Action createIncrementAction(Node identifier) {
@@ -211,6 +215,15 @@ public final class Statement {
             return ((Comparable) left.get()).compareTo((Comparable) right.get()) <= 0;
         };
         return ParseTreeExpression.of("Boolean", leftOperand.content() + " .LE. " + rightOperand.content(), evaluator);
+    }
+
+    private ParseTreeExpression createLessThanExpression(Node leftOperand, Node rightOperand) {
+        Evaluator evaluator = memory -> {
+            Value left = createParseTreeExpression(leftOperand).evaluate(memory);
+            Value right = createParseTreeExpression(rightOperand).evaluate(memory);
+            return ((Comparable) left.get()).compareTo((Comparable) right.get()) < 0;
+        };
+        return ParseTreeExpression.of("Boolean", leftOperand.content() + " .LT. " + rightOperand.content(), evaluator);
     }
 
     private ParseTreeExpression createParseTreeExpression() {

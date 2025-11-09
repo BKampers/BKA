@@ -13,7 +13,9 @@ import run.*;
 import uml.statechart.*;
 import uml.structure.*;
 
-
+/**
+ * Creates an executable state machine from a pascal parse tree.
+ */
 public class PascalCompiler {
 
     public uml.structure.Class createProgramClass(Node node) {

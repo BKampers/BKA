@@ -5,10 +5,10 @@
 package bka.text.parser;
 
 import java.util.*;
+import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.*;
 
 public class NodeTest {
 
@@ -41,11 +41,11 @@ public class NodeTest {
     @Test
     public void testLine() {
         Node sentence = createTree();
-        assertEquals(0, sentence.startLine());
-        assertEquals(0, sentence.getChild("Subject").startLine());
-        assertEquals(1, sentence.getChild("FiniteVerb").startLine());
-        assertEquals(2, sentence.getChild("Predicate").startLine());
-        assertEquals(2, sentence.getChild("Period").startLine());
+        assertEquals(1, sentence.startLine());
+        assertEquals(1, sentence.getChild("Subject").startLine());
+        assertEquals(2, sentence.getChild("FiniteVerb").startLine());
+        assertEquals(3, sentence.getChild("Predicate").startLine());
+        assertEquals(3, sentence.getChild("Period").startLine());
     }
 
     @Test
@@ -75,11 +75,11 @@ public class NodeTest {
     }
 
     private static Node createTree() {
-        Node subject = new Node(SOURCE, "Subject", 0, 1);
-        Node finiteVerb = new Node(SOURCE, "FiniteVerb", 2, 5);
-        Node predicate = new Node(SOURCE, "Predicate", 6, 11);
-        Node period = new Node(SOURCE, "Period", 11, 12);
-        return new Node(SOURCE, "Sentence", 0, List.of(subject, finiteVerb, predicate, period));
+        return new Node(SOURCE, "Sentence", 0, List.of(
+            new Node(SOURCE, "Subject", 0, 1),
+            new Node(SOURCE, "FiniteVerb", 2, 5),
+            new Node(SOURCE, "Predicate", 6, 11),
+            new Node(SOURCE, "Period", 11, 12)));
     }
 
     private static final String SOURCE = "I\ncan\nparse.";

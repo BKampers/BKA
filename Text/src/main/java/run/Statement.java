@@ -12,7 +12,9 @@ import java.util.logging.*;
 import java.util.stream.Collectors;
 import uml.statechart.*;
 
-
+/**
+ * Statement defined by a pascal parser node and executable by a state machine.
+ */
 public final class Statement {
 
     public Statement(Node expression, PascalCompiler.MethodProperties properties) {

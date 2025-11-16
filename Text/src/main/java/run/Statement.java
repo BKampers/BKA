@@ -310,11 +310,11 @@ public final class Statement {
         ParseTreeExpression right = createParseTreeExpression(node.getChildren().getLast());
         return ParseTreeExpression.of(
             typeOf(node.getChildren()),
-            operarorExpressionString(left, operator, right),
+            operatorExpressionString(left, operator, right),
             memory -> getDyadicOperator(operator).evaluate(left, right, memory).evaluate());
     }
 
-    private String operarorExpressionString(ParseTreeExpression left, Node operator, ParseTreeExpression right) {
+    private static String operatorExpressionString(ParseTreeExpression left, Node operator, ParseTreeExpression right) {
         return String.format("%s (Operator)%s %s", left.value(), operator.content(), right.value());
     }
 
@@ -513,15 +513,13 @@ public final class Statement {
     public void execute(Memory memory) throws StateMachineException {
         Object value = getExpressionTree().get().evaluate(memory).evaluate();
         if (assignable.isPresent()) {
-            if (!value.equals(VOID)) {
-                store(memory, value);
+            if (value.equals(VOID)) {
+                throw new IllegalStateException(assignable.get() + "{0} cannot be assigned with void");
             }
-            else {
-                throw new IllegalStateException(assignable.get() + " cannot be assigned with void");
-            }
+            store(memory, value);
         }
         else if (!value.equals(VOID)) {
-            getLogger().log(Level.WARNING, "Evaluation of " + expression + " is ignored");
+            getLogger().log(Level.WARNING, "Evaluation ({1}) of '{0}' is ignored", new Object[]{expression, value});
         }
     }
 
@@ -555,13 +553,19 @@ public final class Statement {
         Node target = assignable.get();
         Optional<Node> indexExpression = target.findChild("Expression");
         if (indexExpression.isPresent()) {
-            int index = (int) createParseTreeExpression(indexExpression.get()).evaluate(memory).evaluate();
-            Object[] array = (Object[]) memory.load(identifier(target));
-            array[index] = value;
+            loadArray(memory, target)[intValue(indexExpression.get(), memory)] = value;
         }
         else {
             memory.store(target.content(), value);
         }
+    }
+
+    private static Object[] loadArray(Memory memory, Node target) throws StateMachineException {
+        return (Object[]) memory.load(identifier(target));
+    }
+
+    private int intValue(Node indexExpression, Memory memory) throws StateMachineException {
+        return (int) createParseTreeExpression(indexExpression).evaluate(memory).evaluate();
     }
 
     @Override

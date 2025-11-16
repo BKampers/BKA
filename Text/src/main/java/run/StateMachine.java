@@ -25,35 +25,35 @@ public class StateMachine {
         RUN, STEP
     }
 
-    public StateMachine(Collection<Transition<Event, GuardCondition, Action>> diagram, Collection<String> identifiers) throws StateMachineException {
-        this(diagram, null, initial(identifiers));
+    public StateMachine(Collection<Transition<Event, GuardCondition, Action>> diagram, Collection<String> memoryDeclarations) throws StateMachineException {
+        this(diagram, null, initial(memoryDeclarations));
     }
 
-    public StateMachine(Collection<Transition<Event, GuardCondition, Action>> diagram, Memory parent, Collection<String> identifiers) throws StateMachineException {
-        this(diagram, parent, initial(identifiers));
+    public StateMachine(Collection<Transition<Event, GuardCondition, Action>> diagram, Memory parent, Collection<String> memoryDeclarations) throws StateMachineException {
+        this(diagram, parent, initial(memoryDeclarations));
     }
 
-    public StateMachine(Collection<Transition<Event, GuardCondition, Action>> diagram, Memory parent, Map<String, Object> parameters, Collection<String> identifiers) throws StateMachineException {
-        this(diagram, parent, merge(identifiers, parameters));
+    public StateMachine(Collection<Transition<Event, GuardCondition, Action>> diagram, Memory parent, Map<String, Object> memoryObjects, Collection<String> memoryDeclarations) throws StateMachineException {
+        this(diagram, parent, merge(memoryDeclarations, memoryObjects));
     }
 
-    private static Map<String, Object> merge(Collection<String> identifiers, Map<String, Object> parameters) {
-        Map<String, Object> initial = initial(identifiers);
-        initial.putAll(parameters);
+    private static Map<String, Object> merge(Collection<String> memoryDeclarations, Map<String, Object> memoryObjects) {
+        Map<String, Object> initial = initial(memoryDeclarations);
+        initial.putAll(memoryObjects);
         return initial;
     }
 
-    private static Map<String, Object> initial(Collection<String> identifiers) {
-        return identifiers.stream().collect(Collectors.toMap(Function.identity(), value -> UNINITIALIZED));
+    private static Map<String, Object> initial(Collection<String> memoryDeclarations) {
+        return memoryDeclarations.stream().collect(Collectors.toMap(Function.identity(), value -> UNINITIALIZED));
     }
 
-    public StateMachine(Collection<Transition<Event, GuardCondition, Action>> diagram, Memory parent, Map<String, Object> parameters) throws StateMachineException {
+    public StateMachine(Collection<Transition<Event, GuardCondition, Action>> diagram, Memory parent, Map<String, Object> memoryObjects) throws StateMachineException {
         long initialStates = diagram.stream().filter(transition -> transition.getSource() instanceof InitialState).count();
         if (initialStates != 1) {
             throw new IllegalArgumentException("Illegal number of initial states: " + initialStates);
         }
         this.diagram = new ArrayList<>(diagram);
-        memory = new Scope(parent, parameters);
+        memory = new Scope(parent, memoryObjects);
     }
 
     public synchronized void start() throws StateMachineException {

@@ -11,6 +11,7 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.stream.*;
 import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import run.*;
 import uml.statechart.*;
@@ -303,6 +304,26 @@ public class PascalCompilerTest {
         assertEquals(144, stateMachine.getMemoryObject("result"));
     }
 
+    @Test
+    public void testArray() throws StateMachineException {
+        Node tree = parser.buildTree("""
+            PROGRAM array_var;
+            VAR integers : ARRAY [0..1] OF INTEGER;
+                i : INTEGER;
+
+            BEGIN
+            i := 1;
+            integers[0] := i;
+            integers[i] := 2;
+            END.
+            """);
+        uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
+        Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
+        StateMachine stateMachine = new StateMachine(transitions, null, getVariableInitializations(program));
+        stateMachine.start();
+        assertArrayEquals(new java.lang.Object[]{1, 2}, (java.lang.Object[]) stateMachine.getMemoryObject("integers"));
+    }
+
     private StateMachine createStateMachine(Node tree) throws StateMachineException {
         uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
         Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
@@ -317,6 +338,24 @@ public class PascalCompilerTest {
 
     private static Collection<String> getVariables(uml.structure.Class program) {
         return program.getAttributes().stream().map(attribute -> attribute.getName().get()).collect(Collectors.toList());
+    }
+
+    private static Map<String, java.lang.Object> getVariableInitializations(uml.structure.Class program) {
+        return program.getAttributes().stream().collect(Collectors.toMap(
+            attribute -> attribute.getName().get(),
+            attribute -> getValueObject(attribute.getType().get().getName().get())));
+    }
+
+    private static java.lang.Object getValueObject(String declaration) {
+        if (declaration.contains("ARRAY")) {
+            int openIndex = declaration.indexOf('[');
+            int separatorIndex = declaration.indexOf("..", openIndex);
+            int closeIndex = declaration.indexOf(']', separatorIndex);
+            int lowerBound = Integer.parseInt(declaration.substring(openIndex + 1, separatorIndex).trim());
+            int upperBound = Integer.parseInt(declaration.substring(separatorIndex + 2, closeIndex).trim());
+            return new java.lang.Object[upperBound - lowerBound + 1];
+        }
+        return new java.lang.Object();
     }
 
     private PascalParser parser;

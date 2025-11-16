@@ -53,7 +53,7 @@ public final class Statement {
             }
         }
         else if (!"Statement".equals(expression.getSymbol())) {
-            Logger.getLogger(PascalCompiler.class.getName()).log(Level.WARNING, "Empty statenemt: {0}", expression);
+            getLogger().log(Level.WARNING, "Empty statenemt: {0}", expression);
         }
     }
 
@@ -184,37 +184,11 @@ public final class Statement {
         throw new IllegalStateException("Cannot determine general type");
     }
 
-    public Optional<ParseTreeExpression> getExpressionTree() {
-        if ("Expression".equals(expression.getSymbol())) {
-            return Optional.of(getExpressionTree(expression));
-        }
-        if ("Call".equals(expression.getSymbol())) {
-            return Optional.of(getExpressionTree(expression));
-        }
-        if ("Statement".equals(expression.getSymbol())) {
-            return Optional.of(getExpressionTree(expression.getChild("Identifier")));
-        }
-        throw new IllegalStateException("Not an expression: " + expression);
-    }
-
-    private ParseTreeExpression getExpressionTree(Node expression) {
-        if ("Expression".equals(expression.getSymbol())) {
-            return createParseTreeExpression(expression);
-        }
-        if ("Call".equals(expression.getSymbol())) {
-            return createParseTreeExpression(expression);
-        }
-        if ("Identifier".equals(expression.getSymbol())) {
-            return createParseTreeExpression(expression);
-        }
-        throw new IllegalStateException("Not an expression: " + expression);
-    }
-
     private ParseTreeExpression createLessEqualExpression(Node leftOperand, Node rightOperand) {
         Evaluator evaluator = memory -> {
             Value left = createParseTreeExpression(leftOperand).evaluate(memory);
             Value right = createParseTreeExpression(rightOperand).evaluate(memory);
-            return ((Comparable) left.get()).compareTo((Comparable) right.get()) <= 0;
+            return ((Comparable) left.evaluate()).compareTo((Comparable) right.evaluate()) <= 0;
         };
         return ParseTreeExpression.of("Boolean", leftOperand.content() + " .LE. " + rightOperand.content(), evaluator);
     }
@@ -223,7 +197,7 @@ public final class Statement {
         Evaluator evaluator = memory -> {
             Value left = createParseTreeExpression(leftOperand).evaluate(memory);
             Value right = createParseTreeExpression(rightOperand).evaluate(memory);
-            return ((Comparable) left.get()).compareTo((Comparable) right.get()) < 0;
+            return ((Comparable) left.evaluate()).compareTo((Comparable) right.evaluate()) < 0;
         };
         return ParseTreeExpression.of("Boolean", leftOperand.content() + " .LT. " + rightOperand.content(), evaluator);
     }
@@ -331,19 +305,17 @@ public final class Statement {
     }
 
     private ParseTreeExpression createOperatorParseTreeExpression(Node node) {
-        Node first = node.getChildren().getFirst();
-        String value
-            = createParseTreeExpression(first).value()
-            + " (Operator)" + node.getChildren().get(1).content() + " "
-            + createParseTreeExpression(node.getChildren().getLast()).value() + ")";
-        Evaluator evaluator = memory -> {
-            Value v = getDyadicOperator(node.getChildren().get(1)).evaluate(
-                createParseTreeExpression(first),
-                createParseTreeExpression(node.getChildren().getLast()),
-                memory);
-            return v.get();
-        };
-        return ParseTreeExpression.of(typeOf(node.getChildren()), value, evaluator);
+        ParseTreeExpression left = createParseTreeExpression(node.getChildren().getFirst());
+        Node operator = node.getChildren().get(1);
+        ParseTreeExpression right = createParseTreeExpression(node.getChildren().getLast());
+        return ParseTreeExpression.of(
+            typeOf(node.getChildren()),
+            operarorExpressionString(left, operator, right),
+            memory -> getDyadicOperator(operator).evaluate(left, right, memory).evaluate());
+    }
+
+    private String operarorExpressionString(ParseTreeExpression left, Node operator, ParseTreeExpression right) {
+        return String.format("%s (Operator)%s %s", left.value(), operator.content(), right.value());
     }
 
     private Evaluator identifierEvaluator(String name) {
@@ -502,7 +474,7 @@ public final class Statement {
     }
 
     private static Number requireNumber(ParseTreeExpression expression, Memory memory) throws StateMachineException {
-        if (expression.evaluate(memory).get() instanceof Number number) {
+        if (expression.evaluate(memory).evaluate() instanceof Number number) {
             return number;
         }
         throw new StateMachineException(expression.type() + " is not a number");
@@ -515,7 +487,7 @@ public final class Statement {
     }
 
     private static Boolean requireBoolean(ParseTreeExpression expression, Memory memory) throws StateMachineException {
-        if (expression.evaluate(memory).get() instanceof Boolean bool) {
+        if (expression.evaluate(memory).evaluate() instanceof Boolean bool) {
             return bool;
         }
         throw new StateMachineException(expression.type() + " is not a boolean");
@@ -528,7 +500,7 @@ public final class Statement {
     }
 
     private static Comparable requireComparable(ParseTreeExpression expression, Memory memory) throws StateMachineException {
-        if (expression.evaluate(memory).get() instanceof Comparable comparable) {
+        if (expression.evaluate(memory).evaluate() instanceof Comparable comparable) {
             return comparable;
         }
         throw new StateMachineException(expression.type() + " is not a comparable");
@@ -536,6 +508,60 @@ public final class Statement {
 
     public Optional<Node> getAssignable() {
         return assignable;
+    }
+
+    public void execute(Memory memory) throws StateMachineException {
+        Object value = getExpressionTree().get().evaluate(memory).evaluate();
+        if (assignable.isPresent()) {
+            if (!value.equals(VOID)) {
+                store(memory, value);
+            }
+            else {
+                throw new IllegalStateException(assignable.get() + " cannot be assigned with void");
+            }
+        }
+        else if (!value.equals(VOID)) {
+            getLogger().log(Level.WARNING, "Evaluation of " + expression + " is ignored");
+        }
+    }
+
+    private Optional<ParseTreeExpression> getExpressionTree() {
+        if ("Expression".equals(expression.getSymbol())) {
+            return Optional.of(getExpressionTree(expression));
+        }
+        if ("Call".equals(expression.getSymbol())) {
+            return Optional.of(getExpressionTree(expression));
+        }
+        if ("Statement".equals(expression.getSymbol())) {
+            return Optional.of(getExpressionTree(expression.getChild("Identifier")));
+        }
+        throw new IllegalStateException("Not an expression: " + expression);
+    }
+
+    private ParseTreeExpression getExpressionTree(Node expression) {
+        if ("Expression".equals(expression.getSymbol())) {
+            return createParseTreeExpression(expression);
+        }
+        if ("Call".equals(expression.getSymbol())) {
+            return createParseTreeExpression(expression);
+        }
+        if ("Identifier".equals(expression.getSymbol())) {
+            return createParseTreeExpression(expression);
+        }
+        throw new IllegalStateException("Not an expression: " + expression);
+    }
+
+    private void store(Memory memory, Object value) throws StateMachineException {
+        Node target = assignable.get();
+        Optional<Node> indexExpression = target.findChild("Expression");
+        if (indexExpression.isPresent()) {
+            int index = (int) createParseTreeExpression(indexExpression.get()).evaluate(memory).evaluate();
+            Object[] array = (Object[]) memory.load(identifier(target));
+            array[index] = value;
+        }
+        else {
+            memory.store(target.content(), value);
+        }
     }
 
     @Override
@@ -546,6 +572,10 @@ public final class Statement {
         }
         builder.append(expression.content());
         return builder.toString();
+    }
+
+    private static Logger getLogger() {
+        return Logger.getLogger(PascalCompiler.class.getName());
     }
 
     private final Optional<Node> assignable;

@@ -18,7 +18,7 @@ public class UmlGuardConditionFactory {
         return new GuardCondition() {
             @Override
             public boolean applies(Memory memory) throws StateMachineException {
-                return Boolean.TRUE.equals(((ParseTreeExpression) decision.getExpression()).evaluate(memory).get());
+                return Boolean.TRUE.equals(((ParseTreeExpression) decision.getExpression()).evaluate(memory).evaluate());
             }
 
             @Override
@@ -32,7 +32,7 @@ public class UmlGuardConditionFactory {
         return new GuardCondition() {
             @Override
             public boolean applies(Memory memory) throws StateMachineException {
-                return Boolean.FALSE.equals(((ParseTreeExpression) decision.getExpression()).evaluate(memory).get());
+                return Boolean.FALSE.equals(((ParseTreeExpression) decision.getExpression()).evaluate(memory).evaluate());
             }
 
             @Override

@@ -4,7 +4,6 @@
 
 package run;
 
-import bka.text.parser.*;
 import java.util.*;
 
 
@@ -21,15 +20,7 @@ public interface Action {
 
             @Override
             public void perform(Memory memory) throws StateMachineException {
-                Optional<ParseTreeExpression> expression = statement.getExpressionTree();
-                if (expression.isPresent()) {
-                    Value value = expression.get().evaluate(memory);
-                    Object result = value.get();
-                    Optional<Node> assignable = statement.getAssignable();
-                    if (assignable.isPresent()) {
-                        memory.store(assignable.get().content(), result);
-                    }
-                }
+                statement.execute(memory);
             }
 
             @Override

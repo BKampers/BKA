@@ -7,7 +7,7 @@ import java.util.*;
 
 public interface Value {
 
-    Object get() throws StateMachineException;
+    Object evaluate() throws StateMachineException;
 
     String type();
 
@@ -19,7 +19,7 @@ public interface Value {
         return new Value() {
 
             @Override
-            public Object get() throws StateMachineException {
+            public Object evaluate() throws StateMachineException {
                 return executable.perform();
             }
 

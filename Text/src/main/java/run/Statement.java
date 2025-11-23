@@ -514,7 +514,7 @@ public final class Statement {
         Object value = getExpressionTree().get().evaluate(memory).evaluate();
         if (assignable.isPresent()) {
             if (value.equals(VOID)) {
-                throw new IllegalStateException(assignable.get() + "{0} cannot be assigned with void");
+                throw new IllegalStateException(assignable.get() + " cannot be assigned with void");
             }
             store(memory, value);
         }

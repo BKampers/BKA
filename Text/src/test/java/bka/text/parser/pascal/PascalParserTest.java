@@ -1,21 +1,18 @@
 package bka.text.parser.pascal;
 
 import bka.text.parser.*;
-import com.fasterxml.jackson.databind.*;
-import java.io.*;
-import java.nio.file.*;
 import java.util.*;
+import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import org.junit.jupiter.api.*;
 
 
 public class PascalParserTest {
 
     @BeforeEach
     public void init() {
-        parser = new PascalParser(getPascalGrammar());
+        parser = new PascalParser();
     }
 
     @Test
@@ -607,17 +604,6 @@ public class PascalParserTest {
             END.
             """);
         assertError(output);
-    }
-
-    private static Map<String, List<List<String>>> getPascalGrammar() {
-        ObjectMapper mapper = new ObjectMapper();
-        try {
-            return mapper.readValue(Paths.get("resources/grammars/pascal.json").toFile(), Map.class);
-        }
-        catch (IOException ex) {
-            throw new IllegalStateException(ex);
-        }
-
     }
 
     private static void assertError(String output) {

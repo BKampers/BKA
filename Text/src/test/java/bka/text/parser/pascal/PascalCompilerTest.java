@@ -5,9 +5,6 @@
 package bka.text.parser.pascal;
 
 import bka.text.parser.*;
-import com.fasterxml.jackson.databind.*;
-import java.io.*;
-import java.nio.file.*;
 import java.util.*;
 import java.util.stream.*;
 import org.junit.jupiter.api.*;
@@ -21,18 +18,8 @@ public class PascalCompilerTest {
 
     @BeforeEach
     public void init() {
-        parser = new PascalParser(getPascalGrammar());
+        parser = new PascalParser();
         compiler = new PascalCompiler();
-    }
-
-    private static Map<String, List<List<String>>> getPascalGrammar() {
-        ObjectMapper mapper = new ObjectMapper();
-        try {
-            return mapper.readValue(Paths.get("resources/grammars/pascal.json").toFile(), Map.class);
-        }
-        catch (IOException ex) {
-            throw new IllegalStateException(ex);
-        }
     }
 
     @Test

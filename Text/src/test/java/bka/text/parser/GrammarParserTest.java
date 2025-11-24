@@ -25,7 +25,8 @@ public class GrammarParserTest {
             parser.buildTree("b", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0, "Unparsable code before end of file",
-                new ExpectedNode("a", 0, 1)),
+                new ExpectedNode("a", 0, 1),
+                new ExpectedNode("", 1, "Unparsable code before end of file")),
             parser.buildTree("aa", "S"));
         assertThrows(IllegalArgumentException.class, () -> parser.buildTree("a", "T"));
     }

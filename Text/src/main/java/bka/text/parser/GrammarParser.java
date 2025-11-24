@@ -27,9 +27,20 @@ public class GrammarParser {
     }
 
     public Node buildTree(String sourceCode, String symbol) {
+        if (!grammar.containsKey(symbol)) {
+            throw new IllegalArgumentException("Invalid symbol: " + symbol);
+        }
         source = sourceCode;
         matchers.clear();
-        return createTreeNode(0, symbol);
+        Node tree = createTreeNode(0, symbol);
+        if (tree.getError().isEmpty() && skipWhitespaceAndComment(tree.getEnd()) < sourceCode.length()) {
+            final String message = "Unparsable code before end of file";
+            Node error = new Node(sourceCode, "", tree.getEnd(), message);
+            List<Node> children = new ArrayList<>(tree.getChildren());
+            children.add(error);
+            return new Node(sourceCode, symbol, tree.getStart(), children, message);
+        }
+        return tree;
     }
 
     private List<Node> buildTree(int index, String symbol) {
@@ -54,6 +65,9 @@ public class GrammarParser {
                 List<Node> resolution = resolve(skipWhitespaceAndComment(tree.getLast().getEnd()), remainder(expression));
                 Optional<Node> error = findError(resolution);
                 if (error.isEmpty()) {
+                    Node head = new Node(source, symbol, i, tree);
+                    tree = new ArrayList<>();
+                    tree.add(head);
                     tree.addAll(resolution);
                     return tree;
                 }
@@ -120,21 +134,32 @@ public class GrammarParser {
     }
 
     private int skipWhitespaceAndComment(int index) {
-        boolean ready = false;
-        while (!ready) {
-            while (index < source.length() && Character.isWhitespace(source.charAt(index))) {
-                index++;
-            }
+        boolean ready;
+        do {
+            index = skipWhitespace(index);
             ready = true;
             if (source.startsWith(commentStart, index)) {
-                index = source.indexOf(commentEnd, index + commentStart.length());
-                if (index < 0) {
-                    return source.length();
-                }
-                index += commentEnd.length();
+                index = skipComment(index);
                 ready = false;
             }
+        } while (!ready);
+        return index;
+    }
+
+    private int skipWhitespace(int index) {
+        while (index < source.length() && Character.isWhitespace(source.charAt(index))) {
+            index++;
         }
+        return index;
+    }
+
+    private int skipComment(int index) {
+        index = source.indexOf(commentEnd, index + commentStart.length());
+        if (index < 0) {
+            // FIXME Comment not terminated
+            return source.length();
+        }
+        index += commentEnd.length();
         return index;
     }
 

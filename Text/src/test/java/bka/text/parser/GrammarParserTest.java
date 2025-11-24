@@ -23,8 +23,11 @@ public class GrammarParserTest {
             new ExpectedNode("S", 0, "No match",
                 new ExpectedNode("a", 0, "No match")),
             parser.buildTree("b", "S"));
-//       FIXME expect error when calling parser.buildTree("a", "T");
-//       FIXME expect error when calling tree = parser.buildTree("aa", "S");
+        assertEqualNodes(
+            new ExpectedNode("S", 0, "Unparsable code before end of file",
+                new ExpectedNode("a", 0, 1)),
+            parser.buildTree("aa", "S"));
+        assertThrows(IllegalArgumentException.class, () -> parser.buildTree("a", "T"));
     }
 
     @Test
@@ -187,8 +190,8 @@ public class GrammarParserTest {
             parser.buildTree("word", "Expression"));
         assertEqualNodes(
             new ExpectedNode("Expression", 0,
-                //new ExpectedNode("Expression", 0, //FIXME expect a containing expression here
-                new ExpectedNode("\\w+", 0, 9)/*)*/,
+                new ExpectedNode("Expression", 0,
+                    new ExpectedNode("\\w+", 0, 9)),
                 new ExpectedNode("\\.", 9, 10),
                 new ExpectedNode("Expression", 10,
                     new ExpectedNode("\\w+", 10, 16))),

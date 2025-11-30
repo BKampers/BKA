@@ -10,10 +10,12 @@ import java.util.stream.*;
 
 public class GrammarParser {
 
-    public GrammarParser(Map<String, List<List<String>>> grammar, String commentStart, String commentEnd) {
-        this.grammar = Objects.requireNonNull(grammar);
-        this.commentStart = Objects.requireNonNull(commentStart);
-        this.commentEnd = Objects.requireNonNull(commentEnd);
+    public GrammarParser(Map<String, List<List<String>>> grammar) {
+        this.grammar = new Grammar(grammar, Collections.emptyList());
+    }
+
+    public GrammarParser(Map<String, List<List<String>>> grammar, Collection<CommentBrackets> commentBrackets) {
+        this.grammar = new Grammar(grammar, commentBrackets);
     }
 
     public String parse(String sourceCode, String symbol) {
@@ -27,31 +29,42 @@ public class GrammarParser {
     }
 
     public Node buildTree(String sourceCode, String symbol) {
-        if (!grammar.containsKey(symbol)) {
+        if (!grammar.getSymbols().contains(symbol)) {
             throw new IllegalArgumentException("Invalid symbol: " + symbol);
         }
         source = sourceCode;
         matchers.clear();
         Node tree = createTreeNode(0, symbol);
-        if (tree.getError().isEmpty() && skipWhitespaceAndComment(tree.getEnd()) < sourceCode.length()) {
-            final String message = "Unparsable code before end of file";
-            Node error = new Node(sourceCode, "", tree.getEnd(), message);
-            List<Node> children = new ArrayList<>(tree.getChildren());
-            children.add(error);
-            return new Node(sourceCode, symbol, tree.getStart(), children, message);
+        if (tree.getError().isEmpty()) {
+            int index = skipWhitespaceAndComment(tree.getEnd());
+            if (index < 0) {
+                return createErrorTree(tree, UNTERMINATED_COMMENT);
+            }
+            if (index < sourceCode.length()) {
+                return createErrorTree(tree, String.format(UNPARSABLE_CODE_AFTER_SYMBOL, symbol));
+            }
         }
         return tree;
+    }
+
+    private Node createErrorTree(Node tree, String message) {
+        Node error = new Node(source, "", tree.getEnd(), message);
+        List<Node> children = new ArrayList<>(tree.getChildren());
+        children.add(error);
+        return new Node(source, tree.getSymbol(), tree.getStart(), children, message);
     }
 
     private List<Node> buildTree(int index, String symbol) {
         List<Node> tree = null;
         List<Node> errorTree = null;
         Node errorNode = null;
-        List<List<String>> choice = grammar.get(symbol);
         final int i = skipWhitespaceAndComment(index);
-        for (List<String> expression : choice) {
+        if (i < 0) {
+            return List.of(new Node(source, symbol, index, UNTERMINATED_COMMENT));
+        }
+        for (List<String> rule : grammar.getRules(symbol)) {
             if (tree == null) {
-                List<Node> resolution = resolve(i, expression);
+                List<Node> resolution = resolve(i, rule);
                 Optional<Node> error = findError(resolution);
                 if (error.isEmpty()) {
                     tree = resolution;
@@ -61,8 +74,12 @@ public class GrammarParser {
                     errorTree = resolution;
                 }
             }
-            else if (expression.size() > 1 && symbol.equals(expression.getFirst())) {
-                List<Node> resolution = resolve(skipWhitespaceAndComment(tree.getLast().getEnd()), remainder(expression));
+            else if (rule.size() > 1 && symbol.equals(rule.getFirst())) {
+                final int j = skipWhitespaceAndComment(tree.getLast().getEnd());
+                if (j < 0) {
+                    return List.of(new Node(source, symbol, tree.getLast().getEnd(), UNTERMINATED_COMMENT));
+                }
+                List<Node> resolution = resolve(j, remainder(rule));
                 Optional<Node> error = findError(resolution);
                 if (error.isEmpty()) {
                     Node head = new Node(source, symbol, i, tree);
@@ -97,12 +114,16 @@ public class GrammarParser {
                 return resolution;
             }
             sourceIndex = skipWhitespaceAndComment(node.getEnd());
+            if (sourceIndex < 0) {
+                resolution.add(new Node(source, "", node.getEnd(), UNTERMINATED_COMMENT));
+                return resolution;
+            }
         }
         return resolution;
     }
 
     private Node createNode(int index, String symbol) {
-        if (grammar.keySet().contains(symbol)) {
+        if (grammar.getSymbols().contains(symbol)) {
             return createTreeNode(index, symbol);
         }
         return createMatchNode(symbol, index);
@@ -122,7 +143,7 @@ public class GrammarParser {
         if (matcher.find(index) && matcher.start() == index) {
             return new Node(source, symbol, index, matcher.end());
         }
-        return new Node(source, symbol, index, "No match");
+        return new Node(source, symbol, index, NO_MATCH);
     }
 
     private static Optional<Node> findError(List<Node> nodes) {
@@ -137,10 +158,13 @@ public class GrammarParser {
         boolean ready;
         do {
             index = skipWhitespace(index);
-            ready = true;
-            if (source.startsWith(commentStart, index)) {
-                index = skipComment(index);
-                ready = false;
+            Optional<CommentBrackets> brackets = findCommentBrackets(index);
+            if (brackets.isPresent()) {
+                index = skipComment(index, brackets.get());
+                ready = index < 0;
+            }
+            else {
+                ready = true;
             }
         } while (!ready);
         return index;
@@ -153,22 +177,34 @@ public class GrammarParser {
         return index;
     }
 
-    private int skipComment(int index) {
-        index = source.indexOf(commentEnd, index + commentStart.length());
-        if (index < 0) {
-            // FIXME Comment not terminated
-            return source.length();
+    private int skipComment(int index, CommentBrackets brackets) {
+        if (brackets.isBlockComment()) {
+            index = source.indexOf(brackets.getEnd(), index + brackets.getStart().length());
+            if (index < 0) {
+                return -1;
+            }
+            return index + brackets.getEnd().length();
         }
-        index += commentEnd.length();
-        return index;
+        else {
+            index = source.indexOf("\n", index + brackets.getStart().length());
+            if (index < 0) {
+                return source.length();
+            }
+            return index + 1;
+        }
     }
 
-    private final Map<String, List<List<String>>> grammar;
-    private String source;
+    private Optional<CommentBrackets> findCommentBrackets(int index) {
+        return grammar.getCommentBrackets().stream().filter(entry -> source.startsWith(entry.getStart(), index)).findAny();
+    }
 
+    private String source;
     private final Map<String, Matcher> matchers = new HashMap<>();
 
-    private final String commentStart;
-    private final String commentEnd;
+    private final Grammar grammar;
+
+    private static final String NO_MATCH = "No match";
+    private static final String UNPARSABLE_CODE_AFTER_SYMBOL = "Unparsable code after symbol [%s]";
+    private static final String UNTERMINATED_COMMENT = "Unterminated comment";
 
 }

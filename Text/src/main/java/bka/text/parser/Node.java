@@ -31,7 +31,7 @@ public final class Node {
         this.symbol = Objects.requireNonNull(symbol);
         this.start = requireValidStartIndex(start);
         this.end = requireValidEndIndex(end);
-        this.children = children.stream().collect(Collectors.toUnmodifiableList());
+        this.children = List.copyOf(children);
         this.error = error;
     }
 

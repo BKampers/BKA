@@ -10,30 +10,35 @@ public class GrammarParserTest {
 
     @Test
     public void testSimpleGrammar() {
-        GrammarParser parser = new GrammarParser(Map.of("S", List.of(List.of("a"))), "/*", "*/");
+        GrammarParser parser = new GrammarParser(Map.of("S", List.of(List.of("a"))), List.of(CommentBrackets.blockComment("/*", "*/"), CommentBrackets.lineComment("//")));
         assertEqualNodes(
             new ExpectedNode("S", 0,
                 new ExpectedNode("a", 0, 1)),
             parser.buildTree("a", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0,
-                new ExpectedNode("a", 27, 28)),
-            parser.buildTree("  /* this is a comment */  a ", "S"));
+                new ExpectedNode("a", 38, 39)),
+            parser.buildTree("// Line comment\n\r/* Block comment */  a // Line comment without line end", "S"));
+        assertEqualNodes(
+            new ExpectedNode("S", 0, "Unterminated comment",
+                new ExpectedNode("a", 0, 1),
+                new ExpectedNode("", 1, "Unterminated comment")),
+            parser.buildTree("a /*", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0, "No match",
                 new ExpectedNode("a", 0, "No match")),
             parser.buildTree("b", "S"));
         assertEqualNodes(
-            new ExpectedNode("S", 0, "Unparsable code before end of file",
+            new ExpectedNode("S", 0, "Unparsable code after symbol [S]",
                 new ExpectedNode("a", 0, 1),
-                new ExpectedNode("", 1, "Unparsable code before end of file")),
+                new ExpectedNode("", 1, "Unparsable code after symbol [S]")),
             parser.buildTree("aa", "S"));
         assertThrows(IllegalArgumentException.class, () -> parser.buildTree("a", "T"));
     }
 
     @Test
     public void testGrammarWithOneChoice() {
-        GrammarParser parser = new GrammarParser(Map.of("S", List.of(List.of("a", "b"))), "/*", "*/");
+        GrammarParser parser = new GrammarParser(Map.of("S", List.of(List.of("a", "b"))));
         assertEqualNodes(
             new ExpectedNode("S", 0,
                 new ExpectedNode("a", 0, 1),
@@ -61,9 +66,7 @@ public class GrammarParserTest {
         GrammarParser parser = new GrammarParser(
             Map.of("S", List.of(
                 List.of("a", "b"),
-                List.of("c", "d"))),
-            "/*",
-            "*/");
+                List.of("c", "d"))));
         assertEqualNodes(
             new ExpectedNode("S", 0,
                 new ExpectedNode("a", 0, 1),
@@ -81,9 +84,7 @@ public class GrammarParserTest {
         GrammarParser parser = new GrammarParser(
             Map.of("S", List.of(
                 List.of("a", "b"),
-                List.of("a", "c"))),
-            "/*",
-            "*/");
+                List.of("a", "c"))));
         assertEqualNodes(
             new ExpectedNode("S", 0,
                 new ExpectedNode("a", 0, 1),
@@ -101,9 +102,7 @@ public class GrammarParserTest {
         GrammarParser parser = new GrammarParser(
             Map.of("S", List.of(
                 List.of("a", "b"),
-                List.of("c", "b"))),
-            "/*",
-            "*/");
+                List.of("c", "b"))));
         assertEqualNodes(
             new ExpectedNode("S", 0,
                 new ExpectedNode("a", 0, 1),
@@ -122,9 +121,7 @@ public class GrammarParserTest {
             Map.of(
                 "S", List.of(List.of("T"), List.of("U")),
                 "T", List.of(List.of("a", "b")),
-                "U", List.of(List.of("c", "d"))),
-            "/*",
-            "*/");
+                "U", List.of(List.of("c", "d"))));
         assertEqualNodes(
             new ExpectedNode("S", 0,
                 new ExpectedNode("T", 0,
@@ -148,9 +145,7 @@ public class GrammarParserTest {
                     List.of("\\{", "\\}")),
                 "Sequence", List.of(
                     List.of("\\d+", "\\,", "Sequence"),
-                    List.of("\\d+"))),
-            "/*",
-            "*/");
+                    List.of("\\d+"))));
         assertEqualNodes(
             new ExpectedNode("List", 0,
                 new ExpectedNode("\\{", 0, 1),
@@ -182,9 +177,7 @@ public class GrammarParserTest {
                 "Expression", List.of(
                     List.of("\\w+"),
                     List.of("Expression", "\\.", "Expression")
-                )),
-            "/*",
-            "*/");
+                )));
         assertEqualNodes(
             new ExpectedNode("Expression", 0,
                 new ExpectedNode("\\w+", 0, 4)),

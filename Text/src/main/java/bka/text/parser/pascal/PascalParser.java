@@ -13,7 +13,7 @@ import java.util.*;
 public class PascalParser extends GrammarParser {
 
     public PascalParser() {
-        super(loadGrammar(), "(*", "*)");
+        super(loadGrammar(), List.of(CommentBrackets.blockComment("(*", "*)")));
     }
 
     private static Map<String, List<List<String>>> loadGrammar() {

@@ -18,9 +18,9 @@ public class GrammarParser {
         this.grammar = new Grammar(grammar, commentBrackets);
     }
 
-    public String parse(String sourceCode, String symbol) {
+    public String parse(String sourceCode, String nonterminal) {
         long startTime = System.nanoTime();
-        Node tree = buildTree(sourceCode, symbol);
+        Node tree = buildTree(sourceCode, nonterminal);
         long duration = System.nanoTime() - startTime;
         if (tree.getError().isPresent()) {
             return "Error: " + tree.getError().get();
@@ -28,20 +28,20 @@ public class GrammarParser {
         return "Program parsed successfully in " + (duration / 1000) + " microseconds";
     }
 
-    public Node buildTree(String sourceCode, String symbol) {
-        if (!grammar.getSymbols().contains(symbol)) {
-            throw new IllegalArgumentException("Invalid symbol: " + symbol);
+    public Node buildTree(String sourceCode, String nonterminal) {
+        if (!grammar.getNonterminals().contains(nonterminal)) {
+            throw new IllegalArgumentException("Invalid symbol: " + nonterminal);
         }
         source = sourceCode;
         matchers.clear();
-        Node tree = createTreeNode(0, symbol);
+        Node tree = createTreeNode(0, nonterminal);
         if (tree.getError().isEmpty()) {
             int index = skipWhitespaceAndComment(tree.getEnd());
             if (index < 0) {
                 return createErrorTree(tree, UNTERMINATED_COMMENT);
             }
             if (index < sourceCode.length()) {
-                return createErrorTree(tree, String.format(UNPARSABLE_CODE_AFTER_SYMBOL, symbol));
+                return createErrorTree(tree, String.format(UNPARSABLE_CODE_AFTER_SYMBOL, nonterminal));
             }
         }
         return tree;
@@ -54,15 +54,15 @@ public class GrammarParser {
         return new Node(source, tree.getSymbol(), tree.getStart(), children, message);
     }
 
-    private List<Node> buildTree(int index, String symbol) {
+    private List<Node> buildTree(int index, String nonterminal) {
         List<Node> tree = null;
         List<Node> errorTree = null;
         Node errorNode = null;
         final int i = skipWhitespaceAndComment(index);
         if (i < 0) {
-            return List.of(new Node(source, symbol, index, UNTERMINATED_COMMENT));
+            return List.of(new Node(source, nonterminal, index, UNTERMINATED_COMMENT));
         }
-        for (List<String> rule : grammar.getRules(symbol)) {
+        for (List<String> rule : grammar.getRules(nonterminal)) {
             if (tree == null) {
                 List<Node> resolution = resolve(i, rule);
                 Optional<Node> error = findError(resolution);
@@ -74,15 +74,15 @@ public class GrammarParser {
                     errorTree = resolution;
                 }
             }
-            else if (rule.size() > 1 && symbol.equals(rule.getFirst())) {
+            else if (rule.size() > 1 && nonterminal.equals(rule.getFirst())) {
                 final int j = skipWhitespaceAndComment(tree.getLast().getEnd());
                 if (j < 0) {
-                    return List.of(new Node(source, symbol, tree.getLast().getEnd(), UNTERMINATED_COMMENT));
+                    return List.of(new Node(source, nonterminal, tree.getLast().getEnd(), UNTERMINATED_COMMENT));
                 }
                 List<Node> resolution = resolve(j, remainder(rule));
                 Optional<Node> error = findError(resolution);
                 if (error.isEmpty()) {
-                    Node head = new Node(source, symbol, i, tree);
+                    Node head = new Node(source, nonterminal, i, tree);
                     tree = new ArrayList<>();
                     tree.add(head);
                     tree.addAll(resolution);
@@ -123,7 +123,7 @@ public class GrammarParser {
     }
 
     private Node createNode(int index, String symbol) {
-        if (grammar.getSymbols().contains(symbol)) {
+        if (grammar.getNonterminals().contains(symbol)) {
             return createTreeNode(index, symbol);
         }
         return createMatchNode(symbol, index);
@@ -154,23 +154,23 @@ public class GrammarParser {
         return Pattern.compile(symbol, Pattern.CASE_INSENSITIVE).matcher(source);
     }
 
-    private int skipWhitespaceAndComment(int index) {
-        boolean ready;
-        do {
-            index = skipWhitespace(index);
-            Optional<CommentBrackets> brackets = findCommentBrackets(index);
-            if (brackets.isPresent()) {
-                index = skipComment(index, brackets.get());
-                ready = index < 0;
+    private int skipWhitespaceAndComment(int startIndex) {
+        int endIndex = startIndex;
+        for (;;) {
+            endIndex = skipWhitespace(endIndex);
+            Optional<CommentBrackets> brackets = findCommentBrackets(endIndex);
+            if (brackets.isEmpty()) {
+                return endIndex;
             }
-            else {
-                ready = true;
+            endIndex = skipComment(endIndex, brackets.get());
+            if (endIndex < 0) {
+                return -1;
             }
-        } while (!ready);
-        return index;
+        }
     }
 
-    private int skipWhitespace(int index) {
+    private int skipWhitespace(int startIndex) {
+        int index = startIndex;
         while (index < source.length() && Character.isWhitespace(source.charAt(index))) {
             index++;
         }
@@ -179,19 +179,25 @@ public class GrammarParser {
 
     private int skipComment(int index, CommentBrackets brackets) {
         if (brackets.isBlockComment()) {
-            index = source.indexOf(brackets.getEnd(), index + brackets.getStart().length());
-            if (index < 0) {
-                return -1;
-            }
-            return index + brackets.getEnd().length();
+            return skipBlockComment(index, brackets);
         }
-        else {
-            index = source.indexOf("\n", index + brackets.getStart().length());
-            if (index < 0) {
-                return source.length();
-            }
-            return index + 1;
+        return skipLineComment(index, brackets);
+    }
+
+    private int skipBlockComment(int startIndex, CommentBrackets brackets) {
+        int endIndex = source.indexOf(brackets.getEnd(), startIndex + brackets.getStart().length());
+        if (endIndex < 0) {
+            return -1;
         }
+        return endIndex + brackets.getEnd().length();
+    }
+
+    private int skipLineComment(int startIndex, CommentBrackets brackets) {
+        int endIndex = source.indexOf("\n", startIndex + brackets.getStart().length());
+        if (endIndex < 0) {
+            return source.length();
+        }
+        return endIndex + 1;
     }
 
     private Optional<CommentBrackets> findCommentBrackets(int index) {

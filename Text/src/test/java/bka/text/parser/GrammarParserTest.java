@@ -17,8 +17,12 @@ public class GrammarParserTest {
             parser.buildTree("a", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0,
-                new ExpectedNode("a", 38, 39)),
-            parser.buildTree("// Line comment\n\r/* Block comment */  a // Line comment without line end", "S"));
+                new ExpectedNode("a", 36, 37)),
+            parser.buildTree("// Line comment\n/* Block comment */ a // Line comment without line end", "S"));
+        assertEqualNodes(
+            new ExpectedNode("S", 0,
+                new ExpectedNode("a", 1, 2)),
+            parser.buildTree(" a /* Block comment at end of source */", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0, "Unterminated comment",
                 new ExpectedNode("a", 0, 1),
@@ -168,6 +172,45 @@ public class GrammarParserTest {
                         new ExpectedNode("\\d+", 3, 4))),
                 new ExpectedNode("\\}", 4, 5)),
             parser.buildTree("{1,2}", "List"));
+    }
+
+    @Test
+    public void testBody() {
+        GrammarParser parser = new GrammarParser(
+            Map.of(
+                "Body", List.of(
+                    List.of("\\bBEGIN", "Sequence", "\\bEND")),
+                "Sequence", List.of(
+                    List.of("\\d+", "\\;", "Sequence"),
+                    List.of("\\d+"),
+                    List.of())));
+        assertEqualNodes(
+            new ExpectedNode("Body", 0,
+                new ExpectedNode("\\bBEGIN", 0, 5),
+                new ExpectedNode("Sequence", 6, 6),
+                new ExpectedNode("\\bEND", 6, 9)),
+            parser.buildTree("BEGIN END", "Body"));
+        assertEqualNodes(
+            new ExpectedNode("Body", 0,
+                new ExpectedNode("\\bBEGIN", 0, 5),
+                new ExpectedNode("Sequence", 6,
+                    new ExpectedNode("\\d+", 6, 7),
+                    new ExpectedNode("\\;", 7, 8),
+                    new ExpectedNode("Sequence", 9, 9)),
+                new ExpectedNode("\\bEND", 9, 12)),
+            parser.buildTree("BEGIN 1; END", "Body"));
+        assertEqualNodes(
+            new ExpectedNode("Body", 0,
+                new ExpectedNode("\\bBEGIN", 0, 5),
+                new ExpectedNode("Sequence", 6,
+                    new ExpectedNode("\\d+", 6, 7),
+                    new ExpectedNode("\\;", 7, 8),
+                    new ExpectedNode("Sequence", 9,
+                        new ExpectedNode("\\d+", 9, 10),
+                        new ExpectedNode("\\;", 10, 11),
+                        new ExpectedNode("Sequence", 12, 12))),
+                new ExpectedNode("\\bEND", 12, 15)),
+            parser.buildTree("BEGIN 1; 2; END", "Body"));
     }
 
     @Test

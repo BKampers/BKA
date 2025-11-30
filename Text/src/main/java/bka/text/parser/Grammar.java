@@ -21,12 +21,12 @@ public class Grammar {
                     .collect(Collectors.toUnmodifiableList())));
     }
 
-    public Collection<String> getSymbols() {
+    public Collection<String> getNonterminals() {
         return rules.keySet();
     }
 
-    public List<List<String>> getRules(String symbol) {
-        return rules.get(symbol);
+    public List<List<String>> getRules(String nonterminal) {
+        return rules.get(nonterminal);
     }
 
 

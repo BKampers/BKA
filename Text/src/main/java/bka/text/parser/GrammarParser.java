@@ -6,7 +6,6 @@ package bka.text.parser;
 
 import java.util.*;
 import java.util.regex.*;
-import java.util.stream.*;
 
 public class GrammarParser {
 
@@ -18,9 +17,9 @@ public class GrammarParser {
         this.grammar = new Grammar(grammar, commentBrackets);
     }
 
-    public String parse(String sourceCode, String nonterminal) {
+    public String parse(String sourceCode, String startSymbol) {
         long startTime = System.nanoTime();
-        Node tree = buildTree(sourceCode, nonterminal);
+        Node tree = buildTree(sourceCode, startSymbol);
         long duration = System.nanoTime() - startTime;
         if (tree.getError().isPresent()) {
             return "Error: " + tree.getError().get();
@@ -28,21 +27,27 @@ public class GrammarParser {
         return "Program parsed successfully in " + (duration / 1000) + " microseconds";
     }
 
-    public Node buildTree(String sourceCode, String nonterminal) {
-        if (!grammar.getNonterminals().contains(nonterminal)) {
-            throw new IllegalArgumentException("Invalid symbol: " + nonterminal);
+    public Node buildTree(String sourceCode, String startSymbol) {
+        if (!grammar.getNonterminals().contains(startSymbol)) {
+            throw new IllegalArgumentException("Invalid symbol: " + startSymbol);
         }
         source = sourceCode;
         matchers.clear();
-        Node tree = createTreeNode(0, nonterminal);
-        if (tree.getError().isEmpty()) {
-            int index = skipWhitespaceAndComment(tree.getEnd());
-            if (index < 0) {
-                return createErrorTree(tree, UNTERMINATED_COMMENT);
-            }
-            if (index < sourceCode.length()) {
-                return createErrorTree(tree, String.format(UNPARSABLE_CODE_AFTER_SYMBOL, nonterminal));
-            }
+        skips.clear();
+        Node tree = createTreeNode(0, startSymbol);
+        if (tree.getError().isPresent()) {
+            return tree;
+        }
+        return validateRemainder(tree);
+    }
+
+    private Node validateRemainder(Node tree) {
+        int index = skipWhitespaceAndComment(tree.getEnd());
+        if (index < 0) {
+            return createErrorTree(tree, UNTERMINATED_COMMENT);
+        }
+        if (index < source.length()) {
+            return createErrorTree(tree, String.format(UNPARSABLE_CODE_AFTER_SYMBOL, tree.getSymbol()));
         }
         return tree;
     }
@@ -58,13 +63,13 @@ public class GrammarParser {
         List<Node> tree = null;
         List<Node> errorTree = null;
         Node errorNode = null;
-        final int i = skipWhitespaceAndComment(index);
-        if (i < 0) {
+        final int headIndex = skipWhitespaceAndComment(index);
+        if (headIndex < 0) {
             return List.of(new Node(source, nonterminal, index, UNTERMINATED_COMMENT));
         }
-        for (List<String> rule : grammar.getRules(nonterminal)) {
+        for (List<String> sentential : grammar.getSententials(nonterminal)) {
             if (tree == null) {
-                List<Node> resolution = resolve(i, rule);
+                List<Node> resolution = resolve(headIndex, sentential);
                 Optional<Node> error = findError(resolution);
                 if (error.isEmpty()) {
                     tree = resolution;
@@ -74,15 +79,15 @@ public class GrammarParser {
                     errorTree = resolution;
                 }
             }
-            else if (rule.size() > 1 && nonterminal.equals(rule.getFirst())) {
-                final int j = skipWhitespaceAndComment(tree.getLast().getEnd());
-                if (j < 0) {
+            else if (sentential.size() > 1 && nonterminal.equals(sentential.getFirst())) {
+                final int tailIndex = skipWhitespaceAndComment(tree.getLast().getEnd());
+                if (tailIndex < 0) {
                     return List.of(new Node(source, nonterminal, tree.getLast().getEnd(), UNTERMINATED_COMMENT));
                 }
-                List<Node> resolution = resolve(j, remainder(rule));
+                List<Node> resolution = resolve(tailIndex, tail(sentential));
                 Optional<Node> error = findError(resolution);
                 if (error.isEmpty()) {
-                    Node head = new Node(source, nonterminal, i, tree);
+                    Node head = new Node(source, nonterminal, headIndex, tree);
                     tree = new ArrayList<>();
                     tree.add(head);
                     tree.addAll(resolution);
@@ -100,14 +105,14 @@ public class GrammarParser {
         return tree;
     }
 
-    private static List<String> remainder(List<String> expression) {
-        return expression.stream().skip(1).collect(Collectors.toList());
+    private static List<String> tail(List<String> sentential) {
+        return sentential.stream().skip(1).toList();
     }
 
-    private List<Node> resolve(int index, List<String> expression) {
+    private List<Node> resolve(int index, List<String> sentential) {
         List<Node> resolution = new ArrayList<>();
         int sourceIndex = index;
-        for (String symbol : expression) {
+        for (String symbol : sentential) {
             Node node = createNode(sourceIndex, symbol);
             resolution.add(node);
             if (node.getError().isPresent()) {
@@ -155,6 +160,10 @@ public class GrammarParser {
     }
 
     private int skipWhitespaceAndComment(int startIndex) {
+        return skips.computeIfAbsent(startIndex, this::skip);
+    }
+
+    private int skip(int startIndex) {
         int endIndex = startIndex;
         for (;;) {
             endIndex = skipWhitespace(endIndex);
@@ -206,6 +215,7 @@ public class GrammarParser {
 
     private String source;
     private final Map<String, Matcher> matchers = new HashMap<>();
+    private final Map<Integer, Integer> skips = new HashMap<>();
 
     private final Grammar grammar;
 

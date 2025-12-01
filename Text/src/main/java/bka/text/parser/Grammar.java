@@ -25,7 +25,7 @@ public class Grammar {
         return rules.keySet();
     }
 
-    public List<List<String>> getRules(String nonterminal) {
+    public List<List<String>> getSententials(String nonterminal) {
         return rules.get(nonterminal);
     }
 

@@ -5,15 +5,15 @@ import java.util.*;
 public class CommentBrackets {
 
     public static CommentBrackets blockComment(String start, String end) {
-        return new CommentBrackets(Objects.requireNonNull(start), Objects.requireNonNull(end));
+        return new CommentBrackets(start, Objects.requireNonNull(end));
     }
 
     public static CommentBrackets lineComment(String start) {
-        return new CommentBrackets(Objects.requireNonNull(start), null);
+        return new CommentBrackets(start, null);
     }
 
     private CommentBrackets(String start, String end) {
-        this.start = start;
+        this.start = Objects.requireNonNull(start);
         this.end = end;
     }
 
@@ -22,7 +22,10 @@ public class CommentBrackets {
     }
 
     public String getEnd() {
-        return Objects.requireNonNull(end);
+        if (end == null) {
+            throw new IllegalStateException("Line comment does not have an end bracket");
+        }
+        return end;
     }
 
     public boolean isBlockComment() {

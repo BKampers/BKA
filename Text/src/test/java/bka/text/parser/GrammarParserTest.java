@@ -41,7 +41,7 @@ public class GrammarParserTest {
     }
 
     @Test
-    public void testGrammarWithOneChoice() {
+    public void testGrammarWithOneSentential() {
         GrammarParser parser = new GrammarParser(Map.of("S", List.of(List.of("a", "b"))));
         assertEqualNodes(
             new ExpectedNode("S", 0,
@@ -66,7 +66,7 @@ public class GrammarParserTest {
     }
 
     @Test
-    public void testGrammarWithTwoDistictChoices() {
+    public void testGrammarWithTwoDistictSententials() {
         GrammarParser parser = new GrammarParser(
             Map.of("S", List.of(
                 List.of("a", "b"),
@@ -120,7 +120,7 @@ public class GrammarParserTest {
     }
 
     @Test
-    public void testGrammarWithThreeSymbols() {
+    public void testGrammarWithThreeNonterminals() {
         GrammarParser parser = new GrammarParser(
             Map.of(
                 "S", List.of(List.of("T"), List.of("U")),
@@ -182,40 +182,40 @@ public class GrammarParserTest {
     }
 
     @Test
-    public void testEmptyElement() {
+    public void testEmptySentential() {
         GrammarParser parser = new GrammarParser(
             Map.of(
                 "Body", List.of(
-                    List.of("\\bBEGIN", "Sequence", "\\bEND")),
+                    List.of("BEGIN", "Sequence", "END")),
                 "Sequence", List.of(
                     List.of("\\d+", "\\;", "Sequence"),
                     List.of("\\d+"),
                     List.of())));
         assertEqualNodes(
             new ExpectedNode("Body", 0,
-                new ExpectedNode("\\bBEGIN", 0, 5),
+                new ExpectedNode("BEGIN", 0, 5),
                 new ExpectedNode("Sequence", 6, 6),
-                new ExpectedNode("\\bEND", 6, 9)),
+                new ExpectedNode("END", 6, 9)),
             parser.buildTree("BEGIN END", "Body"));
         assertEqualNodes(
             new ExpectedNode("Body", 0,
-                new ExpectedNode("\\bBEGIN", 0, 5),
+                new ExpectedNode("BEGIN", 0, 5),
                 new ExpectedNode("Sequence", 6,
                     new ExpectedNode("\\d+", 6, 7),
                     new ExpectedNode("\\;", 7, 8),
                     new ExpectedNode("Sequence", 9, 9)),
-                new ExpectedNode("\\bEND", 9, 12)),
+                new ExpectedNode("END", 9, 12)),
             parser.buildTree("BEGIN 1; END", "Body"));
         assertEqualNodes(
             new ExpectedNode("Body", 0,
-                new ExpectedNode("\\bBEGIN", 0, 5),
+                new ExpectedNode("BEGIN", 0, 5),
                 new ExpectedNode("Sequence", 6,
                     new ExpectedNode("\\d+", 6, 7)),
-                new ExpectedNode("\\bEND", 8, 11)),
+                new ExpectedNode("END", 8, 11)),
             parser.buildTree("BEGIN 1 END", "Body"));
         assertEqualNodes(
             new ExpectedNode("Body", 0,
-                new ExpectedNode("\\bBEGIN", 0, 5),
+                new ExpectedNode("BEGIN", 0, 5),
                 new ExpectedNode("Sequence", 6,
                     new ExpectedNode("\\d+", 6, 7),
                     new ExpectedNode("\\;", 7, 8),
@@ -223,17 +223,17 @@ public class GrammarParserTest {
                         new ExpectedNode("\\d+", 9, 10),
                         new ExpectedNode("\\;", 10, 11),
                         new ExpectedNode("Sequence", 12, 12))),
-                new ExpectedNode("\\bEND", 12, 15)),
+                new ExpectedNode("END", 12, 15)),
             parser.buildTree("BEGIN 1; 2; END", "Body"));
         assertEqualNodes(
             new ExpectedNode("Body", 0,
-                new ExpectedNode("\\bBEGIN", 0, 5),
+                new ExpectedNode("BEGIN", 0, 5),
                 new ExpectedNode("Sequence", 6,
                     new ExpectedNode("\\d+", 6, 7),
                     new ExpectedNode("\\;", 7, 8),
                     new ExpectedNode("Sequence", 9,
                         new ExpectedNode("\\d+", 9, 10))),
-                new ExpectedNode("\\bEND", 11, 14)),
+                new ExpectedNode("END", 11, 14)),
             parser.buildTree("BEGIN 1; 2 END", "Body"));
     }
 

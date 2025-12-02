@@ -202,7 +202,7 @@ public class GrammarParser {
     }
 
     private int skipLineComment(int startIndex, CommentBrackets brackets) {
-        int endIndex = source.indexOf("\n", startIndex + brackets.getStart().length());
+        int endIndex = source.indexOf('\n', startIndex + brackets.getStart().length());
         if (endIndex < 0) {
             return source.length();
         }

@@ -13,7 +13,7 @@ public class PascalParserTest {
 
     @BeforeEach
     public void init() throws IOException {
-        parser = new GrammarParser(GrammarLoader.loadJsonFile("resources/grammars/pascal-grammar.json"));
+        parser = new Parser(GrammarLoader.loadJsonFile("resources/grammars/pascal-grammar.json"));
     }
 
     @Test
@@ -26,7 +26,7 @@ public class PascalParserTest {
                 emptyNode("Declarations"),
                 emptyBody(" "),
                 endOfProgram()),
-            parser.buildTree("PROGRAM empty; BEGIN END.").getChildren());
+            parser.parse("PROGRAM empty; BEGIN END.").getChildren());
     }
 
     private static ExpectedNode separator() {
@@ -45,7 +45,7 @@ public class PascalParserTest {
                     emptyNode("Declarations")),
                 emptyBody(),
                 endOfProgram()),
-            parser.buildTree("""
+            parser.parse("""
                 PROGRAM program_name;
                 TYPE fruit = ( apple, banana, cherry );
                 BEGIN
@@ -65,7 +65,7 @@ public class PascalParserTest {
                     emptyNode("Declarations")),
                 emptyBody(),
                 endOfProgram()),
-            parser.buildTree("""
+            parser.parse("""
                 PROGRAM program_name;
                 
                 TYPE Point = RECORD
@@ -96,7 +96,7 @@ public class PascalParserTest {
                 emptyNode("Declarations")),
             emptyBody(),
             endOfProgram()),
-            parser.buildTree("""
+            parser.parse("""
                 PROGRAM byte_definition;
                 VAR byte : 0..255;
                 BEGIN
@@ -225,7 +225,7 @@ public class PascalParserTest {
 
     @Test
     public void testVariableDeclarations() {
-        Node tree = parser.buildTree("""
+        Node tree = parser.parse("""
             PROGRAM program_name;
             VAR bool: BOOLEAN;
             VAR byte, word: 0 .. 255;
@@ -346,7 +346,7 @@ public class PascalParserTest {
 
     @Test
     public void testTypeDeclarations() {
-        assertSuccess(parser.buildTree("""
+        assertSuccess(parser.parse("""
             PROGRAM program_name;
             TYPE bool = BOOLEAN;
             TYPE byte = 0 .. 255;
@@ -362,7 +362,7 @@ public class PascalParserTest {
 
     @Test
     public void testProcedureDeclaration() {
-        assertSuccess(parser.buildTree("""
+        assertSuccess(parser.parse("""
             PROGRAM program_name;
 
             VAR result: INTEGER;
@@ -380,7 +380,7 @@ public class PascalParserTest {
 
     @Test
     public void testFunctionDeclaration() {
-        assertSuccess(parser.buildTree("""
+        assertSuccess(parser.parse("""
             PROGRAM program_name;
 
             CONST pi = 3.14;
@@ -400,7 +400,7 @@ public class PascalParserTest {
 
     @Test
     public void testWhile() {
-        assertSuccess(parser.buildTree("""
+        assertSuccess(parser.parse("""
             PROGRAM program_name;
             VAR a: ARRAY [0 .. 9] OF INTEGER;
                 i: INTEGER;
@@ -417,7 +417,7 @@ public class PascalParserTest {
 
     @Test
     public void testFor() {
-        assertSuccess(parser.buildTree("""
+        assertSuccess(parser.parse("""
             PROGRAM program_name;
             VAR a: ARRAY [1 .. 10] OF INTEGER;
             VAR i: INTEGER;
@@ -429,7 +429,7 @@ public class PascalParserTest {
 
     @Test
     public void testIfThenElse() {
-        assertSuccess(parser.buildTree("""
+        assertSuccess(parser.parse("""
             PROGRAM program_name;
             VAR i,j,s: INTEGER;
             BEGIN
@@ -457,7 +457,7 @@ public class PascalParserTest {
 
     @Test
     public void testLiterals() {
-        assertSuccess(parser.buildTree("""
+        assertSuccess(parser.parse("""
             PROGRAM program_name;
             CONST float = 1.4e9;
             CONST greeting = 'Hello World!';
@@ -471,7 +471,7 @@ public class PascalParserTest {
 
     @Test
     public void testExpressions() {
-        assertSuccess(parser.buildTree("""
+        assertSuccess(parser.parse("""
             PROGRAM program_name;
             CONST c1 = 1 + 2;
             CONST c2 = -c1;
@@ -485,7 +485,7 @@ public class PascalParserTest {
 
     @Test
     public void testComment() {
-        assertSuccess(parser.buildTree("""
+        assertSuccess(parser.parse("""
             (*
             ** A Pascal Program
             *)
@@ -498,7 +498,7 @@ public class PascalParserTest {
 
     @Test
     public void testRangeExpressions() {
-        assertSuccess(parser.buildTree("""
+        assertSuccess(parser.parse("""
             PROGRAM program_name;
             CONST s = 0;
             CONST e = 9;
@@ -519,7 +519,7 @@ public class PascalParserTest {
     public void testMissingProgramKeyword() {
         assertParseTree(
             List.of(ExpectedNode.ofError("PROGRAM\\b", "No match")),
-            parser.buildTree("""
+            parser.parse("""
                 (*PROGRAM*)program_name;
                 BEGIN
                 END.
@@ -532,7 +532,7 @@ public class PascalParserTest {
             List.of(
                 keyword("PROGRAM"),
                 ExpectedNode.ofError("Identifier", "No match")),
-            parser.buildTree("""
+            parser.parse("""
                 PROGRAM (*program_name*);
                 BEGIN
                 END.
@@ -541,7 +541,7 @@ public class PascalParserTest {
 
     @Test
     public void testKeywordForProgramName() {
-        Node tree = parser.buildTree("""
+        Node tree = parser.parse("""
             PROGRAM case;
             BEGIN
             END.
@@ -551,7 +551,7 @@ public class PascalParserTest {
 
     @Test
     public void testMissingSemicolon() {
-        Node tree = parser.buildTree("""
+        Node tree = parser.parse("""
             PROGRAM program_name(*;*)
             BEGIN
             END.
@@ -561,7 +561,7 @@ public class PascalParserTest {
 
     @Test
     public void testMissingBegin() {
-        Node tree = parser.buildTree("""
+        Node tree = parser.parse("""
             PROGRAM program_name;
             (*BEGIN*)
             END.
@@ -571,7 +571,7 @@ public class PascalParserTest {
 
     @Test
     public void testMissingEnd() {
-        Node tree = parser.buildTree("""
+        Node tree = parser.parse("""
             PROGRAM program_name;
             BEGIN
             (*END*).
@@ -581,7 +581,7 @@ public class PascalParserTest {
 
     @Test
     public void testMissingEndDot() {
-        Node tree = parser.buildTree("""
+        Node tree = parser.parse("""
             PROGRAM program_name ;
             BEGIN
             END(*.*)
@@ -591,7 +591,7 @@ public class PascalParserTest {
 
     @Test
     public void testMissingBracket() {
-        Node tree = parser.buildTree("""
+        Node tree = parser.parse("""
             PROGRAM program_name;
 
             (* p1 *)
@@ -721,6 +721,6 @@ public class PascalParserTest {
     }
 
 
-    private GrammarParser parser;
+    private Parser parser;
 
 }

@@ -7,35 +7,17 @@ package bka.text.parser;
 import java.util.*;
 import java.util.regex.*;
 
-public class GrammarParser {
+public class Parser {
 
-    public GrammarParser(Map<String, List<List<String>>> grammar) {
-        this(new Grammar(grammar, Collections.emptyList()));
-    }
-
-    public GrammarParser(Map<String, List<List<String>>> grammar, Collection<CommentBrackets> commentBrackets) {
-        this(new Grammar(grammar, commentBrackets));
-    }
-
-    public GrammarParser(Grammar grammar) {
+    public Parser(Grammar grammar) {
         this.grammar = Objects.requireNonNull(grammar);
     }
 
-    public String parse(String sourceCode, String startSymbol) {
-        long startTime = System.nanoTime();
-        Node tree = buildTree(sourceCode, startSymbol);
-        long duration = System.nanoTime() - startTime;
-        if (tree.getError().isPresent()) {
-            return "Error: " + tree.getError().get();
-        }
-        return "Program parsed successfully in " + (duration / 1000) + " microseconds";
+    public Node parse(String sourceCode) {
+        return parse(sourceCode, grammar.getStartSymbol().get());
     }
 
-    public Node buildTree(String sourceCode) {
-        return buildTree(sourceCode, grammar.getStartSymbol().get());
-    }
-
-    public Node buildTree(String sourceCode, String startSymbol) {
+    public Node parse(String sourceCode, String startSymbol) {
         if (!grammar.getNonterminals().contains(startSymbol)) {
             throw new IllegalArgumentException("Invalid symbol: " + startSymbol);
         }

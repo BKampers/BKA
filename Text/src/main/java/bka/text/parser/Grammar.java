@@ -7,11 +7,23 @@ import java.util.stream.*;
  */
 public class Grammar {
 
-    public Grammar(Map<String, List<List<String>>> rules, Collection<CommentBrackets> commentBrackets) {
-        this(rules, null, commentBrackets);
+    public static Grammar of(Map<String, List<List<String>>> rules) {
+        return of(rules, Collections.emptyList());
     }
 
-    public Grammar(Map<String, List<List<String>>> rules, String startSymbol, Collection<CommentBrackets> commentBrackets) {
+    public static Grammar of(Map<String, List<List<String>>> rules, String startSymbol) {
+        return of(rules, startSymbol, Collections.emptyList());
+    }
+
+    public static Grammar of(Map<String, List<List<String>>> rules, Collection<CommentBrackets> commentBrackets) {
+        return new Grammar(rules, null, commentBrackets);
+    }
+
+    public static Grammar of(Map<String, List<List<String>>> rules, String startSymbol, Collection<CommentBrackets> commentBrackets) {
+        return new Grammar(rules, Objects.requireNonNull(startSymbol), commentBrackets);
+    }
+
+    private Grammar(Map<String, List<List<String>>> rules, String startSymbol, Collection<CommentBrackets> commentBrackets) {
         this.rules = unmodifiableDeepCopy(rules);
         this.startSymbol = startSymbol;
         this.commentBrackets = List.copyOf(commentBrackets);

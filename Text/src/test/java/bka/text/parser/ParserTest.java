@@ -1,74 +1,74 @@
 package bka.text.parser;
 
 import java.util.*;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import static org.junit.jupiter.api.Assertions.*;
-import org.junit.jupiter.api.Test;
+import java.util.function.*;
+import java.util.stream.*;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class GrammarParserTest {
+public class ParserTest {
 
     @Test
     public void testSimpleGrammar() {
-        GrammarParser parser = new GrammarParser(Map.of("S", List.of(List.of("a"))), List.of(CommentBrackets.blockComment("/*", "*/"), CommentBrackets.lineComment("//")));
+        Parser parser = createParser(Map.of("S", List.of(List.of("a"))), List.of(CommentBrackets.blockComment("/*", "*/"), CommentBrackets.lineComment("//")));
         assertEqualNodes(
             new ExpectedNode("S", 0,
                 new ExpectedNode("a", 0, 1)),
-            parser.buildTree("a", "S"));
+            parser.parse("a", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0,
                 new ExpectedNode("a", 36, 37)),
-            parser.buildTree("// Line comment\n/* Block comment */ a // Line comment without line end", "S"));
+            parser.parse("// Line comment\n/* Block comment */ a // Line comment without line end", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0,
                 new ExpectedNode("a", 1, 2)),
-            parser.buildTree(" a /* Block comment at end of source */", "S"));
+            parser.parse(" a /* Block comment at end of source */", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0, "Unterminated comment",
                 new ExpectedNode("a", 0, 1),
                 new ExpectedNode("", 1, "Unterminated comment")),
-            parser.buildTree("a /*", "S"));
+            parser.parse("a /*", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0, "No match",
                 new ExpectedNode("a", 0, "No match")),
-            parser.buildTree("b", "S"));
+            parser.parse("b", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0, "Unparsable code after symbol [S]",
                 new ExpectedNode("a", 0, 1),
                 new ExpectedNode("", 1, "Unparsable code after symbol [S]")),
-            parser.buildTree("aa", "S"));
-        assertThrows(IllegalArgumentException.class, () -> parser.buildTree("a", "T"));
+            parser.parse("aa", "S"));
+        assertThrows(IllegalArgumentException.class, () -> parser.parse("a", "T"));
     }
 
     @Test
     public void testGrammarWithOneSentential() {
-        GrammarParser parser = new GrammarParser(Map.of("S", List.of(List.of("a", "b"))));
+        Parser parser = createParser(Map.of("S", List.of(List.of("a", "b"))));
         assertEqualNodes(
             new ExpectedNode("S", 0,
                 new ExpectedNode("a", 0, 1),
                 new ExpectedNode("b", 1, 2)),
-            parser.buildTree("ab", "S"));
+            parser.parse("ab", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0,
                 new ExpectedNode("a", 0, 1),
                 new ExpectedNode("b", 2, 3)),
-            parser.buildTree("a b", "S"));
+            parser.parse("a b", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0, "No match",
                 new ExpectedNode("a", 0, 1),
                 new ExpectedNode("b", 1, "No match")),
-            parser.buildTree("a", "S"));
+            parser.parse("a", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0, "No match",
                 new ExpectedNode("a", 0, 1),
                 new ExpectedNode("b", 1, "No match")),
-            parser.buildTree("aa", "S"));
+            parser.parse("aa", "S"));
     }
 
     @Test
     public void testGrammarWithTwoDistictSententials() {
-        GrammarParser parser = new GrammarParser(
+        Parser parser = createParser(
             Map.of("S", List.of(
                 List.of("a", "b"),
                 List.of("c", "d"))));
@@ -76,17 +76,17 @@ public class GrammarParserTest {
             new ExpectedNode("S", 0,
                 new ExpectedNode("a", 0, 1),
                 new ExpectedNode("b", 1, 2)),
-            parser.buildTree("ab", "S"));
+            parser.parse("ab", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0,
                 new ExpectedNode("c", 0, 1),
                 new ExpectedNode("d", 1, 2)),
-            parser.buildTree("cd", "S"));
+            parser.parse("cd", "S"));
     }
 
     @Test
     public void testGrammarWithTwoOverlappingHeads() {
-        GrammarParser parser = new GrammarParser(
+        Parser parser = createParser(
             Map.of("S", List.of(
                 List.of("a", "b"),
                 List.of("a", "c"))));
@@ -94,17 +94,17 @@ public class GrammarParserTest {
             new ExpectedNode("S", 0,
                 new ExpectedNode("a", 0, 1),
                 new ExpectedNode("b", 1, 2)),
-            parser.buildTree("ab", "S"));
+            parser.parse("ab", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0,
                 new ExpectedNode("a", 0, 1),
                 new ExpectedNode("c", 1, 2)),
-            parser.buildTree("ac", "S"));
+            parser.parse("ac", "S"));
     }
 
     @Test
     public void testGrammarWithTwoOverlappingTails() {
-        GrammarParser parser = new GrammarParser(
+        Parser parser = createParser(
             Map.of("S", List.of(
                 List.of("a", "b"),
                 List.of("c", "b"))));
@@ -112,17 +112,17 @@ public class GrammarParserTest {
             new ExpectedNode("S", 0,
                 new ExpectedNode("a", 0, 1),
                 new ExpectedNode("b", 1, 2)),
-            parser.buildTree("ab", "S"));
+            parser.parse("ab", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0,
                 new ExpectedNode("c", 0, 1),
                 new ExpectedNode("b", 1, 2)),
-            parser.buildTree("cb", "S"));
+            parser.parse("cb", "S"));
     }
 
     @Test
     public void testGrammarWithThreeNonterminals() {
-        GrammarParser parser = new GrammarParser(
+        Parser parser = createParser(
             Map.of(
                 "S", List.of(List.of("T"), List.of("U")),
                 "T", List.of(List.of("a", "b")),
@@ -132,18 +132,18 @@ public class GrammarParserTest {
                 new ExpectedNode("T", 0,
                     new ExpectedNode("a", 0, 1),
                     new ExpectedNode("b", 1, 2))),
-            parser.buildTree("ab", "S"));
+            parser.parse("ab", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0,
                 new ExpectedNode("U", 0,
                     new ExpectedNode("c", 0, 1),
                     new ExpectedNode("d", 1, 2))),
-            parser.buildTree("cd", "S"));
+            parser.parse("cd", "S"));
     }
 
     @Test
     public void testSequence() {
-        GrammarParser parser = new GrammarParser(
+        Parser parser = createParser(
             Map.of(
                 "List", List.of(
                     List.of("\\{", "Sequence", "\\}"),
@@ -155,14 +155,14 @@ public class GrammarParserTest {
             new ExpectedNode("List", 0,
                 new ExpectedNode("\\{", 0, 1),
                 new ExpectedNode("\\}", 1, 2)),
-            parser.buildTree("{}", "List"));
+            parser.parse("{}", "List"));
         assertEqualNodes(
             new ExpectedNode("List", 0,
                 new ExpectedNode("\\{", 0, 1),
                 new ExpectedNode("Sequence", 1,
                     new ExpectedNode("\\d+", 1, 2)),
                 new ExpectedNode("\\}", 2, 3)),
-            parser.buildTree("{1}", "List"));
+            parser.parse("{1}", "List"));
         assertEqualNodes(
             new ExpectedNode("List", 0,
                 new ExpectedNode("\\{", 0, 1),
@@ -172,19 +172,19 @@ public class GrammarParserTest {
                     new ExpectedNode("Sequence", 3,
                         new ExpectedNode("\\d+", 3, 4))),
                 new ExpectedNode("\\}", 4, 5)),
-            parser.buildTree("{1,2}", "List"));
+            parser.parse("{1,2}", "List"));
         assertEqualNodes(
             new ExpectedNode("List", 0, "No match",
                 new ExpectedNode("\\{", 0, 1),
                 new ExpectedNode("Sequence", 1,
                     new ExpectedNode("\\d+", 1, 2)),
                 new ExpectedNode("\\}", 2, "No match")),
-            parser.buildTree("{1,}", "List"));
+            parser.parse("{1,}", "List"));
     }
 
     @Test
     public void testEmptySentential() {
-        GrammarParser parser = new GrammarParser(
+        Parser parser = createParser(
             Map.of(
                 "Body", List.of(
                     List.of("BEGIN", "Sequence", "END")),
@@ -197,7 +197,7 @@ public class GrammarParserTest {
                 new ExpectedNode("BEGIN", 0, 5),
                 new ExpectedNode("Sequence", 6, 6),
                 new ExpectedNode("END", 6, 9)),
-            parser.buildTree("BEGIN END", "Body"));
+            parser.parse("BEGIN END", "Body"));
         assertEqualNodes(
             new ExpectedNode("Body", 0,
                 new ExpectedNode("BEGIN", 0, 5),
@@ -206,14 +206,14 @@ public class GrammarParserTest {
                     new ExpectedNode("\\;", 7, 8),
                     new ExpectedNode("Sequence", 9, 9)),
                 new ExpectedNode("END", 9, 12)),
-            parser.buildTree("BEGIN 1; END", "Body"));
+            parser.parse("BEGIN 1; END", "Body"));
         assertEqualNodes(
             new ExpectedNode("Body", 0,
                 new ExpectedNode("BEGIN", 0, 5),
                 new ExpectedNode("Sequence", 6,
                     new ExpectedNode("\\d+", 6, 7)),
                 new ExpectedNode("END", 8, 11)),
-            parser.buildTree("BEGIN 1 END", "Body"));
+            parser.parse("BEGIN 1 END", "Body"));
         assertEqualNodes(
             new ExpectedNode("Body", 0,
                 new ExpectedNode("BEGIN", 0, 5),
@@ -225,7 +225,7 @@ public class GrammarParserTest {
                         new ExpectedNode("\\;", 10, 11),
                         new ExpectedNode("Sequence", 12, 12))),
                 new ExpectedNode("END", 12, 15)),
-            parser.buildTree("BEGIN 1; 2; END", "Body"));
+            parser.parse("BEGIN 1; 2; END", "Body"));
         assertEqualNodes(
             new ExpectedNode("Body", 0,
                 new ExpectedNode("BEGIN", 0, 5),
@@ -235,12 +235,12 @@ public class GrammarParserTest {
                     new ExpectedNode("Sequence", 9,
                         new ExpectedNode("\\d+", 9, 10))),
                 new ExpectedNode("END", 11, 14)),
-            parser.buildTree("BEGIN 1; 2 END", "Body"));
+            parser.parse("BEGIN 1; 2 END", "Body"));
     }
 
     @Test
     public void testSententialStartsWithRuleHead() {
-        GrammarParser parser = new GrammarParser(
+        Parser parser = createParser(
             Map.of(
                 "Expression", List.of(
                     List.of("\\w+"),
@@ -249,7 +249,7 @@ public class GrammarParserTest {
         assertEqualNodes(
             new ExpectedNode("Expression", 0,
                 new ExpectedNode("\\w+", 0, 4)),
-            parser.buildTree("word", "Expression"));
+            parser.parse("word", "Expression"));
         assertEqualNodes(
             new ExpectedNode("Expression", 0,
                 new ExpectedNode("Expression", 0,
@@ -257,12 +257,12 @@ public class GrammarParserTest {
                 new ExpectedNode("\\.", 9, 10),
                 new ExpectedNode("Expression", 10,
                     new ExpectedNode("\\w+", 10, 16))),
-            parser.buildTree("reference.member", "Expression"));
+            parser.parse("reference.member", "Expression"));
     }
 
     @Test
     public void testMathematicalExpression() {
-        GrammarParser parser = new GrammarParser(
+        Parser parser = createParser(
             Map.of(
                 "expression", List.of(
                     List.of("term", "additive-operation")),
@@ -308,7 +308,7 @@ public class GrammarParserTest {
                                 new ExpectedNode("\\d+", 6, 7)),
                             new ExpectedNode("multiplication", 7, 7))),
                     new ExpectedNode("additive-operation", 7, 7))),
-            parser.buildTree("1*2+3*4", "expression"));
+            parser.parse("1*2+3*4", "expression"));
         assertEqualNodes(
             new ExpectedNode("expression", 0,
                 new ExpectedNode("term", 0,
@@ -340,7 +340,15 @@ public class GrammarParserTest {
                                 new ExpectedNode("\\d+", 8, 9)),
                             new ExpectedNode("multiplication", 9, 9)))),
                 new ExpectedNode("additive-operation", 9, 9)),
-            parser.buildTree("1*(2+3)*4", "expression"));
+            parser.parse("1*(2+3)*4", "expression"));
+    }
+
+    private static Parser createParser(Map<String, List<List<String>>> rules, List<CommentBrackets> comments) {
+        return new Parser(Grammar.of(rules, comments));
+    }
+
+    private static Parser createParser(Map<String, List<List<String>>> rules) {
+        return new Parser(Grammar.of(rules));
     }
 
     private static void assertEqualNodes(PrintableNode expected, Node actual) {

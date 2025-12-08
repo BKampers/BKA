@@ -19,13 +19,13 @@ public class PascalCompilerTest {
 
     @BeforeEach
     public void init() throws IOException {
-        parser = new GrammarParser(GrammarLoader.loadJsonFile("resources/grammars/pascal-grammar.json"));
+        parser = new Parser(GrammarLoader.loadJsonFile("resources/grammars/pascal-grammar.json"));
         compiler = new PascalCompiler();
     }
 
     @Test
     public void testWhileLoop() throws StateMachineException {
-        Node tree = parser.buildTree("""
+        Node tree = parser.parse("""
             PROGRAM while_loop;
             VAR i: INTEGER;
             BEGIN
@@ -41,7 +41,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testThenBranch() throws StateMachineException {
-        Node tree = parser.buildTree("""
+        Node tree = parser.parse("""
             PROGRAM then_branch;
             VAR i: INTEGER;
             BEGIN
@@ -57,7 +57,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testSkipThenBranch() throws StateMachineException {
-        Node tree = parser.buildTree("""
+        Node tree = parser.parse("""
             PROGRAM skip_then;
             VAR i: INTEGER;
             BEGIN
@@ -73,7 +73,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testElseBranch() throws StateMachineException {
-        Node tree = parser.buildTree("""
+        Node tree = parser.parse("""
             PROGRAM else_branch;
             VAR i: INTEGER;
             BEGIN
@@ -91,7 +91,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testForLoop() throws StateMachineException {
-        Node tree = parser.buildTree("""
+        Node tree = parser.parse("""
             PROGRAM for_loop;
             VAR i, sum: INTEGER;
             BEGIN
@@ -110,7 +110,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testForLoopOneIteration() throws StateMachineException {
-        Node tree = parser.buildTree("""
+        Node tree = parser.parse("""
             PROGRAM for_loop_one_iteration;
             VAR i, sum: INTEGER;
             BEGIN
@@ -129,7 +129,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testForLoopNoIterations() throws StateMachineException {
-        Node tree = parser.buildTree("""
+        Node tree = parser.parse("""
             PROGRAM for_loop_no_iterations;
             VAR i, sum: INTEGER;
             BEGIN
@@ -148,7 +148,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testForLoopWithStep() throws StateMachineException {
-        Node tree = parser.buildTree("""
+        Node tree = parser.parse("""
             PROGRAM for_loop_with_step;
             VAR i, sum: INTEGER;
             BEGIN
@@ -168,7 +168,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testRepeatLoop() throws StateMachineException {
-        Node tree = parser.buildTree("""
+        Node tree = parser.parse("""
             PROGRAM for_loop;
             VAR sum: INTEGER;
             BEGIN
@@ -185,7 +185,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testFunctionCallWithoutParameters() throws StateMachineException {
-        Node tree = parser.buildTree("""
+        Node tree = parser.parse("""
             PROGRAM function_call_without_parameters;
             VAR result : INTEGER;
 
@@ -205,7 +205,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testFunctionCallWithParameters() throws StateMachineException {
-        Node tree = parser.buildTree("""
+        Node tree = parser.parse("""
             PROGRAM function_call_with_parameters;
             VAR result : INTEGER;
 
@@ -230,7 +230,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testProcedureCallWithInputParameter() throws StateMachineException {
-        Node tree = parser.buildTree("""
+        Node tree = parser.parse("""
             PROGRAM procedure_call_with_input;
             VAR result : INTEGER;
 
@@ -250,7 +250,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testProcedureCallWithInOutParameter() throws StateMachineException {
-        Node tree = parser.buildTree("""
+        Node tree = parser.parse("""
             PROGRAM procedure_call_with_inout;
             VAR result : INTEGER;
 
@@ -271,7 +271,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testLocalVariable() throws StateMachineException {
-        Node tree = parser.buildTree("""
+        Node tree = parser.parse("""
             PROGRAM procedure_call_local;
             VAR result : INTEGER;
 
@@ -294,7 +294,7 @@ public class PascalCompilerTest {
 
     @Test
     public void testArray() throws StateMachineException {
-        Node tree = parser.buildTree("""
+        Node tree = parser.parse("""
             PROGRAM array_var;
             VAR integers : ARRAY [0..1] OF INTEGER;
                 i : INTEGER;
@@ -346,7 +346,7 @@ public class PascalCompilerTest {
         return new java.lang.Object();
     }
 
-    private GrammarParser parser;
+    private Parser parser;
     private PascalCompiler compiler;
 
 }

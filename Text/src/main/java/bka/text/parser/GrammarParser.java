@@ -10,11 +10,15 @@ import java.util.regex.*;
 public class GrammarParser {
 
     public GrammarParser(Map<String, List<List<String>>> grammar) {
-        this.grammar = new Grammar(grammar, Collections.emptyList());
+        this(new Grammar(grammar, Collections.emptyList()));
     }
 
     public GrammarParser(Map<String, List<List<String>>> grammar, Collection<CommentBrackets> commentBrackets) {
-        this.grammar = new Grammar(grammar, commentBrackets);
+        this(new Grammar(grammar, commentBrackets));
+    }
+
+    public GrammarParser(Grammar grammar) {
+        this.grammar = Objects.requireNonNull(grammar);
     }
 
     public String parse(String sourceCode, String startSymbol) {
@@ -25,6 +29,10 @@ public class GrammarParser {
             return "Error: " + tree.getError().get();
         }
         return "Program parsed successfully in " + (duration / 1000) + " microseconds";
+    }
+
+    public Node buildTree(String sourceCode) {
+        return buildTree(sourceCode, grammar.getStartSymbol().get());
     }
 
     public Node buildTree(String sourceCode, String startSymbol) {

@@ -5,6 +5,7 @@
 package bka.text.parser.pascal;
 
 import bka.text.parser.*;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.*;
 import org.junit.jupiter.api.*;
@@ -17,8 +18,8 @@ import uml.structure.*;
 public class PascalCompilerTest {
 
     @BeforeEach
-    public void init() {
-        parser = new PascalParser();
+    public void init() throws IOException {
+        parser = new GrammarParser(GrammarLoader.loadJsonFile("resources/grammars/pascal-grammar.json"));
         compiler = new PascalCompiler();
     }
 
@@ -345,7 +346,7 @@ public class PascalCompilerTest {
         return new java.lang.Object();
     }
 
-    private PascalParser parser;
+    private GrammarParser parser;
     private PascalCompiler compiler;
 
 }

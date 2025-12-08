@@ -1,0 +1,8 @@
+{
+    "rules": {
+        "S": [
+            ["a"]
+        ]
+    },
+    "start-symbol": "S"
+}

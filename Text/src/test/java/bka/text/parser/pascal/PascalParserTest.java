@@ -1,6 +1,7 @@
 package bka.text.parser.pascal;
 
 import bka.text.parser.*;
+import java.io.IOException;
 import java.util.*;
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -11,8 +12,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class PascalParserTest {
 
     @BeforeEach
-    public void init() {
-        parser = new PascalParser();
+    public void init() throws IOException {
+        parser = new GrammarParser(GrammarLoader.loadJsonFile("resources/grammars/pascal-grammar.json"));
     }
 
     @Test
@@ -540,57 +541,57 @@ public class PascalParserTest {
 
     @Test
     public void testKeywordForProgramName() {
-        String output = parser.parse("""
+        Node tree = parser.buildTree("""
             PROGRAM case;
             BEGIN
             END.
             """);
-        assertError(output);
+        assertTrue(tree.getError().isPresent());
     }
 
     @Test
     public void testMissingSemicolon() {
-        String output = parser.parse("""
+        Node tree = parser.buildTree("""
             PROGRAM program_name(*;*)
             BEGIN
             END.
             """);
-        assertError(output);
+        assertTrue(tree.getError().isPresent());
     }
 
     @Test
     public void testMissingBegin() {
-        String output = parser.parse("""
+        Node tree = parser.buildTree("""
             PROGRAM program_name;
             (*BEGIN*)
             END.
             """);
-        assertError(output);
+        assertTrue(tree.getError().isPresent());
     }
 
     @Test
     public void testMissingEnd() {
-        String output = parser.parse("""
+        Node tree = parser.buildTree("""
             PROGRAM program_name;
             BEGIN
             (*END*).
             """);
-        assertError(output);
+        assertTrue(tree.getError().isPresent());
     }
 
     @Test
     public void testMissingEndDot() {
-        String output = parser.parse("""
+        Node tree = parser.buildTree("""
             PROGRAM program_name ;
             BEGIN
             END(*.*)
             """);
-        assertError(output);
+        assertTrue(tree.getError().isPresent());
     }
 
     @Test
     public void testMissingBracket() {
-        String output = parser.parse("""
+        Node tree = parser.buildTree("""
             PROGRAM program_name;
 
             (* p1 *)
@@ -603,11 +604,7 @@ public class PascalParserTest {
             p1(result, 0);
             END.
             """);
-        assertError(output);
-    }
-
-    private static void assertError(String output) {
-        assertTrue(output.startsWith("Error"));
+        assertTrue(tree.getError().isPresent());;
     }
 
     private static void assertSuccess(Node actual) {
@@ -724,6 +721,6 @@ public class PascalParserTest {
     }
 
 
-    private PascalParser parser;
+    private GrammarParser parser;
 
 }

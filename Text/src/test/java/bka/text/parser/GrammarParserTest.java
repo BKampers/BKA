@@ -265,7 +265,7 @@ public class GrammarParserTest {
         GrammarParser parser = new GrammarParser(
             Map.of(
                 "expression", List.of(
-                    List.of("term", "addition")),
+                    List.of("term", "additive-operation")),
                 "term", List.of(
                     List.of("factor", "multiplication")),
                 "factor", List.of(
@@ -278,10 +278,10 @@ public class GrammarParserTest {
                     List.of("\\*"),
                     List.of("\\/"),
                     List.of("\\%")),
-                "addition", List.of(
-                    List.of("adding-operator", "term", "addition"),
+                "additive-operation", List.of(
+                    List.of("additive-operator", "term", "additive-operation"),
                     List.of()),
-                "adding-operator", List.of(
+                "additive-operator", List.of(
                     List.of("\\+"),
                     List.of("\\-"))));
         assertEqualNodes(
@@ -295,8 +295,8 @@ public class GrammarParserTest {
                         new ExpectedNode("factor", 2,
                             new ExpectedNode("\\d+", 2, 3)),
                         new ExpectedNode("multiplication", 3, 3))),
-                new ExpectedNode("addition", 3,
-                    new ExpectedNode("adding-operator", 3,
+                new ExpectedNode("additive-operation", 3,
+                    new ExpectedNode("additive-operator", 3,
                         new ExpectedNode("\\+", 3, 4)),
                     new ExpectedNode("term", 4,
                         new ExpectedNode("factor", 4,
@@ -307,7 +307,7 @@ public class GrammarParserTest {
                             new ExpectedNode("factor", 6,
                                 new ExpectedNode("\\d+", 6, 7)),
                             new ExpectedNode("multiplication", 7, 7))),
-                    new ExpectedNode("addition", 7, 7))),
+                    new ExpectedNode("additive-operation", 7, 7))),
             parser.buildTree("1*2+3*4", "expression"));
         assertEqualNodes(
             new ExpectedNode("expression", 0,
@@ -324,14 +324,14 @@ public class GrammarParserTest {
                                     new ExpectedNode("factor", 3,
                                         new ExpectedNode("\\d+", 3, 4)),
                                     new ExpectedNode("multiplication", 4, 4)),
-                                new ExpectedNode("addition", 4,
-                                    new ExpectedNode("adding-operator", 4,
+                                new ExpectedNode("additive-operation", 4,
+                                    new ExpectedNode("additive-operator", 4,
                                         new ExpectedNode("\\+", 4, 5)),
                                     new ExpectedNode("term", 5,
                                         new ExpectedNode("factor", 5,
                                             new ExpectedNode("\\d+", 5, 6)),
                                         new ExpectedNode("multiplication", 6, 6)),
-                                    new ExpectedNode("addition", 6, 6))),
+                                    new ExpectedNode("additive-operation", 6, 6))),
                             new ExpectedNode("\\)", 6, 7)),
                         new ExpectedNode("multiplication", 7,
                             new ExpectedNode("multiplying-operator", 7,
@@ -339,7 +339,7 @@ public class GrammarParserTest {
                             new ExpectedNode("factor", 8,
                                 new ExpectedNode("\\d+", 8, 9)),
                             new ExpectedNode("multiplication", 9, 9)))),
-                new ExpectedNode("addition", 9, 9)),
+                new ExpectedNode("additive-operation", 9, 9)),
             parser.buildTree("1*(2+3)*4", "expression"));
     }
 
@@ -474,7 +474,7 @@ public class GrammarParserTest {
         @Override
         public String toString() {
             if (error.isEmpty()) {
-                return String.format("'%s' (%d .. %d)", symbol, start, end);
+                return String.format("'%s' %d..%d", symbol, start, end);
             }
             return String.format("%s: '%s' %d..%d", error.get(), symbol, start, end);
         }
@@ -485,6 +485,5 @@ public class GrammarParserTest {
         private final List<PrintableNode> children;
         private final Optional<String> error;
     }
-
 
 }

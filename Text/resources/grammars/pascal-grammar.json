@@ -1,0 +1,164 @@
+{
+    "rules": {
+        "Program": [
+            [ "PROGRAM\\b", "Identifier", ";", "Declarations", "CompoundStatement", "\\." ]
+        ],
+        "Declarations": [
+            [ "ConstDeclaration", "Declarations" ], 
+            [ "TypeDeclaration", "Declarations" ],
+            [ "VariableDeclaration", "Declarations" ],
+            [ "ProcedureDeclaration", "Declarations" ],
+            [ "FunctionDeclaration", "Declarations" ],
+            [ ]
+        ],
+        "ConstDeclaration": [
+            ["CONST\\b", "Identifier", "\\=", "Expression", ";" ]
+        ],
+        "TypeDeclaration": [
+            [ "TYPE\\b", "Identifier", "\\=", "TypeDeclarationExpression", ";" ]
+        ],
+        "VariableDeclaration": [
+            [ "VAR\\b", "VariableDeclarationList", ";" ]
+        ],
+        "ProcedureDeclaration": [
+            [ "PROCEDURE\\b", "Identifier", "ParameterDeclaration", ";", "Declarations", "CompoundStatement", ";" ]
+        ],
+        "FunctionDeclaration": [
+            [ "FUNCTION\\b", "Identifier", "ParameterDeclaration", "\\:", "TypeExpression", ";", "Declarations", "CompoundStatement", ";" ]
+        ],
+        "ParameterDeclaration": [
+            [ "\\(", "ParameterList", "\\)" ],
+            [ ]
+        ],
+        "ParameterList": [
+            [ "ParameterExpression", ";", "ParameterList" ],
+            [ "ParameterExpression" ]
+        ],
+        "ParameterExpression": [
+            [ "Identifier", "\\:", "ParameterTypeExpression" ],
+            [ "VAR\\b", "Identifier", "\\:", "ParameterTypeExpression" ]
+        ],
+        "ParameterTypeExpression": [
+            [ "TypeExpression" ],
+            [ "ARRAY\\b", "OF\\b", "TypeExpression" ]
+        ],
+        "VariableDeclarationList": [
+            [ "VariableDeclarationExpression", ";", "VariableDeclarationList" ],
+            [ "VariableDeclarationExpression" ]
+        ],
+        "VariableDeclarationExpression": [
+            [ "IdentifierList", "\\:", "TypeDeclarationExpression" ]
+        ],
+        "TypeDeclarationExpression": [
+            [ "RangeExpression" ],
+            [ "TypeExpression" ], 
+            [ "\\(", "IdentifierList", "\\)" ],
+            [ "ARRAY\\b", "\\[", "RangeExpression", "\\]", "OF\\b", "TypeExpression" ],
+            [ "RECORD\\b", "VariableDeclarationList", "END\\b" ]
+        ],
+        "TypeExpression": [
+            [ "BOOLEAN\\b" ],
+            [ "INTEGER\\b" ],
+            [ "REAL\\b" ],
+            [ "STRING\\b" ],
+            [ "Identifier" ]
+        ],
+        "IdentifierList": [
+            [ "Identifier", "\\,", "IdentifierList" ],
+            [ "Identifier" ]
+        ],
+        "RangeExpression": [
+            [ "IntegerLiteral", "\\.\\.", "IntegerLiteral" ],
+            [ "Identifier", "\\.\\.", "Identifier" ]
+        ],
+        "CompoundStatement": [
+            [ "BEGIN\\b", "Statements", "END\\b" ]
+        ],
+        "Statements": [
+            [ "Statement", ";", "Statements" ],
+            [ "Statement" ]
+        ],
+        "Statement": [
+            [ "Assignable", "\\:\\=", "Expression" ],
+            [ "Call" ],
+            [ "Identifier" ],
+            [ "IF\\b", "Expression", "THEN\\b", "Statement", "ElseClause" ],
+            [ "WHILE\\b", "Expression", "DO\\b", "Statement" ],
+            [ "FOR\\b", "Identifier", "\\:\\=", "Expression", "TO\\b", "Expression", "DO\\b", "Statement" ],
+            [ "REPEAT\\b", "Statements", "UNTIL\\b", "Expression" ],
+            [ "CompoundStatement" ],
+            [ ]
+        ],
+        "ElseClause": [
+            [ "ELSE\\b", "Statement" ],
+            [ ]
+        ],
+        "Call": [
+            [ "Identifier", "\\(", "ArgumentList", "\\)" ]
+        ],
+        "ArgumentList": [
+            [ "Expression", "\\,", "ArgumentList" ],
+            [ "Expression" ]
+        ],
+        "Assignable": [
+            [ "Identifier", "\\[", "Expression", "\\]" ],
+            [ "Identifier", "\\.", "Identifier" ],
+            [ "Identifier" ]
+        ],
+        "Expression": [
+            [ "Call" ],
+            [ "Identifier" ],
+            [ "Literal" ],
+            [ "UnaryOperator", "Expression" ],
+            [ "\\(", "Expression", "\\)" ],
+            [ "Expression", "BinaryOperator", "Expression" ],
+            [ "Expression", "\\.", "Identifier"],
+            [ "Expression", "\\[", "Expression", "\\]" ]
+        ],
+        "UnaryOperator": [
+            ["\\-"],
+            ["NOT\\b"]
+        ],
+        "BinaryOperator": [
+            ["\\^"],
+            ["\\*"],
+            ["\\/"],
+            ["DIV\\b"],
+            ["MOD\\b"],
+            ["\\+"],
+            ["\\-"],
+            ["\\="],
+            ["\\<\\="],
+            ["\\>\\="],
+            ["\\<\\>"],
+            ["\\<"],
+            ["\\>"],
+            ["AND\\b"],
+            ["OR\\b"],
+            ["XOR\\b"]
+        ],
+        "Identifier": [
+            [ "\\b(?!AND\\b|ARRAY\\b|BEGIN\\b|BOOLEAN\\b|BREAK\\b|CASE\\b|CONST\\b|DO\\b|ELSE\\b|END\\b|FALSE\\b|FOR\\b|FUNCTION\\b|INTEGER\\b|IF\\b|NOT\\b|OF\\b|OR\\b|OTHERWISE\\b|PROCEDURE\\b|PROGRAM\\b|REAL\\b|RECORD\\b|REPEAT\\b|STRING\\b|THEN\\b|TO\\b|TRUE\\b|TYPE\\b|UNTIL\\b|VAR\\b|WHILE\\b|XOR\\b)[A-Z_]+[A-Z_0-9]*" ]
+        ],
+        "Literal": [
+            [ "RealLiteral" ],
+            [ "IntegerLiteral" ],
+            [ "'", "[^']*", "'" ],
+            [ "FALSE\\b" ],
+            [ "TRUE\\b" ]
+        ],
+        "IntegerLiteral": [
+            [ "\\d+" ],
+            [ "\\$[0-9A-F]+" ]
+        ],
+        "RealLiteral": [
+            [ "\\d+\\.\\d*(E[\\-\\+]?\\d+)?" ]
+        ]
+    },
+    "start-symbol": "Program",
+    "comments": [{
+            "start": "(*",
+            "end": "*)"
+        }
+    ]
+}

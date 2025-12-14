@@ -11,7 +11,7 @@ public class ParserTest {
 
     @Test
     public void testSimpleGrammar() {
-        Parser parser = createParser(Map.of("S", List.of(List.of("a"))), List.of(CommentBrackets.blockComment("/*", "*/"), CommentBrackets.lineComment("//")));
+        Parser parser = createParser(Map.of("S", List.of(Sentential.of("a"))), List.of(CommentBrackets.blockComment("/*", "*/"), CommentBrackets.lineComment("//")));
         assertEqualNodes(
             new ExpectedNode("S", 0,
                 new ExpectedNode("a", 0, 1)),
@@ -43,7 +43,7 @@ public class ParserTest {
 
     @Test
     public void testGrammarWithOneSentential() {
-        Parser parser = createParser(Map.of("S", List.of(List.of("a", "b"))));
+        Parser parser = createParser(Map.of("S", List.of(Sentential.of("a", "b"))));
         assertEqualNodes(
             new ExpectedNode("S", 0,
                 new ExpectedNode("a", 0, 1),
@@ -70,8 +70,8 @@ public class ParserTest {
     public void testGrammarWithTwoDistictSententials() {
         Parser parser = createParser(
             Map.of("S", List.of(
-                List.of("a", "b"),
-                List.of("c", "d"))));
+                Sentential.of("a", "b"),
+                Sentential.of("c", "d"))));
         assertEqualNodes(
             new ExpectedNode("S", 0,
                 new ExpectedNode("a", 0, 1),
@@ -88,8 +88,8 @@ public class ParserTest {
     public void testGrammarWithTwoOverlappingHeads() {
         Parser parser = createParser(
             Map.of("S", List.of(
-                List.of("a", "b"),
-                List.of("a", "c"))));
+                Sentential.of("a", "b"),
+                Sentential.of("a", "c"))));
         assertEqualNodes(
             new ExpectedNode("S", 0,
                 new ExpectedNode("a", 0, 1),
@@ -106,8 +106,8 @@ public class ParserTest {
     public void testGrammarWithTwoOverlappingTails() {
         Parser parser = createParser(
             Map.of("S", List.of(
-                List.of("a", "b"),
-                List.of("c", "b"))));
+                Sentential.of("a", "b"),
+                Sentential.of("c", "b"))));
         assertEqualNodes(
             new ExpectedNode("S", 0,
                 new ExpectedNode("a", 0, 1),
@@ -124,9 +124,9 @@ public class ParserTest {
     public void testGrammarWithThreeNonterminals() {
         Parser parser = createParser(
             Map.of(
-                "S", List.of(List.of("T"), List.of("U")),
-                "T", List.of(List.of("a", "b")),
-                "U", List.of(List.of("c", "d"))));
+                "S", List.of(Sentential.of("T"), Sentential.of("U")),
+                "T", List.of(Sentential.of("a", "b")),
+                "U", List.of(Sentential.of("c", "d"))));
         assertEqualNodes(
             new ExpectedNode("S", 0,
                 new ExpectedNode("T", 0,
@@ -146,11 +146,11 @@ public class ParserTest {
         Parser parser = createParser(
             Map.of(
                 "List", List.of(
-                    List.of("\\{", "Sequence", "\\}"),
-                    List.of("\\{", "\\}")),
+                    Sentential.of("\\{", "Sequence", "\\}"),
+                    Sentential.of("\\{", "\\}")),
                 "Sequence", List.of(
-                    List.of("\\d+", "\\,", "Sequence"),
-                    List.of("\\d+"))));
+                    Sentential.of("\\d+", "\\,", "Sequence"),
+                    Sentential.of("\\d+"))));
         assertEqualNodes(
             new ExpectedNode("List", 0,
                 new ExpectedNode("\\{", 0, 1),
@@ -187,11 +187,11 @@ public class ParserTest {
         Parser parser = createParser(
             Map.of(
                 "Body", List.of(
-                    List.of("BEGIN", "Sequence", "END")),
+                    Sentential.of("BEGIN", "Sequence", "END")),
                 "Sequence", List.of(
-                    List.of("\\d+", "\\;", "Sequence"),
-                    List.of("\\d+"),
-                    List.of())));
+                    Sentential.of("\\d+", "\\;", "Sequence"),
+                    Sentential.of("\\d+"),
+                    Sentential.of())));
         assertEqualNodes(
             new ExpectedNode("Body", 0,
                 new ExpectedNode("BEGIN", 0, 5),
@@ -243,8 +243,8 @@ public class ParserTest {
         Parser parser = createParser(
             Map.of(
                 "Expression", List.of(
-                    List.of("\\w+"),
-                    List.of("Expression", "\\.", "Expression")
+                    Sentential.of("\\w+"),
+                    Sentential.of("Expression", "\\.", "Expression")
                 )));
         assertEqualNodes(
             new ExpectedNode("Expression", 0,
@@ -265,25 +265,25 @@ public class ParserTest {
         Parser parser = createParser(
             Map.of(
                 "expression", List.of(
-                    List.of("term", "additive-operation")),
+                    Sentential.of("term", "additive-operation")),
                 "term", List.of(
-                    List.of("factor", "multiplication")),
+                    Sentential.of("factor", "multiplication")),
                 "factor", List.of(
-                    List.of("\\d+"),
-                    List.of("\\(", "expression", "\\)")),
+                    Sentential.of("\\d+"),
+                    Sentential.of("\\(", "expression", "\\)")),
                 "multiplication", List.of(
-                    List.of("multiplying-operator", "factor", "multiplication"),
-                    List.of()),
+                    Sentential.of("multiplying-operator", "factor", "multiplication"),
+                    Sentential.of()),
                 "multiplying-operator", List.of(
-                    List.of("\\*"),
-                    List.of("\\/"),
-                    List.of("\\%")),
+                    Sentential.of("\\*"),
+                    Sentential.of("\\/"),
+                    Sentential.of("\\%")),
                 "additive-operation", List.of(
-                    List.of("additive-operator", "term", "additive-operation"),
-                    List.of()),
+                    Sentential.of("additive-operator", "term", "additive-operation"),
+                    Sentential.of()),
                 "additive-operator", List.of(
-                    List.of("\\+"),
-                    List.of("\\-"))));
+                    Sentential.of("\\+"),
+                    Sentential.of("\\-"))));
         assertEqualNodes(
             new ExpectedNode("expression", 0,
                 new ExpectedNode("term", 0,
@@ -343,12 +343,12 @@ public class ParserTest {
             parser.parse("1*(2+3)*4", "expression"));
     }
 
-    private static Parser createParser(Map<String, List<List<String>>> rules, List<CommentBrackets> comments) {
-        return new Parser(Grammar.of(rules, comments));
+    private static Parser createParser(Map<String, List<Sentential>> rules, List<CommentBrackets> comments) {
+        return new Parser(Grammar.of(new Rules(rules), comments));
     }
 
-    private static Parser createParser(Map<String, List<List<String>>> rules) {
-        return new Parser(Grammar.of(rules));
+    private static Parser createParser(Map<String, List<Sentential>> rules) {
+        return new Parser(Grammar.of(new Rules(rules)));
     }
 
     private static void assertEqualNodes(PrintableNode expected, Node actual) {

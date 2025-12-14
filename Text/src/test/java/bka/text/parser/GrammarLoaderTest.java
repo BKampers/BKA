@@ -12,8 +12,8 @@ public class GrammarLoaderTest {
     @Test
     public void testSimpleGrammar() throws IOException {
         Grammar grammar = GrammarLoader.loadJsonFile("src/test/resources/parser/simple-grammar.json");
-        assertEquals(Set.of("S"), grammar.getNonterminals());
-        assertEquals(List.of(List.of("a")), grammar.getSententials("S"));
+        assertEquals(Set.of("S"), grammar.getRules().getNonterminals());
+        assertEquals(List.of(List.of("a")), asLists(grammar.getRules().getSententials("S")));
         assertEquals(Optional.of("S"), grammar.getStartSymbol());
         assertTrue(grammar.getCommentBrackets().isEmpty());
     }
@@ -30,6 +30,10 @@ public class GrammarLoaderTest {
         Optional<CommentBrackets> lineComment = brackets.stream().filter(isLineComment).findAny();
         assertTrue(lineComment.isPresent());
         assertEquals("//", lineComment.get().getStart());
+    }
+
+    private static List<List<String>> asLists(List<Sentential> sententials) {
+        return sententials.stream().map(Sentential::getSymbols).toList();
     }
 
     private static final Predicate<CommentBrackets> isBlockComment = CommentBrackets::isBlockComment;

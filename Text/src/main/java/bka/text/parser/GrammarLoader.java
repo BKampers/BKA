@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.*;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
+import java.util.stream.*;
 
 /**
  */
@@ -17,9 +18,9 @@ public class GrammarLoader {
     public static Grammar loadJsonFile(String filename) throws IOException {
         GrammarTransporter grammar = new ObjectMapper().readValue(Paths.get(filename).toFile(), GrammarTransporter.class);
         if (grammar.startSymbol == null) {
-            return Grammar.of(grammar.rules, grammar.unmarshallCommentBrackets());
+            return Grammar.of(grammar.unmarshallRules(), grammar.unmarshallCommentBrackets());
         }
-        return Grammar.of(grammar.rules, grammar.startSymbol, grammar.unmarshallCommentBrackets());
+        return Grammar.of(grammar.unmarshallRules(), grammar.startSymbol, grammar.unmarshallCommentBrackets());
     }
 
     private record GrammarTransporter(
@@ -27,6 +28,13 @@ public class GrammarLoader {
         @JsonProperty("start-symbol") String startSymbol,
         @JsonProperty("comments")
         Collection<CommentBracketsTransporter> comments) {
+
+        public Rules unmarshallRules() {
+            return new Rules(rules.entrySet().stream()
+                .collect(Collectors.toUnmodifiableMap(
+                    Map.Entry::getKey,
+                    entry -> entry.getValue().stream().map(Sentential::new).toList())));
+        }
 
         public Collection<CommentBrackets> unmarshallCommentBrackets() {
             return (comments == null)

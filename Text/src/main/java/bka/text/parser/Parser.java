@@ -18,7 +18,7 @@ public class Parser {
     }
 
     public Node parse(String sourceCode, String startSymbol) {
-        if (!grammar.getNonterminals().contains(startSymbol)) {
+        if (!grammar.getRules().getNonterminals().contains(startSymbol)) {
             throw new IllegalArgumentException("Invalid symbol: " + startSymbol);
         }
         source = sourceCode;
@@ -57,9 +57,9 @@ public class Parser {
         if (headIndex < 0) {
             return List.of(new Node(source, nonterminal, index, UNTERMINATED_COMMENT));
         }
-        for (List<String> sentential : grammar.getSententials(nonterminal)) {
+        for (Sentential sentential : grammar.getSententials(nonterminal)) {
             if (tree == null) {
-                List<Node> resolution = resolve(headIndex, sentential);
+                List<Node> resolution = resolve(headIndex, sentential.getSymbols());
                 Optional<Node> error = findError(resolution);
                 if (error.isEmpty()) {
                     tree = resolution;
@@ -69,7 +69,7 @@ public class Parser {
                     errorTree = resolution;
                 }
             }
-            else if (sentential.size() > 1 && nonterminal.equals(sentential.getFirst())) {
+            else if (sentential.length() > 1 && nonterminal.equals(sentential.getSymbols().getFirst())) {
                 final int tailIndex = skipWhitespaceAndComment(tree.getLast().getEnd());
                 if (tailIndex < 0) {
                     return List.of(new Node(source, nonterminal, tree.getLast().getEnd(), UNTERMINATED_COMMENT));
@@ -95,8 +95,8 @@ public class Parser {
         return tree;
     }
 
-    private static List<String> tail(List<String> sentential) {
-        return sentential.stream().skip(1).toList();
+    private static List<String> tail(Sentential sentential) {
+        return sentential.getSymbols().stream().skip(1).toList();
     }
 
     private List<Node> resolve(int index, List<String> sentential) {
@@ -118,7 +118,7 @@ public class Parser {
     }
 
     private Node createNode(int index, String symbol) {
-        if (grammar.getNonterminals().contains(symbol)) {
+        if (grammar.getRules().getNonterminals().contains(symbol)) {
             return createTreeNode(index, symbol);
         }
         return createMatchNode(symbol, index);

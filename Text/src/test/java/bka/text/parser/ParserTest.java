@@ -19,11 +19,7 @@ public class ParserTest {
         assertEqualNodes(
             new ExpectedNode("S", 0,
                 new ExpectedNode("a", 36, 37)),
-            parser.parse("// Line comment\n/* Block comment */ a // Line comment without line end", "S"));
-        assertEqualNodes(
-            new ExpectedNode("S", 0,
-                new ExpectedNode("a", 1, 2)),
-            parser.parse(" a /* Block comment at end of source */", "S"));
+            parser.parse("// Line comment\n/* Block comment */ a /* Block comment immediately followed by another comment */// Line comment without line end", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0, "Unterminated comment",
                 new ExpectedNode("a", 0, 1),

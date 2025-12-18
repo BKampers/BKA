@@ -5,6 +5,7 @@
 package bka.text.parser;
 
 import java.util.*;
+import java.util.function.*;
 import java.util.regex.*;
 
 public class Parser {
@@ -50,49 +51,59 @@ public class Parser {
     }
 
     private List<Node> buildTree(int index, String nonterminal) {
-        List<Node> tree = null;
-        List<Node> errorTree = null;
-        Node errorNode = null;
-        final int headIndex = skipWhitespaceAndComment(index);
+        int headIndex = skipWhitespaceAndComment(index);
         if (headIndex < 0) {
             return List.of(new Node(source, nonterminal, index, UNTERMINATED_COMMENT));
         }
-        for (Sentential sentential : grammar.getSententials(nonterminal)) {
-            if (tree == null) {
-                List<Node> resolution = resolve(headIndex, sentential.getSymbols());
-                Optional<Node> error = findError(resolution);
-                if (error.isEmpty()) {
-                    tree = resolution;
-                }
-                else if (errorNode == null || error.get().getStart() >= errorNode.getStart()) {
-                    errorNode = error.get();
-                    errorTree = resolution;
-                }
+        List<Node> resolution = resolve(nonterminal, headIndex);
+        if (findError(resolution).isPresent()) {
+            return resolution;
+        }
+        List<Node> recursiveResolution = resolveLeftRecursive(nonterminal, headIndex, resolution);
+        return (recursiveResolution != null) ? recursiveResolution : resolution;
+    }
+
+    private List<Node> resolve(String nonterminal, int headIndex) {
+        Node errorNode = null;
+        List<Node> errorTree = null;
+        for (Sentential sentential : grammar.getSententials(nonterminal).stream().filter(isLeftRecursive(nonterminal).negate()).toList()) {
+            List<Node> resolution = resolve(headIndex, sentential.getSymbols());
+            Optional<Node> error = findError(resolution);
+            if (error.isEmpty()) {
+                return resolution;
             }
-            else if (sentential.length() > 1 && nonterminal.equals(sentential.getSymbols().getFirst())) {
-                final int tailIndex = skipWhitespaceAndComment(tree.getLast().getEnd());
-                if (tailIndex < 0) {
-                    return List.of(new Node(source, nonterminal, tree.getLast().getEnd(), UNTERMINATED_COMMENT));
-                }
-                List<Node> resolution = resolve(tailIndex, tail(sentential));
-                Optional<Node> error = findError(resolution);
-                if (error.isEmpty()) {
-                    Node head = new Node(source, nonterminal, headIndex, tree);
-                    tree = new ArrayList<>();
-                    tree.add(head);
-                    tree.addAll(resolution);
-                    return tree;
-                }
-                else if (errorNode == null || error.get().getStart() >= errorNode.getStart()) {
-                    errorNode = error.get();
-                    errorTree = resolution;
-                }
+            if (errorNode == null || error.get().getStart() >= errorNode.getStart()) {
+                errorNode = error.get();
+                errorTree = resolution;
             }
         }
-        if (tree == null) {
-            return errorTree;
+        return errorTree;
+    }
+
+    private List<Node> resolveLeftRecursive(String nonterminal, int headIndex, List<Node> resolutionHead) {
+        List<Sentential> leftRecursiveSententials = grammar.getSententials(nonterminal).stream().filter(isLeftRecursive(nonterminal)).toList();
+        if (leftRecursiveSententials.isEmpty()) {
+            return null;
         }
-        return tree;
+        int tailIndex = skipWhitespaceAndComment(resolutionHead.getLast().getEnd());
+        if (tailIndex < 0) {
+            return List.of(new Node(source, nonterminal, resolutionHead.getLast().getEnd(), UNTERMINATED_COMMENT));
+        }
+        for (Sentential sentential : leftRecursiveSententials) {
+            List<Node> resolutionTail = resolve(tailIndex, tail(sentential));
+            if (findError(resolutionTail).isEmpty()) {
+                List<Node> resolution = new ArrayList<>();
+                Node head = new Node(source, nonterminal, headIndex, resolutionHead);
+                resolution.add(head);
+                resolution.addAll(resolutionTail);
+                return resolution;
+            }
+        }
+        return null;
+    }
+
+    private static Predicate<Sentential> isLeftRecursive(String nonterminal) {
+        return sentential -> sentential.length() > 1 && nonterminal.equals(sentential.getSymbols().getFirst());
     }
 
     private static List<String> tail(Sentential sentential) {

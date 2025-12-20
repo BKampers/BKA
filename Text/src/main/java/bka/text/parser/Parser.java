@@ -11,7 +11,10 @@ import java.util.regex.*;
 public class Parser {
 
     public Parser(Grammar grammar) {
-        this.grammar = Objects.requireNonNull(grammar);
+        if (grammar.hasSelfProducingRule()) {
+            throw new IllegalArgumentException("Grammar contains self-producing rule");
+        }
+        this.grammar = grammar;
     }
 
     public Node parse(String sourceCode) {
@@ -103,17 +106,17 @@ public class Parser {
     }
 
     private static Predicate<Sentential> isLeftRecursive(String nonterminal) {
-        return sentential -> sentential.length() > 1 && nonterminal.equals(sentential.getSymbols().getFirst());
+        return sentential -> Grammar.isLeftRecursiveRule(nonterminal, sentential);
     }
 
     private static List<String> tail(Sentential sentential) {
         return sentential.getSymbols().stream().skip(1).toList();
     }
 
-    private List<Node> resolve(int index, List<String> sentential) {
+    private List<Node> resolve(int index, List<String> symbols) {
         List<Node> resolution = new ArrayList<>();
         int sourceIndex = index;
-        for (String symbol : sentential) {
+        for (String symbol : symbols) {
             Node node = createNode(sourceIndex, symbol);
             resolution.add(node);
             if (node.getError().isPresent()) {
@@ -188,10 +191,9 @@ public class Parser {
     }
 
     private int skipComment(int index, CommentBrackets brackets) {
-        if (brackets.isBlockComment()) {
-            return skipBlockComment(index, brackets);
-        }
-        return skipLineComment(index, brackets);
+        return (brackets.isBlockComment())
+            ? skipBlockComment(index, brackets)
+            : skipLineComment(index, brackets);
     }
 
     private int skipBlockComment(int startIndex, CommentBrackets brackets) {
@@ -211,7 +213,7 @@ public class Parser {
     }
 
     private Optional<CommentBrackets> findCommentBrackets(int index) {
-        return grammar.getCommentBrackets().stream().filter(entry -> source.startsWith(entry.getStart(), index)).findAny();
+        return grammar.getCommentBrackets().stream().filter(brackets -> source.startsWith(brackets.getStart(), index)).findAny();
     }
 
     private String source;

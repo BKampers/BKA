@@ -43,22 +43,13 @@ public class Parser {
             return validateRemainder(tree);
         }
 
-        private Node validateRemainder(Node tree) {
-            int index = skipWhitespaceAndComment(tree.getEnd());
-            if (index < 0) {
-                return createErrorTree(tree, UNTERMINATED_COMMENT);
+        private Node createTreeNode(int index, String symbol) {
+            List<Node> children = buildTree(index, symbol);
+            Optional<Node> error = findError(children);
+            if (error.isPresent()) {
+                return new Node(source, symbol, index, children, error.get().getError().get());
             }
-            if (index < source.length()) {
-                return createErrorTree(tree, String.format(UNPARSABLE_CODE_AFTER_SYMBOL, tree.getSymbol()));
-            }
-            return tree;
-        }
-
-        private Node createErrorTree(Node tree, String message) {
-            Node error = new Node(source, "", tree.getEnd(), message);
-            List<Node> children = new ArrayList<>(tree.getChildren());
-            children.add(error);
-            return new Node(source, tree.getSymbol(), tree.getStart(), children, message);
+            return new Node(source, symbol, index, children);
         }
 
         private List<Node> buildTree(int index, String nonterminal) {
@@ -146,15 +137,6 @@ public class Parser {
             return createMatchNode(symbol, index);
         }
 
-        private Node createTreeNode(int index, String symbol) {
-            List<Node> children = buildTree(index, symbol);
-            Optional<Node> error = findError(children);
-            if (error.isPresent()) {
-                return new Node(source, symbol, index, children, error.get().getError().get());
-            }
-            return new Node(source, symbol, index, children);
-        }
-
         private Node createMatchNode(String symbol, int index) {
             Matcher matcher = matchers.computeIfAbsent(symbol, this::createMatcher);
             if (matcher.find(index) && matcher.start() == index) {
@@ -169,6 +151,24 @@ public class Parser {
 
         private Matcher createMatcher(String symbol) {
             return Pattern.compile(symbol, Pattern.CASE_INSENSITIVE).matcher(source);
+        }
+
+        private Node validateRemainder(Node tree) {
+            int index = skipWhitespaceAndComment(tree.getEnd());
+            if (index < 0) {
+                return createErrorTree(tree, UNTERMINATED_COMMENT);
+            }
+            if (index < source.length()) {
+                return createErrorTree(tree, String.format(UNPARSABLE_CODE_AFTER_SYMBOL, tree.getSymbol()));
+            }
+            return tree;
+        }
+
+        private Node createErrorTree(Node tree, String message) {
+            Node error = new Node(source, "", tree.getEnd(), message);
+            List<Node> children = new ArrayList<>(tree.getChildren());
+            children.add(error);
+            return new Node(source, tree.getSymbol(), tree.getStart(), children, message);
         }
 
         private int skipWhitespaceAndComment(int startIndex) {
@@ -224,7 +224,7 @@ public class Parser {
             return grammar.getCommentBrackets().stream().filter(brackets -> source.startsWith(brackets.getStart(), index)).findAny();
         }
 
-        private String source;
+        private final String source;
         private final Map<String, Matcher> matchers = new HashMap<>();
         private final Map<Integer, Integer> skips = new HashMap<>();
     }

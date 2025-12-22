@@ -77,13 +77,23 @@ public class SolarDecorator {
     }
 
     private Arc createArc(Map.Entry<Period, Arc> entry) {
-        Arc arc = new Arc();
-        arc.setStart(getStart(entry));
-        arc.setEnd(entry.getValue().getEnd());
+        Arc arc = new Arc() {
+            @Override
+            public OptionalDouble getStart() {
+                return getStartOf(entry);
+            }
+
+            @Override
+            public OptionalDouble getEnd() {
+                return entry.getValue().getEnd();
+            }
+        };
+//        arc.setStart(getStartOf(entry));
+//        arc.setEnd(entry.getValue().getEnd());
         return arc;
     }
 
-    private Optional<Double> getStart(Map.Entry<Period, Arc> entry) {
+    private OptionalDouble getStartOf(Map.Entry<Period, Arc> entry) {
         if (entry.getValue().getStart().isPresent()) {
             return entry.getValue().getStart();
         }
@@ -97,9 +107,9 @@ public class SolarDecorator {
     public void calculateArcs(LocalDate date) {
         if (!date.equals(this.date)) {
             synchronized (arcs) {
-                Optional<Double> start = decimalHour(solarEventCalculator.sunset(Period.NIGHTTIME.getZenith(), date));
+                OptionalDouble start = decimalHour(solarEventCalculator.sunset(Period.NIGHTTIME.getZenith(), date));
                 for (Period period : Period.values()) {
-                    Optional<Double> end = calculateEndTime(date, period);
+                    OptionalDouble end = calculateEndTime(date, period);
                     Logger.getLogger(SolarDecorator.class.getName()).log(Level.FINE, "{0}: {1} .. {2}", new Object[]{ period, start, end });
                     Arc arc = arcs.computeIfAbsent(period, p -> new Arc());
                     arc.setStart(start);
@@ -111,29 +121,29 @@ public class SolarDecorator {
         }
     }
 
-    public Optional<Double> calculateSolarNoonHour(LocalDate date) {
+    public OptionalDouble calculateSolarNoonHour(LocalDate date) {
         Optional<LocalDateTime> sunrise = solarEventCalculator.sunrise(Zenith.CIVIL, date);
         if (sunrise.isEmpty()) {
-            return Optional.empty();
+            return OptionalDouble.empty();
         }
         Optional<LocalDateTime> sunset = solarEventCalculator.sunset(Zenith.CIVIL, date);
         if (sunset.isEmpty()) {
-            return Optional.empty();
+            return OptionalDouble.empty();
         }
-        return Optional.of(decimalHour(sunrise.get().plusNanos(Duration.between(sunrise.get(), sunset.get()).toNanos() / 2)));
+        return OptionalDouble.of(decimalHour(sunrise.get().plusNanos(Duration.between(sunrise.get(), sunset.get()).toNanos() / 2)));
     }
 
-    private Optional<Double> calculateEndTime(LocalDate date, Period period) {
+    private OptionalDouble calculateEndTime(LocalDate date, Period period) {
         return decimalHour(period.isBeforeSunrise()
             ? solarEventCalculator.sunrise(period.getZenith(), date)
             : solarEventCalculator.sunset(period.getZenith(), date));
     }
 
-    private static Optional<Double> decimalHour(Optional<LocalDateTime> dateTime) {
+    private static OptionalDouble decimalHour(Optional<LocalDateTime> dateTime) {
         if (dateTime.isEmpty()) {
-            return Optional.empty();
+            return OptionalDouble.empty();
         }
-        return Optional.of(dateTime.get().getHour() + dateTime.get().getMinute() / 60d);
+        return OptionalDouble.of(dateTime.get().getHour() + dateTime.get().getMinute() / 60d);
     }
 
     private static double decimalHour(LocalDateTime dateTime) {
@@ -142,24 +152,24 @@ public class SolarDecorator {
 
     public class Arc {
 
-        private void setStart(Optional<Double> start) {
+        private void setStart(OptionalDouble start) {
             this.start = start;
         }
 
-        private void setEnd(Optional<Double> end) {
+        private void setEnd(OptionalDouble end) {
             this.end = end;
         }
 
-        public Optional<Double> getStart() {
+        public OptionalDouble getStart() {
             return start;
         }
 
-        public Optional<Double> getEnd() {
+        public OptionalDouble getEnd() {
             return end;
         }
 
-        private Optional<Double> start;
-        private Optional<Double> end;
+        private OptionalDouble start;
+        private OptionalDouble end;
     }
 
     private final SolarEventCalculator solarEventCalculator;

@@ -261,9 +261,9 @@ public class CalendarPanel extends javax.swing.JPanel {
             updateColors(currentPeriod, arcPaint);
         }
         solarDecorator.calculateArcs(LocalDate.now());
-        Optional<Double> solarNoon = decorator.get().calculateSolarNoonHour(LocalDate.now());
+        OptionalDouble solarNoon = decorator.get().calculateSolarNoonHour(LocalDate.now());
         if (solarNoon.isPresent()) {
-            solarNoonIndicator.setValue(solarNoon.get());
+            solarNoonIndicator.setValue(solarNoon.getAsDouble());
             solarNoonIndicatorPaint = SOLAR_NOON_INDICATOR_COLOR;
         }
         else {
@@ -283,8 +283,8 @@ public class CalendarPanel extends javax.swing.JPanel {
 
     private static Predicate<Map.Entry<SolarDecorator.Period, SolarDecorator.Arc>> lessThan(double currentHour) {
         return entry -> {
-            Optional<Double> end = entry.getValue().getEnd();
-            return end.isPresent() && currentHour < end.get();
+            OptionalDouble end = entry.getValue().getEnd();
+            return end.isPresent() && currentHour < end.getAsDouble();
         };
     }
 
@@ -327,7 +327,7 @@ public class CalendarPanel extends javax.swing.JPanel {
             if (arc.getStart().isPresent() && arc.getEnd().isPresent()) {
                 graphics.setPaint(paint);
                 graphics.setStroke(ARC_STROKE);
-                graphics.draw(clock.createArc(radius, arc.getStart().get(), arc.getEnd().get()));
+                graphics.draw(clock.createArc(radius, arc.getStart().getAsDouble(), arc.getEnd().getAsDouble()));
             }
         }
 

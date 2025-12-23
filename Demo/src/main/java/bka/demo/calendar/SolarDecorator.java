@@ -77,20 +77,16 @@ public class SolarDecorator {
     }
 
     private Arc createArc(Map.Entry<Period, Arc> entry) {
-        Arc arc = new Arc() {
+        return new Arc() {
             @Override
             public OptionalDouble getStart() {
                 return getStartOf(entry);
             }
-
             @Override
             public OptionalDouble getEnd() {
                 return entry.getValue().getEnd();
             }
         };
-//        arc.setStart(getStartOf(entry));
-//        arc.setEnd(entry.getValue().getEnd());
-        return arc;
     }
 
     private OptionalDouble getStartOf(Map.Entry<Period, Arc> entry) {

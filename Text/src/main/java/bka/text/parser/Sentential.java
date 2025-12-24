@@ -1,6 +1,7 @@
 package bka.text.parser;
 
 import java.util.*;
+import java.util.stream.*;
 
 /**
  * Right hand side of a production rule. The symbols replace the left hand side when the ruleis applied.
@@ -45,6 +46,11 @@ public class Sentential {
 
     public boolean isErasing() {
         return symbols.isEmpty();
+    }
+    
+    @Override    
+    public String toString() {
+        return symbols.stream().collect(Collectors.joining(", ", "[", "]"));
     }
 
     private final List<String> symbols;

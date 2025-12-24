@@ -66,20 +66,16 @@ public class Parser {
         }
 
         private List<Node> resolve(String nonterminal, int headIndex) {
-            Node errorNode = null;
-            List<Node> errorTree = null;
+            List<Node> errorList = new ArrayList<>();
             for (Sentential sentential : grammar.getSententials(nonterminal).stream().filter(isLeftRecursive(nonterminal).negate()).toList()) {
                 List<Node> resolution = resolve(headIndex, sentential.getSymbols());
                 Optional<Node> error = findError(resolution);
                 if (error.isEmpty()) {
                     return resolution;
                 }
-                if (errorNode == null || error.get().getStart() >= errorNode.getStart()) {
-                    errorNode = error.get();
-                    errorTree = resolution;
-                }
+                errorList.add(new Node(source, nonterminal, headIndex, resolution, error.get().getError().get()));
             }
-            return errorTree;
+            return errorList;
         }
 
         private List<Node> resolveLeftRecursive(String nonterminal, int headIndex, List<Node> resolutionHead) {

@@ -22,12 +22,14 @@ public class ParserTest {
             parser.parse("// Line comment\n/* Block comment */ a /* Block comment immediately followed by another comment */// Line comment without line end", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0, "Unterminated comment",
-                new ExpectedNode("a", 0, 1),
-                new ExpectedNode("", 1, "Unterminated comment")),
+                new ExpectedNode("S", 0, "Unterminated comment",
+                    new ExpectedNode("a", 0, 1),
+                    new ExpectedNode("", 1, "Unterminated comment"))),
             parser.parse("a /*", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0, "No match",
-                new ExpectedNode("a", 0, "No match")),
+                new ExpectedNode("S", 0, "No match",
+                    new ExpectedNode("a", 0, "No match"))),
             parser.parse("b", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0, "Unparsable code after symbol [S]",
@@ -52,13 +54,15 @@ public class ParserTest {
             parser.parse("a b", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0, "No match",
-                new ExpectedNode("a", 0, 1),
-                new ExpectedNode("b", 1, "No match")),
+                new ExpectedNode("S", 0, "No match",
+                    new ExpectedNode("a", 0, 1),
+                    new ExpectedNode("b", 1, 1, "No match"))),
             parser.parse("a", "S"));
         assertEqualNodes(
             new ExpectedNode("S", 0, "No match",
-                new ExpectedNode("a", 0, 1),
-                new ExpectedNode("b", 1, "No match")),
+                new ExpectedNode("S", 0, "No match",
+                    new ExpectedNode("a", 0, 1),
+                    new ExpectedNode("b", 1, 1, "No match"))),
             parser.parse("aa", "S"));
     }
 
@@ -171,10 +175,14 @@ public class ParserTest {
             parser.parse("{1,2}", "List"));
         assertEqualNodes(
             new ExpectedNode("List", 0, "No match",
-                new ExpectedNode("\\{", 0, 1),
-                new ExpectedNode("Sequence", 1,
-                    new ExpectedNode("\\d+", 1, 2)),
-                new ExpectedNode("\\}", 2, "No match")),
+                new ExpectedNode("List", 0, "No match",
+                    new ExpectedNode("\\{", 0, 1),
+                    new ExpectedNode("Sequence", 1,
+                        new ExpectedNode("\\d+", 1, 2)),
+                    new ExpectedNode("\\}", 2, "No match")),
+                new ExpectedNode("List", 0, "No match",
+                    new ExpectedNode("\\{", 0, 1),
+                    new ExpectedNode("\\}", 1, "No match"))),
             parser.parse("{1,}", "List"));
     }
 
@@ -436,6 +444,10 @@ public class ParserTest {
 
         public ExpectedNode(String symbol, int start, String error, ExpectedNode... children) {
             this(symbol, start, 0, Optional.of(error), children);
+        }
+
+        public ExpectedNode(String symbol, int start, int end, String error, ExpectedNode... children) {
+            this(symbol, start, end, Optional.of(error), children);
         }
 
         private ExpectedNode(String symbol, int start, int end, Optional<String> error, ExpectedNode... children) {

@@ -47,7 +47,7 @@ public class Parser {
             List<Node> children = buildTree(index, symbol);
             Optional<Node> error = findError(children);
             if (error.isPresent()) {
-                return new Node(source, symbol, index, children, error.get().getError().get());
+                return new Node(source, symbol, index, children, CANNOT_RESOLVE);
             }
             return new Node(source, symbol, index, children);
         }
@@ -69,11 +69,10 @@ public class Parser {
             List<Node> errorList = new ArrayList<>();
             for (Sentential sentential : grammar.getSententials(nonterminal).stream().filter(isLeftRecursive(nonterminal).negate()).toList()) {
                 List<Node> resolution = resolve(headIndex, sentential.getSymbols());
-                Optional<Node> error = findError(resolution);
-                if (error.isEmpty()) {
+                if (findError(resolution).isEmpty()) {
                     return resolution;
                 }
-                errorList.add(new Node(source, nonterminal, headIndex, resolution, error.get().getError().get()));
+                errorList.add(new Node(source, nonterminal, headIndex, resolution, NOT_REPLACEABLE));
             }
             return errorList;
         }
@@ -227,7 +226,9 @@ public class Parser {
 
     private final Grammar grammar;
 
+    private static final String CANNOT_RESOLVE = "Cannot resolve";
     private static final String NO_MATCH = "No match";
+    private static final String NOT_REPLACEABLE = "Not replaceable";
     private static final String UNPARSABLE_CODE_AFTER_SYMBOL = "Unparsable code after symbol [%s]";
     private static final String UNTERMINATED_COMMENT = "Unterminated comment";
 

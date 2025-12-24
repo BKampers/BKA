@@ -21,14 +21,14 @@ public class ParserTest {
                 new ExpectedNode("a", 36, 37)),
             parser.parse("// Line comment\n/* Block comment */ a /* Block comment immediately followed by another comment */// Line comment without line end", "S"));
         assertEqualNodes(
-            new ExpectedNode("S", 0, "Unterminated comment",
-                new ExpectedNode("S", 0, "Unterminated comment",
+            new ExpectedNode("S", 0, "Cannot resolve",
+                new ExpectedNode("S", 0, "Not replaceable",
                     new ExpectedNode("a", 0, 1),
                     new ExpectedNode("", 1, "Unterminated comment"))),
             parser.parse("a /*", "S"));
         assertEqualNodes(
-            new ExpectedNode("S", 0, "No match",
-                new ExpectedNode("S", 0, "No match",
+            new ExpectedNode("S", 0, "Cannot resolve",
+                new ExpectedNode("S", 0, "Not replaceable",
                     new ExpectedNode("a", 0, "No match"))),
             parser.parse("b", "S"));
         assertEqualNodes(
@@ -53,14 +53,14 @@ public class ParserTest {
                 new ExpectedNode("b", 2, 3)),
             parser.parse("a b", "S"));
         assertEqualNodes(
-            new ExpectedNode("S", 0, "No match",
-                new ExpectedNode("S", 0, "No match",
+            new ExpectedNode("S", 0, "Cannot resolve",
+                new ExpectedNode("S", 0, "Not replaceable",
                     new ExpectedNode("a", 0, 1),
                     new ExpectedNode("b", 1, 1, "No match"))),
             parser.parse("a", "S"));
         assertEqualNodes(
-            new ExpectedNode("S", 0, "No match",
-                new ExpectedNode("S", 0, "No match",
+            new ExpectedNode("S", 0, "Cannot resolve",
+                new ExpectedNode("S", 0, "Not replaceable",
                     new ExpectedNode("a", 0, 1),
                     new ExpectedNode("b", 1, 1, "No match"))),
             parser.parse("aa", "S"));
@@ -174,13 +174,13 @@ public class ParserTest {
                 new ExpectedNode("\\}", 4, 5)),
             parser.parse("{1,2}", "List"));
         assertEqualNodes(
-            new ExpectedNode("List", 0, "No match",
-                new ExpectedNode("List", 0, "No match",
+            new ExpectedNode("List", 0, "Cannot resolve",
+                new ExpectedNode("List", 0, "Not replaceable",
                     new ExpectedNode("\\{", 0, 1),
                     new ExpectedNode("Sequence", 1,
                         new ExpectedNode("\\d+", 1, 2)),
                     new ExpectedNode("\\}", 2, "No match")),
-                new ExpectedNode("List", 0, "No match",
+                new ExpectedNode("List", 0, "Not replaceable",
                     new ExpectedNode("\\{", 0, 1),
                     new ExpectedNode("\\}", 1, "No match"))),
             parser.parse("{1,}", "List"));

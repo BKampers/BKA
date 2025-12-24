@@ -518,7 +518,7 @@ public class PascalParserTest {
     @Test
     public void testMissingProgramKeyword() {
         assertParseTree(
-            List.of(ExpectedNode.ofError("Program", "No match")),
+            List.of(ExpectedNode.ofError("Program", "Not replaceable")),
             parser.parse("""
                 (*PROGRAM*)program_name;
                 BEGIN
@@ -530,10 +530,10 @@ public class PascalParserTest {
     public void testMissingProgramName() {
         assertParseTree(
             List.of(
-                ExpectedNode.ofError("Program", "No match",
+                ExpectedNode.ofError("Program", "Not replaceable",
                     keyword("PROGRAM"),
-                    ExpectedNode.ofError("Identifier", "No match",
-                        ExpectedNode.ofError("Identifier", "No match")))),
+                    ExpectedNode.ofError("Identifier", "Cannot resolve",
+                        ExpectedNode.ofError("Identifier", "Not replaceable")))),
             parser.parse("""
                 PROGRAM (*program_name*);
                 BEGIN

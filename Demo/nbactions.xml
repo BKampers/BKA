@@ -10,8 +10,11 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:3.0.0:exec</goal>
             </goals>
             <properties>
-                <exec.args>--enable-preview -classpath %classpath ${packageClassName}</exec.args>
+                <exec.args>${exec.vmArgs} -classpath %classpath ${exec.mainClass} ${exec.appArgs}</exec.args>
                 <exec.executable>java</exec.executable>
+                <exec.mainClass>bka.demo.calendar.CalendarDemo</exec.mainClass>
+                <exec.vmArgs>--enable-preview -Djava.util.logging.config.file=calendar-logging.properties</exec.vmArgs>
+                <exec.appArgs></exec.appArgs>
             </properties>
         </action>
         <action>
@@ -24,9 +27,12 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:3.0.0:exec</goal>
             </goals>
             <properties>
-                <exec.args>-agentlib:jdwp=transport=dt_socket,server=n,address=${jpda.address} --enable-preview -classpath %classpath ${packageClassName}</exec.args>
+                <exec.args>${exec.vmArgs} -classpath %classpath ${exec.mainClass} ${exec.appArgs}</exec.args>
                 <exec.executable>java</exec.executable>
                 <jpda.listen>true</jpda.listen>
+                <exec.mainClass>bka.demo.calendar.CalendarDemo</exec.mainClass>
+                <exec.vmArgs>--enable-preview -Djava.util.logging.config.file=calendar-logging.properties -agentlib:jdwp=transport=dt_socket,server=n,address=${jpda.address}</exec.vmArgs>
+                <exec.appArgs></exec.appArgs>
             </properties>
         </action>
         <action>
@@ -39,8 +45,11 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:3.0.0:exec</goal>
             </goals>
             <properties>
-                <exec.args>--enable-preview -classpath %classpath ${packageClassName}</exec.args>
+                <exec.args>${exec.vmArgs} -classpath %classpath ${exec.mainClass} ${exec.appArgs}</exec.args>
                 <exec.executable>java</exec.executable>
+                <exec.mainClass>bka.demo.calendar.CalendarDemo</exec.mainClass>
+                <exec.vmArgs>--enable-preview -Djava.util.logging.config.file=calendar-logging.properties</exec.vmArgs>
+                <exec.appArgs></exec.appArgs>
             </properties>
         </action>
     </actions>

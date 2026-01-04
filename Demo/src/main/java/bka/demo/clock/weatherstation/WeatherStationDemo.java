@@ -11,8 +11,8 @@ import java.awt.image.*;
 import java.io.*;
 import java.time.*;
 import java.time.format.*;
-import java.util.List;
 import java.util.*;
+import java.util.List;
 import java.util.logging.*;
 
 public class WeatherStationDemo extends javax.swing.JFrame {
@@ -147,10 +147,10 @@ public class WeatherStationDemo extends javax.swing.JFrame {
     }
 
     private static Color temperatureColor(WeatherStation station) {
-        if (station == null || station.getTemperature().isEmpty()) {
+        if (station == null || station.getTemperature().isEmpty() && station.getChill().isEmpty()) {
             return Color.GRAY;
         }
-        return WeatherStationPanel.temperatureColor(station.getTemperature().getAsDouble());
+        return WeatherStationPanel.temperatureColor(station.getChill().orElse(station.getTemperature().getAsDouble()));
     }
 
     private static String temperatureString(WeatherStation station) {

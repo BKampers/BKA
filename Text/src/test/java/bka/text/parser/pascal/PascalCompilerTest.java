@@ -24,6 +24,50 @@ public class PascalCompilerTest {
     }
 
     @Test
+    public void testSimpleExpression() throws StateMachineException {
+        Node tree = parser.parse("""
+            PROGRAM simple_expression;
+            VAR one, sum, product, expression, braces: INTEGER;
+            VAR t0, both, at_least_one, one_and_only_one: BOOLEAN;
+            VAR equals, less_than, less_equal, greater_than, greater_equal, unequal: BOOLEAN;
+            BEGIN
+                one := 1;
+                sum := one + 2;
+                product := sum * 4;
+                expression := 2 * sum + 4 * 5;
+                braces := 2 * (sum + 4) * 5;
+                t0 := TRUE;
+                both := t0 AND FALSE;
+                at_least_one := t0 OR TRUE;
+                one_and_only_one := t0 XOR TRUE;
+                equals := one = (sum - 2);
+                less_than := 0 < (-1 + 2);
+                less_equal := one <= braces;
+                greater_than := one > braces;
+                greater_equal := one >= braces;
+                unequal := one <> 2
+                                                                                                                                                                                    END.
+            """);
+        StateMachine stateMachine = createStateMachine(tree);
+        stateMachine.start();
+        assertEquals(1, stateMachine.getMemoryObject("one"));
+        assertEquals(3, stateMachine.getMemoryObject("sum"));
+        assertEquals(12, stateMachine.getMemoryObject("product"));
+        assertEquals(26, stateMachine.getMemoryObject("expression"));
+        assertEquals(70, stateMachine.getMemoryObject("braces"));
+        assertEquals(true, stateMachine.getMemoryObject("t0"));
+        assertEquals(false, stateMachine.getMemoryObject("both"));
+        assertEquals(true, stateMachine.getMemoryObject("at_least_one"));
+        assertEquals(false, stateMachine.getMemoryObject("one_and_only_one"));
+        assertEquals(true, stateMachine.getMemoryObject("equals"));
+        assertEquals(true, stateMachine.getMemoryObject("less_than"));
+        assertEquals(true, stateMachine.getMemoryObject("less_equal"));
+        assertEquals(false, stateMachine.getMemoryObject("greater_than"));
+        assertEquals(false, stateMachine.getMemoryObject("greater_equal"));
+        assertEquals(true, stateMachine.getMemoryObject("unequal"));
+    }
+
+    @Test
     public void testWhileLoop() throws StateMachineException {
         Node tree = parser.parse("""
             PROGRAM while_loop;

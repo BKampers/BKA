@@ -38,8 +38,8 @@ public class PascalCompiler {
     private void addProgramVariables(UmlClassBuilder builder, Node declarations) {
         declarations.findChild("VariableDeclaration")
             .ifPresent(declaration -> addVariables(builder, declaration));
-        declarations.findChild("Declaration")
-            .ifPresent(next -> addVariables(builder, next));
+        declarations.findChild("Declarations")
+            .ifPresent(next -> addProgramVariables(builder, next));
     }
 
     private void addVariables(UmlClassBuilder builder, Node variableDeclaration) {

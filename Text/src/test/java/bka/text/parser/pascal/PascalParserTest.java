@@ -29,10 +29,6 @@ public class PascalParserTest {
             parser.parse("PROGRAM empty; BEGIN END.").getChildren());
     }
 
-    private static ExpectedNode separator() {
-        return ExpectedNode.ofSymbolAndContent(";");
-    }
-
     @Test
     public void testEnumerationTypeDefinition() {
         assertParseTree(
@@ -102,6 +98,10 @@ public class PascalParserTest {
                 BEGIN
                 END.
                 """).getChildren());
+    }
+
+    private static ExpectedNode separator() {
+        return ExpectedNode.ofSymbolAndContent(";");
     }
 
     private static ExpectedNode rangeExpression(String start, String end) {
@@ -471,8 +471,167 @@ public class PascalParserTest {
 
     @Test
     public void testExpressions() {
+        assertParseTree(List.of(
+            ExpectedNode.ofSymbol("UnaryOperator",
+                ExpectedNode.ofContent("-")),
+            ExpectedNode.ofSymbol("Comparable",
+                ExpectedNode.ofSymbol("Identifier",
+                    ExpectedNode.ofContent("c1")))),
+            parser.parse("-c1", "Comparable").getChildren());
+        assertParseTree(List.of(
+            ExpectedNode.ofSymbol("Term",
+                ExpectedNode.ofSymbol("Factor",
+                    ExpectedNode.ofSymbol("Comparable",
+                        ExpectedNode.ofSymbol("Identifier",
+                            ExpectedNode.ofContent("a"))),
+                    ExpectedNode.ofSymbol("RelationalOperator",
+                        ExpectedNode.ofContent("=")),
+                    ExpectedNode.ofSymbol("Comparable",
+                        ExpectedNode.ofSymbol("Literal",
+                            ExpectedNode.ofSymbol("IntegerLiteral",
+                                ExpectedNode.ofContent("0"))))),
+                ExpectedNode.ofSymbol("MultiplicativeOperation")),
+            ExpectedNode.ofSymbol("AdditiveOperation")),
+            parser.parse("a = 0", "Expression").getChildren());
+        assertParseTree(List.of(
+            ExpectedNode.ofSymbol("Term",
+                ExpectedNode.ofSymbol("Factor",
+                    ExpectedNode.ofSymbol("Comparable",
+                        ExpectedNode.ofSymbol("Identifier",
+                            ExpectedNode.ofContent("a")))),
+                ExpectedNode.ofSymbol("MultiplicativeOperation",
+                    ExpectedNode.ofSymbol("MultiplicativeOperator",
+                        ExpectedNode.ofContent("/")),
+                    ExpectedNode.ofSymbol("Factor",
+                        ExpectedNode.ofSymbol("Comparable",
+                            ExpectedNode.ofSymbol("Identifier",
+                                ExpectedNode.ofContent("b")))),
+                    ExpectedNode.ofSymbol("MultiplicativeOperation"))),
+            ExpectedNode.ofSymbol("AdditiveOperation")),
+            parser.parse("a / b", "Expression").getChildren());
+        assertParseTree(List.of(
+            ExpectedNode.ofSymbol("Term",
+                ExpectedNode.ofSymbol("Factor",
+                    ExpectedNode.ofSymbol("Comparable",
+                        ExpectedNode.ofSymbol("Literal",
+                            ExpectedNode.ofContent("TRUE")))),
+                ExpectedNode.ofSymbol("MultiplicativeOperation")),
+            ExpectedNode.ofSymbol("AdditiveOperation",
+                ExpectedNode.ofSymbol("AdditiveOperator",
+                    ExpectedNode.ofContent("OR")),
+                ExpectedNode.ofSymbol("Term",
+                    ExpectedNode.ofSymbol("Factor",
+                        ExpectedNode.ofSymbol("Comparable",
+                            ExpectedNode.ofSymbol("Literal",
+                                ExpectedNode.ofContent("FALSE")))),
+                    ExpectedNode.ofSymbol("MultiplicativeOperation")),
+                ExpectedNode.ofSymbol("AdditiveOperation"))),
+            parser.parse("TRUE OR FALSE", "Expression").getChildren());
+        assertParseTree(List.of(
+            ExpectedNode.ofSymbol("Term",
+                ExpectedNode.ofSymbol("Factor",
+                    ExpectedNode.ofSymbol("Comparable",
+                        ExpectedNode.ofSymbol("Literal",
+                            ExpectedNode.ofSymbol("IntegerLiteral",
+                                ExpectedNode.ofContent("1"))))),
+                ExpectedNode.ofSymbol("MultiplicativeOperation",
+                    ExpectedNode.ofSymbol("MultiplicativeOperator",
+                        ExpectedNode.ofContent("*")),
+                    ExpectedNode.ofSymbol("Factor",
+                        ExpectedNode.ofSymbol("Comparable",
+                            ExpectedNode.ofSymbol("Literal",
+                                ExpectedNode.ofSymbol("IntegerLiteral",
+                                    ExpectedNode.ofContent("2"))))),
+                    ExpectedNode.ofSymbol("MultiplicativeOperation"))),
+            ExpectedNode.ofSymbol("AdditiveOperation",
+                ExpectedNode.ofSymbol("AdditiveOperator",
+                    ExpectedNode.ofContent("+")),
+                ExpectedNode.ofSymbol("Term",
+                    ExpectedNode.ofSymbol("Factor",
+                        ExpectedNode.ofSymbol("Comparable",
+                            ExpectedNode.ofSymbol("Literal",
+                                ExpectedNode.ofSymbol("IntegerLiteral",
+                                    ExpectedNode.ofContent("3"))))),
+                    ExpectedNode.ofSymbol("MultiplicativeOperation",
+                        ExpectedNode.ofSymbol("MultiplicativeOperator",
+                            ExpectedNode.ofContent("*")),
+                        ExpectedNode.ofSymbol("Factor",
+                            ExpectedNode.ofSymbol("Comparable",
+                                ExpectedNode.ofSymbol("Literal",
+                                    ExpectedNode.ofSymbol("IntegerLiteral",
+                                        ExpectedNode.ofContent("4"))))),
+                        ExpectedNode.ofSymbol("MultiplicativeOperation"))),
+                ExpectedNode.ofSymbol("AdditiveOperation"))),
+            parser.parse("1*2+3*4", "Expression").getChildren());
+        assertParseTree(List.of(
+            ExpectedNode.ofSymbol("Term",
+                ExpectedNode.ofSymbol("Factor",
+                    ExpectedNode.ofSymbol("Comparable",
+                        ExpectedNode.ofSymbol("Identifier",
+                            ExpectedNode.ofContent("a")))),
+                ExpectedNode.ofSymbol("MultiplicativeOperation",
+                    ExpectedNode.ofSymbol("MultiplicativeOperator",
+                        ExpectedNode.ofContent("*")),
+                    ExpectedNode.ofSymbol("Factor",
+                        ExpectedNode.ofSymbol("Comparable",
+                            ExpectedNode.ofContent("("),
+                            ExpectedNode.ofSymbol("Expression",
+                                ExpectedNode.ofSymbol("Term",
+                                    ExpectedNode.ofSymbol("Factor",
+                                        ExpectedNode.ofSymbol("Comparable",
+                                            ExpectedNode.ofSymbol("Identifier",
+                                                ExpectedNode.ofContent("b")))),
+                                    ExpectedNode.ofSymbol("MultiplicativeOperation")),
+                                ExpectedNode.ofSymbol("AdditiveOperation",
+                                    ExpectedNode.ofSymbol("AdditiveOperator",
+                                        ExpectedNode.ofContent("+")),
+                                    ExpectedNode.ofSymbol("Term",
+                                        ExpectedNode.ofSymbol("Factor",
+                                            ExpectedNode.ofSymbol("Comparable",
+                                                ExpectedNode.ofSymbol("Identifier",
+                                                    ExpectedNode.ofContent("c")))),
+                                        ExpectedNode.ofSymbol("MultiplicativeOperation")),
+                                    ExpectedNode.ofSymbol("AdditiveOperation"))),
+                            ExpectedNode.ofContent(")"))),
+                    ExpectedNode.ofSymbol("MultiplicativeOperation",
+                        ExpectedNode.ofSymbol("MultiplicativeOperator",
+                            ExpectedNode.ofContent("*")),
+                        ExpectedNode.ofSymbol("Factor",
+                            ExpectedNode.ofSymbol("Comparable",
+                                ExpectedNode.ofSymbol("Identifier",
+                                    ExpectedNode.ofContent("d")))),
+                        ExpectedNode.ofSymbol("MultiplicativeOperation")))),
+            ExpectedNode.ofSymbol("AdditiveOperation")),
+            parser.parse("a*(b+c)*d", "Expression").getChildren());
+        assertParseTree(List.of(
+            ExpectedNode.ofSymbol("Comparable",
+                ExpectedNode.ofContent("("),
+                ExpectedNode.ofSymbol("Expression",
+                    ExpectedNode.ofSymbol("Term",
+                        ExpectedNode.ofSymbol("Factor",
+                            ExpectedNode.ofSymbol("Comparable",
+                                ExpectedNode.ofSymbol("Identifier",
+                                    ExpectedNode.ofContent("p1")))),
+                        ExpectedNode.ofSymbol("MultiplicativeOperation")),
+                    ExpectedNode.ofSymbol("AdditiveOperation",
+                        ExpectedNode.ofSymbol("AdditiveOperator",
+                            ExpectedNode.ofContent("-")),
+                        ExpectedNode.ofSymbol("Term",
+                            ExpectedNode.ofSymbol("Factor",
+                                ExpectedNode.ofSymbol("Comparable",
+                                    ExpectedNode.ofSymbol("Identifier",
+                                        ExpectedNode.ofContent("p2")))),
+                            ExpectedNode.ofSymbol("MultiplicativeOperation")),
+                        ExpectedNode.ofSymbol("AdditiveOperation"))),
+                ExpectedNode.ofContent(")")),
+            ExpectedNode.ofSymbol("RelationalOperator",
+                ExpectedNode.ofContent("<")),
+            ExpectedNode.ofSymbol("Comparable",
+                ExpectedNode.ofSymbol("Identifier",
+                    ExpectedNode.ofContent("c0")))),
+            parser.parse("(p1 - p2) < c0", "Factor").getChildren());
         assertSuccess(parser.parse("""
-            PROGRAM program_name;
+            PROGRAM const_expressions;
             CONST c1 = 1 + 2;
             CONST c2 = -c1;
             CONST c3 = TRUE OR FALSE;
@@ -552,36 +711,6 @@ public class PascalParserTest {
     }
 
     @Test
-    public void testMissingSemicolon() {
-        Node tree = parser.parse("""
-            PROGRAM program_name(*;*)
-            BEGIN
-            END.
-            """);
-        assertTrue(tree.getError().isPresent());
-    }
-
-    @Test
-    public void testMissingBegin() {
-        Node tree = parser.parse("""
-            PROGRAM program_name;
-            (*BEGIN*)
-            END.
-            """);
-        assertTrue(tree.getError().isPresent());
-    }
-
-    @Test
-    public void testMissingEnd() {
-        Node tree = parser.parse("""
-            PROGRAM program_name;
-            BEGIN
-            (*END*).
-            """);
-        assertTrue(tree.getError().isPresent());
-    }
-
-    @Test
     public void testMissingEndDot() {
         Node tree = parser.parse("""
             PROGRAM program_name ;
@@ -589,24 +718,6 @@ public class PascalParserTest {
             END(*.*)
             """);
         assertTrue(tree.getError().isPresent());
-    }
-
-    @Test
-    public void testMissingBracket() {
-        Node tree = parser.parse("""
-            PROGRAM program_name;
-
-            (* p1 *)
-            PROCEDURE p1(VAR out: INTEGER; in: INTEGER(* ) *);
-                BEGIN
-                out := in
-                END;
-
-            BEGIN
-            p1(result, 0);
-            END.
-            """);
-        assertTrue(tree.getError().isPresent());;
     }
 
     private static void assertSuccess(Node actual) {

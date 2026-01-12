@@ -106,36 +106,56 @@
             [ "Identifier" ]
         ],
         "Expression": [
+            [ "Term", "AdditiveOperation" ]
+        ],
+        "Term": [
+            [ "Factor", "MultiplicativeOperation" ]
+        ],
+        "Factor": [
+            [ "Comparable", "RelationalOperator", "Comparable" ],
+            [ "Comparable" ]
+        ],
+        "Comparable": [
             [ "Call" ],
             [ "Identifier" ],
             [ "Literal" ],
-            [ "UnaryOperator", "Expression" ],
             [ "\\(", "Expression", "\\)" ],
-            [ "Expression", "BinaryOperator", "Expression" ],
-            [ "Expression", "\\.", "Identifier"],
-            [ "Expression", "\\[", "Expression", "\\]" ]
+            [ "Identifier", "\\.", "Identifier"],
+            [ "Identifier", "\\[", "Expression", "\\]" ],
+            [ "UnaryOperator", "Comparable" ]
         ],
-        "UnaryOperator": [
-            ["\\-"],
-            ["NOT\\b"]
+        "MultiplicativeOperation": [
+            [ "MultiplicativeOperator", "Factor", "MultiplicativeOperation" ],
+            [ ]
         ],
-        "BinaryOperator": [
-            ["\\^"],
-            ["\\*"],
-            ["\\/"],
-            ["DIV\\b"],
-            ["MOD\\b"],
-            ["\\+"],
-            ["\\-"],
+        "AdditiveOperation": [
+            [ "AdditiveOperator", "Term", "AdditiveOperation" ],
+            [ ]
+        ],
+        "RelationalOperator": [
             ["\\="],
             ["\\<\\="],
             ["\\>\\="],
             ["\\<\\>"],
             ["\\<"],
-            ["\\>"],
-            ["AND\\b"],
-            ["OR\\b"],
-            ["XOR\\b"]
+            ["\\>"]
+        ],
+        "MultiplicativeOperator": [
+            [ "\\*" ],
+            [ "\\/" ],
+            [ "DIV\\b" ],
+            [ "MOD\\b" ],
+            [ "AND\\b"]
+        ],
+        "AdditiveOperator": [
+            [ "\\+" ],
+            [ "\\-" ],
+            [ "OR\\b" ],
+            [ "XOR\\b"]
+        ],
+        "UnaryOperator": [
+            ["\\-"],
+            ["NOT\\b"]
         ],
         "Identifier": [
             [ "\\b(?!AND\\b|ARRAY\\b|BEGIN\\b|BOOLEAN\\b|BREAK\\b|CASE\\b|CONST\\b|DO\\b|ELSE\\b|END\\b|FALSE\\b|FOR\\b|FUNCTION\\b|INTEGER\\b|IF\\b|NOT\\b|OF\\b|OR\\b|OTHERWISE\\b|PROCEDURE\\b|PROGRAM\\b|REAL\\b|RECORD\\b|REPEAT\\b|STRING\\b|THEN\\b|TO\\b|TRUE\\b|TYPE\\b|UNTIL\\b|VAR\\b|WHILE\\b|XOR\\b)[A-Z_]+[A-Z_0-9]*" ]

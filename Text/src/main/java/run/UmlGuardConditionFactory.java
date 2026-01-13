@@ -14,11 +14,11 @@ public class UmlGuardConditionFactory {
     }
 
 
-    public static GuardCondition pass(Decision decision) {
+    public static GuardCondition pass(Decision<Evaluator> decision) {
         return new GuardCondition() {
             @Override
             public boolean applies(Memory memory) throws StateMachineException {
-                return Boolean.TRUE.equals(((ParseTreeExpression) decision.getExpression()).evaluate(memory).evaluate());
+                return requireBoolean(decision.getExpression(), memory);
             }
 
             @Override
@@ -28,11 +28,12 @@ public class UmlGuardConditionFactory {
         };
     }
 
-    public static GuardCondition fail(Decision decision) {
+    public static GuardCondition fail(Decision<Evaluator> decision) {
         return new GuardCondition() {
             @Override
             public boolean applies(Memory memory) throws StateMachineException {
-                return Boolean.FALSE.equals(((ParseTreeExpression) decision.getExpression()).evaluate(memory).evaluate());
+                return !requireBoolean(decision.getExpression(), memory);
+
             }
 
             @Override
@@ -40,6 +41,14 @@ public class UmlGuardConditionFactory {
                 return "(UML-Guard Condition \u00AC (" + decision.getExpression().toString() + "))";
             }
         };
+    }
+
+    private static boolean requireBoolean(Evaluator evaluator, Memory memory) throws StateMachineException {
+        Object value = evaluator.evaluate(memory);
+        if (evaluator.evaluate(memory) instanceof Boolean booleanValue) {
+            return booleanValue;
+        }
+        throw new IllegalStateException("Not a boolean: " + value);
     }
 
 }

@@ -11,6 +11,7 @@ import java.util.function.*;
 import java.util.logging.*;
 import java.util.stream.*;
 import uml.statechart.*;
+import uml.structure.Type;
 
 /**
  * Statement defined by a pascal parser node and executable by a state machine.
@@ -58,7 +59,7 @@ public final class Statement {
     }
 
     private void addIfThenElseTransitions(ActivityDiagramBuilder diagram) {
-        Decision decision = UmlStateFactory.createDecision(createParseTreeExpression());
+        Decision<Evaluator> decision = createDecision(expression.getChild("Expression"), expression.getChild("Expression").content());
         diagram.add(leave -> UmlTransitionFactory.createTransition(leave, decision), decision);
         createTransitions(expression.getChild("Statement"), diagram);
         diagram.addGuardCondition(transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), "then");
@@ -78,35 +79,15 @@ public final class Statement {
         Node identifier = expression.getChild("Identifier");
         List<Node> expressions = expression.findChildren("Expression");
         ActionState<Action> loopInitialization = createActionState(new Statement(identifier, expressions.getFirst(), methodProperties));
-        Decision loopStartDecision = UmlStateFactory.createDecision(createLessEqualExpression(identifier, expressions.getLast()));
+        Decision<Evaluator> loopStartDecision = createDecision(identifier, expressions.getLast(), ".LE.", i -> i <= 0);
         diagram.add(loopInitialization, loopStartDecision);
         createTransitions(expression.getChild("Statement"), diagram);
         diagram.addGuardCondition(loopStartDecision, UmlGuardConditionFactory.pass(loopStartDecision), "for");
         TransitionTarget loopStart = diagram.targetOf(loopStartDecision);
-        Decision loopEndDecision = UmlStateFactory.createDecision(createLessThanExpression(identifier, expressions.getLast()));
+        Decision<Evaluator> loopEndDecision = createDecision(identifier, expressions.getLast(), ".LT.", i -> i < 0);
         diagram.add(loopEndDecision, UmlStateFactory.createActionState(createIncrementAction(identifier)), loopStart, "for");
         diagram.addLeaf(loopStartDecision);
     }
-
-//    private Decision<Expression> createDecision() {
-//        return new Decision<Expression>() {
-//            @Override
-//            public Expression getExpression() {
-//                throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-//            }
-//
-//            @Override
-//            public Optional<Type> getType() {
-//                throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-//            }
-//
-//            @Override
-//            public Optional<String> getName() {
-//                throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-//            }
-//
-//        };
-//    }
 
     private Action createIncrementAction(Node identifier) {
         return createAction(
@@ -128,7 +109,7 @@ public final class Statement {
     }
     
     private void addWhileLoopTransitions(ActivityDiagramBuilder diagram) {
-        Decision decision = UmlStateFactory.createDecision(createParseTreeExpression());
+        Decision<Evaluator> decision = createDecision(expression.getChild("Expression"), expression.getChild("Expression").content());
         diagram.add(leave -> UmlTransitionFactory.createTransition(leave, decision), decision);
         createTransitions(expression.getChild("Statement"), diagram);
         diagram.addGuardCondition(transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), "while");
@@ -138,11 +119,74 @@ public final class Statement {
     private void addRepeatLoopTransitions(ActivityDiagramBuilder diagram) {
         TransitionSource loopRoot = diagram.anyLeaf();
         createTransitions(expression.getChild("Statements"), diagram);
-        ParseTreeExpression condition = createParseTreeExpression();
-        Decision decision = UmlStateFactory.createDecision(condition);
+        Decision<Evaluator> decision = createDecision(expression.getChild("Expression"), expression.getChild("Expression").content());
         diagram.add(leave -> UmlTransitionFactory.createTransition(leave, decision), decision);
         TransitionTarget loopStart = diagram.targetOf(loopRoot);
         diagram.addTransition(decision, loopStart, UmlGuardConditionFactory.fail(decision), "repeat");
+    }
+
+    private Decision<Evaluator> createDecision(Node operand, String name) {
+        return new Decision<>() {
+            @Override
+            public Evaluator getExpression() {
+                return memory -> evaluate(operand, memory).value;
+            }
+
+            @Override
+            public Optional<Type> getType() {
+                return Optional.of(new Type() {
+                    @Override
+                    public boolean isAbstract() {
+                        return false;
+                    }
+
+                    @Override
+                    public Optional<String> getName() {
+                        return Optional.of("Decision-Object");
+                    }
+                });
+            }
+
+            @Override
+            public Optional<String> getName() {
+                return Optional.of(name);
+            }
+
+        };
+    }
+
+    private Decision<Evaluator> createDecision(Node leftOperand, Node rightOperand, String name, Predicate<Integer> predicate) {
+        return new Decision<>() {
+            @Override
+            public Evaluator getExpression() {
+                return memory -> {
+                    V left = evaluate(leftOperand, memory);
+                    V right = evaluate(rightOperand, memory);
+                    return predicate.test(requireComparable(left.value).compareTo(requireComparable(right.value)));
+                };
+            }
+
+            @Override
+            public Optional<Type> getType() {
+                return Optional.of(new Type() {
+                    @Override
+                    public boolean isAbstract() {
+                        return false;
+                    }
+
+                    @Override
+                    public Optional<String> getName() {
+                        return Optional.of("Decision-Boolean");
+                    }
+                });
+            }
+
+            @Override
+            public Optional<String> getName() {
+                return Optional.of(name);
+            }
+
+        };
     }
 
     private void addAssignementTransitions(ActivityDiagramBuilder diagram) {
@@ -178,56 +222,6 @@ public final class Statement {
         }
     }
 
-    private String typeOf(List<Node> expression) {
-        if (expression.size() == 1) {
-            return "*";
-        }
-        if (expression.size() == 2 && Set.of("Factor").contains(expression.get(0).getSymbol()) && Set.of("AdditiveOperation", "MultiplicativeOperation").contains(expression.get(1).getSymbol())) {
-            return "*";
-        }
-        if (expression.get(0).findChild("RelationalOperator").isPresent()) {
-            return "Boolean";
-        }
-        if (RELATIONAL_OPERATORS.contains(expression.get(1).content())) {
-            return "Boolean";
-        }
-        return "?";//generalType(typeOf(expression.getFirst()), typeOf(expression.getLast()).type());
-    }
-
-    private static String generalType(String type1, String type2) {
-        if (type1.equals(type2)) {
-            return type1;
-        }
-        if (type1.equals("*")) {
-            return type2;
-        }
-        if (type2.equals("*")) {
-            return type1;
-        }
-        if (type1.equals("Integer") && type2.equals("Real") || type1.equals("Real") && type2.equals("Integer")) {
-            return "Real";
-        }
-        throw new IllegalStateException("Cannot determine general type");
-    }
-
-    private ParseTreeExpression createLessEqualExpression(Node leftOperand, Node rightOperand) {
-        Evaluator evaluator = memory -> {
-            V left = evaluate(leftOperand, memory);
-            V right = evaluate(rightOperand, memory);
-            return requireComparable(left.value).compareTo(requireComparable(right.value)) <= 0;
-        };
-        return ParseTreeExpression.of("Boolean", leftOperand.content() + " .LE. " + rightOperand.content(), evaluator);
-    }
-
-    private ParseTreeExpression createLessThanExpression(Node leftOperand, Node rightOperand) {
-        Evaluator evaluator = memory -> {
-            V leftV = evaluate(leftOperand, memory);
-            V rightV = evaluate(rightOperand, memory);
-            return requireComparable(leftV.value).compareTo(requireComparable(rightV.value)) < 0;
-        };
-        return ParseTreeExpression.of("Boolean", leftOperand.content() + " .LT. " + rightOperand.content(), evaluator);
-    }
-
     private static Comparable requireComparable(Object object) throws StateMachineException {
         if (object instanceof Comparable comparable) {
             return comparable;
@@ -235,214 +229,11 @@ public final class Statement {
         throw new StateMachineException("Not a comparable" + object);
     }
 
-    private ParseTreeExpression createParseTreeExpression() {
-        return createParseTreeExpression(expression.getChild("Expression"));
-    }
-
-    private ParseTreeExpression createParseTreeExpression(Node node) {
-        if (node.getChildren().size() == 1) {
-            return createSimpleParseTreeExpression(node);
-        }
-        if ("Call".equals(node.getSymbol())) {
-            return createCallParseTreeExpression(node);
-        }
-        if ("Expression".equals(node.getSymbol())) {
-            return createAdditiveOperationParseTreeExpression(node);
-        }
-        throw new IllegalStateException("Invalid expression: " + node);
-    }
-
-    private ParseTreeExpression createSimpleParseTreeExpression(Node node) {
-        Node first = node.getChildren().getFirst();
-        if ("Literal".equals(first.getSymbol())) {
-            return createLiteralParseTreeExpression(first);
-        }
-        if ("Identifier".equals(first.getSymbol())) {
-            String name = first.getChildren().getFirst().content();
-            return ParseTreeExpression.of("*", name, identifierEvaluator(name));
-        }
-        if ("Identifier".equals(node.getSymbol())) {
-            String name = first.content();
-            Collection<Transition<Event, GuardCondition, Action>> method = methodProperties.getBody(name);
-            if (method != null) {
-                Evaluator procedureCall = memory -> {
-                    new StateMachine(method, memory, localNames(name)).start();
-                    return VOID;
-                };
-                return ParseTreeExpression.of("*", name, procedureCall);
-            }
-            return ParseTreeExpression.of("*", name, memory -> memory.load(name));
-        }
-        if ("Expression".equals(node.getSymbol())) {
-            return createParseTreeExpression(node.getChildren().getFirst());
-        }
-        throw new IllegalStateException("Cannot create parse tree expression: " + node);
-    }
-
     private Collection<String> localNames(String methodName) {
         return methodProperties.getLocals(methodName).stream()
             .map(uml.structure.Object::getName)
             .map(Optional::get)
             .collect(Collectors.toList());
-    }
-
-    private ParseTreeExpression createLiteralParseTreeExpression(Node first) throws IllegalArgumentException {
-        String type = switch (first.getChildren().getFirst().getSymbol()) {
-            case "IntegerLiteral" ->
-                "Integer";
-            case "'" ->
-                "String";
-            default ->
-                throw new IllegalArgumentException("Unexpected literal: " + first.getChildren().getFirst().getSymbol());
-        };
-        String value = first.content();
-        Evaluator evaluator = memory -> {
-            return switch (first.getChildren().getFirst().getSymbol()) {
-                case "IntegerLiteral" ->
-                    parseInteger(value);
-                case "'" ->
-                    value;
-                default ->
-                    throw new IllegalArgumentException("Cannot evaluate literal: " + first.getChildren().getFirst().getSymbol());
-            };
-        };
-        return ParseTreeExpression.of(type, value, evaluator);
-    }
-
-    private ParseTreeExpression createCallParseTreeExpression(Node node) {
-        String name = node.getChildren().getFirst().content();
-        Evaluator evaluator = memory -> {
-            Collection<Transition<Event, GuardCondition, Action>> methodBody = methodProperties.getBody(name);
-            if (methodBody == null) {
-                throw new IllegalStateException("No such procedure or function: '" + name + '\'');
-            }
-            final boolean isProcedure = "Void".equals(methodProperties.getType(name));
-            List<Node> arguments = createArgumentList(node.getChildren());
-            Map<String, Object> parameters = evaluateArguments(arguments, name, memory);
-            Collection<String> identifiers = new ArrayList<>(localNames(name));
-            if (!isProcedure) {
-                identifiers.add(name);
-            }
-            StateMachine stateMachine = new StateMachine(methodBody, memory, parameters, identifiers);
-            stateMachine.start();
-            for (int i = 0; i < methodProperties.getParameters(name).size(); ++i) {
-                if (methodProperties.getParameters(name).get(i).findChild("VAR\\b").isPresent()) {
-                    memory.store(
-                        identifier(arguments.get(i)),
-                        stateMachine.getMemoryObject(identifier(methodProperties.getParameters(name).get(i))));
-                }
-            }
-            return (isProcedure) ? VOID : stateMachine.getMemoryObject(name);
-        };
-        return ParseTreeExpression.of(methodProperties.getType(name), name, evaluator);
-    }
-
-    private ParseTreeExpression createAdditiveOperationParseTreeExpression(Node node) {
-        if (node.getChildren().isEmpty()) {
-            return ParseTreeExpression.of(EMPTY_OPERATION_RESULT, EMPTY_ADDITIVE_OPERATION.toString(), memory -> EMPTY_ADDITIVE_OPERATION);
-        }
-        ParseTreeExpression left = createTermParseTreeExpression(node.getChild("Term"));
-        ParseTreeExpression right = createAdditiveOperationParseTreeExpression(node.getChild("AdditiveOperation"));
-        Optional<Node> operator = node.getChild("AdditiveOperation").findChild("AdditiveOperator");
-        String operatorSymbol = (operator.isEmpty()) ? "+" : operator.get().content();
-        return ParseTreeExpression.of(
-            generalType(left.type(), right.type()),
-            left.toString() + operatorSymbol + right.toString(),
-            memory -> getDyadicOperator(operatorSymbol).evaluate(left, right, memory).evaluate());
-    }
-
-    private ParseTreeExpression createTermParseTreeExpression(Node node) {
-        ParseTreeExpression left = createFactorParseTreeExpression(node.getChild("Factor"));
-        ParseTreeExpression right = createMultiplicativeOperationParseTreeExpression(node.getChild("MultiplicativeOperation"));
-        return ParseTreeExpression.of(
-            typeOf(node.getChildren()),
-            left.toString() + "+" + right.toString(),
-            memory -> getDyadicOperator("+").evaluate(left, right, memory).evaluate());
-    }
-
-    private ParseTreeExpression createMultiplicativeOperationParseTreeExpression(Node node) {
-        if (node.getChildren().isEmpty()) {
-            return ParseTreeExpression.of(EMPTY_OPERATION_RESULT, EMPTY_MULTIPLICATIVE_OPERATION.toString(), memory -> EMPTY_MULTIPLICATIVE_OPERATION);
-        }
-        ParseTreeExpression left = createFactorParseTreeExpression(node.getChild("Factor"));
-        ParseTreeExpression right = createMultiplicativeOperationParseTreeExpression(node.getChild("MultiplicativeOperation"));
-        Node operator = node.getChild("MultiplicativeOperator");
-        return ParseTreeExpression.of(
-            typeOf(node.getChildren()),
-            operatorExpressionString(left, operator, right),
-            memory -> getDyadicOperator(operator).evaluate(left, right, memory).evaluate());
-    }
-
-    private ParseTreeExpression createFactorParseTreeExpression(Node node) {
-        if (node.getChildren().size() == 1) {
-            return createComparableParseTreeExpression(node.getChild("Comparable"));
-        }
-        ParseTreeExpression left = createComparableParseTreeExpression(node.getChildren().getFirst());
-        ParseTreeExpression right = createComparableParseTreeExpression(node.getChildren().getLast());
-        Node operator = node.getChild("RelationalOperator");
-        return ParseTreeExpression.of(
-            typeOf(node.getChildren()),
-            operatorExpressionString(left, operator, right),
-            memory -> getDyadicOperator(operator).evaluate(left, right, memory).evaluate());
-    }
-
-    private ParseTreeExpression createComparableParseTreeExpression(Node node) {
-        if ("Comparable".equals(node.getSymbol())) {
-            return createSimpleParseTreeExpression(node);
-        }
-        return createSimpleParseTreeExpression(node.getChildren().getFirst());
-    }
-
-//    private ParseTreeExpression createOperatorParseTreeExpression(Node node) {
-//        ParseTreeExpression left = createParseTreeExpression(node.getChildren().getFirst());
-//        Node operator = node.getChildren().get(1);
-//        ParseTreeExpression right = createParseTreeExpression(node.getChildren().getLast());
-//        return ParseTreeExpression.of(
-//            typeOf(node.getChildren()),
-//            operatorExpressionString(left, operator, right),
-//            memory -> getDyadicOperator(operator).evaluate(left, right, memory).evaluate());
-//    }
-
-    private static String operatorExpressionString(ParseTreeExpression left, Node operator, ParseTreeExpression right) {
-        return String.format("%s (Operator)%s %s", left.value(), operator.content(), right.value());
-    }
-
-    private Evaluator identifierEvaluator(String name) {
-        return memory -> {
-            Collection<Transition<Event, GuardCondition, Action>> method = methodProperties.getBody(name);
-            if (method != null) {
-                Collection<String> identifiers = new ArrayList<>(localNames(name));
-                identifiers.add(name);
-                StateMachine stateMachine = new StateMachine(method, memory, identifiers);
-                stateMachine.start();
-                return stateMachine.getMemoryObject(name);
-            }
-            return memory.load(name);
-        };
-    }
-
-    private Map<String, Object> evaluateArguments(List<Node> arguments, String name, Memory memory) throws StateMachineException {
-        List<Node> methodParameters = methodProperties.getParameters(name);
-        final int parameterCount = methodParameters.size();
-        if (parameterCount != arguments.size()) {
-            throw new IllegalStateException("Invalid number of arguments.");
-        }
-        if (parameterCount == 0) {
-            return Collections.emptyMap();
-        }
-        ActivityDiagramBuilder diagram = new ActivityDiagramBuilder();
-        for (int i = 0; i < parameterCount; ++i) {
-            diagram.add(UmlStateFactory.createActionState(Action.of(new Statement(methodParameters.get(i), arguments.get(i), methodProperties))));
-        }
-        diagram.addFinalState();
-        List<String> parameterNames = methodParameters.stream().map(Node::content).collect(Collectors.toList());
-        StateMachine parameterEvaluator = new StateMachine(diagram.getTransitions(), memory, parameterNames);
-        parameterEvaluator.start();
-        Map<String, Object> parameters = new HashMap<>();
-        for (int i = 0; i < parameterCount; ++i) {
-            parameters.put(identifier(methodParameters.get(i)), parameterEvaluator.getMemoryObject(parameterNames.get(i)));
-        }
-        return parameters;
     }
 
     private List<Node> createArgumentList(List<Node> expression) {
@@ -495,70 +286,11 @@ public final class Statement {
         throw new StateMachineException("Comparable is not an identifier");
     }
 
-    private static java.lang.Object parseInteger(String literal) {
-        return (literal.startsWith("$"))
-            ? Integer.parseInt(literal, 1, literal.length(), 0x10)
-            : Integer.valueOf(literal);
-    }
-
-    private static DyadicOperator getDyadicOperator(Node node) {
-        return getDyadicOperator(node.content().toLowerCase());
-    }
-
-    private static DyadicOperator getDyadicOperator(String symbol) {
-        return switch (symbol) {
-            case "*" ->
-                createArithmicOperator((left, right) -> product(left, right));
-            case "/" ->
-                createArithmicOperator((left, right) -> quotient(left, right));
-            case "div" ->
-                createArithmicOperator((left, right) -> division(left, right));
-            case "mod" ->
-                createArithmicOperator((left, right) -> modulus(left, right));
-            case "+" ->
-                createArithmicOperator((left, right) -> sum(left, right));
-            case "-" ->
-                createArithmicOperator((left, right) -> difference(left, right));
-            case "=" ->
-                createRelationalOperator((left, right) -> left.compareTo(right) == 0);
-            case "<>" ->
-                createRelationalOperator((left, right) -> left.compareTo(right) != 0);
-            case "<" ->
-                createRelationalOperator((left, right) -> left.compareTo(right) < 0);
-            case "<=" ->
-                createRelationalOperator((left, right) -> left.compareTo(right) <= 0);
-            case ">" ->
-                createRelationalOperator((left, right) -> left.compareTo(right) > 0);
-            case ">=" ->
-                createRelationalOperator((left, right) -> left.compareTo(right) >= 0);
-            case "and" ->
-                createLogicalOperator((left, right) -> left & right);
-            case "or" ->
-                createLogicalOperator((left, right) -> left | right);
-            case "xor" ->
-                createLogicalOperator((left, right) -> left ^ right);
-            default ->
-                throw new IllegalStateException("Unsupported dyadic operator: '" + symbol + "'");
-        };
-    }
-
     private static Number product(Number left, Number right) {
         if (left instanceof Integer && right instanceof Integer) {
             return left.intValue() * right.intValue();
         }
         return left.doubleValue() * right.doubleValue();
-    }
-
-    private static Number quotient(Number left, Number right) {
-        return left.doubleValue() / right.doubleValue();
-    }
-
-    private static Number division(Number left, Number right) {
-        return left.intValue() / right.intValue();
-    }
-
-    private static Number modulus(Number left, Number right) {
-        return left.intValue() % right.intValue();
     }
 
     private static Number sum(Number left, Number right) {
@@ -573,50 +305,6 @@ public final class Statement {
             return left.intValue() - right.intValue();
         }
         return left.doubleValue() - right.doubleValue();
-    }
-
-    private static DyadicOperator createArithmicOperator(BiFunction<Number, Number, Number> function) {
-        return (ParseTreeExpression leftOperand, ParseTreeExpression rightOperand, Memory memory) -> {
-            if (EMPTY_OPERATION_RESULT.equals(rightOperand.type())) {
-                Object value = leftOperand.evaluate(memory).evaluate();
-                return Value.of(() -> value, (value instanceof Boolean) ? "Boolean" : (value instanceof Integer) ? "Integer" : "Real");
-            }
-            Number value = function.apply(requireNumber(leftOperand, memory), requireNumber(rightOperand, memory));
-            return Value.of(() -> value, (value instanceof Integer) ? "Integer" : "Real");
-        };
-    }
-
-    private static Number requireNumber(ParseTreeExpression expression, Memory memory) throws StateMachineException {
-        if (expression.evaluate(memory).evaluate() instanceof Number number) {
-            return number;
-        }
-        throw new StateMachineException(expression.type() + " is not a number: " + expression.evaluate(memory).evaluate());
-    }
-
-    private static DyadicOperator createLogicalOperator(BiFunction<Boolean, Boolean, Boolean> function) {
-        return (ParseTreeExpression leftOperand, ParseTreeExpression rightOperand, Memory memory) -> {
-            return Value.of(() -> function.apply(requireBoolean(leftOperand, memory), requireBoolean(rightOperand, memory)), "Boolean");
-        };
-    }
-
-    private static Boolean requireBoolean(ParseTreeExpression expression, Memory memory) throws StateMachineException {
-        if (expression.evaluate(memory).evaluate() instanceof Boolean bool) {
-            return bool;
-        }
-        throw new StateMachineException(expression.type() + " is not a boolean");
-    }
-
-    private static DyadicOperator createRelationalOperator(BiFunction<Comparable, Comparable, Boolean> function) {
-        return (ParseTreeExpression leftOperand, ParseTreeExpression rightOperand, Memory memory) -> {
-            return Value.of(() -> function.apply(requireComparable(leftOperand, memory), requireComparable(rightOperand, memory)), "Boolean");
-        };
-    }
-
-    private static Comparable requireComparable(ParseTreeExpression expression, Memory memory) throws StateMachineException {
-        if (expression.evaluate(memory).evaluate() instanceof Comparable comparable) {
-            return comparable;
-        }
-        throw new StateMachineException(expression.type() + " is not a comparable");
     }
 
     public Optional<Node> getAssignable() {
@@ -635,41 +323,6 @@ public final class Statement {
             getLogger().log(Level.WARNING, "Evaluation ({1}) of '{0}' is ignored", new Object[]{expression, v.value});
         }
     }
-
-//    private Optional<ParseTreeExpression> getExpressionTree() {
-//        if ("Expression".equals(expression.getSymbol())) {
-//            return Optional.of(getExpressionTree(expression));
-//        }
-//        if ("Call".equals(expression.getSymbol())) {
-//            return Optional.of(getExpressionTree(expression));
-//        }
-//        if ("Statement".equals(expression.getSymbol())) {
-//            return Optional.of(getExpressionTree(expression.getChild("Identifier")));
-//        }
-//        throw new IllegalStateException("Not an expression: " + expression);
-//    }
-//
-//    private ParseTreeExpression getExpressionTree(Node expression) {
-//        if ("Expression".equals(expression.getSymbol())) {
-//            return createParseTreeExpression(expression);
-//        }
-//        if ("Factor".equals(expression.getSymbol())) {
-//            return createFactorParseTreeExpression(expression);
-//        }
-//        if ("Term".equals(expression.getSymbol())) {
-//            return createTermParseTreeExpression(expression);
-//        }
-//        if ("AdditiveOperation".equals(expression.getSymbol())) {
-//            return createAdditiveOperationParseTreeExpression(expression);
-//        }
-//        if ("Call".equals(expression.getSymbol())) {
-//            return createParseTreeExpression(expression);
-//        }
-//        if ("Identifier".equals(expression.getSymbol())) {
-//            return createParseTreeExpression(expression);
-//        }
-//        throw new IllegalStateException("Not an expression: " + expression);
-//    }
 
     private V evaluate(Node node, Memory memory) throws StateMachineException {
         return switch (node.getSymbol()) {
@@ -911,7 +564,7 @@ public final class Statement {
             case "\\d+" ->
                 new V((java.lang.Object) Integer.parseInt(node.content()), "Integer");
             case "\\$[0-9A-F]+" ->
-                new V((java.lang.Object) Integer.parseInt(node.content().substring(1), 16), "Integer");
+                new V((java.lang.Object) Integer.parseInt(node.content().substring(1), 0x10), "Integer");
             case "FALSE\\b" ->
                 new V(false, "Boolean");
             case "TRUE\\b" ->
@@ -942,7 +595,6 @@ public final class Statement {
 
     private int intValue(Node indexExpression, Memory memory) throws StateMachineException {
         return requireInteger(evaluate(indexExpression, memory).value);
-//        return (int) createParseTreeExpression(indexExpression).evaluate(memory).evaluate();
     }
 
     @Override
@@ -962,40 +614,5 @@ public final class Statement {
     private final Optional<Node> assignable;
     private final Node expression;
     private final PascalCompiler.MethodProperties methodProperties;
-
-    private static final List<String> RELATIONAL_OPERATORS = List.of("<", "<=", "=", ">", ">=", "<>");
-
-    private static final ParseTreeExpression VOID = new ParseTreeExpression() {
-        @Override
-        public String type() {
-            return "Void";
-        }
-
-        @Override
-        public String value() {
-            throw new UnsupportedOperationException("Void expressions have no value");
-        }
-
-        @Override
-        public Value evaluate(Memory memory) throws StateMachineException {
-            throw new UnsupportedOperationException("Void expression cannot be evaluated");
-        }
-    };
-
-    private static final Object EMPTY_MULTIPLICATIVE_OPERATION = new Object() {
-        @Override
-        public String toString() {
-            return "Empty Multiplicative Operation";
-        }
-    };
-
-    private static final Object EMPTY_ADDITIVE_OPERATION = new Object() {
-        @Override
-        public String toString() {
-            return "Empty Additive Operation";
-        }
-    };
-
-    private static final String EMPTY_OPERATION_RESULT = "EmptyOperationResult";
 
 }

@@ -6,7 +6,6 @@ package run;
 
 import java.util.*;
 import uml.statechart.*;
-import uml.structure.*;
 
 
 public class UmlStateFactory {
@@ -21,58 +20,16 @@ public class UmlStateFactory {
 
     private static ActionState<Action> createActionState(Optional<Action> action) {
         return new ActionState() {
-
             @Override
             public Optional<Action> getAction() {
                 return action;
             }
-
             @Override
             public String toString() {
                 return String.format("(UML-Action state %s)", action);
             }
         };
     }
-
-    public static Decision<Expression> createDecision(ParseTreeExpression expression) {
-        Objects.requireNonNull(expression);
-        return new Decision() {
-
-            @Override
-            public Expression getExpression() {
-                return expression;
-            }
-
-            @Override
-            public Optional<Type> getType() {
-                return Optional.of(UmlTypeFactory.create(expression.type()));
-            }
-
-            @Override
-            public Optional<String> getName() {
-                String name = expression.toString();
-                return Optional.of((name != null) ? name : expression.getClass().getName());
-            }
-
-            @Override
-            public String toString() {
-                return "(UML-Decision (" + typeString(getType()) + ") " + expression.value() + ")";
-            }
-
-            private String typeString(Optional<Type> type) {
-                if (type.isEmpty()) {
-                    return "Void";
-                }
-                if (type.get().getName().isEmpty()) {
-                    return "Anonimous";
-                }
-                return type.get().getName().get();
-            }
-
-        };
-    }
-
-
 
     public static InitialState getInitialState() {
         return INITIAL_STATE;

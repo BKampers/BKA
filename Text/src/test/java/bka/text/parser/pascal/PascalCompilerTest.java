@@ -39,7 +39,7 @@ public class PascalCompilerTest {
                 t0 := TRUE;
                 both := t0 AND FALSE;
                 at_least_one := t0 OR TRUE;
-                one_and_only_one := t0 XOR TRUE;
+                one_and_only_one := FALSE OR t0 XOR TRUE;
                 equals := one = (sum - 2);
                 less_than := 0 < (-1 + 2);
                 less_equal := one <= braces;

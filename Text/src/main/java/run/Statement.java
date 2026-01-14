@@ -4,7 +4,7 @@
 */
 package run;
 
-import bka.text.parser.Node;
+import bka.text.parser.*;
 import bka.text.parser.pascal.*;
 import java.util.*;
 import java.util.function.*;
@@ -59,7 +59,7 @@ public final class Statement {
     }
 
     private void addIfThenElseTransitions(ActivityDiagramBuilder diagram) {
-        Decision<Evaluator> decision = createDecision(expression.getChild("Expression"), expression.getChild("Expression").content());
+        Decision<Evaluator> decision = createDecision(expression.getChild("Expression"));
         diagram.add(leave -> UmlTransitionFactory.createTransition(leave, decision), decision);
         createTransitions(expression.getChild("Statement"), diagram);
         diagram.addGuardCondition(transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), "then");
@@ -109,7 +109,7 @@ public final class Statement {
     }
     
     private void addWhileLoopTransitions(ActivityDiagramBuilder diagram) {
-        Decision<Evaluator> decision = createDecision(expression.getChild("Expression"), expression.getChild("Expression").content());
+        Decision<Evaluator> decision = createDecision(expression.getChild("Expression"));
         diagram.add(leave -> UmlTransitionFactory.createTransition(leave, decision), decision);
         createTransitions(expression.getChild("Statement"), diagram);
         diagram.addGuardCondition(transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), "while");
@@ -119,10 +119,14 @@ public final class Statement {
     private void addRepeatLoopTransitions(ActivityDiagramBuilder diagram) {
         TransitionSource loopRoot = diagram.anyLeaf();
         createTransitions(expression.getChild("Statements"), diagram);
-        Decision<Evaluator> decision = createDecision(expression.getChild("Expression"), expression.getChild("Expression").content());
+        Decision<Evaluator> decision = createDecision(expression.getChild("Expression"));
         diagram.add(leave -> UmlTransitionFactory.createTransition(leave, decision), decision);
         TransitionTarget loopStart = diagram.targetOf(loopRoot);
         diagram.addTransition(decision, loopStart, UmlGuardConditionFactory.fail(decision), "repeat");
+    }
+
+    private Decision<Evaluator> createDecision(Node node) {
+        return createDecision(node, node.content());
     }
 
     private Decision<Evaluator> createDecision(Node operand, String name) {
@@ -131,7 +135,6 @@ public final class Statement {
             public Evaluator getExpression() {
                 return memory -> evaluate(operand, memory).value;
             }
-
             @Override
             public Optional<Type> getType() {
                 return Optional.of(new Type() {
@@ -139,19 +142,16 @@ public final class Statement {
                     public boolean isAbstract() {
                         return false;
                     }
-
                     @Override
                     public Optional<String> getName() {
                         return Optional.of("Decision-Object");
                     }
                 });
             }
-
             @Override
             public Optional<String> getName() {
                 return Optional.of(name);
             }
-
         };
     }
 
@@ -365,34 +365,41 @@ public final class Statement {
         if (nodes.isEmpty()) {
             return left;
         }
+        String operator = nodes.getFirst().getChildren().getFirst().getSymbol();
         V right = evaluateTerm(nodes.get(1).getChildren(), memory);
-        if (left.value instanceof Boolean && right.value instanceof Boolean) {
-            if ("OR\\b".equals(nodes.getFirst().getChildren().getFirst().getSymbol())) {
-                return new V((Boolean) left.value || (Boolean) right.value, "Boolean");
-            }
-            if ("XOR\\b".equals(nodes.getFirst().getChildren().getFirst().getSymbol())) {
-                return new V((Boolean) left.value ^ (Boolean) right.value, "Boolean");
-            }
-            throw new StateMachineException("Unsupported boolean multiplicative operator");
-        }
-        if (!((left.value instanceof Number) && (right.value instanceof Number))) {
-            throw new StateMachineException("Multiplicative operation requires numbers");
-        }
-        if (!((left.value instanceof Number) && (right.value instanceof Number))) {
-            throw new StateMachineException("Additive operation requires numbers");
-        }
-        Number sum = switch (nodes.getFirst().getChildren().getFirst().getSymbol()) {
-            case "\\+" ->
-                sum((Number) left.value, (Number) right.value);
-            case "\\-" ->
-                difference((Number) left.value, (Number) right.value);
-            default ->
-                throw new StateMachineException("Unsupported additive operator");
-        };
+        Object sum = (left.value instanceof Boolean leftbool && right.value instanceof Boolean rightbool)
+            ? evaluateLogicalAdditiveOperation(leftbool, operator, rightbool)
+            : evaluateNumericAdditiveOperation(left.value, operator, right.value);
         return evaluateAdditiveOperation(
-            new V(sum, (sum instanceof Integer) ? "Integer" : "Real"),
+            new V(sum, (sum instanceof Boolean) ? "Boolean" : (sum instanceof Integer) ? "Integer" : "Real"),
             nodes.getLast().getChildren(),
             memory);
+    }
+
+    private boolean evaluateLogicalAdditiveOperation(boolean left, String operator, boolean right) throws StateMachineException {
+        return switch (operator) {
+            case "OR\\b" ->
+                left || right;
+            case "XOR\\b" ->
+                left ^ right;
+            default ->
+                throw new StateMachineException("Unsupported logical additive operator: " + operator);
+        };
+    }
+
+    private Number evaluateNumericAdditiveOperation(Object left, String operator, Object right) throws StateMachineException {
+        return switch (operator) {
+            case "\\+" ->
+                sum(requireNumber(left), requireNumber(right));
+            case "\\-" ->
+                difference(requireNumber(left), requireNumber(right));
+            case "OR\\b" ->
+                requireInteger(left) | requireInteger(right);
+            case "XOR\\b" ->
+                requireInteger(left) ^ requireInteger(right);
+            default ->
+                throw new StateMachineException("Unsupported additive operator: " + operator);
+        };
     }
 
     private V evaluateTerm(List<Node> nodes, Memory memory) throws StateMachineException {
@@ -406,34 +413,41 @@ public final class Statement {
         if (nodes.isEmpty()) {
             return left;
         }
+        String operator = nodes.getFirst().getChildren().getFirst().getSymbol();
         V right = evaluateFactor(nodes.get(1).getChildren(), memory);
-        if (left.value instanceof Boolean && right.value instanceof Boolean) {
-            if ("AND\\b".equals(nodes.getFirst().getChildren().getFirst().getSymbol())) {
-                return new V((Boolean) left.value && (Boolean) right.value, "Boolean");
-            }
-            throw new StateMachineException("Unsupported boolean multiplicative operator");
-        }
-        if (!((left.value instanceof Number) && (right.value instanceof Number))) {
-            throw new StateMachineException("Multiplicative operation requires numbers");
-        }
-        Number product = switch (nodes.getFirst().getChildren().getFirst().getSymbol()) {
-            case "\\*" ->
-                product(requireNumber(left.value), requireNumber(right.value));
-            case "\\/" ->
-                requireNumber(left.value).doubleValue() / requireNumber(right).doubleValue();
-            case "DIV\\b" ->
-                requireInteger(left.value) / requireInteger(right.value);
-            case "MOD\\b" ->
-                requireInteger(left.value) % requireInteger(right.value);
-            case "AND\\b" ->
-                requireInteger(left.value) & requireInteger(right.value);
-            default ->
-                throw new StateMachineException("Unsupported multiplicative operator");
-        };
+        Object product = (left.value instanceof Boolean leftbool && right.value instanceof Boolean rightbool)
+            ? evaluateLogicalMultiplicativeOperation(leftbool, operator, rightbool)
+            : evaluateNumericMultiplcativeOperation(left.value, operator, right.value);
         return evaluateMultiplicativeOperation(
-            new V(product, (product instanceof Integer) ? "Integer" : "Real"),
+            new V(product, (product instanceof Boolean) ? "Boolean" : (product instanceof Integer) ? "Integer" : "Real"),
             nodes.getLast().getChildren(),
             memory);
+    }
+
+    private boolean evaluateLogicalMultiplicativeOperation(boolean left, String operator, boolean right) throws StateMachineException {
+        return switch (operator) {
+            case "AND\\b" ->
+                left && right;
+            default ->
+                throw new StateMachineException("Unsupported logical multiplicatieve operator: " + operator);
+        };
+    }
+
+    private Number evaluateNumericMultiplcativeOperation(Object left, String operator, Object right) throws StateMachineException {
+        return switch (operator) {
+            case "\\*" ->
+                product(requireNumber(left), requireNumber(right));
+            case "\\/" ->
+                requireNumber(left).doubleValue() / requireNumber(right).doubleValue();
+            case "DIV\\b" ->
+                requireInteger(left) / requireInteger(right);
+            case "MOD\\b" ->
+                requireInteger(left) % requireInteger(right);
+            case "AND\\b" ->
+                requireInteger(left) & requireInteger(right);
+            default ->
+                throw new StateMachineException("Unsupported multiplicative operator: " + operator);
+        };
     }
 
     private static Number requireNumber(Object object) throws StateMachineException {
@@ -448,6 +462,13 @@ public final class Statement {
             return integer;
         }
         throw new StateMachineException("Not an integer: " + object);
+    }
+
+    private static Boolean requireBoolean(Object object) throws StateMachineException {
+        if (object instanceof Boolean bool) {
+            return bool;
+        }
+        throw new StateMachineException("Not a boolean: " + object);
     }
 
     private V evaluateComparable(List<Node> nodes, Memory memory) throws StateMachineException {
@@ -516,12 +537,12 @@ public final class Statement {
         return new V(stateMachine.getMemoryObject(name), methodProperties.getType(name));
     }
 
-    private V evaluateUnaryOperation(Node operator, V operand) {
+    private V evaluateUnaryOperation(Node operator, V operand) throws StateMachineException {
         if ("\\-".equals(operator.getSymbol())) {
-            return new V(-(Integer) operand.value, "Integer");
+            return new V(-requireInteger(operand.value), "Integer");
         }
         if ("NOT\\b".equals(operator.getSymbol())) {
-            return new V(!(Boolean) operand.value, "Boolean");
+            return new V(!requireBoolean(operand.value), "Boolean");
         }
         return operand;
     }

@@ -11,7 +11,7 @@ public class StateMachineException extends Exception {
         super(message);
     }
 
-    public StateMachineException(InterruptedException cause) {
-        super(cause);
+    public StateMachineException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

@@ -157,7 +157,7 @@ public class StateMachine {
                 semaphore.wait();
             }
             catch (InterruptedException ex) {
-                throw new StateMachineException(ex);
+                throw new StateMachineException("Unexpected interruption in step mode", ex);
             }
         }
     }

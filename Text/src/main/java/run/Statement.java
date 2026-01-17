@@ -222,35 +222,11 @@ public final class Statement {
         }
     }
 
-    private static Comparable requireComparable(Object object) throws StateMachineException {
-        if (object instanceof Comparable comparable) {
-            return comparable;
-        }
-        throw new StateMachineException("Not a comparable" + object);
-    }
-
     private Collection<String> localNames(String methodName) {
         return methodProperties.getLocals(methodName).stream()
             .map(uml.structure.Object::getName)
             .map(Optional::get)
             .collect(Collectors.toList());
-    }
-
-    private List<Node> createArgumentList(List<Node> expression) {
-        if (expression.size() > 2 && "ArgumentList".equals(expression.get(2).getSymbol())) {
-            return createArgumentList(expression.get(2));
-        }
-        return Collections.emptyList();
-    }
-
-    private List<Node> createArgumentList(Node argumentList) {
-        List<Node> arguments = new ArrayList<>();
-        arguments.add(argumentList.getChild("Expression"));
-        Optional<Node> remainder = argumentList.findChild("ArgumentList");
-        if (remainder.isPresent()) {
-            arguments.addAll(createArgumentList(remainder.get()));
-        }
-        return arguments;
     }
 
     private static String identifier(Node node) throws StateMachineException {
@@ -441,27 +417,6 @@ public final class Statement {
         return requireInteger(left) & requireInteger(right);
     }
 
-    private static Number requireNumber(Object object) throws StateMachineException {
-        if (object instanceof Number number) {
-            return number;
-        }
-        throw new StateMachineException("Not a number: " + object);
-    }
-
-    private static Integer requireInteger(Object object) throws StateMachineException {
-        if (object instanceof Integer integer) {
-            return integer;
-        }
-        throw new StateMachineException("Not an integer: " + object);
-    }
-
-    private static Boolean requireBoolean(Object object) throws StateMachineException {
-        if (object instanceof Boolean bool) {
-            return bool;
-        }
-        throw new StateMachineException("Not a boolean: " + object);
-    }
-
     private Result evaluateComparable(List<Node> nodes, Memory memory) throws StateMachineException {
         return switch (nodes.getFirst().getSymbol()) {
             case "Call" ->
@@ -484,8 +439,7 @@ public final class Statement {
         if (methodBody == null) {
             throw new StateMachineException("No such procedure or function: '" + name + '\'');
         }
-
-        List<Node> arguments = createArgumentList(node.getChildren());
+        List<Node> arguments = createArgumentList(node.findChild("ArgumentList"));
         final List<Node> signatureParameters = methodProperties.getParameters(name);
         final int parameterCount = signatureParameters.size();
         if (arguments.size() != parameterCount) {
@@ -510,6 +464,23 @@ public final class Statement {
         return (isProcedure)
             ? new Result(null, "Void")
             : new Result(stateMachine.getMemoryObject(name), methodProperties.getType(name));
+    }
+
+    private List<Node> createArgumentList(Optional<Node> argumentList) {
+        if (argumentList.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Node> arguments = new ArrayList<>();
+        createArgumentList(argumentList.get(), arguments);
+        return arguments;
+    }
+
+    private void createArgumentList(Node argumentList, List<Node> arguments) {
+        arguments.add(argumentList.getChild("Expression"));
+        Optional<Node> remainder = argumentList.findChild("ArgumentList");
+        if (remainder.isPresent()) {
+            createArgumentList(remainder.get(), arguments);
+        }
     }
 
     private Result evaluateIdentifier(Node node, Memory memory) throws StateMachineException {
@@ -543,27 +514,25 @@ public final class Statement {
             return evaluate(nodes.getFirst(), memory);
         }
         if (nodes.size() == 3) {
-            Result left = evaluate(nodes.getFirst(), memory);
-            Result right = evaluate(nodes.getLast(), memory);
-            if (!((left.value instanceof Comparable) && (right.value instanceof Comparable))) {
-                throw new StateMachineException("Comparables required");
-            }
-            int compare = ((Comparable) left.value).compareTo(((Comparable) right.value));
-            return switch (nodes.get(1).getChildren().getFirst().getSymbol()) {
+            Comparable left = requireComparable(evaluate(nodes.getFirst(), memory).value);
+            Comparable right = requireComparable(evaluate(nodes.getLast(), memory).value);
+            int comparison = left.compareTo(right);
+            Node operator = nodes.get(1).getChildren().getFirst();
+            return switch (operator.getSymbol()) {
                 case "\\=" ->
-                    new Result(compare == 0, "Boolean");
+                    new Result(comparison == 0, "Boolean");
                 case "\\<\\>" ->
-                    new Result(compare != 0, "Boolean");
+                    new Result(comparison != 0, "Boolean");
                 case "\\<\\=" ->
-                    new Result(compare <= 0, "Boolean");
+                    new Result(comparison <= 0, "Boolean");
                 case "\\<" ->
-                    new Result(compare < 0, "Boolean");
+                    new Result(comparison < 0, "Boolean");
                 case "\\>\\=" ->
-                    new Result(compare >= 0, "Boolean");
+                    new Result(comparison >= 0, "Boolean");
                 case "\\>" ->
-                    new Result(compare > 0, "Boolean");
+                    new Result(comparison > 0, "Boolean");
                 default ->
-                    throw new StateMachineException("Unsupported relational operator" + (nodes.get(1).getChildren().getFirst().getSymbol()));
+                    throw new StateMachineException("Unsupported relational operator" + operator.content());
             };
         }
         throw new StateMachineException("Cannot evaluate Factor " + nodes);
@@ -574,9 +543,9 @@ public final class Statement {
             case "Literal", "IntegerLiteral" ->
                 evaluateLiteral(node.getChildren().getFirst());
             case "\\d+" ->
-                new Result((java.lang.Object) Integer.parseInt(node.content()), "Integer");
+                parseInteger(node.content(), 10);
             case "\\$[0-9A-F]+" ->
-                new Result((java.lang.Object) Integer.parseInt(node.content().substring(1), 0x10), "Integer");
+                parseInteger(node.content().substring(1), 0x10);
             case "FALSE\\b" ->
                 new Result(false, "Boolean");
             case "TRUE\\b" ->
@@ -584,6 +553,47 @@ public final class Statement {
             default ->
                 throw new StateMachineException("Cannot evaluate literal" + node);
         };
+    }
+
+    private static Result parseInteger(String string, int radix) throws StateMachineException {
+        try {
+            return new Result(Integer.valueOf(string, radix), "Integer");
+        }
+        catch (NumberFormatException ex) {
+            throw new StateMachineException("Invalid integer: " + string, ex);
+        }
+    }
+
+    private int intValue(Node indexExpression, Memory memory) throws StateMachineException {
+        return requireInteger(evaluate(indexExpression, memory).value);
+    }
+
+    private static Comparable requireComparable(Object object) throws StateMachineException {
+        if (object instanceof Comparable comparable) {
+            return comparable;
+        }
+        throw new StateMachineException("Not a comparable" + object);
+    }
+
+    private static Number requireNumber(Object object) throws StateMachineException {
+        if (object instanceof Number number) {
+            return number;
+        }
+        throw new StateMachineException("Not a number: " + object);
+    }
+
+    private static Integer requireInteger(Object object) throws StateMachineException {
+        if (object instanceof Integer integer) {
+            return integer;
+        }
+        throw new StateMachineException("Not an integer: " + object);
+    }
+
+    private static Boolean requireBoolean(Object object) throws StateMachineException {
+        if (object instanceof Boolean bool) {
+            return bool;
+        }
+        throw new StateMachineException("Not a boolean: " + object);
     }
 
     private void store(Memory memory, Object value) throws StateMachineException {
@@ -599,10 +609,6 @@ public final class Statement {
 
     private static Object[] loadArray(Memory memory, Node target) throws StateMachineException {
         return (Object[]) memory.load(identifier(target));
-    }
-
-    private int intValue(Node indexExpression, Memory memory) throws StateMachineException {
-        return requireInteger(evaluate(indexExpression, memory).value);
     }
 
     @Override
@@ -626,7 +632,7 @@ public final class Statement {
 
     private interface OperandEvaluator {
 
-        Result evaluate(List<Node> node, Memory memory) throws StateMachineException;
+        Result evaluate(List<Node> nodes, Memory memory) throws StateMachineException;
     }
 
 

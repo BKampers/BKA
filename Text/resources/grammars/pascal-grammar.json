@@ -106,16 +106,16 @@
             [ "Identifier" ]
         ],
         "Expression": [
+            [ "Comparable", "RelationalOperator", "Comparable" ],
+            [ "Comparable" ]            
+        ],
+        "Comparable": [
             [ "Term", "AdditiveOperation" ]
         ],
         "Term": [
             [ "Factor", "MultiplicativeOperation" ]
         ],
         "Factor": [
-            [ "Comparable", "RelationalOperator", "Comparable" ],
-            [ "Comparable" ]
-        ],
-        "Comparable": [
             [ "Call" ],
             [ "Identifier" ],
             [ "Literal" ],

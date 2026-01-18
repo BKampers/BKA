@@ -229,37 +229,149 @@ public final class Statement {
             .collect(Collectors.toList());
     }
 
-    private static String identifier(Node node) throws StateMachineException {
+    public void execute(Memory memory) throws StateMachineException {
+        Result result = evaluate(expression, memory);
+        if (assignable.isPresent()) {
+            if (result.type.equals("Void")) {
+                throw new IllegalStateException(assignable.get() + " cannot be assigned with void");
+            }
+            store(memory, result.value);
+        }
+        else if (!result.type.equals("Void")) {
+            getLogger().log(Level.WARNING, "Evaluation ({1}) of '{0}' is ignored", new Object[]{expression, result.value});
+        }
+    }
+
+    private Result evaluate(Node node, Memory memory) throws StateMachineException {
         return switch (node.getSymbol()) {
-            case "Identifier" ->
-                node.content();
+            case "Statement" ->
+                evaluateStatement(node, memory);
             case "Expression" ->
-                identifier(node.getChild("Term"));
+                evaluateExpression(node, memory);
             case "Term" ->
-                identifier(node.getChild("Factor"));
+                evaluateTerm(node, memory);
             case "Factor" ->
-                factorIdentifier(node);
+                evaluateFactor(node, memory);
             case "Comparable" ->
-                comparableIdentifier(node);
-            case "ParameterExpression", "Assignable" ->
-                node.getChild("Identifier").content();
+                evaluateComparable(node, memory);
+            case "Identifier" ->
+                new Result(memory.load(node.content()), "var");
+            case "Call" ->
+                evaluateCall(node, memory);
             default ->
-                throw new StateMachineException("Not an identifier: " + node);
+                throw new StateMachineException("Cannot evaluate " + node);
         };
     }
 
-    private static String factorIdentifier(Node node) throws StateMachineException {
-        if (node.getChildren().size() == 1) {
-            return identifier(node.getChild("Comparable"));
-        }
-        throw new StateMachineException("Factor is not an identifier");
+    private Result evaluateStatement(Node node, Memory memory) throws StateMachineException {
+        return switch (node.getChildren().getFirst().getSymbol()) {
+            case "Identifier" ->
+                evaluateIdentifier(node.getChildren().getFirst(), memory);
+            default ->
+                throw new StateMachineException("Cannot evaluate statement: " + node);
+        };
     }
 
-    private static String comparableIdentifier(Node node) throws StateMachineException {
-        if (node.getChildren().size() == 1 && node.startsWith("Identifier")) {
-            return node.content();
+    private Result evaluateExpression(Node node, Memory memory) throws StateMachineException {
+        return switch (node.getChildren().size()) {
+            case 1 ->
+                evaluateComparable(node.getChildren().getFirst(), memory);
+            case 3 ->
+                evaluateRelationalOperation(node, memory);
+            default ->
+                throw new StateMachineException("Cannot evaluate expression " + node);
+        };
+    }
+
+    private Result evaluateRelationalOperation(Node node, Memory memory) throws StateMachineException {
+        Comparable left = requireComparable(evaluate(node.getChildren().getFirst(), memory).value);
+        Comparable right = requireComparable(evaluate(node.getChildren().getLast(), memory).value);
+        int comparison = left.compareTo(right);
+        Node operator = node.getChild("RelationalOperator").getChildren().getFirst();
+        return switch (operator.getSymbol()) {
+            case "\\=" ->
+                new Result(comparison == 0, "Boolean");
+            case "\\<\\>" ->
+                new Result(comparison != 0, "Boolean");
+            case "\\<\\=" ->
+                new Result(comparison <= 0, "Boolean");
+            case "\\<" ->
+                new Result(comparison < 0, "Boolean");
+            case "\\>\\=" ->
+                new Result(comparison >= 0, "Boolean");
+            case "\\>" ->
+                new Result(comparison > 0, "Boolean");
+            default ->
+                throw new StateMachineException("Unsupported relational operator" + operator.content());
+        };
+    }
+
+    private Result evaluateComparable(Node node, Memory memory) throws StateMachineException {
+        return evaluateOperation(
+            evaluateTerm(node.getChild("Term"), memory),
+            node.getChild("AdditiveOperation"),
+            this::evaluateTerm,
+            Statement::additiveOperation,
+            memory);
+    }
+
+
+    private static Object additiveOperation(Object left, String operator, Object right) throws StateMachineException {
+        return switch (operator) {
+            case "\\+" ->
+                sum(requireNumber(left), requireNumber(right));
+            case "\\-" ->
+                difference(requireNumber(left), requireNumber(right));
+            case "OR\\b" ->
+                or(left, right);
+            case "XOR\\b" ->
+                xor(left, right);
+            default ->
+                throw new StateMachineException("Unsupported additive operator: " + operator);
+        };
+    }
+
+    private Result evaluateTerm(Node node, Memory memory) throws StateMachineException {
+        return evaluateOperation(
+            evaluateFactor(node.getChild("Factor"), memory),
+            node.getChild("MultiplicativeOperation"),
+            this::evaluateFactor,
+            Statement::multiplicativeOperation,
+            memory);
+    }
+
+    private Result evaluateOperation(Result left, Node node, OperandEvaluator operandEvaluator, DyadicOperation operation, Memory memory) throws StateMachineException {
+        List<Node> nodes = node.getChildren();
+        if (nodes.isEmpty()) {
+            return left;
         }
-        throw new StateMachineException("Comparable is not an identifier");
+        Object result = operation.compute(
+            left.value,
+            nodes.getFirst().getChildren().getFirst().getSymbol(),
+            operandEvaluator.evaluate(nodes.get(1), memory).value);
+        return evaluateOperation(
+            new Result(result, (result instanceof Boolean) ? "Boolean" : (result instanceof Integer) ? "Integer" : "Real"),
+            nodes.getLast(),
+            operandEvaluator,
+            operation,
+            memory);
+    }
+
+    private static Object multiplicativeOperation(Object left, String operator, Object right) throws StateMachineException {
+        return switch (operator) {
+            case "\\*" ->
+                product(requireNumber(left), requireNumber(right));
+            case "\\/" ->
+                requireNumber(left).doubleValue() / requireNumber(right).doubleValue();
+            case "DIV\\b" ->
+                requireInteger(left) / requireInteger(right);
+            case "MOD\\b" ->
+                requireInteger(left) % requireInteger(right);
+            case "AND\\b" ->
+                and(left, right);
+            default ->
+                throw new StateMachineException("Unsupported multiplicative operator: " + operator);
+        };
     }
 
     private static Number product(Number left, Number right) {
@@ -283,75 +395,11 @@ public final class Statement {
         return left.doubleValue() - right.doubleValue();
     }
 
-    public Optional<Node> getAssignable() {
-        return assignable;
-    }
-
-    public void execute(Memory memory) throws StateMachineException {
-        Result v = evaluate(expression, memory);
-        if (assignable.isPresent()) {
-            if (v.type.equals("Void")) {
-                throw new IllegalStateException(assignable.get() + " cannot be assigned with void");
-            }
-            store(memory, v.value);
+    private static Object and(Object left, Object right) throws StateMachineException {
+        if (left instanceof Boolean leftBoolean) {
+            return leftBoolean & requireBoolean(right);
         }
-        else if (!v.type.equals("Void")) {
-            getLogger().log(Level.WARNING, "Evaluation ({1}) of '{0}' is ignored", new Object[]{expression, v.value});
-        }
-    }
-
-    private Result evaluate(Node node, Memory memory) throws StateMachineException {
-        return switch (node.getSymbol()) {
-            case "Statement" ->
-                evaluateStatement(node, memory);
-            case "Expression" ->
-                evaluateExpression(node.getChildren(), memory);
-            case "Term" ->
-                evaluateTerm(node.getChildren(), memory);
-            case "Factor" ->
-                evaluateFactor(node.getChildren(), memory);
-            case "Comparable" ->
-                evaluateComparable(node.getChildren(), memory);
-            case "Identifier" ->
-                new Result(memory.load(node.content()), "var");
-            case "Call" ->
-                evaluateCall(node, memory);
-            default ->
-                throw new StateMachineException("Cannot evaluate " + node);
-        };
-    }
-
-    private Result evaluateStatement(Node node, Memory memory) throws StateMachineException {
-        return switch (node.getChildren().getFirst().getSymbol()) {
-            case "Identifier" ->
-                evaluateIdentifier(node.getChildren().getFirst(), memory);
-            default ->
-                throw new StateMachineException("Cannot evaluate statement: " + node);
-        };
-    }
-
-    private Result evaluateExpression(List<Node> nodes, Memory memory) throws StateMachineException {
-        return evaluateOperation(
-            evaluateTerm(nodes.getFirst().getChildren(), memory),
-            nodes.getLast().getChildren(),
-            this::evaluateTerm,
-            Statement::additiveOperation,
-            memory);
-    }
-
-    private static Object additiveOperation(Object left, String operator, Object right) throws StateMachineException {
-        return switch (operator) {
-            case "\\+" ->
-                sum(requireNumber(left), requireNumber(right));
-            case "\\-" ->
-                difference(requireNumber(left), requireNumber(right));
-            case "OR\\b" ->
-                or(left, right);
-            case "XOR\\b" ->
-                xor(left, right);
-            default ->
-                throw new StateMachineException("Unsupported additive operator: " + operator);
-        };
+        return requireInteger(left) & requireInteger(right);
     }
 
     private static Object or(Object left, Object right) throws StateMachineException {
@@ -368,71 +416,6 @@ public final class Statement {
         return requireInteger(left) ^ requireInteger(right);
     }
 
-    private Result evaluateTerm(List<Node> nodes, Memory memory) throws StateMachineException {
-        return evaluateOperation(
-            evaluateFactor(nodes.getFirst().getChildren(), memory),
-            nodes.getLast().getChildren(),
-            this::evaluateFactor,
-            Statement::multiplicativeOperation,
-            memory);
-    }
-
-    private Result evaluateOperation(Result left, List<Node> nodes, OperandEvaluator operandEvaluator, DyadicOperation operation, Memory memory) throws StateMachineException {
-        if (nodes.isEmpty()) {
-            return left;
-        }
-        Object result = operation.compute(
-            left.value,
-            nodes.getFirst().getChildren().getFirst().getSymbol(),
-            operandEvaluator.evaluate(nodes.get(1).getChildren(), memory).value);
-        return evaluateOperation(
-            new Result(result, (result instanceof Boolean) ? "Boolean" : (result instanceof Integer) ? "Integer" : "Real"),
-            nodes.getLast().getChildren(),
-            operandEvaluator,
-            operation,
-            memory);
-    }
-
-    private static Object multiplicativeOperation(Object left, String operator, Object right) throws StateMachineException {
-        return switch (operator) {
-            case "\\*" ->
-                product(requireNumber(left), requireNumber(right));
-            case "\\/" ->
-                requireNumber(left).doubleValue() / requireNumber(right).doubleValue();
-            case "DIV\\b" ->
-                requireInteger(left) / requireInteger(right);
-            case "MOD\\b" ->
-                requireInteger(left) % requireInteger(right);
-            case "AND\\b" ->
-                and(left, right);
-            default ->
-                throw new StateMachineException("Unsupported multiplicative operator: " + operator);
-        };
-    }
-
-    private static Object and(Object left, Object right) throws StateMachineException {
-        if (left instanceof Boolean leftBoolean) {
-            return leftBoolean & requireBoolean(right);
-        }
-        return requireInteger(left) & requireInteger(right);
-    }
-
-    private Result evaluateComparable(List<Node> nodes, Memory memory) throws StateMachineException {
-        return switch (nodes.getFirst().getSymbol()) {
-            case "Call" ->
-                evaluateCall(nodes.getFirst(), memory);
-            case "Identifier" ->
-                evaluateIdentifier(nodes.getFirst(), memory);
-            case "UnaryOperator" ->
-                evaluateUnaryOperation(nodes.getFirst(), evaluateComparable(nodes.getLast().getChildren(), memory));
-            case "\\(" ->
-                evaluateExpression(nodes.get(1).getChildren(), memory);
-            // TODO support all rules for "Comparable"
-            default ->
-                evaluateLiteral(nodes.getFirst());
-        };
-    }
-
     private Result evaluateCall(Node node, Memory memory) throws StateMachineException {
         String name = node.getChild("Identifier").content();
         Collection<Transition<Event, GuardCondition, Action>> methodBody = methodProperties.getBody(name);
@@ -440,8 +423,8 @@ public final class Statement {
             throw new StateMachineException("No such procedure or function: '" + name + '\'');
         }
         List<Node> arguments = createArgumentList(node.findChild("ArgumentList"));
-        final List<Node> signatureParameters = methodProperties.getParameters(name);
-        final int parameterCount = signatureParameters.size();
+        List<Node> signatureParameters = methodProperties.getParameters(name);
+        int parameterCount = signatureParameters.size();
         if (arguments.size() != parameterCount) {
             throw new StateMachineException("Invalid numer of parameters for: '" + name + "\'. required: " + parameterCount + ", actual: " + arguments.size());
         }
@@ -509,33 +492,21 @@ public final class Statement {
         return operand;
     }
 
-    private Result evaluateFactor(List<Node> nodes, Memory memory) throws StateMachineException {
-        if (nodes.size() == 1) {
-            return evaluate(nodes.getFirst(), memory);
-        }
-        if (nodes.size() == 3) {
-            Comparable left = requireComparable(evaluate(nodes.getFirst(), memory).value);
-            Comparable right = requireComparable(evaluate(nodes.getLast(), memory).value);
-            int comparison = left.compareTo(right);
-            Node operator = nodes.get(1).getChildren().getFirst();
-            return switch (operator.getSymbol()) {
-                case "\\=" ->
-                    new Result(comparison == 0, "Boolean");
-                case "\\<\\>" ->
-                    new Result(comparison != 0, "Boolean");
-                case "\\<\\=" ->
-                    new Result(comparison <= 0, "Boolean");
-                case "\\<" ->
-                    new Result(comparison < 0, "Boolean");
-                case "\\>\\=" ->
-                    new Result(comparison >= 0, "Boolean");
-                case "\\>" ->
-                    new Result(comparison > 0, "Boolean");
-                default ->
-                    throw new StateMachineException("Unsupported relational operator" + operator.content());
-            };
-        }
-        throw new StateMachineException("Cannot evaluate Factor " + nodes);
+    private Result evaluateFactor(Node node, Memory memory) throws StateMachineException {
+        Node head = node.getChildren().getFirst();
+        return switch (head.getSymbol()) {
+            case "Call" ->
+                evaluateCall(head, memory);
+            case "Identifier" ->
+                evaluateIdentifier(head, memory);
+            case "UnaryOperator" ->
+                evaluateUnaryOperation(head, evaluateComparable(node.getChild("Comparable"), memory));
+            case "\\(" ->
+                evaluateExpression(node.getChild("Expression"), memory);
+            // TODO support all rules for "Factor"
+            default ->
+                evaluateLiteral(node.getChildren().getFirst());
+        };
     }
 
     private Result evaluateLiteral(Node node) throws StateMachineException {
@@ -551,7 +522,7 @@ public final class Statement {
             case "TRUE\\b" ->
                 new Result(true, "Boolean");
             default ->
-                throw new StateMachineException("Cannot evaluate literal" + node);
+                throw new StateMachineException("Cannot evaluate literal " + node);
         };
     }
 
@@ -611,6 +582,42 @@ public final class Statement {
         return (Object[]) memory.load(identifier(target));
     }
 
+    private static String identifier(Node node) throws StateMachineException {
+        return switch (node.getSymbol()) {
+            case "Identifier" ->
+                node.content();
+            case "Expression" ->
+                expressionIdentifier(node);
+            case "Comparable" ->
+                identifier(node.getChild("Term"));
+            case "Term" ->
+                identifier(node.getChild("Factor"));
+            case "Factor" ->
+                factorIdentifier(node);
+            case "ParameterExpression", "Assignable" ->
+                node.getChild("Identifier").content();
+            default ->
+                throw new StateMachineException("Not an identifier: " + node);
+        };
+    }
+
+    private static String expressionIdentifier(Node node) throws StateMachineException {
+        Optional<Node> comparableNode = node.findChild("Comparable");
+        if (comparableNode.isEmpty() || node.getChildren().size() != 1) {
+            throw new StateMachineException("Expression is not an identifier: " + node);
+        }
+        return identifier(comparableNode.get());
+    }
+
+    private static String factorIdentifier(Node node) throws StateMachineException {
+        Optional<Node> identifierNode = node.findChild("Identifier");
+        if (identifierNode.isEmpty() || node.getChildren().size() != 1) {
+            throw new StateMachineException("Factor is not an identifier");
+        }
+        return identifier(identifierNode.get());
+
+    }
+
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder().append('(').append(expression.getSymbol()).append(") ");
@@ -632,7 +639,7 @@ public final class Statement {
 
     private interface OperandEvaluator {
 
-        Result evaluate(List<Node> nodes, Memory memory) throws StateMachineException;
+        Result evaluate(Node nodes, Memory memory) throws StateMachineException;
     }
 
 

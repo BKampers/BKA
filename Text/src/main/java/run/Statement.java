@@ -432,8 +432,8 @@ public final class Statement {
         for (int i = 0; i < parameterCount; ++i) {
             parameters.put(identifier(signatureParameters.get(i)), evaluate(arguments.get(i), memory).value);
         }
+        boolean isProcedure = "Void".equals(methodProperties.getType(name));
         Collection<String> locals = new ArrayList<>(localNames(name));
-        final boolean isProcedure = "Void".equals(methodProperties.getType(name));
         if (!isProcedure) {
             locals.add(name);
         }
@@ -569,12 +569,21 @@ public final class Statement {
 
     private void store(Memory memory, Object value) throws StateMachineException {
         Node target = assignable.get();
-        Optional<Node> indexExpression = target.findChild("Expression");
-        if (indexExpression.isPresent()) {
-            loadArray(memory, target)[intValue(indexExpression.get(), memory)] = value;
+        Optional<Node> indirection = assignable.get().findChild("Indirection");
+        if (indirection.isPresent() && !indirection.get().getChildren().isEmpty()) {
+            Optional<Node> indexExpression = indirection.get().findChild("Expression");
+            if (indexExpression.isPresent()) {
+                loadArray(memory, target)[intValue(indexExpression.get(), memory)] = value;
+            }
         }
         else {
-            memory.store(target.content(), value);
+            Optional<Node> identifier = target.findChild("Identifier");
+            if (identifier.isPresent()) {
+                memory.store(identifier.get().content(), value);
+            }
+            else {
+                memory.store(target.content(), value);
+            }
         }
     }
 
@@ -611,7 +620,7 @@ public final class Statement {
 
     private static String factorIdentifier(Node node) throws StateMachineException {
         Optional<Node> identifierNode = node.findChild("Identifier");
-        if (identifierNode.isEmpty() || node.getChildren().size() != 1) {
+        if (identifierNode.isEmpty() || node.getChildren().size() != 2) {
             throw new StateMachineException("Factor is not an identifier");
         }
         return identifier(identifierNode.get());

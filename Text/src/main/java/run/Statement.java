@@ -513,6 +513,8 @@ public final class Statement {
         return switch (node.getSymbol()) {
             case "Literal", "IntegerLiteral" ->
                 evaluateLiteral(node.getChildren().getFirst());
+            case "RealLiteral" ->
+                parseReal(node.getChildren().getFirst().content());
             case "\\d+" ->
                 parseInteger(node.content(), 10);
             case "\\$[0-9A-F]+" ->
@@ -524,6 +526,15 @@ public final class Statement {
             default ->
                 throw new StateMachineException("Cannot evaluate literal " + node);
         };
+    }
+
+    private static Result parseReal(String string) throws StateMachineException {
+        try {
+            return new Result(Double.valueOf(string), "Real");
+        }
+        catch (NumberFormatException ex) {
+            throw new StateMachineException("Invalid real: " + string, ex);
+        }
     }
 
     private static Result parseInteger(String string, int radix) throws StateMachineException {

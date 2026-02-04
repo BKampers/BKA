@@ -30,6 +30,7 @@ public class PascalCompilerTest {
             VAR one, sum, product, expression, braces: INTEGER;
             VAR t0, both, at_least_one, one_and_only_one: BOOLEAN;
             VAR equals, less_than, less_equal, greater_than, greater_equal, unequal: BOOLEAN;
+            VAR r1: REAL;
             BEGIN
                 one := 1;
                 sum := one + 2;
@@ -45,8 +46,9 @@ public class PascalCompilerTest {
                 less_equal := one <= braces;
                 greater_than := one > braces;
                 greater_equal := one >= braces;
-                unequal := one <> 2
-                                                                                                                                                                                    END.
+                unequal := one <> 2;
+                r1:= 10.0
+            END.
             """);
         StateMachine stateMachine = createStateMachine(tree);
         stateMachine.start();
@@ -65,6 +67,7 @@ public class PascalCompilerTest {
         assertEquals(false, stateMachine.getMemoryObject("greater_than"));
         assertEquals(false, stateMachine.getMemoryObject("greater_equal"));
         assertEquals(true, stateMachine.getMemoryObject("unequal"));
+        assertEquals(10.0, stateMachine.getMemoryObject("r1"));
     }
 
     @Test

@@ -31,6 +31,7 @@ public class PascalCompilerTest {
             VAR t0, both, at_least_one, one_and_only_one: BOOLEAN;
             VAR equals, less_than, less_equal, greater_than, greater_equal, unequal: BOOLEAN;
             VAR r1: REAL;
+            VAR s: STRING;
             BEGIN
                 one := 1;
                 sum := one + 2;
@@ -47,7 +48,8 @@ public class PascalCompilerTest {
                 greater_than := one > braces;
                 greater_equal := one >= braces;
                 unequal := one <> 2;
-                r1:= 10.0
+                r1:= 10.0;
+                s := 'A string';
             END.
             """);
         StateMachine stateMachine = createStateMachine(tree);
@@ -68,6 +70,7 @@ public class PascalCompilerTest {
         assertEquals(false, stateMachine.getMemoryObject("greater_equal"));
         assertEquals(true, stateMachine.getMemoryObject("unequal"));
         assertEquals(10.0, stateMachine.getMemoryObject("r1"));
+        assertEquals("A string", stateMachine.getMemoryObject("s"));
     }
 
     @Test

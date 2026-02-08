@@ -733,7 +733,10 @@ public class PascalParserTest {
     @Test
     public void testLiteral() {
         Node tree = parser.parse("1e1", "Literal");
-        assertParseTree(List.of(ExpectedNode.ofSymbol("RealLiteral")), tree.getChildren());
+        assertParseTree(
+            List.of(ExpectedNode.ofSymbol("RealLiteral",
+                ExpectedNode.ofContent("1e1"))),
+            tree.getChildren());
     }
 
     private static void assertSuccess(Node actual) {

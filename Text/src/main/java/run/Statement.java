@@ -503,26 +503,26 @@ public final class Statement {
                 evaluateUnaryOperation(head, evaluateComparable(node.getChild("Comparable"), memory));
             case "\\(" ->
                 evaluateExpression(node.getChild("Expression"), memory);
-            // TODO support all rules for "Factor"
-            default ->
+            case "Literal" ->
                 evaluateLiteral(node.getChildren().getFirst());
+            default ->
+                throw new StateMachineException("Cannot evaluate factor " + node);
         };
     }
 
     private Result evaluateLiteral(Node node) throws StateMachineException {
-        return switch (node.getSymbol()) {
-            case "Literal", "IntegerLiteral" ->
-                evaluateLiteral(node.getChildren().getFirst());
+        Node head = node.getChildren().getFirst();
+        return switch (head.getSymbol()) {
+            case "\\'" ->
+                new Result(node.getChild("[^']*").content(), "String");
             case "RealLiteral" ->
-                parseReal(node.getChildren().getFirst().content());
-            case "\\d+" ->
-                parseInteger(node.content(), 10);
-            case "\\$[0-9A-F]+" ->
-                parseInteger(node.content().substring(1), 0x10);
+                parseReal(head.content());
+            case "IntegerLiteral" ->
+                parseInteger(head.getChildren());
             case "FALSE\\b" ->
-                new Result(false, "Boolean");
+                new Result(Boolean.FALSE, "Boolean");
             case "TRUE\\b" ->
-                new Result(true, "Boolean");
+                new Result(Boolean.TRUE, "Boolean");
             default ->
                 throw new StateMachineException("Cannot evaluate literal " + node);
         };
@@ -535,6 +535,17 @@ public final class Statement {
         catch (NumberFormatException ex) {
             throw new StateMachineException("Invalid real: " + string, ex);
         }
+    }
+
+    private static Result parseInteger(List<Node> nodes) throws StateMachineException {
+        return switch (nodes.getFirst().getSymbol()) {
+            case "\\d+" ->
+                parseInteger(nodes.getFirst().content(), 10);
+            case "\\$[0-9A-F]+" ->
+                parseInteger(nodes.getFirst().content().substring(1), 0x10);
+            default ->
+                throw new StateMachineException("Unsupported integer symbol: " + nodes.getFirst().getSymbol());
+        };
     }
 
     private static Result parseInteger(String string, int radix) throws StateMachineException {

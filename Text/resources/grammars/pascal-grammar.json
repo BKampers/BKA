@@ -164,7 +164,7 @@
         "Literal": [
             [ "RealLiteral" ],
             [ "IntegerLiteral" ],
-            [ "'", "[^']*", "'" ],
+            [ "\\'", "[^']*", "\\'" ],
             [ "FALSE\\b" ],
             [ "TRUE\\b" ]
         ],

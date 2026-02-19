@@ -597,6 +597,11 @@ public final class Statement {
             if (indexExpression.isPresent()) {
                 loadArray(memory, target)[intValue(indexExpression.get(), memory)] = value;
             }
+            else {
+                if (indirection.get().getChildren().size() >= 2 && "\\.".equals(indirection.get().getChildren().get(0).getSymbol())) {
+                    loadRecord(memory, target).put(indirection.get().getChildren().get(1).content(), value);
+                }
+            }
         }
         else {
             Optional<Node> identifier = target.findChild("Identifier");
@@ -611,6 +616,10 @@ public final class Statement {
 
     private static Object[] loadArray(Memory memory, Node target) throws StateMachineException {
         return (Object[]) memory.load(identifier(target));
+    }
+
+    private static Map<String, Object> loadRecord(Memory memory, Node target) throws StateMachineException {
+        return (Map<String, Object>) memory.load(identifier(target));
     }
 
     private static String identifier(Node node) throws StateMachineException {

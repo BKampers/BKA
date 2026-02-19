@@ -362,6 +362,26 @@ public class PascalCompilerTest {
         assertArrayEquals(new java.lang.Object[]{1, 2}, (java.lang.Object[]) stateMachine.getMemoryObject("integers"));
     }
 
+    @Test
+    public void testRecord() throws StateMachineException {
+        Node tree = parser.parse("""
+            PROGRAM record_var;
+            VAR point : RECORD
+                x,y: REAL
+                END;
+
+            BEGIN
+            point.x := 0.1;
+            point.y := 0.2;
+            END.
+            """);
+        uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
+        Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
+        StateMachine stateMachine = new StateMachine(transitions, null, getVariableInitializations(program));
+        stateMachine.start();
+        assertEquals(Map.of("x", 0.1, "y", 0.2), stateMachine.getMemoryObject("point"));
+    }
+
     private StateMachine createStateMachine(Node tree) throws StateMachineException {
         uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
         Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
@@ -392,6 +412,9 @@ public class PascalCompilerTest {
             int lowerBound = Integer.parseInt(declaration.substring(openIndex + 1, separatorIndex).trim());
             int upperBound = Integer.parseInt(declaration.substring(separatorIndex + 2, closeIndex).trim());
             return new java.lang.Object[upperBound - lowerBound + 1];
+        }
+        else if (declaration.contains("RECORD")) {
+            return new HashMap<String, java.lang.Object>();
         }
         return new java.lang.Object();
     }

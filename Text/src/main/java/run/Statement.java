@@ -483,13 +483,20 @@ public final class Statement {
     }
 
     private Result evaluateUnaryOperation(Node operator, Result operand) throws StateMachineException {
-        if ("\\-".equals(operator.getSymbol())) {
-            return new Result(-requireInteger(operand.value), "Integer");
+        Node head = operator.getChildren().getFirst();
+        if ("\\-".equals(head.getSymbol())) {
+            if ("Integer".equals(operand.type())) {
+                return new Result(-requireInteger(operand.value()), operand.type());
+            }
+            if ("Real".equals(operand.type())) {
+                return new Result(-requireReal(operand.value()), operand.type());
+            }
+            throw new StateMachineException("Integer or Real expected: " + operand.value());
         }
-        if ("NOT\\b".equals(operator.getSymbol())) {
-            return new Result(!requireBoolean(operand.value), "Boolean");
+        if ("NOT\\b".equals(head.getSymbol())) {
+            return new Result(!requireBoolean(operand.value()), "Boolean");
         }
-        return operand;
+        throw new StateMachineException("Unsupported unnary operator: " + operator.content());
     }
 
     private Result evaluateFactor(Node node, Memory memory) throws StateMachineException {
@@ -573,6 +580,13 @@ public final class Statement {
             return number;
         }
         throw new StateMachineException("Not a number: " + object);
+    }
+
+    private static Double requireReal(Object object) throws StateMachineException {
+        if (object instanceof Double real) {
+            return real;
+        }
+        throw new StateMachineException("Not a real: " + object);
     }
 
     private static Integer requireInteger(Object object) throws StateMachineException {
@@ -669,7 +683,7 @@ public final class Statement {
     }
 
     private static Logger getLogger() {
-        return Logger.getLogger(PascalCompiler.class.getName());
+        return Logger.getLogger(Statement.class.getName());
     }
 
     private record Result(java.lang.Object value, String type) {

@@ -22,9 +22,9 @@ public class UmlClassBuilder {
         umlClass = new UmlClass(name, isAbstract);
     }
 
-    public UmlClassBuilder withAttribute(String name, Type type) {
+    public UmlClassBuilder withAttribute(String name, Type type, Member.Visibility visibility) {
         checkBuilt();
-        umlClass.addAttribute(new UmlAttribute(Optional.of(name), Optional.of(type), Member.Visibility.PRIVATE, false));
+        umlClass.addAttribute(new UmlAttribute(Optional.of(name), Optional.of(type), visibility, false));
         return this;
     }
 

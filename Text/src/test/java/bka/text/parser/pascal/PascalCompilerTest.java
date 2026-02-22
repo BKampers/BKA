@@ -28,7 +28,7 @@ public class PascalCompilerTest {
         Node tree = parser.parse("""
             PROGRAM simple_expression;
             VAR one, sum, product, expression, braces: INTEGER;
-            VAR t0, both, at_least_one, one_and_only_one: BOOLEAN;
+            VAR t0, f0, both, at_least_one, one_and_only_one: BOOLEAN;
             VAR equals, less_than, less_equal, greater_than, greater_equal, unequal: BOOLEAN;
             VAR r1: REAL;
             VAR s: STRING;
@@ -38,12 +38,13 @@ public class PascalCompilerTest {
                 product := sum * 4;
                 expression := 2 * sum + 4 * 5;
                 braces := 2 * (sum + 4) * 5;
-                t0 := TRUE;
+                f0 := FALSE;
+                t0 := NOT f0;
                 both := t0 AND FALSE;
                 at_least_one := t0 OR TRUE;
                 one_and_only_one := FALSE OR t0 XOR TRUE;
-                equals := one = (sum - 2);
-                less_than := 0 < (-1 + 2);
+                equals := one = sum - 2;
+                less_than := 0 < 1 + 2;
                 less_equal := one <= braces;
                 greater_than := one > braces;
                 greater_equal := one >= braces;
@@ -59,6 +60,7 @@ public class PascalCompilerTest {
         assertEquals(12, stateMachine.getMemoryObject("product"));
         assertEquals(26, stateMachine.getMemoryObject("expression"));
         assertEquals(70, stateMachine.getMemoryObject("braces"));
+        assertEquals(false, stateMachine.getMemoryObject("f0"));
         assertEquals(true, stateMachine.getMemoryObject("t0"));
         assertEquals(false, stateMachine.getMemoryObject("both"));
         assertEquals(true, stateMachine.getMemoryObject("at_least_one"));
@@ -366,20 +368,26 @@ public class PascalCompilerTest {
     public void testRecord() throws StateMachineException {
         Node tree = parser.parse("""
             PROGRAM record_var;
-            VAR point : RECORD
+            TYPE point = RECORD
                 x,y: REAL
                 END;
-
+            VAR p1: RECORD
+                x,y: REAL
+                END;
+            var p2: Point;
             BEGIN
-            point.x := 0.1;
-            point.y := 0.2;
+            p1.x := 0.1;
+            p1.y := 0.2;
+            p2.x := -0.3;
+            p2.y := -0.4;
             END.
             """);
         uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
         Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
         StateMachine stateMachine = new StateMachine(transitions, null, getVariableInitializations(program));
         stateMachine.start();
-        assertEquals(Map.of("x", 0.1, "y", 0.2), stateMachine.getMemoryObject("point"));
+        assertEquals(Map.of("x", 0.1, "y", 0.2), stateMachine.getMemoryObject("p1"));
+        assertEquals(Map.of("x", -0.3, "y", -0.4), stateMachine.getMemoryObject("p2"));
     }
 
     private StateMachine createStateMachine(Node tree) throws StateMachineException {
@@ -401,10 +409,11 @@ public class PascalCompilerTest {
     private static Map<String, java.lang.Object> getVariableInitializations(uml.structure.Class program) {
         return program.getAttributes().stream().collect(Collectors.toMap(
             attribute -> attribute.getName().get(),
-            attribute -> getValueObject(attribute.getType().get().getName().get())));
+            attribute -> getValueObject(attribute.getType().get())));
     }
 
-    private static java.lang.Object getValueObject(String declaration) {
+    private static java.lang.Object getValueObject(Type type) {
+        String declaration = type.getName().get();
         if (declaration.contains("ARRAY")) {
             int openIndex = declaration.indexOf('[');
             int separatorIndex = declaration.indexOf("..", openIndex);
@@ -413,7 +422,7 @@ public class PascalCompilerTest {
             int upperBound = Integer.parseInt(declaration.substring(separatorIndex + 2, closeIndex).trim());
             return new java.lang.Object[upperBound - lowerBound + 1];
         }
-        else if (declaration.contains("RECORD")) {
+        else if (declaration.contains("RECORD") || type instanceof uml.structure.Class) {
             return new HashMap<String, java.lang.Object>();
         }
         return new java.lang.Object();

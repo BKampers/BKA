@@ -25,6 +25,7 @@ public class PascalCompiler {
         String programName = node.getChild("Identifier").content();
         UmlClassBuilder builder = new UmlClassBuilder(programName);
         Node declarationsNode = node.getChild("Declarations");
+        createTypes(declarationsNode);
         addProgramVariables(builder, declarationsNode);
         buildOperations(builder, programName, declarationsNode);
         methodBodies.put(programName, createBody(node.getChild("CompoundStatement").getChild("Statements")));
@@ -35,6 +36,17 @@ public class PascalCompiler {
         return Collections.unmodifiableCollection(methodBodies.get(operation.getName().get()));
     }
 
+    public void createTypes(Node declarations) {
+        declarations.findChild("TypeDeclaration")
+            .ifPresent(typeDeclaration -> types.add(createType(typeDeclaration)));
+        declarations.findChild("Declarations")
+            .ifPresent(next -> createTypes(next));
+    }
+
+    private Type createType(Node typeDeclaration) {
+        return createRecordType(typeDeclaration.getChild("Identifier"), typeDeclaration.getChild("TypeDeclarationExpression"), Member.Visibility.PUBLIC);
+    }
+
     private void addProgramVariables(UmlClassBuilder builder, Node declarations) {
         declarations.findChild("VariableDeclaration")
             .ifPresent(declaration -> addVariables(builder, declaration));
@@ -43,19 +55,19 @@ public class PascalCompiler {
     }
 
     private void addVariables(UmlClassBuilder builder, Node variableDeclaration) {
-        createAttributes(builder, variableDeclaration.getChild("VariableDeclarationList"));
+        createAttributes(builder, variableDeclaration.getChild("VariableDeclarationList"), Member.Visibility.PRIVATE);
     }
 
-    private void createAttributes(UmlClassBuilder builder, Node variableDeclarationList) {
-        addAttributesFromExpression(builder, variableDeclarationList.getChild("VariableDeclarationExpression"));
+    private void createAttributes(UmlClassBuilder builder, Node variableDeclarationList, Member.Visibility visibility) {
+        addAttributesFromExpression(builder, variableDeclarationList.getChild("VariableDeclarationExpression"), visibility);
         variableDeclarationList.findChild("VariableDeclarationList")
-            .ifPresent(next -> createAttributes(builder, next));
+            .ifPresent(next -> createAttributes(builder, next, visibility));
     }
 
-    private void addAttributesFromExpression(UmlClassBuilder builder, Node variableDeclarationExpression) {
-        Type type = createType(variableDeclarationExpression.getChild("TypeDeclarationExpression"));
+    private void addAttributesFromExpression(UmlClassBuilder builder, Node variableDeclarationExpression, Member.Visibility visibility) {
+        Type type = createType(variableDeclarationExpression.getChild("TypeDeclarationExpression"), visibility);
         createIdentifiers(variableDeclarationExpression.getChild("IdentifierList"))
-            .forEach(name -> builder.withAttribute(name, type));
+            .forEach(name -> builder.withAttribute(name, type, visibility));
     }
 
     private void addPrivateFunctionOperations(UmlClassBuilder builder, Node declarations) {
@@ -167,11 +179,11 @@ public class PascalCompiler {
         return UmlTypeFactory.create(parameterTypeExpression.getChild("TypeExpression").getChildren().getFirst().content());
     }
 
-    private Type createType(Node typeDeclarationExpression) {
+    private Type createType(Node typeDeclarationExpression, Member.Visibility visibility) {
         Node expression = typeDeclarationExpression.getChildren().getFirst();
         return switch (expression.getSymbol()) {
             case "TypeExpression" ->
-                UmlTypeFactory.create(expression.getChildren().getFirst().content());
+                getType(expression);
             case "RangeExpression" ->
                 UmlTypeFactory.create(rangeString(expression));
             case "\\(" ->
@@ -179,10 +191,21 @@ public class PascalCompiler {
             case "ARRAY\\b" ->
                 createArrayType(typeDeclarationExpression.getChild("RangeExpression"), typeDeclarationExpression.getChild("TypeExpression"));
             case "RECORD\\b" ->
-                createRecordType(typeDeclarationExpression);
+                createRecordType(null, typeDeclarationExpression, visibility);
             default ->
                 throw new IllegalStateException("UnsupportedType " + typeDeclarationExpression.getChildren().getFirst().getSymbol());
         };
+    }
+
+    private Type getType(Node expression) {
+        Node head = expression.getChildren().getFirst();
+        return ("Identifier".equals(head.getSymbol()))
+            ? types.stream().filter(typeNameEquals(head)).findAny().orElseThrow(() -> new IllegalStateException("No such type: " + head.content()))
+            : UmlTypeFactory.create(head.content());
+    }
+
+    private static Predicate<Type> typeNameEquals(Node identifier) {
+        return type -> type.getName().get().equalsIgnoreCase(identifier.content());
     }
 
     private static Type createEnumerationType(Node identifierList) {
@@ -193,22 +216,22 @@ public class PascalCompiler {
         return UmlTypeFactory.create("ARRAY [" + rangeString(rangeExpression) + "] OF " + typeExpression.content());
     }
 
-    private uml.structure.Class createRecordType(Node typeDeclarationExpression) {
-        UmlClassBuilder builder = new UmlClassBuilder(typeDeclarationExpression.content());
-        addRecordFields(builder, typeDeclarationExpression.getChild("VariableDeclarationList"));
+    private uml.structure.Class createRecordType(Node identifier, Node typeDeclarationExpression, Member.Visibility visibility) {
+        UmlClassBuilder builder = new UmlClassBuilder((identifier == null) ? "Anonimous RECORD" : identifier.content()); // FIXME anonimous type shoud have empty name,
+        addRecordFields(builder, typeDeclarationExpression.getChild("VariableDeclarationList"), visibility);
         return builder.build();
     }
 
-    private void addRecordFields(UmlClassBuilder builder, Node variableDeclarationList) {
-        addRecordField(builder, variableDeclarationList.getChild("VariableDeclarationExpression"));
+    private void addRecordFields(UmlClassBuilder builder, Node variableDeclarationList, Member.Visibility visibility) {
+        addRecordField(builder, variableDeclarationList.getChild("VariableDeclarationExpression"), visibility);
         variableDeclarationList.findChild("VariableDeclarationList")
-            .ifPresent(next -> addRecordFields(builder, next));
+            .ifPresent(next -> addRecordFields(builder, next, visibility));
     }
 
-    private void addRecordField(UmlClassBuilder builder, Node variableDeclarationExpression) {
-        Type type = createType(variableDeclarationExpression.getChild("TypeDeclarationExpression"));
+    private void addRecordField(UmlClassBuilder builder, Node variableDeclarationExpression, Member.Visibility visibility) {
+        Type type = createType(variableDeclarationExpression.getChild("TypeDeclarationExpression"), visibility);
         createIdentifiers(variableDeclarationExpression.getChild("IdentifierList"))
-            .forEach(name -> builder.withAttribute(name, type));
+            .forEach(name -> builder.withAttribute(name, type, visibility));
     }
 
     private Collection<uml.structure.Object> createVariables(Node variableDeclarationList) {
@@ -220,7 +243,7 @@ public class PascalCompiler {
     }
 
     private Collection<uml.structure.Object> createObjects(Node variableDeclarationExpression) {
-        Type type = createType(variableDeclarationExpression.getChild("TypeDeclarationExpression"));
+        Type type = createType(variableDeclarationExpression.getChild("TypeDeclarationExpression"), Member.Visibility.PRIVATE);
         return createIdentifiers(variableDeclarationExpression.getChild("IdentifierList")).stream()
             .map(identifier -> createObject(identifier, type))
             .collect(Collectors.toList());
@@ -282,6 +305,7 @@ public class PascalCompiler {
     private final Map<String, Collection<Transition<Event, GuardCondition, Action>>> methodBodies = new HashMap<>();
     private final Map<String, List<Node>> methodParameters = new HashMap<>();
     private final Map<String, Collection<uml.structure.Object>> methodLocals = new HashMap<>();
-    private final Map<String, String> methodTypes = new HashMap();
+    private final Map<String, String> methodTypes = new HashMap<>();
+    private final Collection<Type> types = new ArrayList<>();
 
 }

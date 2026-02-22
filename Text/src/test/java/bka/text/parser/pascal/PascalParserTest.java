@@ -101,7 +101,7 @@ public class PascalParserTest {
     }
 
     private static ExpectedNode separator() {
-        return ExpectedNode.ofSymbolAndContent(";");
+        return ExpectedNode.ofSymbol("\\;", ";");
     }
 
     private static ExpectedNode rangeExpression(String start, String end) {

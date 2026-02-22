@@ -16,6 +16,7 @@ import uml.structure.Type;
 /**
  * Statement defined by a pascal parser node and executable by a state machine.
  */
+// TODO refactor this class. Its implementation is based on the Pascal grammar but is needed to run the generic StateMachine.
 public final class Statement {
 
     public Statement(Node expression, PascalCompiler.MethodProperties properties) {

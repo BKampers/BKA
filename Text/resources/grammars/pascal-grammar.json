@@ -1,7 +1,7 @@
 {
     "rules": {
         "Program": [
-            [ "PROGRAM\\b", "Identifier", ";", "Declarations", "CompoundStatement", "\\." ]
+            [ "PROGRAM\\b", "Identifier", "\\;", "Declarations", "CompoundStatement", "\\." ]
         ],
         "Declarations": [
             [ "ConstDeclaration", "Declarations" ], 
@@ -12,26 +12,26 @@
             [ ]
         ],
         "ConstDeclaration": [
-            ["CONST\\b", "Identifier", "\\=", "Expression", ";" ]
+            ["CONST\\b", "Identifier", "\\=", "Expression", "\\;" ]
         ],
         "TypeDeclaration": [
-            [ "TYPE\\b", "Identifier", "\\=", "TypeDeclarationExpression", ";" ]
+            [ "TYPE\\b", "Identifier", "\\=", "TypeDeclarationExpression", "\\;" ]
         ],
         "VariableDeclaration": [
-            [ "VAR\\b", "VariableDeclarationList", ";" ]
+            [ "VAR\\b", "VariableDeclarationList", "\\;" ]
         ],
         "ProcedureDeclaration": [
-            [ "PROCEDURE\\b", "Identifier", "ParameterDeclaration", ";", "Declarations", "CompoundStatement", ";" ]
+            [ "PROCEDURE\\b", "Identifier", "ParameterDeclaration", "\\;", "Declarations", "CompoundStatement", "\\;" ]
         ],
         "FunctionDeclaration": [
-            [ "FUNCTION\\b", "Identifier", "ParameterDeclaration", "\\:", "TypeExpression", ";", "Declarations", "CompoundStatement", ";" ]
+            [ "FUNCTION\\b", "Identifier", "ParameterDeclaration", "\\:", "TypeExpression", "\\;", "Declarations", "CompoundStatement", "\\;" ]
         ],
         "ParameterDeclaration": [
             [ "\\(", "ParameterList", "\\)" ],
             [ ]
         ],
         "ParameterList": [
-            [ "ParameterExpression", ";", "ParameterList" ],
+            [ "ParameterExpression", "\\;", "ParameterList" ],
             [ "ParameterExpression" ]
         ],
         "ParameterExpression": [
@@ -43,7 +43,7 @@
             [ "ARRAY\\b", "OF\\b", "TypeExpression" ]
         ],
         "VariableDeclarationList": [
-            [ "VariableDeclarationExpression", ";", "VariableDeclarationList" ],
+            [ "VariableDeclarationExpression", "\\;", "VariableDeclarationList" ],
             [ "VariableDeclarationExpression" ]
         ],
         "VariableDeclarationExpression": [
@@ -75,7 +75,7 @@
             [ "BEGIN\\b", "Statements", "END\\b" ]
         ],
         "Statements": [
-            [ "Statement", ";", "Statements" ],
+            [ "Statement", "\\;", "Statements" ],
             [ "Statement" ]
         ],
         "Statement": [

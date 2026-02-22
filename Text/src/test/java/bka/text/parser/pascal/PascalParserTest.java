@@ -474,14 +474,10 @@ public class PascalParserTest {
         assertParseTree(List.of(
             ExpectedNode.ofSymbol("UnaryOperator",
                 ExpectedNode.ofContent("-")),
-            ExpectedNode.ofSymbol("Comparable",
-                ExpectedNode.ofSymbol("Term",
-                    ExpectedNode.ofSymbol("Factor",
-                        ExpectedNode.ofSymbol("Identifier",
-                            ExpectedNode.ofContent("c1")),
-                        ExpectedNode.ofSymbol("Indirection")),
-                    ExpectedNode.ofSymbol("MultiplicativeOperation")),
-                ExpectedNode.ofSymbol("AdditiveOperation"))),
+            ExpectedNode.ofSymbol("Factor",
+                ExpectedNode.ofSymbol("Identifier",
+                    ExpectedNode.ofContent("c1")),
+                ExpectedNode.ofSymbol("Indirection"))),
             parser.parse("-c1", "Factor").getChildren());
         assertParseTree(List.of(
             ExpectedNode.ofSymbol("Comparable",

@@ -118,7 +118,7 @@
             [ "Identifier", "Indirection" ], 
             [ "Literal" ],
             [ "\\(", "Expression", "\\)" ],
-            [ "UnaryOperator", "Comparable" ]
+            [ "UnaryOperator", "Factor" ]
         ],
         "Indirection": [
             [ "\\.", "Identifier", "Indirection" ],

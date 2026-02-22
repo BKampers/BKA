@@ -507,7 +507,7 @@ public final class Statement {
             case "Identifier" ->
                 evaluateIdentifier(head, memory);
             case "UnaryOperator" ->
-                evaluateUnaryOperation(head, evaluateComparable(node.getChild("Comparable"), memory));
+                evaluateUnaryOperation(head, evaluateFactor(node.getChild("Factor"), memory));
             case "\\(" ->
                 evaluateExpression(node.getChild("Expression"), memory);
             case "Literal" ->

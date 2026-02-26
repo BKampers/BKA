@@ -11,6 +11,7 @@ import java.util.stream.*;
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import run.*;
 import uml.statechart.*;
 import uml.structure.*;
@@ -413,16 +414,12 @@ public class PascalCompilerTest {
     }
 
     private static java.lang.Object getValueObject(Type type) {
-        String declaration = type.getName().get();
-        if (declaration.contains("ARRAY")) {
-            int openIndex = declaration.indexOf('[');
-            int separatorIndex = declaration.indexOf("..", openIndex);
-            int closeIndex = declaration.indexOf(']', separatorIndex);
-            int lowerBound = Integer.parseInt(declaration.substring(openIndex + 1, separatorIndex).trim());
-            int upperBound = Integer.parseInt(declaration.substring(separatorIndex + 2, closeIndex).trim());
-            return new java.lang.Object[upperBound - lowerBound + 1];
+        if (type.getMultiplicity().isPresent()) {
+            Multiplicity multiplicity = type.getMultiplicity().get();
+            assertTrue(multiplicity.maximum().isPresent(), "Pascal arrays require upperbound");
+            return new java.lang.Object[multiplicity.maximum().getAsInt() - multiplicity.minimum() + 1];
         }
-        else if (declaration.contains("RECORD") || type instanceof uml.structure.Class) {
+        else if (type instanceof uml.structure.Class) {
             return new HashMap<String, java.lang.Object>();
         }
         return new java.lang.Object();

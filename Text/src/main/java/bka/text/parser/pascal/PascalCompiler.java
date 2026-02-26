@@ -174,7 +174,7 @@ public class PascalCompiler {
 
     private Type createParameterType(Node parameterTypeExpression) {
         if (parameterTypeExpression.findChild("ARRAY\\b").isPresent()) {
-            UmlTypeFactory.create("ARRAY OF " + parameterTypeExpression.getChild("TypeExpression").getChildren().getFirst().content());
+            return UmlTypeFactory.create(parameterTypeExpression.getChild("TypeExpression").getChildren().getFirst().content(), UmlMultiplicityFactory.createMultiplicity(0));
         }
         return UmlTypeFactory.create(parameterTypeExpression.getChild("TypeExpression").getChildren().getFirst().content());
     }
@@ -213,11 +213,26 @@ public class PascalCompiler {
     }
 
     private static Type createArrayType(Node rangeExpression, Node typeExpression) {
-        return UmlTypeFactory.create("ARRAY [" + rangeString(rangeExpression) + "] OF " + typeExpression.content());
+        return UmlTypeFactory.create(createMultiplicity(rangeExpression));
+    }
+
+    private static Multiplicity createMultiplicity(Node rangeExpression) {
+        return UmlMultiplicityFactory.createMultiplicity(intValue(rangeExpression.getChildren().getFirst()), intValue(rangeExpression.getChildren().getLast()));
+    }
+
+    private static int intValue(Node node) {
+        return switch (node.getSymbol()) {
+            case "IntegerLiteral" ->
+                Integer.parseInt(node.content());
+            case "Identifier" ->
+                throw new IllegalStateException("Const not supported yet"); // TODO evaluate consts fitrst
+            default ->
+                throw new IllegalStateException(node.content() + " is cannot be evaluated to an integer.");
+        };
     }
 
     private uml.structure.Class createRecordType(Node identifier, Node typeDeclarationExpression, Member.Visibility visibility) {
-        UmlClassBuilder builder = new UmlClassBuilder((identifier == null) ? "Anonimous RECORD" : identifier.content()); // FIXME anonimous type shoud have empty name,
+        UmlClassBuilder builder = (identifier == null) ? new UmlClassBuilder() : new UmlClassBuilder(identifier.content());
         addRecordFields(builder, typeDeclarationExpression.getChild("VariableDeclarationList"), visibility);
         return builder.build();
     }

@@ -28,6 +28,20 @@ public class UmlMultiplicityFactory {
                 return maximum;
             }
 
+            @Override
+            public String toString() {
+                StringBuilder builder = new StringBuilder();
+                builder.append('[').append(minimum).append("..");
+                if (maximum.isPresent()) {
+                    builder.append(maximum);
+                }
+                else {
+                    builder.append('*');
+                }
+                builder.append(']');
+                return builder.toString();
+            }
+
         };
     }
 

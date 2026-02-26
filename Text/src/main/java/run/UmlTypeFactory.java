@@ -55,7 +55,17 @@ public class UmlTypeFactory {
             }
 
             private String displayName() {
-                return (name.isPresent()) ? "'" + name.get() + "'" : "anonymous";
+                StringBuilder builder = new StringBuilder();
+                if (name.isPresent()) {
+                    builder.append('\'').append(name.get()).append('\'');
+                }
+                else {
+                    builder.append("anonymous");
+                }
+                if (getMultiplicity().isPresent()) {
+                    builder.append(getMultiplicity().get());
+                }
+                return builder.toString();
             }
 
         };

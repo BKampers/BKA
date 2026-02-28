@@ -349,13 +349,19 @@ public class PascalCompilerTest {
     public void testArray() throws StateMachineException {
         Node tree = parser.parse("""
             PROGRAM array_var;
+            TYPE Pair = ARRAY[0..1] OF INTEGER;
             VAR integers : ARRAY [0..1] OF INTEGER;
-                i : INTEGER;
+                p : Pair;
+                i, p0, p1 : INTEGER;
 
             BEGIN
             i := 1;
             integers[0] := i;
             integers[i] := 2;
+            i := integers[1];
+            p := integers;
+            p0 := integers[0];
+            p1 := integers[1];
             END.
             """);
         uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
@@ -363,12 +369,16 @@ public class PascalCompilerTest {
         StateMachine stateMachine = new StateMachine(transitions, null, getVariableInitializations(program));
         stateMachine.start();
         assertArrayEquals(new java.lang.Object[]{1, 2}, (java.lang.Object[]) stateMachine.getMemoryObject("integers"));
+        assertEquals(2, stateMachine.getMemoryObject("i"));
+        assertEquals(1, stateMachine.getMemoryObject("p0"));
+        assertEquals(2, stateMachine.getMemoryObject("p1"));
     }
 
     @Test
     public void testRecord() throws StateMachineException {
         Node tree = parser.parse("""
             PROGRAM record_var;
+
             TYPE point = RECORD
                 x,y: REAL
                 END;
@@ -376,11 +386,14 @@ public class PascalCompilerTest {
                 x,y: REAL
                 END;
             var p2: Point;
+            var x: real;
+
             BEGIN
             p1.x := 0.1;
             p1.y := 0.2;
             p2.x := -0.3;
             p2.y := -0.4;
+            x := p1.x;
             END.
             """);
         uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
@@ -389,6 +402,7 @@ public class PascalCompilerTest {
         stateMachine.start();
         assertEquals(Map.of("x", 0.1, "y", 0.2), stateMachine.getMemoryObject("p1"));
         assertEquals(Map.of("x", -0.3, "y", -0.4), stateMachine.getMemoryObject("p2"));
+        assertEquals(0.1, stateMachine.getMemoryObject("x"));
     }
 
     private StateMachine createStateMachine(Node tree) throws StateMachineException {

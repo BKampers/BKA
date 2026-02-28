@@ -506,7 +506,7 @@ public final class Statement {
             case "Call" ->
                 evaluateCall(head, memory);
             case "Identifier" ->
-                evaluateIdentifier(head, memory);
+                evaluateIdentifierExpression(node, memory);
             case "UnaryOperator" ->
                 evaluateUnaryOperation(head, evaluateFactor(node.getChild("Factor"), memory));
             case "\\(" ->
@@ -516,6 +516,44 @@ public final class Statement {
             default ->
                 throw new StateMachineException("Cannot evaluate factor " + node);
         };
+    }
+
+    private Result evaluateIdentifierExpression(Node expression, Memory memory) throws StateMachineException {
+        Optional<Node> indirection = expression.findChild("Indirection");
+        List<Node> indirections = new ArrayList<>();
+        while (indirection.isPresent()) {
+            Node indirectionNode = indirection.get();
+            if (!indirectionNode.getChildren().isEmpty()) {
+                if (indirectionNode.startsWith("\\.")) {
+                    indirections.add(indirectionNode.getChild("Identifier"));
+                }
+                else if (indirectionNode.startsWith("\\[")) {
+                    indirections.add(indirectionNode.getChild("Expression"));
+                }
+                else {
+                    throw new IllegalStateException("Invalid Indirection");
+                }
+                indirection = indirection.get().findChild("Indirection");
+            }
+            else {
+                indirection = Optional.empty();
+            }
+        }
+        Result result = evaluateIdentifier(expression.getChildren().getFirst(), memory);
+        for (Node indirectionNode : indirections) {
+            switch (indirectionNode.getSymbol()) {
+                case "Identifier":
+                    result = new Result(((Map<String, Object>) result.value()).get(indirectionNode.content()), "field");
+                    break;
+                case "Expression":
+                    int index = (int) evaluateExpression(indirectionNode, memory).value();
+                    result = new Result(((java.lang.Object[]) result.value())[index], "element");
+                    break;
+                default:
+                    throw new IllegalStateException("Invalid Indirection");
+            }
+        }
+        return result;
     }
 
     private Result evaluateLiteral(Node node) throws StateMachineException {

@@ -44,7 +44,7 @@ public class PascalCompiler {
     }
 
     private Type createType(Node typeDeclaration) {
-        return createRecordType(typeDeclaration.getChild("Identifier"), typeDeclaration.getChild("TypeDeclarationExpression"), Member.Visibility.PUBLIC);
+        return createDeclaredType(typeDeclaration.getChild("Identifier"), typeDeclaration.getChild("TypeDeclarationExpression"), Member.Visibility.PUBLIC);
     }
 
     private void addProgramVariables(UmlClassBuilder builder, Node declarations) {
@@ -189,9 +189,9 @@ public class PascalCompiler {
             case "\\(" ->
                 createEnumerationType(typeDeclarationExpression.getChild("IdentifierList"));
             case "ARRAY\\b" ->
-                createArrayType(typeDeclarationExpression.getChild("RangeExpression"), typeDeclarationExpression.getChild("TypeExpression"));
+                createArrayType(null, typeDeclarationExpression.getChild("RangeExpression"), typeDeclarationExpression.getChild("TypeExpression"));
             case "RECORD\\b" ->
-                createRecordType(null, typeDeclarationExpression, visibility);
+                createDeclaredType(null, typeDeclarationExpression, visibility);
             default ->
                 throw new IllegalStateException("UnsupportedType " + typeDeclarationExpression.getChildren().getFirst().getSymbol());
         };
@@ -212,14 +212,6 @@ public class PascalCompiler {
         return UmlTypeFactory.create(createIdentifiers(identifierList).stream().collect(Collectors.joining(", ", "( ", " )")));
     }
 
-    private static Type createArrayType(Node rangeExpression, Node typeExpression) {
-        return UmlTypeFactory.create(createMultiplicity(rangeExpression));
-    }
-
-    private static Multiplicity createMultiplicity(Node rangeExpression) {
-        return UmlMultiplicityFactory.createMultiplicity(intValue(rangeExpression.getChildren().getFirst()), intValue(rangeExpression.getChildren().getLast()));
-    }
-
     private static int intValue(Node node) {
         return switch (node.getSymbol()) {
             case "IntegerLiteral" ->
@@ -231,10 +223,26 @@ public class PascalCompiler {
         };
     }
 
-    private uml.structure.Class createRecordType(Node identifier, Node typeDeclarationExpression, Member.Visibility visibility) {
-        UmlClassBuilder builder = (identifier == null) ? new UmlClassBuilder() : new UmlClassBuilder(identifier.content());
-        addRecordFields(builder, typeDeclarationExpression.getChild("VariableDeclarationList"), visibility);
-        return builder.build();
+    private Type createDeclaredType(Node identifier, Node typeDeclarationExpression, Member.Visibility visibility) {
+        if (typeDeclarationExpression.findChild("VariableDeclarationList").isPresent()) {
+            UmlClassBuilder builder = (identifier == null) ? new UmlClassBuilder() : new UmlClassBuilder(identifier.content());
+            addRecordFields(builder, typeDeclarationExpression.getChild("VariableDeclarationList"), visibility);
+            return builder.build();
+        }
+        if (typeDeclarationExpression.startsWith("ARRAY\\b")) {
+            return createArrayType(identifier, typeDeclarationExpression.getChild("RangeExpression"), typeDeclarationExpression.getChild("TypeExpression"));
+        }
+        throw new IllegalStateException("Invalid type declaration expression");
+    }
+
+    private static Type createArrayType(Node identifier, Node rangeExpression, Node typeExpression) {
+        return (identifier == null)
+            ? UmlTypeFactory.create(createMultiplicity(rangeExpression))
+            : UmlTypeFactory.create(identifier.content(), createMultiplicity(rangeExpression));
+    }
+
+    private static Multiplicity createMultiplicity(Node rangeExpression) {
+        return UmlMultiplicityFactory.createMultiplicity(intValue(rangeExpression.getChildren().getFirst()), intValue(rangeExpression.getChildren().getLast()));
     }
 
     private void addRecordFields(UmlClassBuilder builder, Node variableDeclarationList, Member.Visibility visibility) {

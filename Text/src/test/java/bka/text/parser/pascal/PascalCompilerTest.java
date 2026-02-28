@@ -28,19 +28,19 @@ public class PascalCompilerTest {
     public void testSimpleExpression() throws StateMachineException {
         Node tree = parser.parse("""
             PROGRAM simple_expression;
-            VAR one, sum, product, expression, braces: INTEGER;
-            VAR t0, f0, both, at_least_one, one_and_only_one: BOOLEAN;
+            VAR ONE, sum, product, expression, braces: INTEGER;
+            VAR T0, F0, both, at_least_one, one_and_only_one: BOOLEAN;
             VAR equals, less_than, less_equal, greater_than, greater_equal, unequal: BOOLEAN;
             VAR r1: REAL;
             VAR s: STRING;
             BEGIN
-                one := 1;
+                ONE := 1;
                 sum := one + 2;
                 product := sum * 4;
                 expression := 2 * sum + 4 * 5;
                 braces := 2 * (sum + 4) * 5;
                 f0 := FALSE;
-                t0 := NOT f0;
+                t0 := NOT F0;
                 both := t0 AND FALSE;
                 at_least_one := t0 OR TRUE;
                 one_and_only_one := FALSE OR t0 XOR TRUE;
@@ -357,7 +357,7 @@ public class PascalCompilerTest {
             BEGIN
             i := 1;
             integers[0] := i;
-            integers[i] := 2;
+            integers[I] := 2;
             i := integers[1];
             p := integers;
             p0 := integers[0];
@@ -389,6 +389,37 @@ public class PascalCompilerTest {
             var x: real;
 
             BEGIN
+            P1.x := 0.1;
+            P1.y := 0.2;
+            p2.X := -0.3;
+            p2.Y := -0.4;
+            X := p1.X;
+            END.
+            """);
+        uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
+        Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
+        StateMachine stateMachine = new StateMachine(transitions, null, getVariableInitializations(program));
+        stateMachine.start();
+        assertEquals(Map.of("x", 0.1, "y", 0.2), stateMachine.getMemoryObject("p1"));
+        assertEquals(Map.of("x", -0.3, "y", -0.4), stateMachine.getMemoryObject("p2"));
+        assertEquals(0.1, stateMachine.getMemoryObject("x"));
+    }
+
+//    @Test
+    public void testRecordArray() throws StateMachineException {
+        Node tree = parser.parse("""
+            PROGRAM record_var;
+
+            TYPE point = RECORD
+                x,y: REAL
+                END;
+            VAR p1: RECORD
+                x,y: REAL
+                END;
+            var p2: Point;
+            var x: real;
+
+            BEGIN
             p1.x := 0.1;
             p1.y := 0.2;
             p2.x := -0.3;
@@ -404,6 +435,7 @@ public class PascalCompilerTest {
         assertEquals(Map.of("x", -0.3, "y", -0.4), stateMachine.getMemoryObject("p2"));
         assertEquals(0.1, stateMachine.getMemoryObject("x"));
     }
+
 
     private StateMachine createStateMachine(Node tree) throws StateMachineException {
         uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);

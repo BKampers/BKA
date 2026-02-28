@@ -22,7 +22,7 @@ public class PascalCompiler {
         if (!"Program".equals(node.getSymbol())) {
             throw new IllegalArgumentException("Program keyword is missing");
         }
-        String programName = node.getChild("Identifier").content();
+        String programName = identifier(node);
         UmlClassBuilder builder = new UmlClassBuilder(programName);
         Node declarationsNode = node.getChild("Declarations");
         createTypes(declarationsNode);
@@ -44,7 +44,7 @@ public class PascalCompiler {
     }
 
     private Type createType(Node typeDeclaration) {
-        return createDeclaredType(typeDeclaration.getChild("Identifier"), typeDeclaration.getChild("TypeDeclarationExpression"), Member.Visibility.PUBLIC);
+        return createDeclaredType(identifier(typeDeclaration), typeDeclaration.getChild("TypeDeclarationExpression"), Member.Visibility.PUBLIC);
     }
 
     private void addProgramVariables(UmlClassBuilder builder, Node declarations) {
@@ -81,7 +81,7 @@ public class PascalCompiler {
 
     private Consumer<Node> addProcedureDeclaration(UmlClassBuilder builder) {
         return procedureDeclaration -> {
-            String procedureName = procedureDeclaration.getChild("Identifier").content();
+            String procedureName = identifier(procedureDeclaration);
             Map<Node, Parameter> parameters = createParameterList(procedureDeclaration.getChild("ParameterDeclaration"));
             builder.withOperation(
                 procedureName,
@@ -124,7 +124,7 @@ public class PascalCompiler {
 
     private Consumer<Node> addFunctionDeclaration(UmlClassBuilder builder) {
         return functionDeclaration -> {
-            String functionName = functionDeclaration.getChild("Identifier").content();
+            String functionName = identifier(functionDeclaration);
             Map<Node, Parameter> parameters = createParameterList(functionDeclaration.getChild("ParameterDeclaration"));
             builder.withOperation(
                 functionName,
@@ -167,7 +167,7 @@ public class PascalCompiler {
 
             @Override
             public Optional<String> getName() {
-                return Optional.of(parameterExpression.getChild("identifier").content());
+                return Optional.of(identifier(parameterExpression));
             }
         };
     }
@@ -223,22 +223,22 @@ public class PascalCompiler {
         };
     }
 
-    private Type createDeclaredType(Node identifier, Node typeDeclarationExpression, Member.Visibility visibility) {
+    private Type createDeclaredType(String name, Node typeDeclarationExpression, Member.Visibility visibility) {
         if (typeDeclarationExpression.findChild("VariableDeclarationList").isPresent()) {
-            UmlClassBuilder builder = (identifier == null) ? new UmlClassBuilder() : new UmlClassBuilder(identifier.content());
+            UmlClassBuilder builder = (name == null) ? new UmlClassBuilder() : new UmlClassBuilder(name);
             addRecordFields(builder, typeDeclarationExpression.getChild("VariableDeclarationList"), visibility);
             return builder.build();
         }
         if (typeDeclarationExpression.startsWith("ARRAY\\b")) {
-            return createArrayType(identifier, typeDeclarationExpression.getChild("RangeExpression"), typeDeclarationExpression.getChild("TypeExpression"));
+            return createArrayType(name, typeDeclarationExpression.getChild("RangeExpression"), typeDeclarationExpression.getChild("TypeExpression"));
         }
         throw new IllegalStateException("Invalid type declaration expression");
     }
 
-    private static Type createArrayType(Node identifier, Node rangeExpression, Node typeExpression) {
+    private static Type createArrayType(String identifier, Node rangeExpression, Node typeExpression) {
         return (identifier == null)
             ? UmlTypeFactory.create(createMultiplicity(rangeExpression))
-            : UmlTypeFactory.create(identifier.content(), createMultiplicity(rangeExpression));
+            : UmlTypeFactory.create(identifier, createMultiplicity(rangeExpression));
     }
 
     private static Multiplicity createMultiplicity(Node rangeExpression) {
@@ -278,7 +278,7 @@ public class PascalCompiler {
 
     private static List<String> createIdentifiers(Node identifierList) {
         List<String> identifiers = new ArrayList<>();
-        identifiers.add(identifierList.getChild("Identifier").content());
+        identifiers.add(identifier(identifierList));
         identifierList.findChild("IdentifierList")
             .ifPresent(next -> identifiers.addAll(createIdentifiers(next)));
         return identifiers;
@@ -303,6 +303,10 @@ public class PascalCompiler {
             statement.createTransitions(diagram);
             statementNode = statementNode.get().findChild("Statements");
         }
+    }
+
+    private static String identifier(Node node) {
+        return node.getChild("Identifier").content().toLowerCase();
     }
 
     public class MethodProperties {

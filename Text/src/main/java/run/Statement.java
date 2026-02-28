@@ -256,7 +256,7 @@ public final class Statement {
             case "Comparable" ->
                 evaluateComparable(node, memory);
             case "Identifier" ->
-                new Result(memory.load(node.content()), "var");
+                new Result(memory.load(node.content().toLowerCase()), "var");
             case "Call" ->
                 evaluateCall(node, memory);
             default ->
@@ -543,7 +543,7 @@ public final class Statement {
         for (Node indirectionNode : indirections) {
             switch (indirectionNode.getSymbol()) {
                 case "Identifier":
-                    result = new Result(((Map<String, Object>) result.value()).get(indirectionNode.content()), "field");
+                    result = new Result(((Map<String, Object>) result.value()).get(indirectionNode.content().toLowerCase()), "field");
                     break;
                 case "Expression":
                     int index = (int) evaluateExpression(indirectionNode, memory).value();
@@ -652,14 +652,14 @@ public final class Statement {
             }
             else {
                 if (indirection.get().getChildren().size() >= 2 && "\\.".equals(indirection.get().getChildren().get(0).getSymbol())) {
-                    loadRecord(memory, target).put(indirection.get().getChildren().get(1).content(), value);
+                    loadRecord(memory, target).put(indirection.get().getChildren().get(1).content().toLowerCase(), value);
                 }
             }
         }
         else {
             Optional<Node> identifier = target.findChild("Identifier");
             if (identifier.isPresent()) {
-                memory.store(identifier.get().content(), value);
+                memory.store(identifier(target), value);
             }
             else {
                 memory.store(target.content(), value);
@@ -678,7 +678,7 @@ public final class Statement {
     private static String identifier(Node node) throws StateMachineException {
         return switch (node.getSymbol()) {
             case "Identifier" ->
-                node.content();
+                node.content().toLowerCase();
             case "Expression" ->
                 expressionIdentifier(node);
             case "Comparable" ->
@@ -688,7 +688,7 @@ public final class Statement {
             case "Factor" ->
                 factorIdentifier(node);
             case "ParameterExpression", "Assignable" ->
-                node.getChild("Identifier").content();
+                identifier(node.getChild("Identifier"));
             default ->
                 throw new StateMachineException("Not an identifier: " + node);
         };

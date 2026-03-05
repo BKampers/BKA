@@ -11,15 +11,20 @@ import uml.structure.*;
 public class UmlClassBuilder {
 
     public UmlClassBuilder() {
-        this(Optional.empty(), false);
+        this(Optional.empty(), false, Optional.empty());
     }
 
     public UmlClassBuilder(String name) {
-        this(Optional.of(name), false);
+        this(Optional.of(name), false, Optional.empty());
     }
 
-    private UmlClassBuilder(Optional<String> name, boolean isAbstract) {
-        umlClass = new UmlClass(name, isAbstract);
+    private UmlClassBuilder(Optional<String> name, boolean isAbstract, Optional<Multiplicity> multiplicity) {
+        umlClass = new UmlClass(name, isAbstract, multiplicity);
+    }
+
+    public UmlClassBuilder withMultiplicity(Multiplicity multiplicity) {
+        umlClass.setMultiplicity(multiplicity);
+        return this;
     }
 
     public UmlClassBuilder withAttribute(String name, Type type, Member.Visibility visibility) {
@@ -169,8 +174,13 @@ public class UmlClassBuilder {
     private class UmlClass implements uml.structure.Class {
 
         public UmlClass(Optional<String> name, boolean isAbstract) {
+            this(name, isAbstract, Optional.empty());
+        }
+
+        public UmlClass(Optional<String> name, boolean isAbstract, Optional<Multiplicity> multiplicity) {
             this.name = name;
             this.isAbstract = isAbstract;
+            this.multiplicity = multiplicity;
         }
 
         @Override
@@ -194,6 +204,11 @@ public class UmlClassBuilder {
         }
 
         @Override
+        public Optional<Multiplicity> getMultiplicity() {
+            return multiplicity;
+        }
+
+        @Override
         public boolean isAbstract() {
             return isAbstract;
         }
@@ -211,14 +226,25 @@ public class UmlClassBuilder {
             operations.forEach(operation -> operation.setOwner(this));
         }
 
+        private void setMultiplicity(Multiplicity multiplicity) {
+            this.multiplicity = Optional.ofNullable(multiplicity);
+        }
+
+        @Override
+        public String toString() {
+            return "(UML-Class: " + UmlTypeFactory.displayName(this) + ")";
+        }
+
         private final Optional<String> name;
         private final boolean isAbstract;
         private final List<uml.structure.Class> parents = new ArrayList<>();
         private final List<UmlAttribute> attributes = new ArrayList<>();
         private final List<UmlOperation> operations = new ArrayList<>();
+        private Optional<Multiplicity> multiplicity;
     }
 
-
     private boolean built;
+
     private final UmlClass umlClass;
+
 }

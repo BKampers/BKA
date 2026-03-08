@@ -174,7 +174,7 @@ public class PascalCompiler {
 
     private Type createParameterType(Node parameterTypeExpression) {
         if (parameterTypeExpression.findChild("ARRAY\\b").isPresent()) {
-            return UmlTypeFactory.create(parameterTypeExpression.getChild("TypeExpression").getChildren().getFirst().content(), UmlMultiplicityFactory.createMultiplicity(0));
+            return new ArrayType(createType(parameterTypeExpression.getChild("TypeExpression")), 0, 0);
         }
         return UmlTypeFactory.create(parameterTypeExpression.getChild("TypeExpression").getChildren().getFirst().content());
     }

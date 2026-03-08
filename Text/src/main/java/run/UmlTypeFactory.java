@@ -16,15 +16,7 @@ public class UmlTypeFactory {
     }
 
     public static Type create(String name) {
-        return createType(Optional.ofNullable(name), false, Optional.empty(), Collections.emptySet());
-    }
-
-    public static Type create(Multiplicity multiplicity) {
-        return createType(Optional.empty(), false, Optional.of(multiplicity), Collections.emptySet());
-    }
-
-    public static Type create(String name, Multiplicity multiplicity) {
-        return createType(Optional.ofNullable(name), false, Optional.of(multiplicity), Collections.emptySet());
+        return createType(Optional.ofNullable(name), false, Collections.emptySet());
     }
 
     public static String displayName(Type type) {
@@ -34,7 +26,7 @@ public class UmlTypeFactory {
         return "'" + type.getName().get() + "'";
     }
 
-    private static Type createType(Optional<String> name, boolean isAbstract, Optional<Multiplicity> multiplicity, Set<Stereotype> stereotypes) {
+    private static Type createType(Optional<String> name, boolean isAbstract, Set<Stereotype> stereotypes) {
         return new Type() {
             @Override
             public Optional<String> getName() {

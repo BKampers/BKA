@@ -189,7 +189,7 @@ public class PascalCompiler {
             case "\\(" ->
                 createEnumerationType(typeDeclarationExpression.getChild("IdentifierList"));
             case "ARRAY\\b" ->
-                createArrayType(null, typeDeclarationExpression.getChild("RangeExpression"), typeDeclarationExpression.getChild("TypeExpression"));
+                createArrayType(null, typeDeclarationExpression.getChild("RangeExpression"), typeDeclarationExpression.getChild("TypeDeclarationExpression"));
             case "RECORD\\b" ->
                 createDeclaredType(null, typeDeclarationExpression, visibility);
             default ->
@@ -224,25 +224,36 @@ public class PascalCompiler {
     }
 
     private Type createDeclaredType(String name, Node typeDeclarationExpression, Member.Visibility visibility) {
-        if (typeDeclarationExpression.findChild("VariableDeclarationList").isPresent()) {
+        if (typeDeclarationExpression.startsWith("RECORD\\b")) {
             UmlClassBuilder builder = (name == null) ? new UmlClassBuilder() : new UmlClassBuilder(name);
             addRecordFields(builder, typeDeclarationExpression.getChild("VariableDeclarationList"), visibility);
             return builder.build();
         }
         if (typeDeclarationExpression.startsWith("ARRAY\\b")) {
-            return createArrayType(name, typeDeclarationExpression.getChild("RangeExpression"), typeDeclarationExpression.getChild("TypeExpression"));
+            return createArrayType(name, typeDeclarationExpression.getChild("RangeExpression"), typeDeclarationExpression.getChild("TypeDeclarationExpression"));
         }
-        throw new IllegalStateException("Invalid type declaration expression");
+        if (typeDeclarationExpression.startsWith("TypeExpression")) {
+            Node typeExpression = typeDeclarationExpression.getChildren().getFirst();
+            if (typeExpression.startsWith("Identifier")) {
+                throw new IllegalStateException("Custom type not supported yet"); // FIXME support custom type
+            }
+            return UmlTypeFactory.create(name);
+        }
+        throw new IllegalStateException("Invalid type declaration expression: " + typeDeclarationExpression.content());
     }
 
-    private static Type createArrayType(String identifier, Node rangeExpression, Node typeExpression) {
-        return (identifier == null)
-            ? UmlTypeFactory.create(createMultiplicity(rangeExpression))
-            : UmlTypeFactory.create(identifier, createMultiplicity(rangeExpression));
-    }
-
-    private static Multiplicity createMultiplicity(Node rangeExpression) {
-        return UmlMultiplicityFactory.createMultiplicity(intValue(rangeExpression.getChildren().getFirst()), intValue(rangeExpression.getChildren().getLast()));
+    private Type createArrayType(String identifier, Node rangeExpression, Node typeExpression) {
+        if (identifier == null) {
+            return new ArrayType(
+                createDeclaredType(null, typeExpression, Member.Visibility.PUBLIC),
+                intValue(rangeExpression.getChildren().getFirst()),
+                intValue(rangeExpression.getChildren().getLast()));
+        }
+        return new ArrayType(
+            identifier,
+            createDeclaredType(null, typeExpression, Member.Visibility.PUBLIC),
+            intValue(rangeExpression.getChildren().getFirst()),
+            intValue(rangeExpression.getChildren().getLast()));
     }
 
     private void addRecordFields(UmlClassBuilder builder, Node variableDeclarationList, Member.Visibility visibility) {

@@ -53,7 +53,7 @@
             [ "RangeExpression" ],
             [ "TypeExpression" ], 
             [ "\\(", "IdentifierList", "\\)" ],
-            [ "ARRAY\\b", "\\[", "RangeExpression", "\\]", "OF\\b", "TypeExpression" ],
+            [ "ARRAY\\b", "\\[", "RangeExpression", "\\]", "OF\\b", "TypeDeclarationExpression" ],
             [ "RECORD\\b", "VariableDeclarationList", "END\\b" ]
         ],
         "TypeExpression": [

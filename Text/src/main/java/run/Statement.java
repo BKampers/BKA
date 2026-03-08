@@ -519,34 +519,14 @@ public final class Statement {
     }
 
     private Result evaluateIdentifierExpression(Node expression, Memory memory) throws StateMachineException {
-        Optional<Node> indirection = expression.findChild("Indirection");
-        List<Node> indirections = new ArrayList<>();
-        while (indirection.isPresent()) {
-            Node indirectionNode = indirection.get();
-            if (!indirectionNode.getChildren().isEmpty()) {
-                if (indirectionNode.startsWith("\\.")) {
-                    indirections.add(indirectionNode.getChild("Identifier"));
-                }
-                else if (indirectionNode.startsWith("\\[")) {
-                    indirections.add(indirectionNode.getChild("Expression"));
-                }
-                else {
-                    throw new IllegalStateException("Invalid Indirection");
-                }
-                indirection = indirection.get().findChild("Indirection");
-            }
-            else {
-                indirection = Optional.empty();
-            }
-        }
         Result result = evaluateIdentifier(expression.getChildren().getFirst(), memory);
-        for (Node indirectionNode : indirections) {
-            switch (indirectionNode.getSymbol()) {
+        for (Node indirection : getIndirections(expression)) {
+            switch (indirection.getSymbol()) {
                 case "Identifier":
-                    result = new Result(((Map<String, Object>) result.value()).get(indirectionNode.content().toLowerCase()), "field");
+                    result = new Result(((Map<String, Object>) result.value()).get(indirection.content().toLowerCase()), "field");
                     break;
                 case "Expression":
-                    int index = (int) evaluateExpression(indirectionNode, memory).value();
+                    int index = (int) evaluateExpression(indirection, memory).value();
                     result = new Result(((java.lang.Object[]) result.value())[index], "element");
                     break;
                 default:
@@ -554,6 +534,30 @@ public final class Statement {
             }
         }
         return result;
+    }
+
+    private static List<Node> getIndirections(Node expression) {
+        List<Node> indirections = new ArrayList<>();
+        Optional<Node> next = expression.findChild("Indirection");
+        while (next.isPresent()) {
+            Node indirection = next.get();
+            if (indirection.getChildren().isEmpty()) {
+                next = Optional.empty();
+            }
+            else {
+                if (indirection.startsWith("\\.")) {
+                    indirections.add(indirection.getChild("Identifier"));
+                }
+                else if (indirection.startsWith("\\[")) {
+                    indirections.add(indirection.getChild("Expression"));
+                }
+                else {
+                    throw new IllegalStateException("Invalid indirection");
+                }
+                next = indirection.findChild("Indirection");
+            }
+        }
+        return indirections;
     }
 
     private Result evaluateLiteral(Node node) throws StateMachineException {
@@ -644,19 +648,33 @@ public final class Statement {
 
     private void store(Memory memory, Object value) throws StateMachineException {
         Node target = assignable.get();
-        Optional<Node> indirection = assignable.get().findChild("Indirection");
-        if (indirection.isPresent() && !indirection.get().getChildren().isEmpty()) {
-            Optional<Node> indexExpression = indirection.get().findChild("Expression");
-            if (indexExpression.isPresent()) {
-                loadArray(memory, target)[intValue(indexExpression.get(), memory)] = value;
-            }
-            else {
-                if (indirection.get().getChildren().size() >= 2 && "\\.".equals(indirection.get().getChildren().get(0).getSymbol())) {
-                    loadRecord(memory, target).put(indirection.get().getChildren().get(1).content().toLowerCase(), value);
-                }
+        java.lang.Object targetValue = memory.load(identifier(target));
+        List<Node> indirections = getIndirections(target);
+        for (int i = 0; i < indirections.size(); ++i) {
+            Node indirection = indirections.get(i);
+            switch (indirection.getSymbol()) {
+                case "Identifier":
+                    if (i < indirections.size() - 1) {
+                        targetValue = ((Map<String, java.lang.Object>) targetValue).get(indirection.content().toLowerCase());
+                    }
+                    else {
+                        ((Map<String, java.lang.Object>) targetValue).put(indirection.content().toLowerCase(), value);
+                    }
+                    break;
+                case "Expression":
+                    if (i < indirections.size() - 1) {
+                        targetValue = ((java.lang.Object[]) targetValue)[intValue(indirection, memory)];
+                    }
+                    else {
+                        ((java.lang.Object[]) targetValue)[intValue(indirection, memory)] = value;
+                    }
+                    break;
+                default:
+                    throw new StateMachineException("Unsupported indirection" + target.content());
             }
         }
-        else {
+        Optional<Node> indirection = target.findChild("Indirection");
+        if (indirection.isEmpty() || indirection.get().getChildren().isEmpty()) {
             Optional<Node> identifier = target.findChild("Identifier");
             if (identifier.isPresent()) {
                 memory.store(identifier(target), value);

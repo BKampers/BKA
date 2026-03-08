@@ -11,7 +11,6 @@ import java.util.stream.*;
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import run.*;
 import uml.statechart.*;
 import uml.structure.*;
@@ -405,37 +404,122 @@ public class PascalCompilerTest {
         assertEquals(0.1, stateMachine.getMemoryObject("x"));
     }
 
-//    @Test
+    @Test
     public void testRecordArray() throws StateMachineException {
         Node tree = parser.parse("""
-            PROGRAM record_var;
+            PROGRAM record_array;
 
-            TYPE point = RECORD
+            VAR line: ARRAY[0..1] OF RECORD
                 x,y: REAL
                 END;
-            VAR p1: RECORD
-                x,y: REAL
-                END;
-            var p2: Point;
-            var x: real;
+            VAR x0,x1,y0,y1: REAL;
 
             BEGIN
-            p1.x := 0.1;
-            p1.y := 0.2;
-            p2.x := -0.3;
-            p2.y := -0.4;
-            x := p1.x;
+            line[0].x := 1.0;
+            line[0].y := 2.0;
+            line[1].x := 3.0;
+            line[1].y := 4.0;
+            x0 := line[0].x;
+            x1 := line[1].x;
+            y0 := line[0].y;
+            y1 := line[1].y;
             END.
             """);
         uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
         Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
         StateMachine stateMachine = new StateMachine(transitions, null, getVariableInitializations(program));
         stateMachine.start();
-        assertEquals(Map.of("x", 0.1, "y", 0.2), stateMachine.getMemoryObject("p1"));
-        assertEquals(Map.of("x", -0.3, "y", -0.4), stateMachine.getMemoryObject("p2"));
-        assertEquals(0.1, stateMachine.getMemoryObject("x"));
+        assertArrayEquals(new java.lang.Object[]{Map.of("x", 1.0, "y", 2.0), Map.of("x", 3.0, "y", 4.0)}, (java.lang.Object[]) stateMachine.getMemoryObject("line"));
+        assertEquals(1.0, stateMachine.getMemoryObject("x0"));
+        assertEquals(2.0, stateMachine.getMemoryObject("y0"));
+        assertEquals(3.0, stateMachine.getMemoryObject("x1"));
+        assertEquals(4.0, stateMachine.getMemoryObject("y1"));
     }
 
+    @Test
+    public void testRecordOfRecord() throws StateMachineException {
+        Node tree = parser.parse("""
+            PROGRAM record_record;
+
+            TYPE point = RECORD
+                x,y: REAL
+                END;
+
+            VAR line: RECORD
+                s, e: point
+                END;
+             VAR sx, sy, ex, ey : REAL;
+
+            BEGIN
+            line.s.x := 0.1;
+            line.s.y := 0.2;
+            line.e.x := 0.3;
+            line.e.y := 0.4;
+            sx := line.s.x;
+            sy := line.s.y;
+            ex := line.e.x;
+            ey:= line.e.y;
+            END.
+            """);
+        uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
+        Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
+        StateMachine stateMachine = new StateMachine(transitions, null, getVariableInitializations(program));
+        stateMachine.start();
+        assertEquals(Map.of("s", Map.of("x", 0.1, "y", 0.2), "e", Map.of("x", 0.3, "y", 0.4)), stateMachine.getMemoryObject("line"));
+        assertEquals(0.1, stateMachine.getMemoryObject("sx"));
+        assertEquals(0.2, stateMachine.getMemoryObject("sy"));
+        assertEquals(0.3, stateMachine.getMemoryObject("ex"));
+        assertEquals(0.4, stateMachine.getMemoryObject("ey"));
+    }
+
+    @Test
+    public void testMatrix() throws StateMachineException {
+        Node tree = parser.parse("""
+            PROGRAM matrix_var;
+
+            VAR matrix: ARRAY[0..2] OF ARRAY[0..2] OF INTEGER;
+            VAR m00, m01, m02, m10, m11, m12, m20, m21, m22: INTEGER;
+
+            BEGIN
+            matrix[0][0] := 0;
+            matrix[0][1] := 1;
+            matrix[0][2] := 2;
+            matrix[1][0] := 10;
+            matrix[1][1] := 11;
+            matrix[1][2] := 12;
+            matrix[2][0] := 20;
+            matrix[2][1] := 21;
+            matrix[2][2] := 22;
+            m00 := matrix[0][0];
+            m01 := matrix[0][1];
+            m02 := matrix[0][2];
+            m10 := matrix[1][0];
+            m11 := matrix[1][1];
+            m12 := matrix[1][2];
+            m20 := matrix[2][0];
+            m21 := matrix[2][1];
+            m22 := matrix[2][2];
+            END.
+            """);
+        uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
+        Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
+        StateMachine stateMachine = new StateMachine(transitions, null, getVariableInitializations(program));
+        stateMachine.start();
+        assertArrayEquals(new java.lang.Object[]{
+            new java.lang.Object[]{0, 1, 2},
+            new java.lang.Object[]{10, 11, 12},
+            new java.lang.Object[]{20, 21, 22}
+        }, (java.lang.Object[]) stateMachine.getMemoryObject("matrix"));
+        assertEquals(0, stateMachine.getMemoryObject("m00"));
+        assertEquals(1, stateMachine.getMemoryObject("m01"));
+        assertEquals(2, stateMachine.getMemoryObject("m02"));
+        assertEquals(10, stateMachine.getMemoryObject("m10"));
+        assertEquals(11, stateMachine.getMemoryObject("m11"));
+        assertEquals(12, stateMachine.getMemoryObject("m12"));
+        assertEquals(20, stateMachine.getMemoryObject("m20"));
+        assertEquals(21, stateMachine.getMemoryObject("m21"));
+        assertEquals(22, stateMachine.getMemoryObject("m22"));
+    }
 
     private StateMachine createStateMachine(Node tree) throws StateMachineException {
         uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
@@ -456,22 +540,43 @@ public class PascalCompilerTest {
     private static Map<String, java.lang.Object> getVariableInitializations(uml.structure.Class program) {
         return program.getAttributes().stream().collect(Collectors.toMap(
             attribute -> attribute.getName().get(),
-            attribute -> getValueObject(attribute.getType().get())));
+            attribute -> getObjectValue(attribute.getType().get())));
     }
 
-    private static java.lang.Object getValueObject(Type type) {
-        if (type.getMultiplicity().isPresent()) {
-            Multiplicity multiplicity = type.getMultiplicity().get();
-            assertTrue(multiplicity.maximum().isPresent(), "Pascal arrays require upperbound");
-            return new java.lang.Object[multiplicity.maximum().getAsInt() - multiplicity.minimum() + 1];
+    private static java.lang.Object getObjectValue(Type type) {
+        if (type instanceof ArrayType arrayType) {
+            return getArrayValue(arrayType);
         }
-        else if (type instanceof uml.structure.Class) {
-            return new HashMap<String, java.lang.Object>();
+        if (type instanceof uml.structure.Class recordType) {
+            return getRecordValue(recordType);
         }
-        return new java.lang.Object();
+        return EMPTY_VALUE;
+    }
+
+    private static java.lang.Object getArrayValue(ArrayType arrayType) {
+        return IntStream.range(0, sizeOf(arrayType)).boxed()
+            .map(i -> getObjectValue(arrayType.getElementType()))
+            .toArray(java.lang.Object[]::new);
+    }
+
+    private static int sizeOf(ArrayType arrayType) {
+        return arrayType.getUpperBound() - arrayType.getLowerBound() + 1;
+    }
+
+    private static Map<String, java.lang.Object> getRecordValue(uml.structure.Class recordType) {
+        return recordType.getAttributes().stream().collect(Collectors.toMap(
+            field -> field.getName().get(),
+            field -> getObjectValue(field.getType().get())));
     }
 
     private Parser parser;
     private PascalCompiler compiler;
+
+    private static final java.lang.Object EMPTY_VALUE = new java.lang.Object() {
+        @Override
+        public String toString() {
+            return "@EmptyValue";
+        }
+    };
 
 }

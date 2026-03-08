@@ -28,15 +28,10 @@ public class UmlTypeFactory {
     }
 
     public static String displayName(Type type) {
-        StringBuilder builder = new StringBuilder();
-        if (type.getName().isPresent()) {
-            builder.append('\'').append(type.getName().get()).append('\'');
+        if (type.getName().isEmpty()) {
+            return "anonymous";
         }
-        else {
-            builder.append("anonymous");
-        }
-        type.getMultiplicity().ifPresent(multiplicity -> builder.append(multiplicity));
-        return builder.toString();
+        return "'" + type.getName().get() + "'";
     }
 
     private static Type createType(Optional<String> name, boolean isAbstract, Optional<Multiplicity> multiplicity, Set<Stereotype> stereotypes) {
@@ -49,11 +44,6 @@ public class UmlTypeFactory {
             @Override
             public boolean isAbstract() {
                 return isAbstract;
-            }
-
-            @Override
-            public Optional<Multiplicity> getMultiplicity() {
-                return multiplicity;
             }
 
             @Override

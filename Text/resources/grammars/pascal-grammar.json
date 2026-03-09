@@ -60,6 +60,7 @@
             [ "BOOLEAN\\b" ],
             [ "INTEGER\\b" ],
             [ "REAL\\b" ],
+            [ "CHAR\\b" ],
             [ "STRING\\b" ],
             [ "Identifier" ]
         ],

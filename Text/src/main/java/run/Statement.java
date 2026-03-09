@@ -134,7 +134,7 @@ public final class Statement {
         return new Decision<>() {
             @Override
             public Evaluator getExpression() {
-                return memory -> evaluate(operand, memory).value;
+                return memory -> evaluate(operand, memory).value();
             }
             @Override
             public Optional<Type> getType() {
@@ -163,7 +163,7 @@ public final class Statement {
                 return memory -> {
                     Result left = evaluate(leftOperand, memory);
                     Result right = evaluate(rightOperand, memory);
-                    return predicate.test(requireComparable(left.value).compareTo(requireComparable(right.value)));
+                    return predicate.test(requireComparable(left.value()).compareTo(requireComparable(right.value())));
                 };
             }
 
@@ -233,13 +233,13 @@ public final class Statement {
     public void execute(Memory memory) throws StateMachineException {
         Result result = evaluate(expression, memory);
         if (assignable.isPresent()) {
-            if (result.type.equals("Void")) {
+            if (result.type().equals("Void")) {
                 throw new IllegalStateException(assignable.get() + " cannot be assigned with void");
             }
-            store(memory, result.value);
+            store(memory, result.value());
         }
-        else if (!result.type.equals("Void")) {
-            getLogger().log(Level.WARNING, "Evaluation ({1}) of '{0}' is ignored", new Object[]{expression, result.value});
+        else if (!result.type().equals("Void")) {
+            getLogger().log(Level.WARNING, "Evaluation ({1}) of '{0}' is ignored", new Object[]{expression, result.value()});
         }
     }
 
@@ -285,8 +285,8 @@ public final class Statement {
     }
 
     private Result evaluateRelationalOperation(Node node, Memory memory) throws StateMachineException {
-        Comparable left = requireComparable(evaluate(node.getChildren().getFirst(), memory).value);
-        Comparable right = requireComparable(evaluate(node.getChildren().getLast(), memory).value);
+        Comparable left = requireComparable(evaluate(node.getChildren().getFirst(), memory).value());
+        Comparable right = requireComparable(evaluate(node.getChildren().getLast(), memory).value());
         int comparison = left.compareTo(right);
         Node operator = node.getChild("RelationalOperator").getChildren().getFirst();
         return switch (operator.getSymbol()) {
@@ -347,9 +347,9 @@ public final class Statement {
             return left;
         }
         Object result = operation.compute(
-            left.value,
+            left.value(),
             nodes.getFirst().getChildren().getFirst().getSymbol(),
-            operandEvaluator.evaluate(nodes.get(1), memory).value);
+            operandEvaluator.evaluate(nodes.get(1), memory).value());
         return evaluateOperation(
             new Result(result, (result instanceof Boolean) ? "Boolean" : (result instanceof Integer) ? "Integer" : "Real"),
             nodes.getLast(),
@@ -431,7 +431,7 @@ public final class Statement {
         }
         Map<String, Object> parameters = new HashMap<>();
         for (int i = 0; i < parameterCount; ++i) {
-            parameters.put(identifier(signatureParameters.get(i)), evaluate(arguments.get(i), memory).value);
+            parameters.put(identifier(signatureParameters.get(i)), evaluate(arguments.get(i), memory).value());
         }
         boolean isProcedure = "Void".equals(methodProperties.getType(name));
         Collection<String> locals = new ArrayList<>(localNames(name));
@@ -608,7 +608,7 @@ public final class Statement {
     }
 
     private int intValue(Node indexExpression, Memory memory) throws StateMachineException {
-        return requireInteger(evaluate(indexExpression, memory).value);
+        return requireInteger(evaluate(indexExpression, memory).value());
     }
 
     private static Comparable requireComparable(Object object) throws StateMachineException {

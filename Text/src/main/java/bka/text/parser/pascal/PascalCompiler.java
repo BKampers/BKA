@@ -18,6 +18,14 @@ import uml.structure.*;
  */
 public class PascalCompiler {
 
+    public PascalCompiler() {
+        types.add(UmlTypeFactory.create("boolean"));
+        types.add(UmlTypeFactory.create("integer"));
+        types.add(UmlTypeFactory.create("real"));
+        types.add(UmlTypeFactory.create("char"));
+        types.add(UmlTypeFactory.create("string"));
+    }
+
     public uml.structure.Class createProgramClass(Node node) {
         if (!"Program".equals(node.getSymbol())) {
             throw new IllegalArgumentException("Program keyword is missing");
@@ -86,7 +94,7 @@ public class PascalCompiler {
             builder.withOperation(
                 procedureName,
                 new ArrayList<>(parameters.values()),
-                UmlTypeFactory.create("Void"),
+                VOID_TYPE,
                 Member.Visibility.PRIVATE);
             methodBodies.put(procedureName, createBody(procedureDeclaration.getChild("CompoundStatement").getChild("Statements")));
             methodParameters.put(procedureName, new ArrayList<>(parameters.keySet()));
@@ -102,26 +110,6 @@ public class PascalCompiler {
         return createVariables(declarations.getChild("VariableDeclaration").getChild("VariableDeclarationList"));
     }
 
-    private static uml.structure.Object createObject(String name, Type type) {
-        return new uml.structure.Object() {
-            @Override
-            public Optional<String> getName() {
-                return Optional.of(name);
-            }
-
-            @Override
-            public Optional<Type> getType() {
-                return Optional.of(type);
-            }
-
-            @Override
-            public Map<Attribute, Expression> getAttributeValues() {
-                return Collections.emptyMap();
-            }
-
-        };
-    }
-
     private Consumer<Node> addFunctionDeclaration(UmlClassBuilder builder) {
         return functionDeclaration -> {
             String functionName = identifier(functionDeclaration);
@@ -129,7 +117,7 @@ public class PascalCompiler {
             builder.withOperation(
                 functionName,
                 new ArrayList<>(parameters.values()),
-                UmlTypeFactory.create(functionDeclaration.getChild("TypeExpression").content()),
+                getType(functionDeclaration.getChild("TypeExpression")),
                 Member.Visibility.PRIVATE);
             methodBodies.put(functionName, createBody(functionDeclaration.getChild("CompoundStatement").getChild("Statements")));
             methodParameters.put(functionName, new ArrayList<>(parameters.keySet()));
@@ -154,29 +142,17 @@ public class PascalCompiler {
 
     private Parameter createParameter(Node parameterList) {
         Node parameterExpression = parameterList.getChild("ParameterExpression");
-        return new Parameter() {
-            @Override
-            public Parameter.Direction getDirection() {
-                return (parameterExpression.findChild("VAR\\b").isPresent()) ? Parameter.Direction.INOUT : Parameter.Direction.IN;
-            }
-
-            @Override
-            public Optional<Type> getType() {
-                return Optional.of(createParameterType(parameterExpression.getChild("parameterTypeExpression")));
-            }
-
-            @Override
-            public Optional<String> getName() {
-                return Optional.of(identifier(parameterExpression));
-            }
-        };
+        return UmlParameterFactory.create(
+            (parameterExpression.findChild("VAR\\b").isPresent()) ? Parameter.Direction.INOUT : Parameter.Direction.IN,
+            createParameterType(parameterExpression.getChild("ParameterTypeExpression")),
+            identifier(parameterExpression));
     }
 
     private Type createParameterType(Node parameterTypeExpression) {
         if (parameterTypeExpression.findChild("ARRAY\\b").isPresent()) {
             return new ArrayType(createType(parameterTypeExpression.getChild("TypeExpression")), 0, 0);
         }
-        return UmlTypeFactory.create(parameterTypeExpression.getChild("TypeExpression").getChildren().getFirst().content());
+        return getType(parameterTypeExpression.getChild("TypeExpression"));
     }
 
     private Type createType(Node typeDeclarationExpression, Member.Visibility visibility) {
@@ -195,13 +171,6 @@ public class PascalCompiler {
             default ->
                 throw new IllegalStateException("UnsupportedType " + typeDeclarationExpression.getChildren().getFirst().getSymbol());
         };
-    }
-
-    private Type getType(Node expression) {
-        Node head = expression.getChildren().getFirst();
-        return ("Identifier".equals(head.getSymbol()))
-            ? types.stream().filter(typeNameEquals(head)).findAny().orElseThrow(() -> new IllegalStateException("No such type: " + head.content()))
-            : UmlTypeFactory.create(head.content());
     }
 
     private static Predicate<Type> typeNameEquals(Node identifier) {
@@ -233,13 +202,13 @@ public class PascalCompiler {
             return createArrayType(name, typeDeclarationExpression.getChild("RangeExpression"), typeDeclarationExpression.getChild("TypeDeclarationExpression"));
         }
         if (typeDeclarationExpression.startsWith("TypeExpression")) {
-            Node typeExpression = typeDeclarationExpression.getChildren().getFirst();
-            if (typeExpression.startsWith("Identifier")) {
-                throw new IllegalStateException("Custom type not supported yet"); // FIXME support custom type
-            }
-            return UmlTypeFactory.create(name);
+            return getType(typeDeclarationExpression.getChild("TypeExpression"));
         }
         throw new IllegalStateException("Invalid type declaration expression: " + typeDeclarationExpression.content());
+    }
+
+    private Type getType(Node typeExpression) {
+        return types.stream().filter(typeNameEquals(typeExpression)).findAny().orElseThrow(() -> new IllegalStateException("No such type: " + typeExpression.content()));
     }
 
     private Type createArrayType(String identifier, Node rangeExpression, Node typeExpression) {
@@ -279,7 +248,7 @@ public class PascalCompiler {
     private Collection<uml.structure.Object> createObjects(Node variableDeclarationExpression) {
         Type type = createType(variableDeclarationExpression.getChild("TypeDeclarationExpression"), Member.Visibility.PRIVATE);
         return createIdentifiers(variableDeclarationExpression.getChild("IdentifierList")).stream()
-            .map(identifier -> createObject(identifier, type))
+            .map(identifier -> UmlObjectFactory.create(identifier, type))
             .collect(Collectors.toList());
     }
 
@@ -345,5 +314,7 @@ public class PascalCompiler {
     private final Map<String, Collection<uml.structure.Object>> methodLocals = new HashMap<>();
     private final Map<String, String> methodTypes = new HashMap<>();
     private final Collection<Type> types = new ArrayList<>();
+
+    private static final Type VOID_TYPE = UmlTypeFactory.create("void");
 
 }

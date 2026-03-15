@@ -5,7 +5,7 @@
 
 package bka.text.parser.pascal;
 
-import bka.text.parser.Node;
+import bka.text.parser.*;
 import java.util.*;
 import java.util.function.*;
 import java.util.stream.*;
@@ -19,11 +19,11 @@ import uml.structure.*;
 public class PascalCompiler {
 
     public PascalCompiler() {
-        types.add(UmlTypeFactory.create("boolean"));
-        types.add(UmlTypeFactory.create("integer"));
-        types.add(UmlTypeFactory.create("real"));
-        types.add(UmlTypeFactory.create("char"));
-        types.add(UmlTypeFactory.create("string"));
+        declaredTypes.add(UmlTypeFactory.create("boolean"));
+        declaredTypes.add(UmlTypeFactory.create("integer"));
+        declaredTypes.add(UmlTypeFactory.create("real"));
+        declaredTypes.add(UmlTypeFactory.create("char"));
+        declaredTypes.add(UmlTypeFactory.create("string"));
     }
 
     public uml.structure.Class createProgramClass(Node node) {
@@ -36,7 +36,7 @@ public class PascalCompiler {
         createTypes(declarationsNode);
         addProgramVariables(builder, declarationsNode);
         buildOperations(builder, programName, declarationsNode);
-        methodBodies.put(programName, createBody(node.getChild("CompoundStatement").getChild("Statements")));
+        methodBodies.put(programName, createBody(programName, node.getChild("CompoundStatement").getChild("Statements")));
         return builder.build();
     }
 
@@ -46,7 +46,7 @@ public class PascalCompiler {
 
     public void createTypes(Node declarations) {
         declarations.findChild("TypeDeclaration")
-            .ifPresent(typeDeclaration -> types.add(createType(typeDeclaration)));
+            .ifPresent(typeDeclaration -> declaredTypes.add(createType(typeDeclaration)));
         declarations.findChild("Declarations")
             .ifPresent(next -> createTypes(next));
     }
@@ -80,28 +80,23 @@ public class PascalCompiler {
 
     private void addPrivateFunctionOperations(UmlClassBuilder builder, Node declarations) {
         declarations.findChild("ProcedureDeclaration")
-            .ifPresent(addProcedureDeclaration(builder));
+            .ifPresent(procedureDeclaration -> addMethod(builder, VOID_TYPE, procedureDeclaration));
         declarations.findChild("FunctionDeclaration")
-            .ifPresent(addFunctionDeclaration(builder));
+            .ifPresent(functionDeclaration -> addMethod(builder, getType(functionDeclaration.getChild("TypeExpression")), functionDeclaration));
         declarations.findChild("Declarations")
             .ifPresent(next -> addPrivateFunctionOperations(builder, next));
     }
 
-    private Consumer<Node> addProcedureDeclaration(UmlClassBuilder builder) {
-        return procedureDeclaration -> {
-            String procedureName = identifier(procedureDeclaration);
-            Map<Node, Parameter> parameters = createParameterList(procedureDeclaration.getChild("ParameterDeclaration"));
-            builder.withOperation(
-                procedureName,
-                new ArrayList<>(parameters.values()),
-                VOID_TYPE,
-                Member.Visibility.PRIVATE);
-            methodBodies.put(procedureName, createBody(procedureDeclaration.getChild("CompoundStatement").getChild("Statements")));
-            methodParameters.put(procedureName, new ArrayList<>(parameters.keySet()));
-            methodTypes.put(procedureName, "Void");
-            methodLocals.put(procedureName, createLocals(procedureDeclaration.getChild("Declarations")));
-        };
+    private void addMethod(UmlClassBuilder builder, Type type, Node declaration) {
+        String methodName = identifier(declaration);
+        List<Parameter> parameters = createParameterList(declaration.getChild("ParameterDeclaration"));
+        methodParameters.put(methodName, parameters);
+        methodTypes.put(methodName, type);
+        methodLocals.put(methodName, createLocals(declaration.getChild("Declarations")));
+        methodBodies.put(methodName, createBody(methodName, declaration.getChild("CompoundStatement").getChild("Statements")));
+        builder.withOperation(methodName, parameters, type, Member.Visibility.PRIVATE);
     }
+
 
     private Collection<uml.structure.Object> createLocals(Node declarations) {
         if (declarations.getChildren().isEmpty()) {
@@ -110,33 +105,16 @@ public class PascalCompiler {
         return createVariables(declarations.getChild("VariableDeclaration").getChild("VariableDeclarationList"));
     }
 
-    private Consumer<Node> addFunctionDeclaration(UmlClassBuilder builder) {
-        return functionDeclaration -> {
-            String functionName = identifier(functionDeclaration);
-            Map<Node, Parameter> parameters = createParameterList(functionDeclaration.getChild("ParameterDeclaration"));
-            builder.withOperation(
-                functionName,
-                new ArrayList<>(parameters.values()),
-                getType(functionDeclaration.getChild("TypeExpression")),
-                Member.Visibility.PRIVATE);
-            methodBodies.put(functionName, createBody(functionDeclaration.getChild("CompoundStatement").getChild("Statements")));
-            methodParameters.put(functionName, new ArrayList<>(parameters.keySet()));
-            methodTypes.put(functionName, functionDeclaration.getChild("TypeExpression").content());
-            methodLocals.put(functionName, createLocals(functionDeclaration.getChild("Declarations")));
-        };
-    }
-
-    private Map<Node, Parameter> createParameterList(Node parameterDeclaration) {
+    private List<Parameter> createParameterList(Node parameterDeclaration) {
         if (parameterDeclaration.getChildren().isEmpty()) {
-            return Collections.emptyMap();
+            return Collections.emptyList();
         }
-        Map<Node, Parameter> parameters = new LinkedHashMap<>();
+        List<Parameter> parameters = new ArrayList<>();
         Node parameterList = parameterDeclaration.getChild("ParameterList");
-        while (parameterList != null) {
-            parameters.put(parameterList.getChild("ParameterExpression"), createParameter(parameterList));
-            Optional<Node> remainder = parameterList.findChild("ParameterList");
-            parameterList = remainder.orElse(null);
-        }
+        do {
+            parameters.add(createParameter(parameterList));
+            parameterList = parameterList.findChild("ParameterList").orElse(null);
+        } while (parameterList != null);
         return parameters;
     }
 
@@ -208,7 +186,10 @@ public class PascalCompiler {
     }
 
     private Type getType(Node typeExpression) {
-        return types.stream().filter(typeNameEquals(typeExpression)).findAny().orElseThrow(() -> new IllegalStateException("No such type: " + typeExpression.content()));
+        return declaredTypes.stream()
+            .filter(typeNameEquals(typeExpression))
+            .findAny()
+            .orElseThrow(() -> new IllegalStateException("No such type: " + typeExpression.content()));
     }
 
     private Type createArrayType(String identifier, Node rangeExpression, Node typeExpression) {
@@ -269,25 +250,51 @@ public class PascalCompiler {
         addPrivateFunctionOperations(builder, declarations);
     }
 
-    private Collection<Transition<Event, GuardCondition, Action>> createBody(Node compoundStatement) {
+    private Collection<Transition<Event, GuardCondition, Action>> createBody(String methodName, Node compoundStatement) {
         ActivityDiagramBuilder diagram = new ActivityDiagramBuilder();
-        createStatementSequence(compoundStatement, diagram);
+        createStatementSequence(methodName, compoundStatement, diagram);
         diagram.addFinalState();
         return diagram.getTransitions();
     }
 
-    private void createStatementSequence(Node statements, ActivityDiagramBuilder diagram) {
-        Optional<Node> statementNode = Optional.of(statements);
-        while (statementNode.isPresent()) {
-            Statement statement = new Statement(statementNode.get().getChild("Statement"), new MethodProperties());
+    private void createStatementSequence(String methodName, Node statements, ActivityDiagramBuilder diagram) {
+        Node statementNode = statements;
+        do {
+            // TODO determine statement type
+//            Type type = null;
+//            Optional<Node> assignable = statementNode.getChild("Statement").findChild("Assignable");
+//            if (assignable.isPresent()) {
+//                String identifier = identifier(assignable.get());
+//                if (identifier.equalsIgnoreCase(methodName)) {
+//                    type = methodTypes.get(methodName);
+//                }
+//                if (type == null && methodParameters.containsKey(methodName)) {
+//                    Optional<Parameter> parameter = methodParameters.get(methodName).stream()
+//                        .filter(p -> identifier.equalsIgnoreCase(p.getName().get()))
+//                        .findAny();
+//                    if (parameter.isPresent()) {
+//                        type = parameter.get().getType().get();
+//                    }
+//                }
+//                if (type == null && methodLocals.containsKey(methodName)) {
+//                    Optional<uml.structure.Object> local = methodLocals.get(methodName).stream()
+//                        .filter(object -> object.getName().get().equalsIgnoreCase(identifier))
+//                        .findAny();
+//                    if (local.isPresent()) {
+//                        type = local.get().getType().get();
+//                    }
+//                }
+//            }
+            Statement statement = new Statement(statementNode.getChild("Statement"), new MethodProperties());
             statement.createTransitions(diagram);
-            statementNode = statementNode.get().findChild("Statements");
-        }
+            statementNode = statementNode.findChild("Statements").orElse(null);
+        } while (statementNode != null);
     }
 
     private static String identifier(Node node) {
         return node.getChild("Identifier").content().toLowerCase();
     }
+
 
     public class MethodProperties {
 
@@ -295,11 +302,11 @@ public class PascalCompiler {
             return methodBodies.get(name);
         }
 
-        public List<Node> getParameters(String name) {
+        public List<Parameter> getParameters(String name) {
             return Collections.unmodifiableList(methodParameters.get(name));
         }
 
-        public String getType(String name) {
+        public Type getType(String name) {
             return methodTypes.get(name);
         }
 
@@ -307,13 +314,17 @@ public class PascalCompiler {
             return Collections.unmodifiableCollection(methodLocals.get(name));
         }
 
+        public boolean isProcedure(String name) {
+            return VOID_TYPE.equals(methodTypes.get(name));
+        }
+
     }
 
     private final Map<String, Collection<Transition<Event, GuardCondition, Action>>> methodBodies = new HashMap<>();
-    private final Map<String, List<Node>> methodParameters = new HashMap<>();
+    private final Map<String, List<Parameter>> methodParameters = new HashMap<>();
     private final Map<String, Collection<uml.structure.Object>> methodLocals = new HashMap<>();
-    private final Map<String, String> methodTypes = new HashMap<>();
-    private final Collection<Type> types = new ArrayList<>();
+    private final Map<String, Type> methodTypes = new HashMap<>();
+    private final Collection<Type> declaredTypes = new ArrayList<>();
 
     private static final Type VOID_TYPE = UmlTypeFactory.create("void");
 

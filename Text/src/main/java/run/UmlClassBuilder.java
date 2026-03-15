@@ -103,7 +103,7 @@ public class UmlClassBuilder {
 
         public UmlOperation(Optional<String> name, List<Parameter> parameters, Optional<Type> type, Visibility visibility, boolean isClassScoped, boolean isAbstract, Set<Stereotype> stereotypes) {
             this.name = name;
-            this.parameters = new ArrayList<>(parameters);
+            this.parameters = List.copyOf(parameters);
             this.type = type;
             this.visibility = visibility;
             this.isAbstract = isAbstract;
@@ -118,7 +118,7 @@ public class UmlClassBuilder {
 
         @Override
         public List<Parameter> getParameters() {
-            return Collections.unmodifiableList(parameters);
+            return parameters;
         }
 
         @Override
@@ -161,8 +161,8 @@ public class UmlClassBuilder {
         private final List<Parameter> parameters;
         private final boolean isAbstract;
         private final boolean isClassScoped;
-        private uml.structure.Class owner;
         private final Set<Stereotype> stereotypes;
+        private uml.structure.Class owner;
     }
 
 

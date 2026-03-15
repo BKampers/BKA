@@ -2,21 +2,20 @@
 ** © Bart Kampers
 ** This code may not be used for any purpose that harms humans, humanity, the environment or the universe.
 */
-package run;
+package bka.text.parser.pascal;
 
 import bka.text.parser.*;
-import bka.text.parser.pascal.*;
 import java.util.*;
 import java.util.function.*;
 import java.util.logging.*;
 import java.util.stream.*;
+import run.*;
 import uml.statechart.*;
-import uml.structure.Type;
+import uml.structure.*;
 
 /**
  * Statement defined by a pascal parser node and executable by a state machine.
  */
-// TODO refactor this class. Its implementation is based on the Pascal grammar but is needed to run the generic StateMachine.
 public final class Statement {
 
     public Statement(Node expression, PascalCompiler.MethodProperties properties) {
@@ -199,7 +198,7 @@ public final class Statement {
     }
 
     private static ActionState<Action> createActionState(Statement statement) {
-        return UmlStateFactory.createActionState(Action.of(statement));
+        return UmlStateFactory.createActionState(statement::execute);
     }
 
     private void createTransitions(Node statements, ActivityDiagramBuilder diagram) {
@@ -239,7 +238,7 @@ public final class Statement {
             store(memory, result.value());
         }
         else if (!result.type().equals("Void")) {
-            getLogger().log(Level.WARNING, "Evaluation ({1}) of '{0}' is ignored", new Object[]{expression, result.value()});
+            getLogger().log(Level.WARNING, "Evaluation ({1}) of '{0}' is ignored", new java.lang.Object[]{expression, result.value()});
         }
     }
 
@@ -317,7 +316,7 @@ public final class Statement {
     }
 
 
-    private static Object additiveOperation(Object left, String operator, Object right) throws StateMachineException {
+    private static java.lang.Object additiveOperation(java.lang.Object left, String operator, java.lang.Object right) throws StateMachineException {
         return switch (operator) {
             case "\\+" ->
                 sum(requireNumber(left), requireNumber(right));
@@ -346,7 +345,7 @@ public final class Statement {
         if (nodes.isEmpty()) {
             return left;
         }
-        Object result = operation.compute(
+        java.lang.Object result = operation.compute(
             left.value(),
             nodes.getFirst().getChildren().getFirst().getSymbol(),
             operandEvaluator.evaluate(nodes.get(1), memory).value());
@@ -358,7 +357,7 @@ public final class Statement {
             memory);
     }
 
-    private static Object multiplicativeOperation(Object left, String operator, Object right) throws StateMachineException {
+    private static java.lang.Object multiplicativeOperation(java.lang.Object left, String operator, java.lang.Object right) throws StateMachineException {
         return switch (operator) {
             case "\\*" ->
                 product(requireNumber(left), requireNumber(right));
@@ -396,21 +395,21 @@ public final class Statement {
         return left.doubleValue() - right.doubleValue();
     }
 
-    private static Object and(Object left, Object right) throws StateMachineException {
+    private static java.lang.Object and(java.lang.Object left, java.lang.Object right) throws StateMachineException {
         if (left instanceof Boolean leftBoolean) {
             return leftBoolean & requireBoolean(right);
         }
         return requireInteger(left) & requireInteger(right);
     }
 
-    private static Object or(Object left, Object right) throws StateMachineException {
+    private static java.lang.Object or(java.lang.Object left, java.lang.Object right) throws StateMachineException {
         if (left instanceof Boolean leftBoolean) {
             return leftBoolean | requireBoolean(right);
         }
         return requireInteger(left) | requireInteger(right);
     }
 
-    private static Object xor(Object left, Object right) throws StateMachineException {
+    private static java.lang.Object xor(java.lang.Object left, java.lang.Object right) throws StateMachineException {
         if (left instanceof Boolean leftBoolean) {
             return leftBoolean ^ requireBoolean(right);
         }
@@ -424,30 +423,29 @@ public final class Statement {
             throw new StateMachineException("No such procedure or function: '" + name + '\'');
         }
         List<Node> arguments = createArgumentList(node.findChild("ArgumentList"));
-        List<Node> signatureParameters = methodProperties.getParameters(name);
+        List<Parameter> signatureParameters = methodProperties.getParameters(name);
         int parameterCount = signatureParameters.size();
         if (arguments.size() != parameterCount) {
             throw new StateMachineException("Invalid numer of parameters for: '" + name + "\'. required: " + parameterCount + ", actual: " + arguments.size());
         }
-        Map<String, Object> parameters = new HashMap<>();
+        Map<String, java.lang.Object> parameters = new HashMap<>();
         for (int i = 0; i < parameterCount; ++i) {
-            parameters.put(identifier(signatureParameters.get(i)), evaluate(arguments.get(i), memory).value());
+            parameters.put(signatureParameters.get(i).getName().get(), evaluate(arguments.get(i), memory).value());
         }
-        boolean isProcedure = "Void".equals(methodProperties.getType(name));
         Collection<String> locals = new ArrayList<>(localNames(name));
-        if (!isProcedure) {
+        if (!methodProperties.isProcedure(name)) {
             locals.add(name);
         }
         StateMachine stateMachine = new StateMachine(methodBody, memory, parameters, locals);
         stateMachine.start();
         for (int i = 0; i < parameterCount; ++i) {
-            if (signatureParameters.get(i).findChild("VAR\\b").isPresent()) {
-                memory.store(identifier(arguments.get(i)), stateMachine.getMemoryObject(identifier(signatureParameters.get(i))));
+            if (signatureParameters.get(i).getDirection() == Parameter.Direction.INOUT) {
+                memory.store(identifier(arguments.get(i)), stateMachine.getMemoryObject(signatureParameters.get(i).getName().get()));
             }
         }
-        return (isProcedure)
+        return (methodProperties.isProcedure(name))
             ? new Result(null, "Void")
-            : new Result(stateMachine.getMemoryObject(name), methodProperties.getType(name));
+            : new Result(stateMachine.getMemoryObject(name), methodProperties.getType(name).getName().get());
     }
 
     private List<Node> createArgumentList(Optional<Node> argumentList) {
@@ -480,7 +478,7 @@ public final class Statement {
         identifiers.add(name);
         StateMachine stateMachine = new StateMachine(method, memory, identifiers);
         stateMachine.start();
-        return new Result(stateMachine.getMemoryObject(name), methodProperties.getType(name));
+        return new Result(stateMachine.getMemoryObject(name), methodProperties.getType(name).getName().get());
     }
 
     private Result evaluateUnaryOperation(Node operator, Result operand) throws StateMachineException {
@@ -523,11 +521,11 @@ public final class Statement {
         for (Node indirection : getIndirections(expression)) {
             switch (indirection.getSymbol()) {
                 case "Identifier":
-                    result = new Result(((Map<String, Object>) result.value()).get(indirection.content().toLowerCase()), "field");
+                    result = new Result(((Map<String, java.lang.Object>) result.value()).get(indirection.content().toLowerCase()), "field");
                     break;
                 case "Expression":
                     int index = (int) evaluateExpression(indirection, memory).value();
-                    result = new Result(((Object[]) result.value())[index], "element");
+                    result = new Result(((java.lang.Object[]) result.value())[index], "element");
                     break;
                 default:
                     throw new IllegalStateException("Invalid Indirection");
@@ -611,42 +609,42 @@ public final class Statement {
         return requireInteger(evaluate(indexExpression, memory).value());
     }
 
-    private static Comparable requireComparable(Object object) throws StateMachineException {
+    private static Comparable requireComparable(java.lang.Object object) throws StateMachineException {
         if (object instanceof Comparable comparable) {
             return comparable;
         }
         throw new StateMachineException("Not a comparable" + object);
     }
 
-    private static Number requireNumber(Object object) throws StateMachineException {
+    private static Number requireNumber(java.lang.Object object) throws StateMachineException {
         if (object instanceof Number number) {
             return number;
         }
         throw new StateMachineException("Not a number: " + object);
     }
 
-    private static Double requireReal(Object object) throws StateMachineException {
+    private static Double requireReal(java.lang.Object object) throws StateMachineException {
         if (object instanceof Double real) {
             return real;
         }
         throw new StateMachineException("Not a real: " + object);
     }
 
-    private static Integer requireInteger(Object object) throws StateMachineException {
+    private static Integer requireInteger(java.lang.Object object) throws StateMachineException {
         if (object instanceof Integer integer) {
             return integer;
         }
         throw new StateMachineException("Not an integer: " + object);
     }
 
-    private static Boolean requireBoolean(Object object) throws StateMachineException {
+    private static Boolean requireBoolean(java.lang.Object object) throws StateMachineException {
         if (object instanceof Boolean bool) {
             return bool;
         }
         throw new StateMachineException("Not a boolean: " + object);
     }
 
-    private void store(Memory memory, Object value) throws StateMachineException {
+    private void store(Memory memory, java.lang.Object value) throws StateMachineException {
         List<Node> indirections = getIndirections(assignable.get());
         if (indirections.isEmpty()) {
             storeDirect(memory, value);
@@ -656,7 +654,7 @@ public final class Statement {
         }
     }
 
-    private void storeDirect(Memory memory, Object value) throws StateMachineException {
+    private void storeDirect(Memory memory, java.lang.Object value) throws StateMachineException {
         Node target = assignable.get();
         Optional<Node> identifier = target.findChild("Identifier");
         if (identifier.isPresent()) {
@@ -667,29 +665,29 @@ public final class Statement {
         }
     }
 
-    private void storeIndirect(List<Node> indirections, Memory memory, Object value) throws StateMachineException {
-        Object targetValue = indirectTargetValue(indirections, memory);
+    private void storeIndirect(List<Node> indirections, Memory memory, java.lang.Object value) throws StateMachineException {
+        java.lang.Object targetValue = indirectTargetValue(indirections, memory);
         Node indirection = indirections.get(indirections.size() - 1);
         switch (indirection.getSymbol()) {
             case "Identifier" ->
-                ((Map<String, Object>) targetValue).put(indirection.content().toLowerCase(), value);
+                ((Map<String, java.lang.Object>) targetValue).put(indirection.content().toLowerCase(), value);
             case "Expression" ->
-                ((Object[]) targetValue)[intValue(indirection, memory)] = value;
+                ((java.lang.Object[]) targetValue)[intValue(indirection, memory)] = value;
             default ->
                 throw new StateMachineException("Unsupported indirection" + assignable.get().content());
         }
     }
 
-    private Object indirectTargetValue(List<Node> indirections, Memory memory) throws StateMachineException {
-        Object targetValue = memory.load(identifier(assignable.get()));
+    private java.lang.Object indirectTargetValue(List<Node> indirections, Memory memory) throws StateMachineException {
+        java.lang.Object targetValue = memory.load(identifier(assignable.get()));
         int lastIndex = indirections.size() - 1;
         for (int i = 0; i < lastIndex; ++i) {
             Node indirection = indirections.get(i);
             targetValue = switch (indirection.getSymbol()) {
                 case "Identifier" ->
-                    ((Map<String, Object>) targetValue).get(indirection.content().toLowerCase());
+                    ((Map<String, java.lang.Object>) targetValue).get(indirection.content().toLowerCase());
                 case "Expression" ->
-                    ((Object[]) targetValue)[intValue(indirection, memory)];
+                    ((java.lang.Object[]) targetValue)[intValue(indirection, memory)];
                 default ->
                     throw new StateMachineException("Unsupported indirection" + assignable.get().content());
             };
@@ -747,20 +745,17 @@ public final class Statement {
         return Logger.getLogger(Statement.class.getName());
     }
 
-    private record Result(Object value, String type) {
-
+    private record Result(java.lang.Object value, String type) {
     }
 
 
     private interface OperandEvaluator {
-
         Result evaluate(Node nodes, Memory memory) throws StateMachineException;
     }
 
 
     private interface DyadicOperation {
-
-        Object compute(Object left, String operator, Object right) throws StateMachineException;
+        java.lang.Object compute(java.lang.Object left, String operator, java.lang.Object right) throws StateMachineException;
     }
 
     private final Optional<Node> assignable;

@@ -280,7 +280,7 @@ public class WeatherStationReader {
             if (data == null) {
                 return OptionalDouble.empty();
             }
-            return OptionalDouble.of(Double.valueOf(data));
+            return OptionalDouble.of(Double.parseDouble(data));
         }
 
         private final LocalDateTime timestamp;

@@ -133,7 +133,7 @@ public final class Statement {
         return new Decision<>() {
             @Override
             public Evaluator getExpression() {
-                return memory -> evaluate(operand, memory).value();
+                return memory -> evaluate(operand, memory).object();
             }
             @Override
             public Optional<Type> getType() {
@@ -160,9 +160,9 @@ public final class Statement {
             @Override
             public Evaluator getExpression() {
                 return memory -> {
-                    Result left = evaluate(leftOperand, memory);
-                    Result right = evaluate(rightOperand, memory);
-                    return predicate.test(requireComparable(left.value()).compareTo(requireComparable(right.value())));
+                    Value left = evaluate(leftOperand, memory);
+                    Value right = evaluate(rightOperand, memory);
+                    return predicate.test(requireComparable(left.object()).compareTo(requireComparable(right.object())));
                 };
             }
 
@@ -230,19 +230,19 @@ public final class Statement {
     }
 
     public void execute(Memory memory) throws StateMachineException {
-        Result result = evaluate(expression, memory);
+        Value value = evaluate(expression, memory);
         if (assignable.isPresent()) {
-            if (result.type().equals("Void")) {
+            if (value.type().equals("Void")) {
                 throw new IllegalStateException(assignable.get() + " cannot be assigned with void");
             }
-            store(memory, result.value());
+            store(memory, value.object());
         }
-        else if (!result.type().equals("Void")) {
-            getLogger().log(Level.WARNING, "Evaluation ({1}) of '{0}' is ignored", new java.lang.Object[]{expression, result.value()});
+        else if (!value.type().equals("Void")) {
+            getLogger().log(Level.WARNING, "Evaluation ({1}) of ''{0}'' is ignored", new java.lang.Object[]{expression.content(), value.object()});
         }
     }
 
-    private Result evaluate(Node node, Memory memory) throws StateMachineException {
+    private Value evaluate(Node node, Memory memory) throws StateMachineException {
         return switch (node.getSymbol()) {
             case "Statement" ->
                 evaluateStatement(node, memory);
@@ -254,16 +254,24 @@ public final class Statement {
                 evaluateFactor(node, memory);
             case "Comparable" ->
                 evaluateComparable(node, memory);
-            case "Identifier" ->
-                new Result(memory.load(node.content().toLowerCase()), "var");
             case "Call" ->
                 evaluateCall(node, memory);
+            case "Identifier" ->
+                new Value(memory.load(node.content().toLowerCase()), typeOf(node));
             default ->
                 throw new StateMachineException("Cannot evaluate " + node);
         };
     }
 
-    private Result evaluateStatement(Node node, Memory memory) throws StateMachineException {
+    private Type typeOf(Node node) {
+        Type type = methodProperties.determineTypeOf(node.content());
+        if (type.getName().isEmpty()) {
+            return UmlTypeFactory.create("anonimous?");
+        }
+        return type;
+    }
+
+    private Value evaluateStatement(Node node, Memory memory) throws StateMachineException {
         return switch (node.getChildren().getFirst().getSymbol()) {
             case "Identifier" ->
                 evaluateIdentifier(node.getChildren().getFirst(), memory);
@@ -272,7 +280,7 @@ public final class Statement {
         };
     }
 
-    private Result evaluateExpression(Node node, Memory memory) throws StateMachineException {
+    private Value evaluateExpression(Node node, Memory memory) throws StateMachineException {
         return switch (node.getChildren().size()) {
             case 1 ->
                 evaluateComparable(node.getChildren().getFirst(), memory);
@@ -283,30 +291,30 @@ public final class Statement {
         };
     }
 
-    private Result evaluateRelationalOperation(Node node, Memory memory) throws StateMachineException {
-        Comparable left = requireComparable(evaluate(node.getChildren().getFirst(), memory).value());
-        Comparable right = requireComparable(evaluate(node.getChildren().getLast(), memory).value());
+    private Value evaluateRelationalOperation(Node node, Memory memory) throws StateMachineException {
+        Comparable left = requireComparable(evaluate(node.getChildren().getFirst(), memory).object());
+        Comparable right = requireComparable(evaluate(node.getChildren().getLast(), memory).object());
         int comparison = left.compareTo(right);
         Node operator = node.getChild("RelationalOperator").getChildren().getFirst();
         return switch (operator.getSymbol()) {
             case "\\=" ->
-                new Result(comparison == 0, "Boolean");
+                new Value(comparison == 0, PascalCompiler.BOOLEAN);
             case "\\<\\>" ->
-                new Result(comparison != 0, "Boolean");
+                new Value(comparison != 0, PascalCompiler.BOOLEAN);
             case "\\<\\=" ->
-                new Result(comparison <= 0, "Boolean");
+                new Value(comparison <= 0, PascalCompiler.BOOLEAN);
             case "\\<" ->
-                new Result(comparison < 0, "Boolean");
+                new Value(comparison < 0, PascalCompiler.BOOLEAN);
             case "\\>\\=" ->
-                new Result(comparison >= 0, "Boolean");
+                new Value(comparison >= 0, PascalCompiler.BOOLEAN);
             case "\\>" ->
-                new Result(comparison > 0, "Boolean");
+                new Value(comparison > 0, PascalCompiler.BOOLEAN);
             default ->
                 throw new StateMachineException("Unsupported relational operator" + operator.content());
         };
     }
 
-    private Result evaluateComparable(Node node, Memory memory) throws StateMachineException {
+    private Value evaluateComparable(Node node, Memory memory) throws StateMachineException {
         return evaluateOperation(
             evaluateTerm(node.getChild("Term"), memory),
             node.getChild("AdditiveOperation"),
@@ -331,7 +339,7 @@ public final class Statement {
         };
     }
 
-    private Result evaluateTerm(Node node, Memory memory) throws StateMachineException {
+    private Value evaluateTerm(Node node, Memory memory) throws StateMachineException {
         return evaluateOperation(
             evaluateFactor(node.getChild("Factor"), memory),
             node.getChild("MultiplicativeOperation"),
@@ -340,17 +348,17 @@ public final class Statement {
             memory);
     }
 
-    private Result evaluateOperation(Result left, Node node, OperandEvaluator operandEvaluator, DyadicOperation operation, Memory memory) throws StateMachineException {
+    private Value evaluateOperation(Value left, Node node, OperandEvaluator operandEvaluator, DyadicOperation operation, Memory memory) throws StateMachineException {
         List<Node> nodes = node.getChildren();
         if (nodes.isEmpty()) {
             return left;
         }
         java.lang.Object result = operation.compute(
-            left.value(),
+            left.object(),
             nodes.getFirst().getChildren().getFirst().getSymbol(),
-            operandEvaluator.evaluate(nodes.get(1), memory).value());
+            operandEvaluator.evaluate(nodes.get(1), memory).object());
         return evaluateOperation(
-            new Result(result, (result instanceof Boolean) ? "Boolean" : (result instanceof Integer) ? "Integer" : "Real"),
+            new Value(result, (result instanceof Boolean) ? PascalCompiler.BOOLEAN : (result instanceof Integer) ? PascalCompiler.INTEGER : PascalCompiler.REAL),
             nodes.getLast(),
             operandEvaluator,
             operation,
@@ -362,7 +370,7 @@ public final class Statement {
             case "\\*" ->
                 product(requireNumber(left), requireNumber(right));
             case "\\/" ->
-                requireNumber(left).doubleValue() / requireNumber(right).doubleValue();
+                requireNumber(left).floatValue() / requireNumber(right).floatValue();
             case "DIV\\b" ->
                 requireInteger(left) / requireInteger(right);
             case "MOD\\b" ->
@@ -378,21 +386,21 @@ public final class Statement {
         if (left instanceof Integer && right instanceof Integer) {
             return left.intValue() * right.intValue();
         }
-        return left.doubleValue() * right.doubleValue();
+        return left.floatValue() * right.floatValue();
     }
 
     private static Number sum(Number left, Number right) {
         if (left instanceof Integer && right instanceof Integer) {
             return left.intValue() + right.intValue();
         }
-        return left.doubleValue() + right.doubleValue();
+        return left.floatValue() + right.floatValue();
     }
 
     private static Number difference(Number left, Number right) {
         if (left instanceof Integer && right instanceof Integer) {
             return left.intValue() - right.intValue();
         }
-        return left.doubleValue() - right.doubleValue();
+        return left.floatValue() - right.floatValue();
     }
 
     private static java.lang.Object and(java.lang.Object left, java.lang.Object right) throws StateMachineException {
@@ -416,7 +424,7 @@ public final class Statement {
         return requireInteger(left) ^ requireInteger(right);
     }
 
-    private Result evaluateCall(Node node, Memory memory) throws StateMachineException {
+    private Value evaluateCall(Node node, Memory memory) throws StateMachineException {
         String name = node.getChild("Identifier").content();
         Collection<Transition<Event, GuardCondition, Action>> methodBody = methodProperties.getBody(name);
         if (methodBody == null) {
@@ -430,7 +438,7 @@ public final class Statement {
         }
         Map<String, java.lang.Object> parameters = new HashMap<>();
         for (int i = 0; i < parameterCount; ++i) {
-            parameters.put(signatureParameters.get(i).getName().get(), evaluate(arguments.get(i), memory).value());
+            parameters.put(signatureParameters.get(i).getName().get(), evaluate(arguments.get(i), memory).object());
         }
         Collection<String> locals = new ArrayList<>(localNames(name));
         if (!methodProperties.isProcedure(name)) {
@@ -444,8 +452,8 @@ public final class Statement {
             }
         }
         return (methodProperties.isProcedure(name))
-            ? new Result(null, "Void")
-            : new Result(stateMachine.getMemoryObject(name), methodProperties.getType(name).getName().get());
+            ? Value.VOID
+            : new Value(stateMachine.getMemoryObject(name), methodProperties.getType(name));
     }
 
     private List<Node> createArgumentList(Optional<Node> argumentList) {
@@ -465,7 +473,7 @@ public final class Statement {
         }
     }
 
-    private Result evaluateIdentifier(Node node, Memory memory) throws StateMachineException {
+    private Value evaluateIdentifier(Node node, Memory memory) throws StateMachineException {
         String name = node.content();
         Collection<Transition<Event, GuardCondition, Action>> method = methodProperties.getBody(name);
         return (method != null)
@@ -473,32 +481,32 @@ public final class Statement {
             : evaluate(node, memory);
     }
 
-    private Result evaluate(String name, Collection<Transition<Event, GuardCondition, Action>> method, Memory memory) throws StateMachineException {
+    private Value evaluate(String name, Collection<Transition<Event, GuardCondition, Action>> method, Memory memory) throws StateMachineException {
         Collection<String> identifiers = new ArrayList<>(localNames(name));
         identifiers.add(name);
         StateMachine stateMachine = new StateMachine(method, memory, identifiers);
         stateMachine.start();
-        return new Result(stateMachine.getMemoryObject(name), methodProperties.getType(name).getName().get());
+        return new Value(stateMachine.getMemoryObject(name), methodProperties.getType(name));
     }
 
-    private Result evaluateUnaryOperation(Node operator, Result operand) throws StateMachineException {
+    private Value evaluateUnaryOperation(Node operator, Value operand) throws StateMachineException {
         Node head = operator.getChildren().getFirst();
         if ("\\-".equals(head.getSymbol())) {
-            if ("Integer".equals(operand.type())) {
-                return new Result(-requireInteger(operand.value()), operand.type());
+            if (PascalCompiler.INTEGER.equals(operand.type())) {
+                return new Value(-requireInteger(operand.object()), operand.type());
             }
-            if ("Real".equals(operand.type())) {
-                return new Result(-requireReal(operand.value()), operand.type());
+            if (PascalCompiler.REAL.equals(operand.type())) {
+                return new Value(-requireReal(operand.object()), operand.type());
             }
-            throw new StateMachineException("Integer or Real expected: " + operand.value());
+            throw new StateMachineException("Integer or Real expected: " + operand.object());
         }
         if ("NOT\\b".equals(head.getSymbol())) {
-            return new Result(!requireBoolean(operand.value()), "Boolean");
+            return new Value(!requireBoolean(operand.object()), PascalCompiler.BOOLEAN);
         }
         throw new StateMachineException("Unsupported unnary operator: " + operator.content());
     }
 
-    private Result evaluateFactor(Node node, Memory memory) throws StateMachineException {
+    private Value evaluateFactor(Node node, Memory memory) throws StateMachineException {
         Node head = node.getChildren().getFirst();
         return switch (head.getSymbol()) {
             case "Call" ->
@@ -516,22 +524,23 @@ public final class Statement {
         };
     }
 
-    private Result evaluateIdentifierExpression(Node expression, Memory memory) throws StateMachineException {
-        Result result = evaluateIdentifier(expression.getChildren().getFirst(), memory);
+    private Value evaluateIdentifierExpression(Node expression, Memory memory) throws StateMachineException {
+        Value value = evaluateIdentifier(expression.getChildren().getFirst(), memory);
         for (Node indirection : getIndirections(expression)) {
+            Type type = methodProperties.determineTypeOf(expression);
             switch (indirection.getSymbol()) {
                 case "Identifier":
-                    result = new Result(((Map<String, java.lang.Object>) result.value()).get(indirection.content().toLowerCase()), "field");
+                    value = new Value(((Map<String, java.lang.Object>) value.object()).get(indirection.content().toLowerCase()), type);
                     break;
                 case "Expression":
-                    int index = (int) evaluateExpression(indirection, memory).value();
-                    result = new Result(((java.lang.Object[]) result.value())[index], "element");
+                    int index = (int) evaluateExpression(indirection, memory).object();
+                    value = new Value(((java.lang.Object[]) value.object())[index], type);
                     break;
                 default:
                     throw new IllegalStateException("Invalid Indirection");
             }
         }
-        return result;
+        return value;
     }
 
     private static List<Node> getIndirections(Node expression) {
@@ -558,34 +567,34 @@ public final class Statement {
         return indirections;
     }
 
-    private Result evaluateLiteral(Node node) throws StateMachineException {
+    private Value evaluateLiteral(Node node) throws StateMachineException {
         Node head = node.getChildren().getFirst();
         return switch (head.getSymbol()) {
             case "\\'" ->
-                new Result(node.getChild("[^']*").content(), "String");
+                new Value(node.getChild("[^']*").content(), PascalCompiler.STRING);
             case "RealLiteral" ->
                 parseReal(head.content());
             case "IntegerLiteral" ->
                 parseInteger(head.getChildren());
             case "FALSE\\b" ->
-                new Result(Boolean.FALSE, "Boolean");
+                new Value(Boolean.FALSE, PascalCompiler.BOOLEAN);
             case "TRUE\\b" ->
-                new Result(Boolean.TRUE, "Boolean");
+                new Value(Boolean.TRUE, PascalCompiler.BOOLEAN);
             default ->
                 throw new StateMachineException("Cannot evaluate literal " + node);
         };
     }
 
-    private static Result parseReal(String string) throws StateMachineException {
+    private static Value parseReal(String string) throws StateMachineException {
         try {
-            return new Result(Double.valueOf(string), "Real");
+            return new Value(Float.valueOf(string), PascalCompiler.REAL);
         }
         catch (NumberFormatException ex) {
             throw new StateMachineException("Invalid real: " + string, ex);
         }
     }
 
-    private static Result parseInteger(List<Node> nodes) throws StateMachineException {
+    private static Value parseInteger(List<Node> nodes) throws StateMachineException {
         return switch (nodes.getFirst().getSymbol()) {
             case "\\d+" ->
                 parseInteger(nodes.getFirst().content(), 10);
@@ -596,9 +605,9 @@ public final class Statement {
         };
     }
 
-    private static Result parseInteger(String string, int radix) throws StateMachineException {
+    private static Value parseInteger(String string, int radix) throws StateMachineException {
         try {
-            return new Result(Integer.valueOf(string, radix), "Integer");
+            return new Value(Integer.valueOf(string, radix), PascalCompiler.INTEGER);
         }
         catch (NumberFormatException ex) {
             throw new StateMachineException("Invalid integer: " + string, ex);
@@ -606,7 +615,7 @@ public final class Statement {
     }
 
     private int intValue(Node indexExpression, Memory memory) throws StateMachineException {
-        return requireInteger(evaluate(indexExpression, memory).value());
+        return requireInteger(evaluate(indexExpression, memory).object());
     }
 
     private static Comparable requireComparable(java.lang.Object object) throws StateMachineException {
@@ -623,8 +632,8 @@ public final class Statement {
         throw new StateMachineException("Not a number: " + object);
     }
 
-    private static Double requireReal(java.lang.Object object) throws StateMachineException {
-        if (object instanceof Double real) {
+    private static Float requireReal(java.lang.Object object) throws StateMachineException {
+        if (object instanceof Float real) {
             return real;
         }
         throw new StateMachineException("Not a real: " + object);
@@ -734,9 +743,7 @@ public final class Statement {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder().append('(').append(expression.getSymbol()).append(") ");
-        if (assignable.isPresent()) {
-            builder.append(assignable.get().content()).append(" \u21D0 ");
-        }
+        assignable.ifPresent(node -> builder.append(node.content()).append(" \u21D0 "));
         builder.append(expression.content());
         return builder.toString();
     }
@@ -745,17 +752,19 @@ public final class Statement {
         return Logger.getLogger(Statement.class.getName());
     }
 
-    private record Result(java.lang.Object value, String type) {
-    }
-
-
     private interface OperandEvaluator {
-        Result evaluate(Node nodes, Memory memory) throws StateMachineException;
+        Value evaluate(Node nodes, Memory memory) throws StateMachineException;
     }
 
 
     private interface DyadicOperation {
         java.lang.Object compute(java.lang.Object left, String operator, java.lang.Object right) throws StateMachineException;
+    }
+
+    private record Value(java.lang.Object object, Type type) {
+
+        private static Value VOID = new Value(null, UmlTypeFactory.create("Void"));
+
     }
 
     private final Optional<Node> assignable;

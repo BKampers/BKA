@@ -71,7 +71,7 @@ public class PascalCompilerTest {
         assertEquals(false, stateMachine.getMemoryObject("greater_than"));
         assertEquals(false, stateMachine.getMemoryObject("greater_equal"));
         assertEquals(true, stateMachine.getMemoryObject("unequal"));
-        assertEquals(10.0, stateMachine.getMemoryObject("r1"));
+        assertEquals(10.0f, stateMachine.getMemoryObject("r1"));
         assertEquals("A string", stateMachine.getMemoryObject("s"));
     }
 
@@ -399,9 +399,9 @@ public class PascalCompilerTest {
         Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
         StateMachine stateMachine = new StateMachine(transitions, null, getVariableInitializations(program));
         stateMachine.start();
-        assertEquals(Map.of("x", 0.1, "y", 0.2), stateMachine.getMemoryObject("p1"));
-        assertEquals(Map.of("x", -0.3, "y", -0.4), stateMachine.getMemoryObject("p2"));
-        assertEquals(0.1, stateMachine.getMemoryObject("x"));
+        assertEquals(Map.of("x", 0.1f, "y", 0.2f), stateMachine.getMemoryObject("p1"));
+        assertEquals(Map.of("x", -0.3f, "y", -0.4f), stateMachine.getMemoryObject("p2"));
+        assertEquals(0.1f, stateMachine.getMemoryObject("x"));
     }
 
     @Test
@@ -429,11 +429,11 @@ public class PascalCompilerTest {
         Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
         StateMachine stateMachine = new StateMachine(transitions, null, getVariableInitializations(program));
         stateMachine.start();
-        assertArrayEquals(new java.lang.Object[]{Map.of("x", 1.0, "y", 2.0), Map.of("x", 3.0, "y", 4.0)}, (java.lang.Object[]) stateMachine.getMemoryObject("line"));
-        assertEquals(1.0, stateMachine.getMemoryObject("x0"));
-        assertEquals(2.0, stateMachine.getMemoryObject("y0"));
-        assertEquals(3.0, stateMachine.getMemoryObject("x1"));
-        assertEquals(4.0, stateMachine.getMemoryObject("y1"));
+        assertArrayEquals(new java.lang.Object[]{Map.of("x", 1.0f, "y", 2.0f), Map.of("x", 3.0f, "y", 4.0f)}, (java.lang.Object[]) stateMachine.getMemoryObject("line"));
+        assertEquals(1.0f, stateMachine.getMemoryObject("x0"));
+        assertEquals(2.0f, stateMachine.getMemoryObject("y0"));
+        assertEquals(3.0f, stateMachine.getMemoryObject("x1"));
+        assertEquals(4.0f, stateMachine.getMemoryObject("y1"));
     }
 
     @Test
@@ -465,11 +465,11 @@ public class PascalCompilerTest {
         Collection<Transition<Event, GuardCondition, Action>> transitions = compiler.getMethod(getMain(program));
         StateMachine stateMachine = new StateMachine(transitions, null, getVariableInitializations(program));
         stateMachine.start();
-        assertEquals(Map.of("s", Map.of("x", 0.1, "y", 0.2), "e", Map.of("x", 0.3, "y", 0.4)), stateMachine.getMemoryObject("line"));
-        assertEquals(0.1, stateMachine.getMemoryObject("sx"));
-        assertEquals(0.2, stateMachine.getMemoryObject("sy"));
-        assertEquals(0.3, stateMachine.getMemoryObject("ex"));
-        assertEquals(0.4, stateMachine.getMemoryObject("ey"));
+        assertEquals(Map.of("s", Map.of("x", 0.1f, "y", 0.2f), "e", Map.of("x", 0.3f, "y", 0.4f)), stateMachine.getMemoryObject("line"));
+        assertEquals(0.1f, stateMachine.getMemoryObject("sx"));
+        assertEquals(0.2f, stateMachine.getMemoryObject("sy"));
+        assertEquals(0.3f, stateMachine.getMemoryObject("ex"));
+        assertEquals(0.4f, stateMachine.getMemoryObject("ey"));
     }
 
     @Test

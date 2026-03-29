@@ -22,22 +22,32 @@ public class UmlClassBuilder {
         umlClass = new UmlClass(name, isAbstract);
     }
 
-    public UmlClassBuilder withAttribute(String name, Type type, Member.Visibility visibility) {
+    public Attribute withAttribute(String name, Type type, Member.Visibility visibility) {
         checkBuilt();
-        umlClass.addAttribute(new UmlAttribute(Optional.of(name), Optional.of(type), visibility, false));
-        return this;
+        UmlAttribute attribute = new UmlAttribute(Optional.of(name), Optional.of(type), visibility, false);
+        umlClass.addAttribute(attribute);
+        return attribute;
     }
 
-    public UmlClassBuilder withOperation(String name, Member.Visibility visibility, Set<Stereotype> stereotypes) {
+    public Operation withMainOperation() {
         checkBuilt();
-        umlClass.addOperation(new UmlOperation(Optional.of(name), Collections.emptyList(), Optional.empty(), visibility, false, false, stereotypes));
-        return this;
+        UmlOperation operation = new UmlOperation(Optional.empty(), Collections.emptyList(), Optional.empty(), Member.Visibility.PUBLIC, false, false, Set.of(UmlStereotypeFactory.createStereotype("Main")));
+        umlClass.addOperation(operation);
+        return operation;
     }
 
-    public UmlClassBuilder withOperation(String name, List<Parameter> parameters, Type type, Member.Visibility visibility) {
+    public Operation withOperation(String name, List<Parameter> parameters, Member.Visibility visibility) {
         checkBuilt();
-        umlClass.addOperation(new UmlOperation(Optional.of(name), parameters, Optional.of(type), visibility, false, false, Collections.emptySet()));
-        return this;
+        UmlOperation operation = new UmlOperation(Optional.of(name), parameters, Optional.empty(), visibility, false, false, Collections.emptySet());
+        umlClass.addOperation(operation);
+        return operation;
+    }
+
+    public Operation withOperation(String name, List<Parameter> parameters, Type type, Member.Visibility visibility) {
+        checkBuilt();
+        UmlOperation operation = new UmlOperation(Optional.of(name), parameters, Optional.of(type), visibility, false, false, Collections.emptySet());
+        umlClass.addOperation(operation);
+        return operation;
     }
 
     public uml.structure.Class build() {

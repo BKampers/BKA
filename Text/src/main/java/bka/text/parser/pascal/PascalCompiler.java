@@ -18,12 +18,18 @@ import uml.structure.*;
  */
 public class PascalCompiler {
 
+    public static final Type STRING = UmlTypeFactory.create("string");
+    public static final Type CHAR = UmlTypeFactory.create("char");
+    public static final Type REAL = UmlTypeFactory.create("real");
+    public static final Type INTEGER = UmlTypeFactory.create("integer");
+    public static final Type BOOLEAN = UmlTypeFactory.create("boolean");
+
     public PascalCompiler() {
-        declaredTypes.add(UmlTypeFactory.create("boolean"));
-        declaredTypes.add(UmlTypeFactory.create("integer"));
-        declaredTypes.add(UmlTypeFactory.create("real"));
-        declaredTypes.add(UmlTypeFactory.create("char"));
-        declaredTypes.add(UmlTypeFactory.create("string"));
+        declaredTypes.add(BOOLEAN);
+        declaredTypes.add(INTEGER);
+        declaredTypes.add(REAL);
+        declaredTypes.add(CHAR);
+        declaredTypes.add(STRING);
     }
 
     public uml.structure.Class createProgramClass(Node node) {
@@ -35,13 +41,14 @@ public class PascalCompiler {
         Node declarationsNode = node.getChild("Declarations");
         createTypes(declarationsNode);
         addProgramVariables(builder, declarationsNode);
-        buildOperations(builder, programName, declarationsNode);
-        methodBodies.put(programName, createBody(programName, node.getChild("CompoundStatement").getChild("Statements")));
+        buildOperations(builder, declarationsNode);
+        Operation mainOperation = builder.withMainOperation();
+        methodBodies.put(mainOperation, createBody(mainOperation, node.getChild("CompoundStatement").getChild("Statements")));
         return builder.build();
     }
 
     public Collection<Transition<Event, GuardCondition, Action>> getMethod(Operation operation) {
-        return Collections.unmodifiableCollection(methodBodies.get(operation.getName().get()));
+        return Collections.unmodifiableCollection(methodBodies.get(operation));
     }
 
     public void createTypes(Node declarations) {
@@ -75,7 +82,10 @@ public class PascalCompiler {
     private void addAttributesFromExpression(UmlClassBuilder builder, Node variableDeclarationExpression, Member.Visibility visibility) {
         Type type = createType(variableDeclarationExpression.getChild("TypeDeclarationExpression"), visibility);
         createIdentifiers(variableDeclarationExpression.getChild("IdentifierList"))
-            .forEach(name -> builder.withAttribute(name, type, visibility));
+            .forEach(name -> {
+                builder.withAttribute(name, type, visibility);
+                globals.add(UmlObjectFactory.create(name, type));
+            });
     }
 
     private void addPrivateFunctionOperations(UmlClassBuilder builder, Node declarations) {
@@ -90,11 +100,11 @@ public class PascalCompiler {
     private void addMethod(UmlClassBuilder builder, Type type, Node declaration) {
         String methodName = identifier(declaration);
         List<Parameter> parameters = createParameterList(declaration.getChild("ParameterDeclaration"));
-        methodParameters.put(methodName, parameters);
-        methodTypes.put(methodName, type);
-        methodLocals.put(methodName, createLocals(declaration.getChild("Declarations")));
-        methodBodies.put(methodName, createBody(methodName, declaration.getChild("CompoundStatement").getChild("Statements")));
-        builder.withOperation(methodName, parameters, type, Member.Visibility.PRIVATE);
+        Operation operation = builder.withOperation(methodName, parameters, type, Member.Visibility.PRIVATE);
+        methodParameters.put(operation, parameters);
+        methodLocals.put(operation, createLocals(declaration.getChild("Declarations")));
+        methodBodies.put(operation, createBody(operation, declaration.getChild("CompoundStatement").getChild("Statements")));
+
     }
 
 
@@ -245,51 +255,92 @@ public class PascalCompiler {
         return identifiers;
     }
 
-    private void buildOperations(UmlClassBuilder builder, String programName, Node declarations) {
-        builder.withOperation(programName, Member.Visibility.PUBLIC, UmlStereotypeFactory.createStereotypes("Main"));
+    private void buildOperations(UmlClassBuilder builder, Node declarations) {
+//        builder.withOperation(programName, Member.Visibility.PUBLIC, UmlStereotypeFactory.createStereotypes("Main"));
         addPrivateFunctionOperations(builder, declarations);
     }
 
-    private Collection<Transition<Event, GuardCondition, Action>> createBody(String methodName, Node compoundStatement) {
+    private Collection<Transition<Event, GuardCondition, Action>> createBody(Operation operation, Node compoundStatement) {
         ActivityDiagramBuilder diagram = new ActivityDiagramBuilder();
-        createStatementSequence(methodName, compoundStatement, diagram);
+        createStatementSequence(operation, compoundStatement, diagram);
         diagram.addFinalState();
         return diagram.getTransitions();
     }
 
-    private void createStatementSequence(String methodName, Node statements, ActivityDiagramBuilder diagram) {
+    private void createStatementSequence(Operation operation, Node statements, ActivityDiagramBuilder diagram) {
         Node statementNode = statements;
         do {
-            // TODO determine statement type
-//            Type type = null;
-//            Optional<Node> assignable = statementNode.getChild("Statement").findChild("Assignable");
-//            if (assignable.isPresent()) {
-//                String identifier = identifier(assignable.get());
-//                if (identifier.equalsIgnoreCase(methodName)) {
-//                    type = methodTypes.get(methodName);
-//                }
-//                if (type == null && methodParameters.containsKey(methodName)) {
-//                    Optional<Parameter> parameter = methodParameters.get(methodName).stream()
-//                        .filter(p -> identifier.equalsIgnoreCase(p.getName().get()))
-//                        .findAny();
-//                    if (parameter.isPresent()) {
-//                        type = parameter.get().getType().get();
-//                    }
-//                }
-//                if (type == null && methodLocals.containsKey(methodName)) {
-//                    Optional<uml.structure.Object> local = methodLocals.get(methodName).stream()
-//                        .filter(object -> object.getName().get().equalsIgnoreCase(identifier))
-//                        .findAny();
-//                    if (local.isPresent()) {
-//                        type = local.get().getType().get();
-//                    }
-//                }
-//            }
-            Statement statement = new Statement(statementNode.getChild("Statement"), new MethodProperties());
+            Statement statement = new Statement(statementNode.getChild("Statement"), new MethodProperties(operation));
             statement.createTransitions(diagram);
             statementNode = statementNode.findChild("Statements").orElse(null);
         } while (statementNode != null);
     }
+
+    private Type typeOf(Operation operation, String identifier, List<Node> indirections) throws IllegalStateException {
+        Type type = null;
+        if (operation.getName().isPresent() && identifier.equalsIgnoreCase(operation.getName().get())) {
+            type = operation.getType().get();
+        }
+        if (type == null && methodParameters.containsKey(operation)) {
+            Optional<Parameter> parameter = methodParameters.get(operation).stream()
+                .filter(p -> identifier.equalsIgnoreCase(p.getName().get()))
+                .findAny();
+            if (parameter.isPresent()) {
+                type = parameter.get().getType().get();
+            }
+        }
+        if (type == null && methodLocals.containsKey(operation)) {
+            Optional<uml.structure.Object> local = methodLocals.get(operation).stream()
+                .filter(object -> object.getName().get().equalsIgnoreCase(identifier))
+                .findAny();
+            if (local.isPresent()) {
+                type = local.get().getType().get();
+            }
+        }
+        if (type == null) {
+            type = globals.stream()
+                .filter(global -> global.getName().get().equalsIgnoreCase(identifier))
+                .map(global -> global.getType().get())
+                .findAny().get();
+        }
+        for (Node indirection : indirections) {
+            type = switch (indirection.getSymbol()) {
+                case "Identifier" ->
+                    ((uml.structure.Class) type).getAttributes().stream().filter(attribute -> attribute.getName().get().equalsIgnoreCase(indirection.content())).findAny().get().getType().get();
+                case "Expression" ->
+                    ((ArrayType) type).getElementType();
+                default ->
+                    throw new IllegalStateException("Invalid Indirection");
+            };
+        }
+        return type;
+    }
+
+    // TODO refactor, this method is copied from Statement
+    private static List<Node> getIndirections(Node expression) {
+        List<Node> indirections = new ArrayList<>();
+        Optional<Node> next = expression.findChild("Indirection");
+        while (next.isPresent()) {
+            Node indirection = next.get();
+            if (indirection.getChildren().isEmpty()) {
+                next = Optional.empty();
+            }
+            else {
+                if (indirection.startsWith("\\.")) {
+                    indirections.add(indirection.getChild("Identifier"));
+                }
+                else if (indirection.startsWith("\\[")) {
+                    indirections.add(indirection.getChild("Expression"));
+                }
+                else {
+                    throw new IllegalStateException("Invalid indirection");
+                }
+                next = indirection.findChild("Indirection");
+            }
+        }
+        return indirections;
+    }
+
 
     private static String identifier(Node node) {
         return node.getChild("Identifier").content().toLowerCase();
@@ -298,32 +349,53 @@ public class PascalCompiler {
 
     public class MethodProperties {
 
+        private MethodProperties(Operation scope) {
+            this.scope = scope;
+        }
+
+        public Type determineTypeOf(Node expression) {
+            return typeOf(scope, identifier(expression), getIndirections(expression));
+        }
+
+        public Type determineTypeOf(String identifier) {
+            return typeOf(scope, identifier, Collections.emptyList());
+        }
+
         public Collection<Transition<Event, GuardCondition, Action>> getBody(String name) {
-            return methodBodies.get(name);
+            return methodBodies.get(getOperation(name));
         }
 
         public List<Parameter> getParameters(String name) {
-            return Collections.unmodifiableList(methodParameters.get(name));
+            return Collections.unmodifiableList(methodParameters.get(getOperation(name)));
         }
 
         public Type getType(String name) {
-            return methodTypes.get(name);
+            return getOperation(name).getType().get();
         }
 
         public Collection<uml.structure.Object> getLocals(String name) {
-            return Collections.unmodifiableCollection(methodLocals.get(name));
+            return Collections.unmodifiableCollection(methodLocals.get(getOperation(name)));
         }
 
         public boolean isProcedure(String name) {
-            return VOID_TYPE.equals(methodTypes.get(name));
+            return VOID_TYPE.equals(getOperation(name).getType().get());
         }
+
+        private Operation getOperation(String name) {
+            return methodBodies.keySet().stream()
+                .filter(operation -> operation.getName().isPresent())
+                .filter(operation -> name.equalsIgnoreCase(operation.getName().get()))
+                .findAny().orElse(null);
+        }
+
+        private final Operation scope;
 
     }
 
-    private final Map<String, Collection<Transition<Event, GuardCondition, Action>>> methodBodies = new HashMap<>();
-    private final Map<String, List<Parameter>> methodParameters = new HashMap<>();
-    private final Map<String, Collection<uml.structure.Object>> methodLocals = new HashMap<>();
-    private final Map<String, Type> methodTypes = new HashMap<>();
+    private final Collection<uml.structure.Object> globals = new ArrayList<>();
+    private final Map<Operation, Collection<Transition<Event, GuardCondition, Action>>> methodBodies = new HashMap<>();
+    private final Map<Operation, List<Parameter>> methodParameters = new HashMap<>();
+    private final Map<Operation, Collection<uml.structure.Object>> methodLocals = new HashMap<>();
     private final Collection<Type> declaredTypes = new ArrayList<>();
 
     private static final Type VOID_TYPE = UmlTypeFactory.create("void");

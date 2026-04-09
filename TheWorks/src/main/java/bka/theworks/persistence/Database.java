@@ -65,6 +65,7 @@ public final class Database {
                     artist VARCHAR(255),
                     "year" INTEGER,
                     duration_seconds BIGINT NOT NULL,
+                    play_count INTEGER NOT NULL,
                     play_date TIMESTAMP,
                     album_id BIGINT,
                     disc_number INTEGER,
@@ -79,15 +80,10 @@ public final class Database {
     }
 
     public static void storeAlbum(Map<String, Object> album) throws DatabaseException {
-        final String query = """
-            INSERT INTO albums
-               (title, artist)
-               VALUES (?, ?)
-            """;
         Long albumId;
         try (Connection batchConnection = getConnection()) {
             batchConnection.setAutoCommit(false);
-            try (PreparedStatement statement = batchConnection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
+            try (PreparedStatement statement = batchConnection.prepareStatement(INSERT_ALBUM_QUERY, Statement.RETURN_GENERATED_KEYS)) {
                 statement.setString(1, (String) album.get("Name"));
                 statement.setString(2, (String) album.get("Artist"));
                 int affectedRows = statement.executeUpdate();
@@ -134,10 +130,11 @@ public final class Database {
         statement.setString(2, (String) track.get("Artist"));
         statement.setObject(3, (track.containsKey("Year")) ? ((BigInteger) track.get("Year")).intValue() : null);
         statement.setLong(4, ((BigInteger) Objects.requireNonNull(track.get("Total Time"), "Missing 'Total Time' in track")).longValue() / 1000);
-        statement.setObject(5, (track.containsKey("Play Date UTC")) ? Timestamp.from(((ZonedDateTime) track.get("Play Date UTC")).toInstant()) : null);
-        statement.setObject(6, (Long) track.get("Album Id"));
-        statement.setObject(7, (track.containsKey("Disc Number")) ? ((BigInteger) track.get("Disc Number")).intValue() : 0);
-        statement.setObject(8, (track.containsKey("Track Number")) ? ((BigInteger) track.get("Track Number")).intValue() : 0);
+        statement.setInt(5, (track.containsKey("Play Count") ? ((BigInteger) track.get("Play Count")).intValue() : 0));
+        statement.setObject(6, (track.containsKey("Play Date UTC")) ? Timestamp.from(((ZonedDateTime) track.get("Play Date UTC")).toInstant()) : null);
+        statement.setObject(7, (Long) track.get("Album Id"));
+        statement.setObject(8, (track.containsKey("Disc Number")) ? ((BigInteger) track.get("Disc Number")).intValue() : null);
+        statement.setObject(9, (track.containsKey("Track Number")) ? ((BigInteger) track.get("Track Number")).intValue() : null);
     }
 
     public static List<Map<String, Object>> query(String sql) throws DatabaseException {
@@ -163,9 +160,14 @@ public final class Database {
     private static final String DB_PASSWORD = "";
     private static Connection connection;
 
+    private static final String INSERT_ALBUM_QUERY = """
+        INSERT INTO albums
+            (title, artist)
+            VALUES (?, ?)
+    """;
     public static final String INSERT_TRACK_QUERY = """
         INSERT INTO tracks
-           (title, artist, "year", duration_seconds, play_date, album_id, disc_number, track_number)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """;
+           (title, artist, "year", duration_seconds, play_count, play_date, album_id, disc_number, track_number)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """;
 }

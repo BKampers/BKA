@@ -15,7 +15,7 @@ import java.util.stream.*;
 import javax.xml.parsers.*;
 import org.xml.sax.*;
 
-public class LibraryLoader {
+public final class LibraryLoader {
 
     public LibraryLoader(String uri) {
         this.uri = Objects.requireNonNull(uri);

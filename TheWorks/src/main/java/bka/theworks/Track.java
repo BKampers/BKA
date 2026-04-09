@@ -10,11 +10,17 @@ public interface Track {
 
     String getTitle();
 
+    Duration getDuration();
+
     Optional<String> getArtist();
 
     OptionalInt getYear();
 
-    Duration getDuration();
-
     Optional<ZonedDateTime> getPlayDate();
+
+    OptionalLong getAlbumId();
+
+    OptionalInt getDiscNumber();
+
+    OptionalInt getTrackNumber();
 }

@@ -2,7 +2,9 @@ package bka.theworks;
 
 import bka.theworks.persistence.*;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.*;
 import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
@@ -37,6 +39,10 @@ public final class Demo {
         Collection<Map<String, Object>> tracks = libraryLoader.getTracks();
         Map<AlbumId, List<Map<String, Object>>> albumTracks = new HashMap<>();
         for (Map<String, Object> track : tracks) {
+            if (!track.containsKey("Play Count")) {
+                track = new HashMap<>(track);
+                track.put("PlayCount", BigInteger.ZERO);
+            }
             String albumTitle = (String) track.get("Album");
             if (albumTitle != null) {
                 String albumArtist = (Boolean.TRUE.equals(track.get("Compilation")))
@@ -67,7 +73,7 @@ public final class Demo {
         if (args.length == 1 && args[0].contains("=")) {
             int index = args[0].indexOf('=');
             if ("sql".equals(args[0].substring(0, index).trim())) {
-                return args[0].substring(index + 1).replaceAll("(?i)year", "\"year\"").replace('\\', '\'');
+                return args[0].substring(index + 1).replace('\\', '\'');
             }
         }
         return DEFAULT_QUERY;
@@ -107,12 +113,13 @@ public final class Demo {
     }
 
     private static String displayValue(String key, Object object) {
-        if (key.contains("DURATION_SECONDS")) {
-            int seconds = ((Number) object).intValue();
-            if (seconds >= 3600) {
-                return String.format("%d:%02d'%02d\"", seconds / 3600, seconds % 3600 / 60, seconds % 60);
+        if (key.contains("DURATION_MILLIS")) {
+            Duration duration = Duration.ofMillis(((Number) object).longValue());
+            long hours = duration.toHours();
+            if (hours != 0) {
+                return String.format("%d:%02d'%02d\"", hours, duration.toMinutesPart(), duration.toSecondsPart());
             }
-            return String.format("%4d'%02d\"", seconds / 60, seconds % 60);
+            return String.format("%4d'%02d\"", duration.toMinutes(), duration.toSecondsPart());
         }
         return displayValue(object);
     }
@@ -129,7 +136,7 @@ public final class Demo {
     }
 
     private static final String DEFAULT_QUERY = """
-        SELECT albums.artist, albums.title, MIN(tracks.play_count), MAX(tracks.play_date) AS latest_play_date, SUM(tracks.duration_seconds)
+        SELECT albums.artist AS "Artist", albums.title AS "Title", MAX(tracks.release_year) AS "year", MAX(tracks.play_count) AS "played", MAX(tracks.play_date) AS latest_play_date, SUM(tracks.duration_millis)
         FROM tracks
         JOIN albums ON tracks.album_id = albums.id
         GROUP BY tracks.album_id

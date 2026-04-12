@@ -4,6 +4,7 @@ import java.math.BigInteger;
 import java.sql.*;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.stream.*;
 
 
 public final class Database {
@@ -27,12 +28,11 @@ public final class Database {
 
     private static Connection createConnection() throws DatabaseException {
         try {
-            Class.forName("org.h2.Driver");
             Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
             conn.setAutoCommit(true);
             return conn;
         }
-        catch (ClassNotFoundException | SQLException ex) {
+        catch (SQLException ex) {
             throw new DatabaseException("Failed to create database connection", ex);
         }
     }
@@ -52,38 +52,36 @@ public final class Database {
 
     private static void initializeTables() throws DatabaseException {
         try (Statement statement = connection.createStatement()) {
-            statement.execute("""
-                CREATE TABLE IF NOT EXISTS albums (
-                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                    title VARCHAR(255),
-                    artist VARCHAR(255))
-            """);
-            statement.execute("""
-                CREATE TABLE IF NOT EXISTS tracks (
-                    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-                    title VARCHAR(255) NOT NULL,
-                    artist VARCHAR(255),
-                    "year" INTEGER,
-                    duration_seconds BIGINT NOT NULL,
-                    play_count INTEGER NOT NULL,
-                    play_date TIMESTAMP,
-                    album_id BIGINT,
-                    disc_number INTEGER,
-                    track_number INTEGER,
-                FOREIGN KEY (album_id) REFERENCES albums(id)
-                ON DELETE CASCADE)
-            """);
+            for (Map.Entry<String, ColumnDefinition[]> tableEntry : TABLE_DEFINITIONS.entrySet()) {
+                statement.execute(createTableStatement(tableEntry.getKey(), tableEntry.getValue()));
+            }
         }
         catch (SQLException ex) {
             throw new DatabaseException("Failed to initialize database tables", ex);
         }
     }
 
+    private static String createTableStatement(String tableName, ColumnDefinition[] columns) {
+        return String.format("""
+            CREATE TABLE IF NOT EXISTS %s(
+                id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                %s
+            %s)""",
+            tableName,
+            Arrays.stream(columns)
+                .map(Object::toString)
+                .collect(Collectors.joining(",\n    ")),
+            Arrays.stream(columns)
+                .filter(column -> column.foreignKey().isPresent())
+                .map(column -> column.foreignKey().get().toString(column.name()))
+                .collect(Collectors.joining(",\n")));
+    }
+
     public static void storeAlbum(Map<String, Object> album) throws DatabaseException {
         Long albumId;
         try (Connection batchConnection = getConnection()) {
             batchConnection.setAutoCommit(false);
-            try (PreparedStatement statement = batchConnection.prepareStatement(INSERT_ALBUM_QUERY, Statement.RETURN_GENERATED_KEYS)) {
+            try (PreparedStatement statement = batchConnection.prepareStatement(insertStatement(ALBUMS), Statement.RETURN_GENERATED_KEYS)) {
                 statement.setString(1, (String) album.get("Name"));
                 statement.setString(2, (String) album.get("Artist"));
                 int affectedRows = statement.executeUpdate();
@@ -99,10 +97,10 @@ public final class Database {
                     }
                 }
             }
-            try (PreparedStatement statement = getConnection().prepareStatement(INSERT_TRACK_QUERY, Statement.RETURN_GENERATED_KEYS)) {
-                for (Map<String, Object> track : (List<Map<String, Object>>) album.get("tracks")) {
+            try (PreparedStatement statement = getConnection().prepareStatement(insertStatement(TRACKS), Statement.RETURN_GENERATED_KEYS)) {
+                for (Map<String, Object> track : (List<Map<String, Object>>) album.get(TRACKS)) {
                     Map<String, Object> t = new HashMap<>(track);
-                    t.put("Album Id", albumId);
+                    t.put("Album Id", BigInteger.valueOf(albumId));
                     setTrack(statement, t);
                     statement.addBatch();
                 }
@@ -116,7 +114,7 @@ public final class Database {
     }
 
     public static void storeTrack(Map<String, Object> track) throws DatabaseException {
-        try (PreparedStatement statement = getConnection().prepareStatement(INSERT_TRACK_QUERY, Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement statement = getConnection().prepareStatement(insertStatement(TRACKS), Statement.RETURN_GENERATED_KEYS)) {
             setTrack(statement, track);
             statement.executeUpdate();
         }
@@ -126,15 +124,26 @@ public final class Database {
     }
 
     public static void setTrack(PreparedStatement statement, Map<String, Object> track) throws SQLException {
-        statement.setString(1, (String) Objects.requireNonNull(track.get("Name"), "Missing 'Name' in track"));
-        statement.setString(2, (String) track.get("Artist"));
-        statement.setObject(3, (track.containsKey("Year")) ? ((BigInteger) track.get("Year")).intValue() : null);
-        statement.setLong(4, ((BigInteger) Objects.requireNonNull(track.get("Total Time"), "Missing 'Total Time' in track")).longValue() / 1000);
-        statement.setInt(5, (track.containsKey("Play Count") ? ((BigInteger) track.get("Play Count")).intValue() : 0));
-        statement.setObject(6, (track.containsKey("Play Date UTC")) ? Timestamp.from(((ZonedDateTime) track.get("Play Date UTC")).toInstant()) : null);
-        statement.setObject(7, (Long) track.get("Album Id"));
-        statement.setObject(8, (track.containsKey("Disc Number")) ? ((BigInteger) track.get("Disc Number")).intValue() : null);
-        statement.setObject(9, (track.containsKey("Track Number")) ? ((BigInteger) track.get("Track Number")).intValue() : null);
+        int columnIndex = 1;
+        for (ColumnDefinition column : TABLE_DEFINITIONS.get(TRACKS)) {
+            Object value = track.get(column.sourceName());
+            if (value == null && column.constraint() == ColumnConstraint.NOT_NULL) {
+                throw new SQLException("Missing '" + column.sourceName() + "' in track");
+            }
+            switch (column.type().primitive()) {
+                case VARCHAR ->
+                    statement.setString(columnIndex, (String) value);
+                case TIMESTAMP ->
+                    statement.setTimestamp(columnIndex, (value == null) ? null : Timestamp.from(((ZonedDateTime) value).toInstant()));
+                case BIGINT ->
+                    statement.setObject(columnIndex, (value == null) ? null : ((BigInteger) value).longValue());
+                case INTEGER ->
+                    statement.setObject(columnIndex, (value == null) ? null : ((BigInteger) value).intValue());
+                default ->
+                    throw new IllegalStateException(column.type().primitive().name());
+            }
+            columnIndex++;
+        }
     }
 
     public static List<Map<String, Object>> query(String sql) throws DatabaseException {
@@ -160,14 +169,109 @@ public final class Database {
     private static final String DB_PASSWORD = "";
     private static Connection connection;
 
-    private static final String INSERT_ALBUM_QUERY = """
-        INSERT INTO albums
-            (title, artist)
-            VALUES (?, ?)
-    """;
-    public static final String INSERT_TRACK_QUERY = """
-        INSERT INTO tracks
-           (title, artist, "year", duration_seconds, play_count, play_date, album_id, disc_number, track_number)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """;
+    private static String insertStatement(String tableName) {
+        ColumnDefinition[] columns = TABLE_DEFINITIONS.get(tableName);
+        return String.format("""
+            INSERT INTO %s
+            %s
+            VALUES %s
+        """,
+            tableName,
+            Arrays.stream(columns).map(ColumnDefinition::name).collect(Collectors.joining(", ", "(", ")")),
+            Arrays.stream(columns).map(column -> "?").collect(Collectors.joining(", ", "(", ")")));
+    }
+
+
+    private enum Primitive {
+        INTEGER,
+        BIGINT,
+        VARCHAR,
+        TIMESTAMP
+    }
+
+    private record Type(Primitive primitive, OptionalInt width) {
+
+        public Type(Primitive primitive) {
+            this(primitive, OptionalInt.empty());
+        }
+
+        public Type(Primitive primitive, int width) {
+            this(primitive, OptionalInt.of(width));
+        }
+
+        @Override
+        public String toString() {
+            if (width.isPresent()) {
+                return primitive.toString() + '(' + width.getAsInt() + ')';
+            }
+            return primitive.toString();
+        }
+
+    }
+
+
+    private enum ColumnConstraint {
+        NULLABLE("NULL"),
+        NOT_NULL("NOT NULL");
+
+        private ColumnConstraint(String string) {
+            this.string = string;
+        }
+
+        @Override
+        public String toString() {
+            return string;
+        }
+
+        private final String string;
+
+    }
+
+    private record ForeignKey(String tableName, String columnName) {
+
+        public String toString(String localColumnName) {
+            return String.format(",\nFOREIGN KEY (%s) REFERENCES %s(%s) ON DELETE CASCADE", localColumnName, tableName, columnName);
+        }
+    }
+
+    private record ColumnDefinition(String name, Type type, ColumnConstraint constraint, Optional<ForeignKey> foreignKey, String sourceName) {
+
+        public ColumnDefinition(String name, Type type, ColumnConstraint constraint, String sourceName) {
+            this(name.equals("year") ? "\"year\"" : name, type, constraint, Optional.empty(), sourceName);
+        }
+
+        public ColumnDefinition(String name, Type type, ColumnConstraint constraint, ForeignKey foreignKey, String sourceName) {
+            this(name, type, constraint, Optional.of(foreignKey), sourceName);
+        }
+
+
+        @Override
+        public String toString() {
+            return name + ' ' + type.toString() + ' ' + constraint.toString();
+        }
+
+    }
+
+    private static final String TRACKS = "tracks";
+    private static final String ALBUMS = "albums";
+
+    private static final Map<String, ColumnDefinition[]> TABLE_DEFINITIONS = new LinkedHashMap() {
+        {
+            put(ALBUMS, new ColumnDefinition[]{
+                new ColumnDefinition("title", new Type(Primitive.VARCHAR, 255), ColumnConstraint.NOT_NULL, "Name"),
+                new ColumnDefinition("artist", new Type(Primitive.VARCHAR, 255), ColumnConstraint.NULLABLE, "Artist")
+        });
+            put(TRACKS, new ColumnDefinition[]{
+                new ColumnDefinition("title", new Type(Primitive.VARCHAR, 255), ColumnConstraint.NOT_NULL, "Name"),
+                new ColumnDefinition("artist", new Type(Primitive.VARCHAR, 255), ColumnConstraint.NULLABLE, "Artist"),
+                new ColumnDefinition("release_year", new Type(Primitive.INTEGER), ColumnConstraint.NULLABLE, "Year"),
+                new ColumnDefinition("duration_millis", new Type(Primitive.INTEGER), ColumnConstraint.NOT_NULL, "Total Time"),
+                new ColumnDefinition("play_count", new Type(Primitive.BIGINT), ColumnConstraint.NOT_NULL, "Play Count"),
+                new ColumnDefinition("play_date", new Type(Primitive.TIMESTAMP), ColumnConstraint.NULLABLE, "Play Date UTC"),
+                new ColumnDefinition("album_id", new Type(Primitive.BIGINT), ColumnConstraint.NULLABLE, new ForeignKey(ALBUMS, "id"), "Album Id"),
+                new ColumnDefinition("disc_number", new Type(Primitive.INTEGER), ColumnConstraint.NULLABLE, "Disc Number"),
+                new ColumnDefinition("track_number", new Type(Primitive.INTEGER), ColumnConstraint.NULLABLE, "Track Number")
+            });
+        }
+    };
 }

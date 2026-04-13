@@ -1,8 +1,9 @@
 package bka.theworks;
 
 import bka.theworks.persistence.*;
-import java.io.IOException;
+import java.io.*;
 import java.math.BigInteger;
+import java.nio.file.*;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.*;
@@ -21,7 +22,7 @@ public final class Demo {
         }
         populateDatabase();
         String sql = getQuery(args);
-        System.out.println("sql = " + sql);
+        Files.writeString(Paths.get("latest.sql"), sql);
         List<Map<String, Object>> records = Database.query(sql);
         Map<String, Integer> widths = computeColumnsWidths(records);
         widths.forEach((key, value) -> System.out.printf(columnFormat(value), key));
@@ -69,11 +70,15 @@ public final class Demo {
         }
     }
 
-    private static String getQuery(String[] args) {
+    private static String getQuery(String[] args) throws IOException {
         if (args.length == 1 && args[0].contains("=")) {
             int index = args[0].indexOf('=');
-            if ("sql".equals(args[0].substring(0, index).trim())) {
+            String argument = args[0].substring(0, index).trim();
+            if ("sql".equals(argument)) {
                 return args[0].substring(index + 1).replace('\\', '\'');
+            }
+            if ("file".equals(argument)) {
+                return new String(Files.readAllBytes(Paths.get(args[0].substring(index + 1))));
             }
         }
         return DEFAULT_QUERY;

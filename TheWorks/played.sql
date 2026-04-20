@@ -1,0 +1,1 @@
+SELECT DISTINCT CAST(play_date AS date) AS played  FROM tracks ORDER BY played DESC LIMIT 31

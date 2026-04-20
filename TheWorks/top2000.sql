@@ -1,6 +1,7 @@
 SELECT 
   COALESCE(group_artist,'-'),
   group_title,
+  MAX(release_year),
   MAX(play_count) AS max_play_count,
   MAX(play_date) AS max_play_date 
 FROM (
@@ -13,6 +14,7 @@ FROM (
       WHEN album_id IS NULL THEN tracks.title
       ELSE albums.title
     END AS group_title,
+    release_year,
     play_count,
     play_date
   FROM tracks LEFT JOIN albums ON albums.id = tracks.album_id 

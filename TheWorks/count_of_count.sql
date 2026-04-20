@@ -1,0 +1,1 @@
+SELECT play_count, COUNT(*) FROM tracks GROUP BY play_count

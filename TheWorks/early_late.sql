@@ -1,0 +1,1 @@
+SELECT artist, title, play_date FROM tracks WHERE HOUR(play_date) <= 12 OR  22 <= HOUR(play_date)

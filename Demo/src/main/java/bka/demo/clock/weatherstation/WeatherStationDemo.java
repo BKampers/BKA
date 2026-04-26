@@ -209,10 +209,6 @@ public class WeatherStationDemo extends javax.swing.JFrame {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-        PANEL_LOGGER.setLevel(Level.FINEST);
-        ConsoleHandler handler = new ConsoleHandler();
-        handler.setLevel(Level.FINEST);
-        PANEL_LOGGER.addHandler(handler);
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
         /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
@@ -300,7 +296,5 @@ public class WeatherStationDemo extends javax.swing.JFrame {
     private static final int TEN_MINUTES = 10 * 60 * 1000;
 
     private static final List<String> PREFIXES = List.of("De", "Den", "Het", "'t", "Ter");
-
-    private static final Logger PANEL_LOGGER = Logger.getLogger(WeatherStationPanel.class.getName());
 
 }

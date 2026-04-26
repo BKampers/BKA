@@ -10,6 +10,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.*;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.*;
+import java.nio.file.*;
 import java.text.*;
 import java.time.*;
 import java.time.format.*;
@@ -21,6 +22,7 @@ public class WeatherStationReader {
 
     public static Collection<WeatherStation> getStations() throws IOException {
         String page = loadPage();
+        Files.writeString(Paths.get("latest.html"), page);
         LocalDateTime timestamp = getTimestamp(page);
         XmlMapper xmlMapper = new XmlMapper();
         xmlMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -314,6 +316,5 @@ public class WeatherStationReader {
     private static final String SQUALL_HEADER = "Windstoot(km/uur)";
     private static final String VISIBILITY_HEADER = "Zicht(m)";
     private static final String PRESSURE_HEADER = "Druk(hPa)";
-
 
 }

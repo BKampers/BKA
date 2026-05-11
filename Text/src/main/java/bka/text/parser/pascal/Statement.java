@@ -231,13 +231,14 @@ public final class Statement {
 
     public void execute(Memory memory) throws StateMachineException {
         Value value = evaluate(expression, memory);
+        boolean isVoid = value.equals(Value.VOID) || methodProperties.isVoid(value.type());
         if (assignable.isPresent()) {
-            if (value.type().equals("Void")) {
+            if (isVoid) {
                 throw new IllegalStateException(assignable.get() + " cannot be assigned with void");
             }
             store(memory, value.object());
         }
-        else if (!value.type().equals("Void")) {
+        else if (!isVoid) {
             getLogger().log(Level.WARNING, "Evaluation ({1}) of ''{0}'' is ignored", new java.lang.Object[]{expression.content(), value.object()});
         }
     }
@@ -545,7 +546,7 @@ public final class Statement {
 
     private static List<Node> getIndirections(Node expression) {
         List<Node> indirections = new ArrayList<>();
-        Optional<Node> next = expression.findChild("Indirection");
+        Optional<Node> next = expression.findChild("AccessExtension");
         while (next.isPresent()) {
             Node indirection = next.get();
             if (indirection.getChildren().isEmpty()) {
@@ -561,7 +562,7 @@ public final class Statement {
                 else {
                     throw new IllegalStateException("Invalid indirection");
                 }
-                next = indirection.findChild("Indirection");
+                next = indirection.findChild("AccessExtension");
             }
         }
         return indirections;

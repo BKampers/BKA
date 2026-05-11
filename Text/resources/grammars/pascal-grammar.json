@@ -102,7 +102,7 @@
             [ "Expression" ]
         ],
         "Assignable": [
-            [ "Identifier", "Indirection" ]
+            [ "Identifier", "AccessExtension" ]
         ],
         "Expression": [
             [ "Comparable", "RelationalOperator", "Comparable" ],
@@ -115,15 +115,15 @@
             [ "Factor", "MultiplicativeOperation" ]
         ],
         "Factor": [
-            [ "Call", "Indirection" ],
-            [ "Identifier", "Indirection" ], 
+            [ "Call", "AccessExtension" ],
+            [ "Identifier", "AccessExtension" ], 
             [ "Literal" ],
             [ "\\(", "Expression", "\\)" ],
             [ "UnaryOperator", "Factor" ]
         ],
-        "Indirection": [
-            [ "\\.", "Identifier", "Indirection" ],
-            [ "\\[", "Expression", "\\]", "Indirection" ],
+        "AccessExtension": [
+            [ "\\.", "Identifier", "AccessExtension" ],
+            [ "\\[", "Expression", "\\]", "AccessExtension" ],
             [ ]
         ],
         "MultiplicativeOperation": [

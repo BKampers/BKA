@@ -10,6 +10,7 @@ import java.util.*;
 import java.util.function.*;
 import java.util.stream.*;
 import run.*;
+import run.Expression;
 import uml.statechart.*;
 import uml.structure.*;
 
@@ -276,7 +277,201 @@ public class PascalCompiler {
         } while (statementNode != null);
     }
 
-    private Type typeOf(Operation operation, String identifier, List<Node> indirections) throws IllegalStateException {
+    private run.Statement createStatement(Operation scope, Node statementNode) {
+        Expression expression = switch (statementNode.getChildren().getFirst().getSymbol()) {
+            case "Assignable" ->
+                createExpression(scope, statementNode.getChildren().getLast());
+            case "Call" ->
+                createCallExpression(scope, statementNode.getChildren().getFirst());
+            case "Identifier" ->
+                createIdentifierExpression(scope, statementNode.getChildren().getFirst());
+            case "CompoundStatement", "IF\\b", "WHILE\\b", "FOR\\b", "REPEAT\\b" ->
+                throw new IllegalStateException("Unexpected symbol: " + statementNode.getChildren().getFirst().getSymbol());
+            default ->
+                throw new IllegalStateException("Unsupported statement: " + statementNode.getChildren().getFirst().getSymbol());
+        };
+        return new run.Statement(expression);
+    }
+
+    private Expression createExpression(Operation scope, Node expressionNode) {
+        if (!"Expression".equals(expressionNode.getSymbol())) {
+            throw new IllegalArgumentException(expressionNode.getSymbol());
+        }
+        Optional<Node> operatorNode = expressionNode.findChild("RelationalOperator");
+        if (operatorNode.isPresent()) {
+            createRelationalOperationExpression(
+                createComparableExpression(scope, expressionNode.getChildren().getFirst()),
+                operatorNode,
+                createComparableExpression(scope, expressionNode.getChildren().getLast()));
+        }
+        return createComparableExpression(scope, expressionNode.getChildren().getFirst());
+    }
+
+    private Expression createComparableExpression(Operation scope, Node comparableNode) {
+        if (!"Comparable".equals(comparableNode.getSymbol())) {
+            throw new IllegalArgumentException(comparableNode.getSymbol());
+        }
+        return createAdditiveExpression(createTermExpression(scope, comparableNode.getChild("Term")), comparableNode.getChild("AdditiveOperation"));
+    }
+
+    private Expression createTermExpression(Operation scope, Node termNode) {
+        return createMultiplicativeExpression(createFactorExpression(scope, termNode.getChild("Factor")), termNode.getChild("MultiplicativeOperation"));
+    }
+
+    private Expression createFactorExpression(Operation scope, Node factorNode) {
+        Node head = factorNode.getChildren().getFirst();
+        return switch (head.getSymbol()) {
+            case "Call" ->
+                createIndirectionExpression(createCallExpression(scope, head), factorNode.getChild("AccessExtension"));
+            case "Identifier" ->
+                createIndirectionExpression(createIdentifierExpression(scope, head), factorNode.getChild("AccessExtension"));
+            case "Literal" ->
+                createLiteralExpression(head);
+            case "\\(" ->
+                createExpression(scope, factorNode.getChild("Expression"));
+            case "UnaryOperator" ->
+                createUnaryExpression(head, createFactorExpression(scope, factorNode.getChild("Factor")));
+            default ->
+                throw new IllegalStateException("Unsupported factor: " + head.getSymbol());
+        };
+    }
+
+    private Expression createIndirectionExpression(Expression referenceExpression, Node indirectionNode) {
+        throw new UnsupportedOperationException();
+    }
+
+    private Expression createAdditiveExpression(Expression leftExpression, Node operationNode) {
+        throw new UnsupportedOperationException();
+    }
+
+    private Expression createMultiplicativeExpression(Expression leftExpression, Node operationNode) {
+        throw new UnsupportedOperationException();
+    }
+
+    private Expression createUnaryExpression(Node operatorNode, Expression expression) {
+        return new Expression() {
+            @Override
+            public Optional<Type> getType() {
+                return expression.getType();
+            }
+        };
+    }
+
+    private class OperatorExpression extends Expression {
+
+        public OperatorExpression(Expression left, Node operator, Expression right) {
+            if (left.getType().isEmpty() || right.getType().isEmpty()) {
+                throw new IllegalArgumentException();
+            }
+            this.left = Objects.requireNonNull(left);
+            this.operator = Objects.requireNonNull(operator);
+            this.right = Objects.requireNonNull(right);
+        }
+
+        @Override
+        public Optional<Type> getType() {
+            return Optional.of((INTEGER.equals(left.getType().get()) && INTEGER.equals(right.getType().get())) ? INTEGER : REAL);
+        }
+
+        private final Expression left;
+        private final Node operator;
+        private final Expression right;
+
+    }
+
+    private void createRelationalOperationExpression(Expression leftExpression, Optional<Node> operatorNode, Expression rightExpression) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    private Expression createCallExpression(Operation scope, Node callNode) {
+        Operation operation = getOperation(callNode.getChild("Identifier"));
+        return new CallExpression(operation, createArgumentMap(scope, operation.getParameters(), callNode.getChild("ArgumentList")));
+    }
+
+    private Map<Parameter, Expression> createArgumentMap(Operation scope, List<Parameter> parameters, Node argumentList) {
+        Map<Parameter, Expression> arguments = new HashMap<>();
+        populateArgumentMap(scope, parameters, argumentList, arguments);
+        return arguments;
+    }
+
+    private void populateArgumentMap(Operation scope, List<Parameter> parameters, Node argumentList, Map<Parameter, Expression> arguments) {
+        if (arguments.size() >= parameters.size()) {
+            throw new IllegalStateException("Too many arguments in list");
+        }
+        arguments.put(parameters.get(arguments.size()), createExpression(scope, argumentList.getChild("Expression")));
+        Optional<Node> remainder = argumentList.findChild("ArgumentList");
+        remainder.ifPresent(tail -> populateArgumentMap(scope, parameters, tail, arguments));
+    }
+
+    private Expression createIdentifierExpression(Operation scope, Node identifierNode) {
+        String identifier = identifier(identifierNode);
+        Optional<Parameter> parameter = scope.getParameters().stream().filter(p -> p.getName().isPresent() && identifier.equalsIgnoreCase(p.getName().get())).findAny();
+        if (parameter.isPresent()) {
+            return new Expression() {
+                @Override
+                public Optional<Type> getType() {
+                    return parameter.get().getType();
+                }
+            };
+        }
+        Optional<uml.structure.Object> global = globals.stream().filter(g -> g.getName().isPresent() && identifier.equalsIgnoreCase(g.getName().get())).findAny();
+        if (global.isPresent()) {
+            return new Expression() {
+                @Override
+                public Optional<Type> getType() {
+                    return global.get().getType();
+                }
+            };
+        }
+        return new CallExpression(getOperation(identifierNode));
+    }
+
+    private Expression createLiteralExpression(Node literalNode) {
+        Node head = literalNode.getChildren().getFirst();
+        return switch (head.getSymbol()) {
+            case "RealLiteral" ->
+                new Expression() {
+                    @Override
+                    public Optional<Type> getType() {
+                        return Optional.of(REAL);
+                    }
+                };
+            case "IntegerLiteral" ->
+                new Expression() {
+                    @Override
+                    public Optional<Type> getType() {
+                        return Optional.of(INTEGER);
+                    }
+                };
+            case "\\'" ->
+                new Expression() {
+                    @Override
+                    public Optional<Type> getType() {
+                        return Optional.of(STRING);
+                    }
+                };
+            case "FALSE\\b", "TRUE\\b" ->
+                new Expression() {
+                    @Override
+                    public Optional<Type> getType() {
+                        return Optional.of(BOOLEAN);
+                    }
+                };
+            default ->
+                throw new IllegalStateException("Unsupported literal: " + head.getSymbol());
+
+        };
+    }
+
+    private Operation getOperation(Node identifierNode) {
+        String identifier = identifier(identifierNode);
+        return methodBodies.keySet().stream()
+            .filter(o -> o.getName().isPresent() && identifier.equalsIgnoreCase(o.getName().get()))
+            .findAny()
+            .orElseThrow(() -> new IllegalStateException("No such operation: " + identifier));
+    }
+
+    private Type typeOf(Operation operation, String identifier, List<Node> indirections) {
         Type type = null;
         if (operation.getName().isPresent() && identifier.equalsIgnoreCase(operation.getName().get())) {
             type = operation.getType().get();
@@ -319,7 +514,7 @@ public class PascalCompiler {
     // TODO refactor, this method is copied from Statement
     private static List<Node> getIndirections(Node expression) {
         List<Node> indirections = new ArrayList<>();
-        Optional<Node> next = expression.findChild("Indirection");
+        Optional<Node> next = expression.findChild("AccessExtension");
         while (next.isPresent()) {
             Node indirection = next.get();
             if (indirection.getChildren().isEmpty()) {
@@ -335,7 +530,7 @@ public class PascalCompiler {
                 else {
                     throw new IllegalStateException("Invalid indirection");
                 }
-                next = indirection.findChild("Indirection");
+                next = indirection.findChild("AccessExtension");
             }
         }
         return indirections;
@@ -345,7 +540,6 @@ public class PascalCompiler {
     private static String identifier(Node node) {
         return node.getChild("Identifier").content().toLowerCase();
     }
-
 
     public class MethodProperties {
 
@@ -375,6 +569,10 @@ public class PascalCompiler {
 
         public Collection<uml.structure.Object> getLocals(String name) {
             return Collections.unmodifiableCollection(methodLocals.get(getOperation(name)));
+        }
+
+        public boolean isVoid(Type type) {
+            return VOID_TYPE.equals(type);
         }
 
         public boolean isProcedure(String name) {

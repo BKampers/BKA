@@ -145,7 +145,7 @@ public class PascalCompiler {
     }
 
     private Type createType(Node typeDeclarationExpression, Member.Visibility visibility) {
-        Node expression = typeDeclarationExpression.getChildren().getFirst();
+        Node expression = head(typeDeclarationExpression);
         return switch (expression.getSymbol()) {
             case "TypeExpression" ->
                 getType(expression);
@@ -158,7 +158,7 @@ public class PascalCompiler {
             case "RECORD\\b" ->
                 createDeclaredType(null, typeDeclarationExpression, visibility);
             default ->
-                throw new IllegalStateException("UnsupportedType " + typeDeclarationExpression.getChildren().getFirst().getSymbol());
+                throw new IllegalStateException("UnsupportedType " + expression.getSymbol());
         };
     }
 
@@ -207,14 +207,14 @@ public class PascalCompiler {
         if (identifier == null) {
             return new ArrayType(
                 createDeclaredType(null, typeExpression, Member.Visibility.PUBLIC),
-                intValue(rangeExpression.getChildren().getFirst()),
-                intValue(rangeExpression.getChildren().getLast()));
+                intValue(head(rangeExpression)),
+                intValue(tail(rangeExpression)));
         }
         return new ArrayType(
             identifier,
             createDeclaredType(null, typeExpression, Member.Visibility.PUBLIC),
-            intValue(rangeExpression.getChildren().getFirst()),
-            intValue(rangeExpression.getChildren().getLast()));
+            intValue(head(rangeExpression)),
+            intValue(tail(rangeExpression)));
     }
 
     private void addRecordFields(UmlClassBuilder builder, Node variableDeclarationList, Member.Visibility visibility) {
@@ -245,7 +245,7 @@ public class PascalCompiler {
     }
 
     private static String rangeString(Node rangeExpression) {
-        return rangeExpression.getChildren().getFirst().content() + " .. " + rangeExpression.getChildren().getLast().content();
+        return head(rangeExpression).content() + " .. " + tail(rangeExpression).content();
     }
 
     private static List<String> createIdentifiers(Node identifierList) {
@@ -278,17 +278,17 @@ public class PascalCompiler {
     }
 
     private run.Statement createStatement(Operation scope, Node statementNode) {
-        Expression expression = switch (statementNode.getChildren().getFirst().getSymbol()) {
+        Expression expression = switch (head(statementNode).getSymbol()) {
             case "Assignable" ->
-                createExpression(scope, statementNode.getChildren().getLast());
+                createExpression(scope, tail(statementNode));
             case "Call" ->
-                createCallExpression(scope, statementNode.getChildren().getFirst());
+                createCallExpression(scope, head(statementNode));
             case "Identifier" ->
-                createIdentifierExpression(scope, statementNode.getChildren().getFirst());
+                createIdentifierExpression(scope, head(statementNode));
             case "CompoundStatement", "IF\\b", "WHILE\\b", "FOR\\b", "REPEAT\\b" ->
-                throw new IllegalStateException("Unexpected symbol: " + statementNode.getChildren().getFirst().getSymbol());
+                throw new IllegalStateException("Unexpected symbol: " + head(statementNode).getSymbol());
             default ->
-                throw new IllegalStateException("Unsupported statement: " + statementNode.getChildren().getFirst().getSymbol());
+                throw new IllegalStateException("Unsupported statement: " + head(statementNode).getSymbol());
         };
         return new run.Statement(expression);
     }
@@ -299,53 +299,83 @@ public class PascalCompiler {
         }
         Optional<Node> operatorNode = expressionNode.findChild("RelationalOperator");
         if (operatorNode.isPresent()) {
-            createRelationalOperationExpression(
-                createComparableExpression(scope, expressionNode.getChildren().getFirst()),
-                operatorNode,
-                createComparableExpression(scope, expressionNode.getChildren().getLast()));
+            return createRelationalOperationExpression(
+                createComparableExpression(scope, head(expressionNode)),
+                operatorNode.get(),
+                createComparableExpression(scope, tail(expressionNode)));
         }
-        return createComparableExpression(scope, expressionNode.getChildren().getFirst());
+        return createComparableExpression(scope, head(expressionNode));
     }
 
     private Expression createComparableExpression(Operation scope, Node comparableNode) {
         if (!"Comparable".equals(comparableNode.getSymbol())) {
             throw new IllegalArgumentException(comparableNode.getSymbol());
         }
-        return createAdditiveExpression(createTermExpression(scope, comparableNode.getChild("Term")), comparableNode.getChild("AdditiveOperation"));
+        return createAdditiveExpression(scope, createTermExpression(scope, comparableNode.getChild("Term")), comparableNode.getChild("AdditiveOperation"));
     }
 
     private Expression createTermExpression(Operation scope, Node termNode) {
-        return createMultiplicativeExpression(createFactorExpression(scope, termNode.getChild("Factor")), termNode.getChild("MultiplicativeOperation"));
+        return createMultiplicativeExpression(scope, createFactorExpression(scope, termNode.getChild("Factor")), termNode.getChild("MultiplicativeOperation"));
     }
 
     private Expression createFactorExpression(Operation scope, Node factorNode) {
-        Node head = factorNode.getChildren().getFirst();
-        return switch (head.getSymbol()) {
+        return switch (head(factorNode).getSymbol()) {
             case "Call" ->
-                createIndirectionExpression(createCallExpression(scope, head), factorNode.getChild("AccessExtension"));
+                createAccessExpression(scope, createCallExpression(scope, head(factorNode)), factorNode.getChild("AccessExtension"));
             case "Identifier" ->
-                createIndirectionExpression(createIdentifierExpression(scope, head), factorNode.getChild("AccessExtension"));
+                createAccessExpression(scope, createIdentifierExpression(scope, head(factorNode)), factorNode.getChild("AccessExtension"));
             case "Literal" ->
-                createLiteralExpression(head);
+                createLiteralExpression(head(factorNode));
             case "\\(" ->
                 createExpression(scope, factorNode.getChild("Expression"));
             case "UnaryOperator" ->
-                createUnaryExpression(head, createFactorExpression(scope, factorNode.getChild("Factor")));
+                createUnaryExpression(head(factorNode), createFactorExpression(scope, factorNode.getChild("Factor")));
             default ->
-                throw new IllegalStateException("Unsupported factor: " + head.getSymbol());
+                throw new IllegalStateException("Unsupported factor: " + head(factorNode).getSymbol());
         };
     }
 
-    private Expression createIndirectionExpression(Expression referenceExpression, Node indirectionNode) {
-        throw new UnsupportedOperationException();
+    private Expression createAccessExpression(Operation scope, Expression referenceExpression, Node targetNode) {
+        return switch (head(targetNode).getSymbol()) {
+            case "\\." ->
+                memberExpression(scope, referenceExpression, targetNode.getChild("Identifier"), targetNode.getChild("AccessExtention"));
+            case "\\[" ->
+                indexedExpression(scope, referenceExpression, targetNode.getChild("Expression"), targetNode.getChild("AccessExtention"));
+            default ->
+                throw new IllegalStateException("Unsupported access: " + head(targetNode).content());
+        };
     }
 
-    private Expression createAdditiveExpression(Expression leftExpression, Node operationNode) {
-        throw new UnsupportedOperationException();
+    private Expression memberExpression(Operation scope, Expression receiver, Node identifierNode, Node accessExtensionNode) {
+        Expression expression = new MemberAccessExpression(receiver, identifier(identifierNode));
+        if (accessExtensionNode.getChildren().isEmpty()) {
+            return expression;
+        }
+        return createAccessExpression(scope, expression, accessExtensionNode);
     }
 
-    private Expression createMultiplicativeExpression(Expression leftExpression, Node operationNode) {
-        throw new UnsupportedOperationException();
+    private Expression indexedExpression(Operation scope, Expression base, Node indexNode, Node accessExtensionNode) {
+        Expression expression = new IndexAccessExpression(base, createExpression(scope, indexNode));
+        if (accessExtensionNode.getChildren().isEmpty()) {
+            return expression;
+        }
+        return createAccessExpression(scope, expression, accessExtensionNode);
+    }
+
+    private Expression createAdditiveExpression(Operation scope, Expression leftExpression, Node additiveOperationNode) {
+        if (additiveOperationNode.getChildren().isEmpty()) {
+            return leftExpression;
+        }
+        Expression operationExpression = new OperatorExpression(leftExpression, additiveOperationNode.getChild("AdditiveOperator"), createTermExpression(scope, additiveOperationNode.getChild("Term")));
+        return createAdditiveExpression(scope, operationExpression, additiveOperationNode.getChild("AdditiveOperation"));
+    }
+
+    private Expression createMultiplicativeExpression(Operation scope, Expression leftExpression, Node multiplicativeOperationNode) {
+        if (multiplicativeOperationNode.getChildren().isEmpty()) {
+            return leftExpression;
+        }
+        Expression operationExpression = new OperatorExpression(leftExpression, multiplicativeOperationNode.getChild("MultiplicativeOperator"), createTermExpression(scope, multiplicativeOperationNode.getChild("Factor")));
+        return createMultiplicativeExpression(scope, operationExpression, multiplicativeOperationNode.getChild("MultiplicativeOperation"));
     }
 
     private Expression createUnaryExpression(Node operatorNode, Expression expression) {
@@ -357,30 +387,8 @@ public class PascalCompiler {
         };
     }
 
-    private class OperatorExpression extends Expression {
-
-        public OperatorExpression(Expression left, Node operator, Expression right) {
-            if (left.getType().isEmpty() || right.getType().isEmpty()) {
-                throw new IllegalArgumentException();
-            }
-            this.left = Objects.requireNonNull(left);
-            this.operator = Objects.requireNonNull(operator);
-            this.right = Objects.requireNonNull(right);
-        }
-
-        @Override
-        public Optional<Type> getType() {
-            return Optional.of((INTEGER.equals(left.getType().get()) && INTEGER.equals(right.getType().get())) ? INTEGER : REAL);
-        }
-
-        private final Expression left;
-        private final Node operator;
-        private final Expression right;
-
-    }
-
-    private void createRelationalOperationExpression(Expression leftExpression, Optional<Node> operatorNode, Expression rightExpression) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    private Expression createRelationalOperationExpression(Expression leftExpression, Node operatorNode, Expression rightExpression) {
+        return new OperatorExpression(leftExpression, operatorNode, rightExpression);
     }
 
     private Expression createCallExpression(Operation scope, Node callNode) {
@@ -427,8 +435,7 @@ public class PascalCompiler {
     }
 
     private Expression createLiteralExpression(Node literalNode) {
-        Node head = literalNode.getChildren().getFirst();
-        return switch (head.getSymbol()) {
+        return switch (head(literalNode).getSymbol()) {
             case "RealLiteral" ->
                 new Expression() {
                     @Override
@@ -458,7 +465,7 @@ public class PascalCompiler {
                     }
                 };
             default ->
-                throw new IllegalStateException("Unsupported literal: " + head.getSymbol());
+                throw new IllegalStateException("Unsupported literal: " + head(literalNode).getSymbol());
 
         };
     }
@@ -469,6 +476,14 @@ public class PascalCompiler {
             .filter(o -> o.getName().isPresent() && identifier.equalsIgnoreCase(o.getName().get()))
             .findAny()
             .orElseThrow(() -> new IllegalStateException("No such operation: " + identifier));
+    }
+
+    private static Node head(Node node) {
+        return node.getChildren().getFirst();
+    }
+
+    private static Node tail(Node node) {
+        return node.getChildren().getLast();
     }
 
     private Type typeOf(Operation operation, String identifier, List<Node> indirections) {
@@ -536,10 +551,85 @@ public class PascalCompiler {
         return indirections;
     }
 
-
     private static String identifier(Node node) {
         return node.getChild("Identifier").content().toLowerCase();
     }
+
+
+    private class MemberAccessExpression extends Expression {
+
+        public MemberAccessExpression(Expression receiver, String member) {
+            this.receiver = Objects.requireNonNull(receiver);
+            this.member = Objects.requireNonNull(member);
+        }
+
+        @Override
+        public Optional<Type> getType() {
+            uml.structure.Class targetClass = (uml.structure.Class) receiver.getType().get();
+            return targetClass.getAttributes()
+                .stream().filter(attribute -> attribute.getName().isPresent() && member.equalsIgnoreCase(attribute.getName().get()))
+                .findAny().get().getType();
+        }
+
+        private final Expression receiver;
+        private final String member;
+
+    }
+
+
+    private class IndexAccessExpression extends Expression {
+
+        public IndexAccessExpression(Expression base, Expression index) {
+            this.base = Objects.requireNonNull(base);
+            this.index = Objects.requireNonNull(index);
+        }
+
+        @Override
+        public Optional<Type> getType() {
+            return base.getType();
+        }
+
+        private final Expression base;
+        private final Expression index;
+
+    }
+
+
+    private class OperatorExpression extends Expression {
+
+        public OperatorExpression(Expression left, Node operator, Expression right) {
+            if (left.getType().isEmpty() || right.getType().isEmpty()) {
+                throw new IllegalArgumentException();
+            }
+            this.left = Objects.requireNonNull(left);
+            this.operator = Objects.requireNonNull(operator);
+            this.right = Objects.requireNonNull(right);
+        }
+
+        @Override
+        public Optional<Type> getType() {
+            return switch (operator.getSymbol()) {
+                case "\\=", "\\<\\=", "\\>\\=", "\\<\\>" ->
+                    Optional.of(BOOLEAN);
+                case "AND\\b", "OR\\b", "XOR\\b" ->
+                    left.getType();
+                case "\\*", "\\+", "\\-" ->
+                    (INTEGER.equals(left.getType().get()) && INTEGER.equals(right.getType().get())) ? Optional.of(INTEGER) : Optional.of(REAL);
+                case "\\/" ->
+                    Optional.of(REAL);
+                case "DIV\\b", "MOD\\b" ->
+                    Optional.of(INTEGER);
+                default ->
+                    throw new IllegalStateException(String.format("Cannot determine type of %s %s %s", left.getType().get(), operator.content(), right.getType().get()));
+            };
+        }
+
+        private final Expression left;
+        private final Node operator;
+        private final Expression right;
+
+    }
+
 
     public class MethodProperties {
 

@@ -257,7 +257,6 @@ public class PascalCompiler {
     }
 
     private void buildOperations(UmlClassBuilder builder, Node declarations) {
-//        builder.withOperation(programName, Member.Visibility.PUBLIC, UmlStereotypeFactory.createStereotypes("Main"));
         addPrivateFunctionOperations(builder, declarations);
     }
 
@@ -278,19 +277,20 @@ public class PascalCompiler {
     }
 
     private run.Statement createStatement(Operation scope, Node statementNode) {
-        Expression expression = switch (head(statementNode).getSymbol()) {
+        return switch (head(statementNode).getSymbol()) {
             case "Assignable" ->
-                createExpression(scope, tail(statementNode));
+                new ExpressionStatement(createExpression(scope, head(statementNode)), createExpression(scope, tail(statementNode)));
             case "Call" ->
-                createCallExpression(scope, head(statementNode));
+                new ExpressionStatement(createCallExpression(scope, head(statementNode)));
             case "Identifier" ->
-                createIdentifierExpression(scope, head(statementNode));
-            case "CompoundStatement", "IF\\b", "WHILE\\b", "FOR\\b", "REPEAT\\b" ->
+                new ExpressionStatement(createIdentifierExpression(scope, head(statementNode)));
+            case "CompoundStatement" ->
+                new CompoundStatement(createStatementSequense(scope, statementNode.getChild("Statements")));
+            case "IF\\b", "WHILE\\b", "FOR\\b", "REPEAT\\b" ->
                 throw new IllegalStateException("Unexpected symbol: " + head(statementNode).getSymbol());
             default ->
-                throw new IllegalStateException("Unsupported statement: " + head(statementNode).getSymbol());
+                throw new IllegalStateException("Unsupported statement: " + statementNode.content());
         };
-        return new run.Statement(expression);
     }
 
     private Expression createExpression(Operation scope, Node expressionNode) {
@@ -384,6 +384,11 @@ public class PascalCompiler {
             public Optional<Type> getType() {
                 return expression.getType();
             }
+
+            @Override
+            public String toString() {
+                return String.format("%s %s", operatorNode.content(), expression);
+            }
         };
     }
 
@@ -420,6 +425,11 @@ public class PascalCompiler {
                 public Optional<Type> getType() {
                     return parameter.get().getType();
                 }
+
+                @Override
+                public String toString() {
+                    return identifierNode.content();
+                }
             };
         }
         Optional<uml.structure.Object> global = globals.stream().filter(g -> g.getName().isPresent() && identifier.equalsIgnoreCase(g.getName().get())).findAny();
@@ -429,9 +439,25 @@ public class PascalCompiler {
                 public Optional<Type> getType() {
                     return global.get().getType();
                 }
+
+                @Override
+                public String toString() {
+                    return identifierNode.content();
+                }
             };
         }
         return new CallExpression(getOperation(identifierNode));
+    }
+
+    private List<run.Statement> createStatementSequense(Operation scope, Node statementsNode) {
+        List<run.Statement> statements = new ArrayList<>();
+        Node next = statementsNode;
+        do {
+            Node statementNode = next.getChild("Statement");
+            statements.add(createStatement(scope, statementNode));
+            next = next.findChild("Statements").orElse(null);
+        } while (next != null);
+        return statements;
     }
 
     private Expression createLiteralExpression(Node literalNode) {
@@ -442,12 +468,20 @@ public class PascalCompiler {
                     public Optional<Type> getType() {
                         return Optional.of(REAL);
                     }
+                    @Override
+                    public String toString() {
+                        return literalNode.content();
+                    }
                 };
             case "IntegerLiteral" ->
                 new Expression() {
                     @Override
                     public Optional<Type> getType() {
                         return Optional.of(INTEGER);
+                    }
+                    @Override
+                    public String toString() {
+                        return literalNode.content();
                     }
                 };
             case "\\'" ->
@@ -456,12 +490,20 @@ public class PascalCompiler {
                     public Optional<Type> getType() {
                         return Optional.of(STRING);
                     }
+                    @Override
+                    public String toString() {
+                        return literalNode.content();
+                    }
                 };
             case "FALSE\\b", "TRUE\\b" ->
                 new Expression() {
                     @Override
                     public Optional<Type> getType() {
                         return Optional.of(BOOLEAN);
+                    }
+                    @Override
+                    public String toString() {
+                        return literalNode.content();
                     }
                 };
             default ->

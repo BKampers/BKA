@@ -3,6 +3,7 @@
 package run;
 
 import java.util.*;
+import java.util.stream.*;
 import uml.structure.*;
 
 
@@ -19,6 +20,7 @@ public class UmlObjectFactory {
     }
 
     private static uml.structure.Object createObject(Optional<String> name, Optional<Type> type, Map<Attribute, Expression> attributeValues) {
+        final Map<Attribute, uml.structure.Expression> values = attributeValues.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         return new uml.structure.Object() {
             @Override
             public Optional<String> getName() {
@@ -31,8 +33,8 @@ public class UmlObjectFactory {
             }
 
             @Override
-            public Map<Attribute, Expression> getAttributeValues() {
-                return attributeValues;
+            public Map<Attribute, uml.structure.Expression> getAttributeValues() {
+                return values;
             }
 
         };

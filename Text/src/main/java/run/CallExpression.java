@@ -32,8 +32,8 @@ public class CallExpression extends Expression {
 
 
     @Override
-public Optional<Type> getType() {
-    return operation.getType();
+    public Optional<Type> getType() {
+        return operation.getType();
     }
 
     private final Operation operation;

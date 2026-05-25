@@ -286,8 +286,18 @@ public class PascalCompiler {
                 new ExpressionStatement(createIdentifierExpression(scope, head(statementNode)));
             case "CompoundStatement" ->
                 new CompoundStatement(createStatementSequense(scope, statementNode.getChild("Statements")));
-            case "IF\\b", "WHILE\\b", "FOR\\b", "REPEAT\\b" ->
-                throw new IllegalStateException("Unexpected symbol: " + head(statementNode).getSymbol());
+            case "IF\\b" ->
+                createIfStatement(scope, statementNode);
+            case "FOR\\b" ->
+                createForLoop(scope, statementNode);
+            case "WHILE\\b" ->
+                LoopStatement.whileLoop(
+                    createExpression(scope, statementNode.getChild("Expression")), 
+                    createStatement(scope, statementNode.getChild("Statement")));
+            case "REPEAT\\b" ->
+                LoopStatement.untilLoop(
+                    createExpression(scope, statementNode.getChild("Expression")), 
+                    createStatement(scope, statementNode.getChild("Statement")));
             default ->
                 throw new IllegalStateException("Unsupported statement: " + statementNode.content());
         };
@@ -458,6 +468,40 @@ public class PascalCompiler {
             next = next.findChild("Statements").orElse(null);
         } while (next != null);
         return statements;
+    }
+    
+    private BranchStatement createIfStatement(Operation scope, Node statementNode) {
+        Optional<Node> elseClause = statementNode.getChild("ElseClause").findChild("Statement");
+        if (elseClause.isPresent()) {
+            return BranchStatement.ifStatement(
+                createExpression(scope, statementNode.getChild("Expression")), 
+                createStatement(scope, statementNode.getChild("Statement")), 
+                createStatement(scope, elseClause.get()));
+        }
+        return BranchStatement.ifStatement(
+            createExpression(scope, statementNode.getChild("Expression")), 
+            createStatement(scope, statementNode.getChild("Statement")));
+    }
+    
+    private LoopStatement createForLoop(Operation scope, Node statementNode) {
+        Expression condition = new Expression() {
+            @Override
+            public Optional<Type> getType() {
+                return Optional.of(BOOLEAN);
+            }
+        };
+        ExpressionStatement incrementAction = new ExpressionStatement(
+            createExpression(scope, statementNode.getChild("Identifier")),
+            new Expression() {
+                @Override
+                public Optional<Type> getType() {
+                    return Optional.of(INTEGER);
+                }
+            });
+        return LoopStatement.forLoop(
+            condition, 
+            createStatement(scope, statementNode.getChild("Statement")), 
+            incrementAction);
     }
 
     private Expression createLiteralExpression(Node literalNode) {

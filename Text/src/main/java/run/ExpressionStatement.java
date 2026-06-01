@@ -28,6 +28,14 @@ public class ExpressionStatement implements Statement {
     public Expression getExpression() {
         return expression;
     }
+    
+    @Override 
+    public String toString() {
+        if (assignable.isEmpty()) {
+            return expression.toString();
+        }
+        return assignable.get().toString() + " <- " + expression.toString();
+    }
 
     private final Optional<Expression> assignable;
     private final Expression expression;

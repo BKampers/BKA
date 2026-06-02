@@ -29,6 +29,16 @@ public final class BranchStatement implements Statement {
         this.defaultChoice = defaultChoice;
     }
     
+    @Override
+    public String toString() {
+        StringBuilder string = new StringBuilder("@On").append(condition);
+        choices.forEach((expression, statement) -> 
+            string.append("\n  @If ").append(expression).append(": ").append(statement)
+        );
+        defaultChoice.ifPresent(statement -> string.append("\n  @Otherwise: ").append(statement));
+        return string.toString();
+    }
+    
     private final Expression condition;
     private final Map<Expression, Statement> choices;
     private final Optional<Statement> defaultChoice;
@@ -38,6 +48,9 @@ public final class BranchStatement implements Statement {
         public Optional<Type> getType() {
             return Optional.of(UmlTypeFactory.create("Boolean"));
         }
-        
+        @Override
+        public String toString() {
+            return "@TRUE";
+        } 
     };
 }

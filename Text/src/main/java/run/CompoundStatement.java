@@ -18,7 +18,9 @@ public class CompoundStatement implements Statement {
     
     @Override
     public String toString() {
-        return statements.stream().map(Objects::toString).collect(Collectors.joining(";\n\t", "{\n\t", "\n}"));
+        return statements.stream()
+            .map(Objects::toString)
+            .collect(Collectors.joining(";\n\t", "{\n\t", "\n}"));
     }
 
     private final List<Statement> statements;

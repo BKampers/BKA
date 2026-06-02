@@ -470,7 +470,7 @@ public class PascalCompiler {
                 }
                 @Override
                 public String toString() {
-                    return "@Return (" + identifier + ")";
+                    return "@ReturnValue (" + identifier + ")";
                 }
             };
         }
@@ -548,11 +548,18 @@ public class PascalCompiler {
             createStatement(scope, statementNode.getChild("Statement")));
     }
     
-    private LoopStatement createForLoop(Operation scope, Node statementNode) {
+    private run.Statement createForLoop(Operation scope, Node statementNode) {
+        ExpressionStatement initialization = new ExpressionStatement(
+            createIdentifierExpression(scope, statementNode.getChild("Identifier")),
+            createExpression(scope, statementNode.getChildren().get(3)));
         Expression condition = new Expression() {
             @Override
             public Optional<Type> getType() {
                 return Optional.of(BOOLEAN);
+            }
+            @Override
+            public String toString() {
+                return statementNode.getChild("Identifier").content() + " <= " + statementNode.getChildren().get(5).content();
             }
         };
         ExpressionStatement incrementAction = new ExpressionStatement(
@@ -562,11 +569,16 @@ public class PascalCompiler {
                 public Optional<Type> getType() {
                     return Optional.of(INTEGER);
                 }
+                @Override
+                public String toString() {
+                    return "@Inc(" + statementNode.getChild("Identifier").content() + ")";
+                }
             });
-        return LoopStatement.forLoop(
+        LoopStatement loop = LoopStatement.forLoop(
             condition, 
             createStatement(scope, statementNode.getChild("Statement")), 
             incrementAction);
+        return new CompoundStatement(List.of(initialization, loop));
     }
 
     private Expression createLiteralExpression(Node literalNode) {

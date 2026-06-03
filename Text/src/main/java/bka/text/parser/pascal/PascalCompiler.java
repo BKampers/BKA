@@ -649,7 +649,7 @@ public class PascalCompiler {
         return node.getChildren().getLast();
     }
 
-    private Type typeOf(Operation operation, String identifier, List<Node> indirections) {
+    private Type typeOf(Operation operation, String identifier, List<Node> accessExtensions) {
         Type type = null;
         if (operation.getName().isPresent() && identifier.equalsIgnoreCase(operation.getName().get())) {
             type = operation.getType().get();
@@ -676,14 +676,14 @@ public class PascalCompiler {
                 .map(global -> global.getType().get())
                 .findAny().get();
         }
-        for (Node indirection : indirections) {
-            type = switch (indirection.getSymbol()) {
+        for (Node extension : accessExtensions) {
+            type = switch (extension.getSymbol()) {
                 case "Identifier" ->
-                    ((uml.structure.Class) type).getAttributes().stream().filter(attribute -> attribute.getName().get().equalsIgnoreCase(indirection.content())).findAny().get().getType().get();
+                    ((uml.structure.Class) type).getAttributes().stream().filter(attribute -> attribute.getName().get().equalsIgnoreCase(extension.content())).findAny().get().getType().get();
                 case "Expression" ->
                     ((ArrayType) type).getElementType();
                 default ->
-                    throw new IllegalStateException("Invalid Indirection");
+                    throw new IllegalStateException("Invalid access extension");
             };
         }
         return type;
@@ -705,7 +705,7 @@ public class PascalCompiler {
                     extensions.add(accessExtension.getChild("Expression"));
                 }
                 else {
-                    throw new IllegalStateException("Invalid indirection");
+                    throw new IllegalStateException("Unsupported access extension");
                 }
                 next = accessExtension.findChild("AccessExtension");
             }

@@ -55,6 +55,14 @@ public class ArrayType implements Type {
         return upperBound;
     }
 
+    @Override
+    public String toString() {
+        StringBuilder string = new StringBuilder();
+        name.ifPresent(n -> string.append(n).append(": "));
+        string.append("ARRAY[").append(lowerBound).append("..").append(upperBound).append("] OF ").append(elementType);
+        return string.toString();
+    }
+
     private final Optional<String> name;
     private final Type elementType;
     private final int lowerBound;

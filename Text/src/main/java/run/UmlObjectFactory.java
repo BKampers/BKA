@@ -1,5 +1,3 @@
-/*
- */
 package run;
 
 import java.util.*;

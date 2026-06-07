@@ -748,7 +748,8 @@ public class PascalCompiler {
 
         @Override
         public Optional<Type> getType() {
-            return base.getType();
+            ArrayType type = (ArrayType) base.getType().get();
+            return Optional.of(type.getElementType());
         }
 
         private final Expression base;
@@ -771,7 +772,7 @@ public class PascalCompiler {
         @Override
         public Optional<Type> getType() {
             return switch (head(operator).getSymbol()) {
-                case "\\=", "\\<\\=", "\\>\\=", "\\<\\>" ->
+                case "\\=", "\\<", "\\>", "\\<\\=", "\\>\\=", "\\<\\>" ->
                     Optional.of(BOOLEAN);
                 case "AND\\b", "OR\\b", "XOR\\b" ->
                     left.getType();

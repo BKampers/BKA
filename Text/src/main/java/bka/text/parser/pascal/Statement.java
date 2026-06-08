@@ -527,24 +527,24 @@ public final class Statement {
 
     private Value evaluateIdentifierExpression(Node expression, Memory memory) throws StateMachineException {
         Value value = evaluateIdentifier(expression.getChildren().getFirst(), memory);
-        for (Node indirection : getIndirections(expression)) {
+        for (Node extension : getAccessExtensions(expression)) {
             Type type = methodProperties.determineTypeOf(expression);
-            switch (indirection.getSymbol()) {
+            switch (extension.getSymbol()) {
                 case "Identifier":
-                    value = new Value(((Map<String, java.lang.Object>) value.object()).get(indirection.content().toLowerCase()), type);
+                    value = new Value(((Map<String, java.lang.Object>) value.object()).get(extension.content().toLowerCase()), type);
                     break;
                 case "Expression":
-                    int index = (int) evaluateExpression(indirection, memory).object();
+                    int index = (int) evaluateExpression(extension, memory).object();
                     value = new Value(((java.lang.Object[]) value.object())[index], type);
                     break;
                 default:
-                    throw new IllegalStateException("Invalid Indirection");
+                    throw new IllegalStateException("Invalid access extension");
             }
         }
         return value;
     }
 
-    private static List<Node> getIndirections(Node expression) {
+    private static List<Node> getAccessExtensions(Node expression) {
         List<Node> indirections = new ArrayList<>();
         Optional<Node> next = expression.findChild("AccessExtension");
         while (next.isPresent()) {
@@ -655,12 +655,12 @@ public final class Statement {
     }
 
     private void store(Memory memory, java.lang.Object value) throws StateMachineException {
-        List<Node> indirections = getIndirections(assignable.get());
-        if (indirections.isEmpty()) {
+        List<Node> extensions = getAccessExtensions(assignable.get());
+        if (extensions.isEmpty()) {
             storeDirect(memory, value);
         }
         else {
-            storeIndirect(indirections, memory, value);
+            storeIndirect(extensions, memory, value);
         }
     }
 
@@ -675,9 +675,9 @@ public final class Statement {
         }
     }
 
-    private void storeIndirect(List<Node> indirections, Memory memory, java.lang.Object value) throws StateMachineException {
-        java.lang.Object targetValue = indirectTargetValue(indirections, memory);
-        Node indirection = indirections.get(indirections.size() - 1);
+    private void storeIndirect(List<Node> accessExtensions, Memory memory, java.lang.Object value) throws StateMachineException {
+        java.lang.Object targetValue = indirectTargetValue(accessExtensions, memory);
+        Node indirection = accessExtensions.get(accessExtensions.size() - 1);
         switch (indirection.getSymbol()) {
             case "Identifier" ->
                 ((Map<String, java.lang.Object>) targetValue).put(indirection.content().toLowerCase(), value);

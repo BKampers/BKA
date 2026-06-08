@@ -455,6 +455,9 @@ public class PascalCompiler {
         if (arguments.size() >= parameters.size()) {
             throw new IllegalStateException("Too many arguments in list");
         }
+        Parameter parameter = parameters.get(arguments.size());
+        Expression argument = createExpression(scope, argumentList.getChild("Expression"));
+        requireTypeMatch(parameter.getType().get(), argument.getType().get());
         arguments.put(parameters.get(arguments.size()), createExpression(scope, argumentList.getChild("Expression")));
         Optional<Node> remainder = argumentList.findChild("ArgumentList");
         remainder.ifPresent(tail -> populateArgumentMap(scope, parameters, tail, arguments));
@@ -549,7 +552,7 @@ public class PascalCompiler {
     }
     
     private run.Statement createForLoop(Operation scope, Node statementNode) {
-        ExpressionStatement initialization = new ExpressionStatement(
+        ExpressionStatement initialization = createExpressionStatement(
             createIdentifierExpression(scope, statementNode.getChild("Identifier")),
             createExpression(scope, statementNode.getChildren().get(3)));
         Expression condition = new Expression() {
@@ -562,7 +565,7 @@ public class PascalCompiler {
                 return statementNode.getChild("Identifier").content() + " <= " + statementNode.getChildren().get(5).content();
             }
         };
-        ExpressionStatement incrementAction = new ExpressionStatement(
+        ExpressionStatement incrementAction = createExpressionStatement(
             createIdentifierExpression(scope, statementNode.getChild("Identifier")),
             new Expression() {
                 @Override
@@ -579,6 +582,30 @@ public class PascalCompiler {
             createStatement(scope, statementNode.getChild("Statement")), 
             incrementAction);
         return new CompoundStatement(List.of(initialization, loop));
+    }
+
+    private ExpressionStatement createExpressionStatement(Expression assignable, Expression expression) {
+        requireTypeMatch(assignable.getType().get(), expression.getType().get());
+        return new ExpressionStatement(assignable, expression);
+    }
+
+    private static void requireTypeMatch(Type assignable, Type expression) throws IllegalArgumentException {
+        if (!compatible(assignable, expression)) {
+            throw new IllegalArgumentException("Type mismatch " + assignable + " != " + expression);
+        }
+    }
+
+    private static boolean compatible(Type left, Type right) {
+        if (left.equals(right)) {
+            return true;
+        }
+        if (REAL.equals(left) && INTEGER.equals(right)) {
+            return true;
+        }
+        if (left instanceof ArrayType leftArray && right instanceof ArrayType rightArray) {
+            return leftArray.getElementType().equals(rightArray.getElementType()) && leftArray.getLowerBound() == rightArray.getLowerBound() && leftArray.getUpperBound() == rightArray.getUpperBound();
+        }
+        return false;
     }
 
     private Expression createLiteralExpression(Node literalNode) {
@@ -733,6 +760,11 @@ public class PascalCompiler {
                 .findAny().get().getType();
         }
 
+        @Override
+        public String toString() {
+            return receiver + "." + member;
+        }
+
         private final Expression receiver;
         private final String member;
 
@@ -748,8 +780,16 @@ public class PascalCompiler {
 
         @Override
         public Optional<Type> getType() {
-            ArrayType type = (ArrayType) base.getType().get();
-            return Optional.of(type.getElementType());
+            return Optional.of(arrayType().getElementType());
+        }
+
+        private ArrayType arrayType() {
+            return (ArrayType) base.getType().get();
+        }
+
+        @Override
+        public String toString() {
+            return base + "[" + index + "]";
         }
 
         private final Expression base;

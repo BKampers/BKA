@@ -80,15 +80,15 @@ public final class Demo {
         return query.toString();
     }
 
-    private static String statement(String argumentString) throws IOException {
-        Argument argument = Argument.of(argumentString);
+    private static String statement(String nameValuePair) throws IOException {
+        Argument argument = Argument.of(nameValuePair);
         return switch (argument.name()) {
             case "sql" ->
                 fixQuotes(argument.value());
             case "file" ->
                 new String(Files.readAllBytes(Paths.get(argument.value())));
             default ->
-                throw new IllegalArgumentException("Unsupported argument: " + argument.name);
+                throw new IllegalArgumentException("Unsupported source: " + argument.name());
         };
     }
 
@@ -101,29 +101,32 @@ public final class Demo {
         }
     }
 
-    private static void substituteNamedArgument(StringBuilder query, String argumentString) throws IllegalArgumentException {
-        Argument argument = Argument.of(argumentString);
-        String placeholder = "$" + argument.name();
-        int i = query.indexOf(placeholder);
-        if (i < 0) {
-            throw new IllegalArgumentException(placeholder + " not found in statement");
-        }
+    private static void substituteNamedArgument(StringBuilder query, String nameValuePair) throws IllegalArgumentException {
+        Argument argument = Argument.of(nameValuePair);
         switch (argument.name()) {
             case "where" ->
-                query.replace(i, i + placeholder.length(), "WHERE " + fixQuotes(argument.value()));
+                replace(query, target(argument), "WHERE " + fixQuotes(argument.value()));
             case "order" ->
-                query.replace(i, i + placeholder.length(), "ORDER BY " + argument.value());
+                replace(query, target(argument), "ORDER BY " + argument.value());
             default ->
                 throw new IllegalArgumentException("Unsupported argument: " + argument.name());
         }
     }
 
+    private static String target(Argument argument) {
+        return "$" + argument.name();
+    }
+
     private static void substituteUnnamedArgument(StringBuilder query, String argument) throws IllegalArgumentException {
-        int i = query.indexOf("?");
-        if (i < 0) {
-            throw new IllegalArgumentException("? not found in statement");
+        replace(query, "?", fixQuotes(argument));
+    }
+
+    private static void replace(StringBuilder builder, String target, String replacement) {
+        int index = builder.indexOf(target);
+        if (index < 0) {
+            throw new IllegalArgumentException(String.format("'%s' not found in '%s'", target, builder));
         }
-        query.replace(i, i + 1, fixQuotes(argument));
+        builder.replace(index, index + target.length(), replacement);
     }
 
     private static String fixQuotes(String string) {
@@ -208,6 +211,7 @@ public final class Demo {
             String[] array = argument.split("=", 2);
             return new Argument(array[0], array[1]);
         }
+
     }
 
     private static final Map<String, Integer> COLUMN_WIDTHS = Map.of(
@@ -222,5 +226,6 @@ public final class Demo {
         GROUP BY tracks.album_id
         ORDER BY latest_play_date
     """;
+
     private static final SimpleDateFormat DISPLAY_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 }

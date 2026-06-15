@@ -78,7 +78,7 @@ public final class Database {
     }
 
     public static void storeAlbum(Map<String, Object> album) throws DatabaseException {
-        Long albumId;
+        long albumId;
         try (Connection batchConnection = getConnection()) {
             batchConnection.setAutoCommit(false);
             try (PreparedStatement statement = batchConnection.prepareStatement(insertStatement(ALBUMS), Statement.RETURN_GENERATED_KEYS)) {
@@ -99,9 +99,9 @@ public final class Database {
             }
             try (PreparedStatement statement = getConnection().prepareStatement(insertStatement(TRACKS), Statement.RETURN_GENERATED_KEYS)) {
                 for (Map<String, Object> track : (List<Map<String, Object>>) album.get(TRACKS)) {
-                    Map<String, Object> t = new HashMap<>(track);
-                    t.put("Album Id", BigInteger.valueOf(albumId));
-                    setTrack(statement, t);
+                    Map<String, Object> mutableTrack = new HashMap<>(track);
+                    mutableTrack.put("Album Id", BigInteger.valueOf(albumId));
+                    setTrack(statement, mutableTrack);
                     statement.addBatch();
                 }
                 statement.executeBatch();
@@ -164,10 +164,27 @@ public final class Database {
         return rows;
     }
 
-    private static final String DB_URL = "jdbc:h2:mem:theworks;DB_CLOSE_DELAY=-1";
-    private static final String DB_USER = "sa";
-    private static final String DB_PASSWORD = "";
-    private static Connection connection;
+    public static List<Map<String, Object>> executeQuery(String[] arguments) throws DatabaseException {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        try (PreparedStatement statement = getConnection().prepareStatement(arguments[0], Statement.RETURN_GENERATED_KEYS)) {
+            for (int i = 1; i < arguments.length; ++i) {
+                statement.setObject(i, arguments[i]);
+            }
+            ResultSet result = statement.executeQuery();
+            ResultSetMetaData metadata = result.getMetaData();
+            while (result.next()) {
+                Map<String, Object> row = new LinkedHashMap<>();
+                for (int i = 1; i <= metadata.getColumnCount(); i++) {
+                    row.put(metadata.getTableName(i) + "." + metadata.getColumnName(i), result.getObject(i));
+                }
+                rows.add(row);
+            }
+        }
+        catch (SQLException ex) {
+            throw new DatabaseException(ex);
+        }
+        return rows;
+    }
 
     private static String insertStatement(String tableName) {
         ColumnDefinition[] columns = TABLE_DEFINITIONS.get(tableName);
@@ -237,7 +254,7 @@ public final class Database {
     private record ColumnDefinition(String name, Type type, ColumnConstraint constraint, Optional<ForeignKey> foreignKey, String sourceName) {
 
         public ColumnDefinition(String name, Type type, ColumnConstraint constraint, String sourceName) {
-            this(name.equals("year") ? "\"year\"" : name, type, constraint, Optional.empty(), sourceName);
+            this(name, type, constraint, Optional.empty(), sourceName);
         }
 
         public ColumnDefinition(String name, Type type, ColumnConstraint constraint, ForeignKey foreignKey, String sourceName) {
@@ -252,8 +269,14 @@ public final class Database {
 
     }
 
+    private static Connection connection;
+
     private static final String TRACKS = "tracks";
     private static final String ALBUMS = "albums";
+
+    private static final String DB_URL = "jdbc:h2:mem:theworks;DB_CLOSE_DELAY=-1";
+    private static final String DB_USER = "sa";
+    private static final String DB_PASSWORD = "";
 
     private static final Map<String, ColumnDefinition[]> TABLE_DEFINITIONS = new LinkedHashMap() {
         {

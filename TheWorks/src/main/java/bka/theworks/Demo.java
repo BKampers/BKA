@@ -21,9 +21,10 @@ public final class Demo {
             System.out.printf("arg %d: ```%s```%n", i, args[i]);
         }
         populateDatabase();
+        List<Map<String, Object>> records;
         String sql = getQuery(args);
         Files.writeString(Paths.get("latest.sql"), sql);
-        List<Map<String, Object>> records = Database.query(sql);
+        records = Database.query(sql);
         Map<String, Integer> widths = computeColumnsWidths(records);
         widths.forEach((key, value) -> System.out.printf(columnFormat(value), key));
         System.out.println();
@@ -35,10 +36,10 @@ public final class Demo {
 
     private static void populateDatabase() throws DatabaseException, SAXException, IOException, ParserConfigurationException {
         LibraryLoader libraryLoader = new LibraryLoader("/Users/bartkampers/iCloud Drive/Bibliotheek.xml");
-        Map<String, Map<String, AlbumId>> albumEntities = new HashMap<>();
+        Map<String, Map<String, AlbumEntity>> albumEntities = new HashMap<>();
         System.out.println("Loading tracks... ");
         Collection<Map<String, Object>> tracks = libraryLoader.getTracks();
-        Map<AlbumId, List<Map<String, Object>>> albumTracks = new HashMap<>();
+        Map<AlbumEntity, List<Map<String, Object>>> albumTracks = new HashMap<>();
         for (Map<String, Object> track : tracks) {
             if (!track.containsKey("Play Count")) {
                 track = new HashMap<>(track);
@@ -49,18 +50,18 @@ public final class Demo {
                 String albumArtist = (Boolean.TRUE.equals(track.get("Compilation")))
                     ? null
                     : (String) (track.containsKey("Album Artist") ? track.get("Album Artist") : track.get("Artist"));
-                AlbumId albumId = albumEntities.computeIfAbsent(
+                AlbumEntity albumEntity = albumEntities.computeIfAbsent(
                     albumArtist,
-                    artist -> new HashMap<>()).computeIfAbsent(albumTitle, title -> new AlbumId(albumTitle, albumArtist));
-                albumTracks.computeIfAbsent(albumId, id -> new ArrayList<>()).add(track);
+                    artist -> new HashMap<>()).computeIfAbsent(albumTitle, title -> new AlbumEntity(albumTitle, albumArtist));
+                albumTracks.computeIfAbsent(albumEntity, entity -> new ArrayList<>()).add(track);
 
             }
             else {
                 Database.storeTrack(track);
             }
         }
-        for (Map<String, AlbumId> albumMap : albumEntities.values()) {
-            for (AlbumId entity : albumMap.values()) {
+        for (Map<String, AlbumEntity> albumMap : albumEntities.values()) {
+            for (AlbumEntity entity : albumMap.values()) {
                 Map<String, Object> album = new HashMap<>();
                 album.put("Name", entity.title());
                 album.put("Artist", entity.artist());
@@ -70,18 +71,63 @@ public final class Demo {
         }
     }
 
-    private static String getQuery(String[] args) throws IOException {
-        if (args.length == 1 && args[0].contains("=")) {
-            int index = args[0].indexOf('=');
-            String argument = args[0].substring(0, index).trim();
-            if ("sql".equals(argument)) {
-                return args[0].substring(index + 1).replace('\\', '\'');
-            }
-            if ("file".equals(argument)) {
-                return new String(Files.readAllBytes(Paths.get(args[0].substring(index + 1))));
-            }
+    private static String getQuery(String[] arguments) throws IOException {
+        if (arguments.length == 0) {
+            return DEFAULT_QUERY;
         }
-        return DEFAULT_QUERY;
+        StringBuilder query = new StringBuilder(statement(arguments[0]));
+        Arrays.stream(arguments).skip(1).forEach(argument -> substitureArgument(query, argument));
+        return query.toString();
+    }
+
+    private static String statement(String argumentString) throws IOException {
+        Argument argument = Argument.of(argumentString);
+        return switch (argument.name()) {
+            case "sql" ->
+                fixQuotes(argument.value());
+            case "file" ->
+                new String(Files.readAllBytes(Paths.get(argument.value())));
+            default ->
+                throw new IllegalArgumentException("Unsupported argument: " + argument.name);
+        };
+    }
+
+    private static void substitureArgument(StringBuilder query, String argument) throws IllegalArgumentException {
+        if (argument.contains("=")) {
+            substituteNamedArgument(query, argument);
+        }
+        else {
+            substituteUnnamedArgument(query, argument);
+        }
+    }
+
+    private static void substituteNamedArgument(StringBuilder query, String argumentString) throws IllegalArgumentException {
+        Argument argument = Argument.of(argumentString);
+        String placeholder = "$" + argument.name();
+        int i = query.indexOf(placeholder);
+        if (i < 0) {
+            throw new IllegalArgumentException(placeholder + " not found in statement");
+        }
+        switch (argument.name()) {
+            case "where" ->
+                query.replace(i, i + placeholder.length(), "WHERE " + fixQuotes(argument.value()));
+            case "order" ->
+                query.replace(i, i + placeholder.length(), "ORDER BY " + argument.value());
+            default ->
+                throw new IllegalArgumentException("Unsupported argument: " + argument.name());
+        }
+    }
+
+    private static void substituteUnnamedArgument(StringBuilder query, String argument) throws IllegalArgumentException {
+        int i = query.indexOf("?");
+        if (i < 0) {
+            throw new IllegalArgumentException("? not found in statement");
+        }
+        query.replace(i, i + 1, fixQuotes(argument));
+    }
+
+    private static String fixQuotes(String string) {
+        return string.replace('\\', '\'');
     }
 
     private static Map<String, Integer> computeColumnsWidths(List<Map<String, Object>> records) {
@@ -119,26 +165,55 @@ public final class Demo {
 
     private static String displayValue(String key, Object object) {
         if (key.contains("DURATION_MILLIS")) {
-            Duration duration = Duration.ofMillis(((Number) object).longValue());
-            long hours = duration.toHours();
-            if (hours != 0) {
-                return String.format("%d:%02d'%02d\"", hours, duration.toMinutesPart(), duration.toSecondsPart());
-            }
-            return String.format("%4d'%02d\"", duration.toMinutes(), duration.toSecondsPart());
+            return durationDisplayValue(object);
+        }
+        Optional<String> widthFormat = findWidthFormat(key);
+        if (widthFormat.isPresent()) {
+            return String.format(widthFormat.get(), (Number) object);
         }
         return displayValue(object);
+    }
+
+    private static String durationDisplayValue(Object object) {
+        Duration duration = Duration.ofMillis(((Number) object).longValue());
+        long hours = duration.toHours();
+        if (hours != 0) {
+            return String.format("%d:%02d'%02d\"", hours, duration.toMinutesPart(), duration.toSecondsPart());
+        }
+        return String.format("%4d'%02d\"", duration.toMinutes(), duration.toSecondsPart());
+    }
+
+    private static Optional<String> findWidthFormat(String key) {
+        String lowerCaseKey = key.toLowerCase();
+        return COLUMN_WIDTHS.entrySet().stream()
+            .filter(entry -> lowerCaseKey.contains(entry.getKey()))
+            .map(entry -> String.format("%%%dd", entry.getValue()))
+            .findAny();
     }
 
     private static String displayValue(Object object) {
         if (object instanceof java.sql.Timestamp timestamp) {
             return DISPLAY_DATE_FORMAT.format(timestamp);
         }
-        return (object == null) ? "NULL" : object.toString();
+        return Objects.toString(object);
     }
 
-    private record AlbumId(String title, String artist) {
+    private record AlbumEntity(String title, String artist) {
 
     }
+
+    private record Argument(String name, String value) {
+
+        static Argument of(String argument) {
+            String[] array = argument.split("=", 2);
+            return new Argument(array[0], array[1]);
+        }
+    }
+
+    private static final Map<String, Integer> COLUMN_WIDTHS = Map.of(
+        "count", 4,
+        "id", 5,
+        "number", 4);
 
     private static final String DEFAULT_QUERY = """
         SELECT albums.artist AS "Artist", albums.title AS "Title", MAX(tracks.release_year) AS "year", MAX(tracks.play_count) AS "played", MAX(tracks.play_date) AS latest_play_date, SUM(tracks.duration_millis)

@@ -70,7 +70,7 @@ public class WeatherStationPanel extends JPanel {
     }
 
     private ClockPanel createWindrose() {
-        ClockPanel windRose = new ClockPanel(new Scale(0, 360), 45, new CardinalNumberFormat());
+        ClockPanel windRose = new ClockPanel(new Scale(0, 360), 45, new CardinalNumberFormat(getLocale()));
         addCardinalArcs(windRose);
         for (double angle = 22.5; angle < 360.0; angle += 45.0) {
             windRose.addTiltedMarker(angle, CROSS_MARKER);

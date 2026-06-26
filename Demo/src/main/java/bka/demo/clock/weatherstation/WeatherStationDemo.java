@@ -130,7 +130,7 @@ public class WeatherStationDemo extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_stationComboBoxActionPerformed
 
-    private static Image createImage(WeatherStation station, int size) {
+    private Image createImage(WeatherStation station, int size) {
         Image image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = (Graphics2D) image.getGraphics();
         FrameDecorator.drawIconBackground(graphics, size);
@@ -167,12 +167,12 @@ public class WeatherStationDemo extends javax.swing.JFrame {
         return WeatherStationPanel.beaufortColor(beaufort(station.getWindSpeed().getAsDouble()));
     }
 
-    private static String windString(WeatherStation station) {
+    private String windString(WeatherStation station) {
         if (station == null) {
             return "";
         }
         StringBuilder wind = new StringBuilder();
-        station.getWindDirection().ifPresent(direction -> append(wind, new CardinalNumberFormat().format(direction)));
+        station.getWindDirection().ifPresent(direction -> append(wind, new CardinalNumberFormat(getLocale()).format(direction)));
         station.getWindSpeed().ifPresent(speed -> append(wind, beaufort(speed)));
         return wind.toString();
     }

@@ -312,7 +312,7 @@ public class PascalCompiler {
         };
     }
     
-    private Expression createAssignableExpression(Operation scope, Node assignableNode) {
+    private PascalExpression createAssignableExpression(Operation scope, Node assignableNode) {
         return createAccessExpression(
             scope, 
             createIdentifierExpression(scope, assignableNode.getChild("Identifier")),
@@ -320,7 +320,7 @@ public class PascalCompiler {
  
     }
 
-    private Expression createExpression(Operation scope, Node expressionNode) {
+    private PascalExpression createExpression(Operation scope, Node expressionNode) {
         if (!"Expression".equals(expressionNode.getSymbol())) {
             throw new IllegalArgumentException(expressionNode.getSymbol());
         }
@@ -334,7 +334,7 @@ public class PascalCompiler {
         return createComparableExpression(scope, head(expressionNode));
     }
 
-    private Expression createComparableExpression(Operation scope, Node comparableNode) {
+    private PascalExpression createComparableExpression(Operation scope, Node comparableNode) {
         if (!"Comparable".equals(comparableNode.getSymbol())) {
             throw new IllegalArgumentException(comparableNode.getSymbol());
         }
@@ -344,14 +344,14 @@ public class PascalCompiler {
             comparableNode.getChild("AdditiveOperation"));
     }
 
-    private Expression createTermExpression(Operation scope, Node termNode) {
+    private PascalExpression createTermExpression(Operation scope, Node termNode) {
         return createMultiplicativeExpression(
             scope,
             createFactorExpression(scope, termNode.getChild("Factor")),
             termNode.getChild("MultiplicativeOperation"));
     }
 
-    private Expression createFactorExpression(Operation scope, Node factorNode) {
+    private PascalExpression createFactorExpression(Operation scope, Node factorNode) {
         return switch (head(factorNode).getSymbol()) {
             case "Call" ->
                 createAccessExpression(
@@ -376,7 +376,7 @@ public class PascalCompiler {
         };
     }
 
-    private Expression createAccessExpression(Operation scope, Expression referenceExpression, Node targetNode) {
+    private PascalExpression createAccessExpression(Operation scope, PascalExpression referenceExpression, Node targetNode) {
         if (targetNode.getChildren().isEmpty()) {
             return referenceExpression;
         }
@@ -390,43 +390,65 @@ public class PascalCompiler {
         };
     }
 
-    private Expression memberExpression(Operation scope, Expression receiver, Node identifierNode, Node accessExtensionNode) {
-        Expression expression = new MemberAccessExpression(receiver, identifierNode.content());
+    private PascalExpression memberExpression(Operation scope, PascalExpression receiver, Node identifierNode, Node accessExtensionNode) {
+        PascalExpression expression = new MemberAccessExpression(receiver, identifierNode.content());
         if (accessExtensionNode.getChildren().isEmpty()) {
             return expression;
         }
         return createAccessExpression(scope, expression, accessExtensionNode);
     }
 
-    private Expression indexedExpression(Operation scope, Expression base, Node indexNode, Node accessExtensionNode) {
-        Expression expression = new IndexAccessExpression(base, createExpression(scope, indexNode));
+    private PascalExpression indexedExpression(Operation scope, PascalExpression base, Node indexNode, Node accessExtensionNode) {
+        PascalExpression expression = new IndexAccessExpression(base, createExpression(scope, indexNode));
         if (accessExtensionNode.getChildren().isEmpty()) {
             return expression;
         }
         return createAccessExpression(scope, expression, accessExtensionNode);
     }
 
-    private Expression createAdditiveExpression(Operation scope, Expression leftExpression, Node additiveOperationNode) {
+    private PascalExpression createAdditiveExpression(Operation scope, PascalExpression leftExpression, Node additiveOperationNode) {
         if (additiveOperationNode.getChildren().isEmpty()) {
             return leftExpression;
         }
-        Expression operationExpression = new OperatorExpression(leftExpression, additiveOperationNode.getChild("AdditiveOperator"), createTermExpression(scope, additiveOperationNode.getChild("Term")));
+        PascalExpression operationExpression = new OperatorExpression(leftExpression, additiveOperationNode.getChild("AdditiveOperator"), createTermExpression(scope, additiveOperationNode.getChild("Term")));
         return createAdditiveExpression(scope, operationExpression, additiveOperationNode.getChild("AdditiveOperation"));
     }
 
-    private Expression createMultiplicativeExpression(Operation scope, Expression leftExpression, Node multiplicativeOperationNode) {
+    private PascalExpression createMultiplicativeExpression(Operation scope, PascalExpression leftExpression, Node multiplicativeOperationNode) {
         if (multiplicativeOperationNode.getChildren().isEmpty()) {
             return leftExpression;
         }
-        Expression operationExpression = new OperatorExpression(leftExpression, multiplicativeOperationNode.getChild("MultiplicativeOperator"), createFactorExpression(scope, multiplicativeOperationNode.getChild("Factor")));
+        PascalExpression operationExpression = new OperatorExpression(leftExpression, multiplicativeOperationNode.getChild("MultiplicativeOperator"), createFactorExpression(scope, multiplicativeOperationNode.getChild("Factor")));
         return createMultiplicativeExpression(scope, operationExpression, multiplicativeOperationNode.getChild("MultiplicativeOperation"));
     }
 
-    private Expression createUnaryExpression(Node operatorNode, Expression expression) {
-        return new Expression() {
+    private PascalExpression createUnaryExpression(Node operatorNode, PascalExpression expression) {
+        return new PascalExpression() {
             @Override
             public Optional<Type> getType() {
                 return expression.getType();
+            }
+
+            @Override
+            public java.lang.Object evaluate() {
+                return switch (operatorNode.content().toUpperCase()) {
+                    case "-" ->
+                        minus((Number) expression.evaluate());
+                    case "NOT" ->
+                        !(Boolean) expression.evaluate();
+                    default ->
+                        throw new IllegalStateException("Unsupported unary operator: " + operatorNode.content());
+                };
+            }
+
+            private Number minus(Number value) throws IllegalStateException {
+                if (value instanceof Integer) {
+                    return -value.intValue();
+                }
+                if (value instanceof Float) {
+                    return -value.floatValue();
+                }
+                throw new IllegalStateException();
             }
 
             @Override
@@ -436,13 +458,13 @@ public class PascalCompiler {
         };
     }
 
-    private Expression createRelationalOperationExpression(Expression leftExpression, Node operatorNode, Expression rightExpression) {
+    private PascalExpression createRelationalOperationExpression(PascalExpression leftExpression, Node operatorNode, PascalExpression rightExpression) {
         return new OperatorExpression(leftExpression, operatorNode, rightExpression);
     }
 
-    private Expression createCallExpression(Operation scope, Node callNode) {
+    private PascalExpression createCallExpression(Operation scope, Node callNode) {
         Operation operation = getOperation(callNode.getChild("Identifier"));
-        return new CallExpression(operation, createArgumentMap(scope, operation.getParameters(), callNode.getChild("ArgumentList")));
+        return pascalExpression(new CallExpression(operation, createArgumentMap(scope, operation.getParameters(), callNode.getChild("ArgumentList"))));
     }
 
     private Map<Parameter, Expression> createArgumentMap(Operation scope, List<Parameter> parameters, Node argumentList) {
@@ -456,20 +478,25 @@ public class PascalCompiler {
             throw new IllegalStateException("Too many arguments in list");
         }
         Parameter parameter = parameters.get(arguments.size());
-        Expression argument = createExpression(scope, argumentList.getChild("Expression"));
+        PascalExpression argument = createExpression(scope, argumentList.getChild("Expression"));
         requireTypeMatch(parameter.getType().get(), argument.getType().get());
         arguments.put(parameters.get(arguments.size()), createExpression(scope, argumentList.getChild("Expression")));
         Optional<Node> remainder = argumentList.findChild("ArgumentList");
         remainder.ifPresent(tail -> populateArgumentMap(scope, parameters, tail, arguments));
     }
 
-    private Expression createIdentifierExpression(Operation scope, Node identifierNode) {
+    private PascalExpression createIdentifierExpression(Operation scope, Node identifierNode) {
         String identifier = identifierNode.content();
         if (scope.getName().isPresent() && identifier.equalsIgnoreCase(scope.getName().get())) {
-            return new Expression() {
+            return new PascalExpression() {
                 @Override
                 public Optional<Type> getType() {
                     return scope.getType();
+                }
+
+                @Override
+                public java.lang.Object evaluate() {
+                    throw new UnsupportedOperationException();
                 }
                 @Override
                 public String toString() {
@@ -479,10 +506,14 @@ public class PascalCompiler {
         }
         Optional<Parameter> parameter = scope.getParameters().stream().filter(p -> identifier.equalsIgnoreCase(p.getName().get())).findAny();
         if (parameter.isPresent()) {
-            return new Expression() {
+            return new PascalExpression() {
                 @Override
                 public Optional<Type> getType() {
                     return parameter.get().getType();
+                }
+                @Override
+                public java.lang.Object evaluate() {
+                    throw new UnsupportedOperationException();
                 }
 
                 @Override
@@ -493,19 +524,9 @@ public class PascalCompiler {
         }
         Optional<uml.structure.Object> variable = findVariable(scope, identifier);
         if (variable.isPresent()) {
-            return new Expression() {
-                @Override
-                public Optional<Type> getType() {
-                    return variable.get().getType();
-                }
-
-                @Override
-                public String toString() {
-                    return identifier;
-                }
-            };
+            return new ProgramVariableExpression(identifier, variable.get().getType().get());
         }
-        return new CallExpression(getOperation(identifierNode));
+        return pascalExpression(new CallExpression(getOperation(identifierNode)));
     }
     
     private Optional<uml.structure.Object> findVariable(Operation scope, String identifier) {
@@ -555,28 +576,42 @@ public class PascalCompiler {
         ExpressionStatement initialization = createExpressionStatement(
             createIdentifierExpression(scope, statementNode.getChild("Identifier")),
             createExpression(scope, statementNode.getChildren().get(3)));
-        Expression condition = new Expression() {
+        PascalExpression condition = new PascalExpression() {
             @Override
             public Optional<Type> getType() {
                 return Optional.of(BOOLEAN);
             }
+            @Override
+            public java.lang.Object evaluate() {
+                throw new UnsupportedOperationException();
+            }
+
             @Override
             public String toString() {
                 return statementNode.getChild("Identifier").content() + " <= " + statementNode.getChildren().get(5).content();
             }
         };
         ExpressionStatement incrementAction = createExpressionStatement(
-            createIdentifierExpression(scope, statementNode.getChild("Identifier")),
-            new Expression() {
-                @Override
-                public Optional<Type> getType() {
-                    return Optional.of(INTEGER);
-                }
-                @Override
-                public String toString() {
-                    return "@Inc(" + statementNode.getChild("Identifier").content() + ")";
-                }
-            });
+            createIdentifierExpression(
+                scope,
+                statementNode.getChild("Identifier")),
+            new PascalExpression() {
+            @Override
+            public Optional<Type> getType() {
+                return Optional.of(INTEGER);
+            }
+
+            @Override
+            public java.lang.Object evaluate() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public String toString() {
+                return "@Inc(" + statementNode.getChild("Identifier").content() + ")";
+            }
+        }
+        );
         LoopStatement loop = LoopStatement.forLoop(
             condition, 
             createStatement(scope, statementNode.getChild("Statement")), 
@@ -584,7 +619,7 @@ public class PascalCompiler {
         return new CompoundStatement(List.of(initialization, loop));
     }
 
-    private ExpressionStatement createExpressionStatement(Expression assignable, Expression expression) {
+    private ExpressionStatement createExpressionStatement(PascalExpression assignable, PascalExpression expression) {
         requireTypeMatch(assignable.getType().get(), expression.getType().get());
         return new ExpressionStatement(assignable, expression);
     }
@@ -603,18 +638,30 @@ public class PascalCompiler {
             return true;
         }
         if (left instanceof ArrayType leftArray && right instanceof ArrayType rightArray) {
-            return leftArray.getElementType().equals(rightArray.getElementType()) && leftArray.getLowerBound() == rightArray.getLowerBound() && leftArray.getUpperBound() == rightArray.getUpperBound();
+            return leftArray.getElementType().equals(rightArray.getElementType())
+                && leftArray.getLowerBound() == rightArray.getLowerBound()
+                && leftArray.getUpperBound() == rightArray.getUpperBound();
         }
         return false;
     }
 
-    private Expression createLiteralExpression(Node literalNode) {
+    private PascalExpression createLiteralExpression(Node literalNode) {
         return switch (head(literalNode).getSymbol()) {
             case "RealLiteral" ->
-                new Expression() {
+                new PascalExpression() {
                     @Override
                     public Optional<Type> getType() {
                         return Optional.of(REAL);
+                    }
+
+                    @Override
+                    public java.lang.Object evaluate() {
+                        try {
+                            return Float.valueOf(literalNode.content());
+                        }
+                        catch (NumberFormatException ex) {
+                            throw new IllegalStateException(ex);
+                        }
                     }
                     @Override
                     public String toString() {
@@ -622,33 +669,54 @@ public class PascalCompiler {
                     }
                 };
             case "IntegerLiteral" ->
-                new Expression() {
+                new PascalExpression() {
                     @Override
                     public Optional<Type> getType() {
                         return Optional.of(INTEGER);
                     }
+                    @Override
+                    public java.lang.Object evaluate() {
+                        try {
+                            return Integer.valueOf(literalNode.content());
+                        }
+                        catch (NumberFormatException ex) {
+                            throw new IllegalStateException(ex);
+                        }
+                    }
+
                     @Override
                     public String toString() {
                         return literalNode.content();
                     }
                 };
             case "\\'" ->
-                new Expression() {
+                new PascalExpression() {
                     @Override
                     public Optional<Type> getType() {
                         return Optional.of(STRING);
                     }
+                    @Override
+                    public java.lang.Object evaluate() {
+                        String content = literalNode.content();
+                        return content.substring(1, content.length() - 1);
+                    }
+
                     @Override
                     public String toString() {
                         return literalNode.content();
                     }
                 };
             case "FALSE\\b", "TRUE\\b" ->
-                new Expression() {
+                new PascalExpression() {
                     @Override
                     public Optional<Type> getType() {
                         return Optional.of(BOOLEAN);
                     }
+                    @Override
+                    public java.lang.Object evaluate() {
+                        return Boolean.valueOf(literalNode.content());
+                    }
+
                     @Override
                     public String toString() {
                         return literalNode.content();
@@ -744,10 +812,162 @@ public class PascalCompiler {
         return node.getChild("Identifier").content().toLowerCase();
     }
 
+    //TODO Move this to a separate class. This does not belong to the compiler's responsibilities
+    public void execute(uml.structure.Class programClass) {
+        Operation mainOperation = programClass.getOperations().stream()
+            .filter(operation -> operation.getStereotypes().stream().anyMatch(stereotype -> "Main".equals(stereotype.getName())))
+            .findAny().get();
+        Map<Attribute, Expression> attributeValues = programClass.getAttributes().stream()
+            .collect(Collectors.toMap(Function.identity(), attribute -> uninitializedExpression(attribute.getType().get())));
+        programObject = new MutableObject(
+            programClass.getName().orElse(null),
+            programClass,
+            attributeValues);
+        methods.get(mainOperation).getStatements().forEach(this::execute);
+        programObject.getAttributeValues().forEach((attribute, expression) -> {
+            System.out.println(attribute.getName().get() + " = " + ((PascalExpression) expression).evaluate());
+        });
+    }
 
-    private class MemberAccessExpression extends Expression {
+//    public MutableObject getProgramObject() {
+//        return programObject;
+//    }
 
-        public MemberAccessExpression(Expression receiver, String member) {
+    private void execute(run.Statement statement) {
+        if (statement.equals(NO_OPERATION)) {
+            return;
+        }
+        switch (statement) {
+            case CompoundStatement compound ->
+                compound.getStatements().forEach(this::execute);
+            case ExpressionStatement expressionStatement -> {
+                if (expressionStatement.getAssignable().isPresent()) {
+                    assign(expressionStatement.getAssignable().get(), expressionStatement.getExpression());
+                }
+                else {
+                    evaluate(expressionStatement.getExpression());
+                }
+            }
+            default ->
+                throw new IllegalStateException("Unsupported statement: " + statement.getClass().getName());
+        }
+    }
+
+    private void assign(Expression assignable, Expression valueExpression) {
+        if (!(assignable instanceof ProgramVariableExpression variable)) {
+            throw new IllegalStateException("Unsupported assignable: " + assignable);
+        }
+        java.lang.Object value = evaluate(valueExpression);
+        programObject.set(variable.getAttribute(), literalExpression(variable.getType().get(), value));
+    }
+
+    private Attribute findProgramAttribute(String name) {
+        return programObject.getAttributes().stream()
+            .filter(attribute -> attribute.getName().isPresent() && name.equalsIgnoreCase(attribute.getName().get()))
+            .findAny()
+            .orElseThrow(() -> new NoSuchElementException("No such program variable: " + name));
+    }
+
+    private java.lang.Object evaluate(Expression expression) {
+        if (expression instanceof PascalExpression pascalExpression) {
+            return pascalExpression.evaluate();
+        }
+        throw new IllegalStateException("Unsupported expression type" + expression.getClass());
+    }
+
+    public void dumpMethods() {
+        methods.forEach((operation, statement) -> {
+            System.out.println(operation.getName());
+            System.out.println(statement);
+            System.out.println("-".repeat(40));
+        });
+    }
+
+
+    private PascalExpression literalExpression(Type type, java.lang.Object value) {
+        return new PascalExpression() {
+            @Override
+            public Optional<Type> getType() {
+                return Optional.of(type);
+            }
+
+            @Override
+            public java.lang.Object evaluate() {
+                return value;
+            }
+        };
+    }
+
+    private PascalExpression uninitializedExpression(Type type) {
+        return new PascalExpression() {
+            @Override
+            public Optional<Type> getType() {
+                return Optional.of(type);
+            }
+
+            @Override
+            public java.lang.Object evaluate() {
+                return StateMachine.UNINITIALIZED;
+            }
+        };
+    }
+
+    private PascalExpression pascalExpression(Expression expression) {
+        return new PascalExpression() {
+            @Override
+            public java.lang.Object evaluate() {
+                throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+            }
+
+            @Override
+            public Optional<Type> getType() {
+                return expression.getType();
+            }
+
+        };
+    }
+
+
+    private abstract class PascalExpression extends Expression {
+
+        public abstract java.lang.Object evaluate();
+
+    }
+
+    private class ProgramVariableExpression extends PascalExpression {
+
+        ProgramVariableExpression(String name, Type type) {
+            this.name = name;
+            this.type = type;
+        }
+
+        Attribute getAttribute() {
+            return findProgramAttribute(name);
+        }
+
+        @Override
+        public Optional<Type> getType() {
+            return Optional.of(type);
+        }
+
+        @Override
+        public java.lang.Object evaluate() {
+            return ((PascalExpression) programObject.get(getAttribute())).evaluate();
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+
+        private final String name;
+        private final Type type;
+
+    }
+
+    private class MemberAccessExpression extends PascalExpression {
+
+        public MemberAccessExpression(PascalExpression receiver, String member) {
             this.receiver = Objects.requireNonNull(receiver);
             this.member = Objects.requireNonNull(member);
         }
@@ -761,19 +981,25 @@ public class PascalCompiler {
         }
 
         @Override
+        public java.lang.Object evaluate() {
+            uml.structure.Object value = (uml.structure.Object) receiver.evaluate();
+            return ((PascalExpression) value.getAttributeValues().get(member)).evaluate();
+        }
+
+        @Override
         public String toString() {
             return receiver + "." + member;
         }
 
-        private final Expression receiver;
+        private final PascalExpression receiver;
         private final String member;
 
     }
 
 
-    private class IndexAccessExpression extends Expression {
+    private class IndexAccessExpression extends PascalExpression {
 
-        public IndexAccessExpression(Expression base, Expression index) {
+        public IndexAccessExpression(PascalExpression base, PascalExpression index) {
             this.base = Objects.requireNonNull(base);
             this.index = Objects.requireNonNull(index);
         }
@@ -788,19 +1014,25 @@ public class PascalCompiler {
         }
 
         @Override
+        public java.lang.Object evaluate() {
+            java.lang.Object[] value = (java.lang.Object[]) base.evaluate();
+            return value[(Integer) index.evaluate()];
+        }
+
+        @Override
         public String toString() {
             return base + "[" + index + "]";
         }
 
-        private final Expression base;
-        private final Expression index;
+        private final PascalExpression base;
+        private final PascalExpression index;
 
     }
 
 
-    private class OperatorExpression extends Expression {
+    private final class OperatorExpression extends PascalExpression {
 
-        public OperatorExpression(Expression left, Node operator, Expression right) {
+        public OperatorExpression(PascalExpression left, Node operator, PascalExpression right) {
             if (left.getType().isEmpty() || right.getType().isEmpty()) {
                 throw new IllegalArgumentException();
             }
@@ -826,20 +1058,117 @@ public class PascalCompiler {
                     throw new IllegalStateException(String.format("Cannot determine type of %s %s %s", left.getType().get(), operator.content(), right.getType().get()));
             };
         }
-        
+
+        @Override
+        public java.lang.Object evaluate() {
+            return switch (head(operator).getSymbol()) {
+                case "\\=" ->
+                    left.evaluate().equals(right.evaluate());
+                case "\\<" ->
+                    ((Number) left.evaluate()).doubleValue() < ((Number) right.evaluate()).doubleValue();
+                case "\\>" ->
+                    ((Number) left.evaluate()).doubleValue() > ((Number) right.evaluate()).doubleValue();
+                case "\\<\\=" ->
+                    ((Number) left.evaluate()).doubleValue() <= ((Number) right.evaluate()).doubleValue();
+                case "\\>\\=" ->
+                    ((Number) left.evaluate()).doubleValue() >= ((Number) right.evaluate()).doubleValue();
+                case "\\<\\>" ->
+                    !left.evaluate().equals(right.evaluate());
+                case "AND\\b" ->
+                    and(left.evaluate(), right.evaluate());
+                case "OR\\b" ->
+                    or(left.evaluate(), right.evaluate());
+                case "XOR\\b" ->
+                    xor(left.evaluate(), right.evaluate());
+                case "\\*" ->
+                    product(left.evaluate(), right.evaluate());
+                case "\\/" ->
+                    ((Number) left.evaluate()).floatValue() / ((Number) (right.evaluate())).floatValue();
+                case "DIV\\b" ->
+                    (Integer) left.evaluate() / (Integer) right.evaluate();
+                case "MOD\\b" ->
+                    (Integer) left.evaluate() % (Integer) right.evaluate();
+                case "\\+" ->
+                    sum(left.evaluate(), right.evaluate());
+                case "\\-" ->
+                    difference(left.evaluate(), right.evaluate());
+                default ->
+                    throw new IllegalStateException();
+            };
+        }
+
+        private java.lang.Object and(java.lang.Object left, java.lang.Object right) {
+            if (left instanceof Boolean leftBoolean && right instanceof Boolean rightBoolean) {
+                return leftBoolean && rightBoolean;
+            }
+            if (left instanceof Integer leftInteger && right instanceof Integer rightInteger) {
+                return leftInteger & rightInteger;
+            }
+            throw new IllegalStateException();
+        }
+
+        private java.lang.Object or(java.lang.Object left, java.lang.Object right) {
+            if (left instanceof Boolean leftBoolean && right instanceof Boolean rightBoolean) {
+                return leftBoolean || rightBoolean;
+            }
+            if (left instanceof Integer leftInteger && right instanceof Integer rightInteger) {
+                return leftInteger | rightInteger;
+            }
+            throw new IllegalStateException();
+        }
+
+        private java.lang.Object xor(java.lang.Object left, java.lang.Object right) {
+            if (left instanceof Boolean leftBoolean && right instanceof Boolean rightBoolean) {
+                return leftBoolean ^ rightBoolean;
+            }
+            if (left instanceof Integer leftInteger && right instanceof Integer rightInteger) {
+                return leftInteger ^ rightInteger;
+            }
+            throw new IllegalStateException();
+        }
+
+        private java.lang.Object product(java.lang.Object left, java.lang.Object right) {
+            if (left instanceof Integer leftInteger && right instanceof Integer rightInteger) {
+                return leftInteger * rightInteger;
+            }
+            if (left instanceof Number leftNumber && right instanceof Number rightNumber) {
+                return leftNumber.floatValue() * rightNumber.floatValue();
+            }
+            throw new IllegalStateException();
+        }
+
+        private java.lang.Object sum(java.lang.Object left, java.lang.Object right) {
+            if (left instanceof Integer leftInteger && right instanceof Integer rightInteger) {
+                return leftInteger + rightInteger;
+            }
+            if (left instanceof Number leftNumber && right instanceof Number rightNumber) {
+                return leftNumber.floatValue() - rightNumber.floatValue();
+            }
+            throw new IllegalStateException();
+        }
+
+        private java.lang.Object difference(java.lang.Object left, java.lang.Object right) {
+            if (left instanceof Integer leftInteger && right instanceof Integer rightInteger) {
+                return leftInteger - rightInteger;
+            }
+            if (left instanceof Number leftNumber && right instanceof Number rightNumber) {
+                return leftNumber.floatValue() - rightNumber.floatValue();
+            }
+            throw new IllegalStateException();
+        }
+
         @Override
         public String toString() {
             return "{" + left + " " + operator.content() + " " + right + "}";
         }
 
-        private final Expression left;
+        private final PascalExpression left;
         private final Node operator;
-        private final Expression right;
+        private final PascalExpression right;
 
     }
 
-
-    public class MethodProperties {
+    public final class MethodProperties {
 
         private MethodProperties(Operation scope) {
             this.scope = scope;
@@ -887,21 +1216,14 @@ public class PascalCompiler {
         private final Operation scope;
 
     }
-    
-    public void dumpMethods() {
-        methods.forEach((operation, statement) -> {
-            System.out.println(operation.getName());
-            System.out.println(statement);
-            System.out.println("-".repeat(40));            
-        });
-    }
 
     private final Collection<uml.structure.Object> globals = new ArrayList<>();
     private final Map<Operation, Collection<Transition<Event, GuardCondition, Action>>> methodBodies = new HashMap<>();
     private final Map<Operation, List<Parameter>> methodParameters = new HashMap<>();
     private final Map<Operation, Collection<uml.structure.Object>> methodLocals = new HashMap<>();
     private final Collection<Type> declaredTypes = new ArrayList<>();
-    private final Map<Operation, run.Statement> methods = new HashMap<>();
+    private final Map<Operation, CompoundStatement> methods = new HashMap<>();
+    private MutableObject programObject;
 
     private static final run.Statement NO_OPERATION = new run.Statement(){
         @Override

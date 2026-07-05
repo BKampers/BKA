@@ -1,0 +1,42 @@
+---
+description: Java formatting conventions for this project
+globs: **/*.java
+alwaysApply: false
+---
+
+# Java formatting
+
+Place `else` and `else if` on their own line, directly below the closing brace:
+
+```java
+// ✅ GOOD
+if (condition) {
+    doSomething();
+}
+else {
+    doSomethingElse();
+}
+
+// ❌ BAD
+if (condition) {
+    doSomething();
+} else {
+    doSomethingElse();
+}
+```
+
+## Object equality
+
+Use `equals` to compare objects. Reserve `==` for primitives and null checks.
+
+```java
+// ✅ GOOD
+if (statement.equals(NO_OPERATION)) {
+    return;
+}
+
+// ❌ BAD
+if (statement == NO_OPERATION) {
+    return;
+}
+```

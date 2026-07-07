@@ -369,7 +369,7 @@ public class PascalCompiler {
                 createExpression(scope, factorNode.getChild("Expression"));
             case "UnaryOperator" ->
                 createUnaryExpression(
-                    head(factorNode),
+                    UnaryOperator.lookup(head(head(factorNode)).getSymbol()),
                     createFactorExpression(scope, factorNode.getChild("Factor")));
             default ->
                 throw new IllegalStateException("Unsupported factor: " + head(factorNode).getSymbol());
@@ -410,56 +410,77 @@ public class PascalCompiler {
         if (additiveOperationNode.getChildren().isEmpty()) {
             return leftExpression;
         }
-        PascalExpression operationExpression = new OperatorExpression(leftExpression, additiveOperationNode.getChild("AdditiveOperator"), createTermExpression(scope, additiveOperationNode.getChild("Term")));
-        return createAdditiveExpression(scope, operationExpression, additiveOperationNode.getChild("AdditiveOperation"));
+        return createAdditiveExpression(
+            scope, 
+            new OperatorExpression(
+                leftExpression, 
+                Operator.lookup(head(additiveOperationNode.getChild("AdditiveOperator")).getSymbol()), 
+                createTermExpression(scope, additiveOperationNode.getChild("Term"))), 
+            additiveOperationNode.getChild("AdditiveOperation"));
     }
 
     private PascalExpression createMultiplicativeExpression(Operation scope, PascalExpression leftExpression, Node multiplicativeOperationNode) {
         if (multiplicativeOperationNode.getChildren().isEmpty()) {
             return leftExpression;
         }
-        PascalExpression operationExpression = new OperatorExpression(leftExpression, multiplicativeOperationNode.getChild("MultiplicativeOperator"), createFactorExpression(scope, multiplicativeOperationNode.getChild("Factor")));
-        return createMultiplicativeExpression(scope, operationExpression, multiplicativeOperationNode.getChild("MultiplicativeOperation"));
+        return createMultiplicativeExpression(
+            scope, 
+            new OperatorExpression(
+                leftExpression, 
+                Operator.lookup(head(multiplicativeOperationNode.getChild("MultiplicativeOperator")).getSymbol()), 
+                createFactorExpression(scope, multiplicativeOperationNode.getChild("Factor"))), 
+            multiplicativeOperationNode.getChild("MultiplicativeOperation"));
     }
 
-    private PascalExpression createUnaryExpression(Node operatorNode, PascalExpression expression) {
-        return new PascalExpression() {
-            @Override
-            public Optional<Type> getType() {
-                return expression.getType();
-            }
-
-            @Override
-            public java.lang.Object evaluate() {
-                return switch (operatorNode.content().toUpperCase()) {
-                    case "-" ->
-                        minus((Number) expression.evaluate());
-                    case "NOT" ->
-                        !(Boolean) expression.evaluate();
-                    default ->
-                        throw new IllegalStateException("Unsupported unary operator: " + operatorNode.content());
-                };
-            }
-
-            private Number minus(Number value) throws IllegalStateException {
-                if (value instanceof Integer) {
-                    return -value.intValue();
-                }
-                if (value instanceof Float) {
-                    return -value.floatValue();
-                }
-                throw new IllegalStateException();
-            }
-
-            @Override
-            public String toString() {
-                return String.format("%s %s", operatorNode.content(), expression);
-            }
-        };
+    private PascalExpression createUnaryExpression(UnaryOperator operator, PascalExpression expression) {
+        return new UnaryOperatorExpression(operator, expression);
     }
+
+    private final class UnaryOperatorExpression extends PascalExpression {
+
+        public UnaryOperatorExpression(UnaryOperator operator, PascalExpression expression) {
+            this.operator = Objects.requireNonNull(operator);
+            this.expression = Objects.requireNonNull(expression);
+        }
+
+        @Override
+        public Optional<Type> getType() {
+            return expression.getType();
+        }
+
+        @Override
+        public java.lang.Object evaluate() {
+            return switch (operator) {
+                case NEGATION ->
+                    minus((Number) expression.evaluate());
+                case NOT ->
+                    !(Boolean) expression.evaluate();
+            };
+        }
+
+        private Number minus(Number value) throws IllegalStateException {
+            if (value instanceof Integer) {
+                return -value.intValue();
+            }
+            if (value instanceof Float) {
+                return -value.floatValue();
+            }
+            throw new IllegalStateException();
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s %s", operator, expression);
+        }
+
+        private final UnaryOperator operator;
+        private final PascalExpression expression;
+
+    }
+
 
     private PascalExpression createRelationalOperationExpression(PascalExpression leftExpression, Node operatorNode, PascalExpression rightExpression) {
-        return new OperatorExpression(leftExpression, operatorNode, rightExpression);
+        return new OperatorExpression(leftExpression, Operator.lookup(head(operatorNode).getSymbol()), rightExpression);
     }
 
     private PascalExpression createCallExpression(Operation scope, Node callNode) {
@@ -697,8 +718,7 @@ public class PascalCompiler {
                     }
                     @Override
                     public java.lang.Object evaluate() {
-                        String content = literalNode.content();
-                        return content.substring(1, content.length() - 1);
+                        return literalNode.getChildren().get(1).content();
                     }
 
                     @Override
@@ -825,8 +845,15 @@ public class PascalCompiler {
             attributeValues);
         methods.get(mainOperation).getStatements().forEach(this::execute);
         programObject.getAttributeValues().forEach((attribute, expression) -> {
-            System.out.println(attribute.getName().get() + " = " + ((PascalExpression) expression).evaluate());
+            System.out.println(attribute.getName().get() + " = (" + typeName((PascalExpression) expression) + ") " + ((PascalExpression) expression).evaluate());
         });
+    }
+    
+    private static String typeName(PascalExpression expression) {
+        if (expression.getType().isEmpty()) {
+            return "@Void";
+        }
+        return expression.getType().get().getName().orElse("@Anonimous");
     }
 
 //    public MutableObject getProgramObject() {
@@ -857,8 +884,7 @@ public class PascalCompiler {
         if (!(assignable instanceof ProgramVariableExpression variable)) {
             throw new IllegalStateException("Unsupported assignable: " + assignable);
         }
-        java.lang.Object value = evaluate(valueExpression);
-        programObject.set(variable.getAttribute(), literalExpression(variable.getType().get(), value));
+        programObject.set(variable.getAttribute(), literalExpression(variable.getType().get(), evaluate(valueExpression)));
     }
 
     private Attribute findProgramAttribute(String name) {
@@ -893,6 +919,9 @@ public class PascalCompiler {
 
             @Override
             public java.lang.Object evaluate() {
+                if (REAL.equals(type)) {
+                    return ((Number) value).floatValue();
+                }
                 return value;
             }
         };
@@ -1032,7 +1061,7 @@ public class PascalCompiler {
 
     private final class OperatorExpression extends PascalExpression {
 
-        public OperatorExpression(PascalExpression left, Node operator, PascalExpression right) {
+        public OperatorExpression(PascalExpression left, Operator operator, PascalExpression right) {
             if (left.getType().isEmpty() || right.getType().isEmpty()) {
                 throw new IllegalArgumentException();
             }
@@ -1043,54 +1072,54 @@ public class PascalCompiler {
 
         @Override
         public Optional<Type> getType() {
-            return switch (head(operator).getSymbol()) {
-                case "\\=", "\\<", "\\>", "\\<\\=", "\\>\\=", "\\<\\>" ->
+            return switch (operator) {
+                case EQUALS, LESS_THAN, GREATER_THAN, LESS_EQUAL, GREATER_EQUAL, UNEQUALS ->
                     Optional.of(BOOLEAN);
-                case "AND\\b", "OR\\b", "XOR\\b" ->
+                case AND, OR, XOR ->
                     left.getType();
-                case "\\*", "\\+", "\\-" ->
+                case MULTIPLICATION, ADDITION, SUBTRACTION ->
                     (INTEGER.equals(left.getType().get()) && INTEGER.equals(right.getType().get())) ? Optional.of(INTEGER) : Optional.of(REAL);
-                case "\\/" ->
+                case REAL_DIVISION ->
                     Optional.of(REAL);
-                case "DIV\\b", "MOD\\b" ->
+                case INTEGER_DIVISION, MODULUS ->
                     Optional.of(INTEGER);
                 default ->
-                    throw new IllegalStateException(String.format("Cannot determine type of %s %s %s", left.getType().get(), operator.content(), right.getType().get()));
+                    throw new IllegalStateException(String.format("Cannot determine type of %s %s %s", left.getType().get(), operator, right.getType().get()));
             };
         }
 
         @Override
         public java.lang.Object evaluate() {
-            return switch (head(operator).getSymbol()) {
-                case "\\=" ->
+            return switch (operator) {
+                case EQUALS ->
                     left.evaluate().equals(right.evaluate());
-                case "\\<" ->
+                case LESS_THAN ->
                     ((Number) left.evaluate()).doubleValue() < ((Number) right.evaluate()).doubleValue();
-                case "\\>" ->
+                case GREATER_THAN ->
                     ((Number) left.evaluate()).doubleValue() > ((Number) right.evaluate()).doubleValue();
-                case "\\<\\=" ->
+                case LESS_EQUAL ->
                     ((Number) left.evaluate()).doubleValue() <= ((Number) right.evaluate()).doubleValue();
-                case "\\>\\=" ->
+                case GREATER_EQUAL ->
                     ((Number) left.evaluate()).doubleValue() >= ((Number) right.evaluate()).doubleValue();
-                case "\\<\\>" ->
+                case UNEQUALS ->
                     !left.evaluate().equals(right.evaluate());
-                case "AND\\b" ->
+                case AND ->
                     and(left.evaluate(), right.evaluate());
-                case "OR\\b" ->
+                case OR ->
                     or(left.evaluate(), right.evaluate());
-                case "XOR\\b" ->
+                case XOR ->
                     xor(left.evaluate(), right.evaluate());
-                case "\\*" ->
+                case MULTIPLICATION ->
                     product(left.evaluate(), right.evaluate());
-                case "\\/" ->
+                case REAL_DIVISION ->
                     ((Number) left.evaluate()).floatValue() / ((Number) (right.evaluate())).floatValue();
-                case "DIV\\b" ->
+                case INTEGER_DIVISION ->
                     (Integer) left.evaluate() / (Integer) right.evaluate();
-                case "MOD\\b" ->
+                case MODULUS ->
                     (Integer) left.evaluate() % (Integer) right.evaluate();
-                case "\\+" ->
+                case ADDITION ->
                     sum(left.evaluate(), right.evaluate());
-                case "\\-" ->
+                case SUBTRACTION ->
                     difference(left.evaluate(), right.evaluate());
                 default ->
                     throw new IllegalStateException();
@@ -1159,11 +1188,11 @@ public class PascalCompiler {
 
         @Override
         public String toString() {
-            return "{" + left + " " + operator.content() + " " + right + "}";
+            return "{" + left + " " + operator + " " + right + "}";
         }
 
         private final PascalExpression left;
-        private final Node operator;
+        private final Operator operator;
         private final PascalExpression right;
 
     }
@@ -1215,6 +1244,57 @@ public class PascalCompiler {
 
         private final Operation scope;
 
+    }
+    
+    private static enum Operator {
+        
+        ADDITION("\\+"),
+        SUBTRACTION("\\-"),
+        MULTIPLICATION("\\*"),
+        REAL_DIVISION("\\/"),
+        INTEGER_DIVISION("DIV\\b"),
+        MODULUS("MOD\\b"),
+        AND("AND\\b"),
+        OR("OR\\b"),
+        XOR("XOR\\b"),
+        EQUALS("\\="),
+        UNEQUALS("\\<\\>"),
+        LESS_THAN("\\<"),
+        LESS_EQUAL("\\<\\="),
+        GREATER_THAN("\\>"),
+        GREATER_EQUAL("\\>\\=");
+        
+        private Operator(String symbol) {
+            this.symbol = symbol;
+        }
+        
+        public static Operator lookup(String symbol) {
+            return Arrays.stream(values())
+                .filter(operator -> symbol.equals(operator.symbol))
+                .findAny()
+                .orElseThrow(() -> new NoSuchElementException(symbol));
+        }
+        
+        private final String symbol;
+    }
+
+    private enum UnaryOperator {
+
+        NEGATION("\\-"),
+        NOT("NOT\\b");
+
+        private UnaryOperator(String symbol) {
+            this.symbol = symbol;
+        }
+
+        public static UnaryOperator lookup(String symbol) {
+            return Arrays.stream(values())
+                .filter(operator -> symbol.equals(operator.symbol))
+                .findAny()
+                .orElseThrow(() -> new NoSuchElementException(symbol));
+        }
+
+        private final String symbol;
     }
 
     private final Collection<uml.structure.Object> globals = new ArrayList<>();

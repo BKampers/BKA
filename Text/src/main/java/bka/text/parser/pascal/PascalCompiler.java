@@ -845,7 +845,7 @@ public class PascalCompiler {
             attributeValues);
         methods.get(mainOperation).getStatements().forEach(this::execute);
         programObject.getAttributeValues().forEach((attribute, expression) -> {
-            System.out.println(attribute.getName().get() + " = (" + typeName((PascalExpression) expression) + ") " + ((PascalExpression) expression).evaluate());
+            System.out.println(attribute.getName().get() + " = (" + typeName((PascalExpression) expression) + ") " + toString((PascalExpression) expression));
         });
     }
     
@@ -855,10 +855,49 @@ public class PascalCompiler {
         }
         return expression.getType().get().getName().orElse("@Anonimous");
     }
+    
+    private static String toString(PascalExpression expression) {
+        java.lang.Object value = expression.evaluate();
+        if (value instanceof java.lang.Object[] array) {
+            return Arrays.stream(array).map(java.lang.Object::toString).collect(Collectors.joining(",", "[", "]"));
+        }
+        return value.toString();
+    }
 
-//    public MutableObject getProgramObject() {
-//        return programObject;
-//    }
+    public MutableObject getProgramObject() {
+        return Objects.requireNonNull(programObject);
+    }
+
+    public java.lang.Object getVariableValue(String name) {
+        Attribute attribute = findProgramAttribute(name);
+        return ((PascalExpression) programObject.get(attribute)).evaluate();
+    }
+
+    public Map<String, java.lang.Object> getRecordValue(String name) {
+        return toRecordMap(getVariableValue(name));
+    }
+
+    public Map<String, java.lang.Object> toRecordMap(java.lang.Object value) {
+        return toMap(value);
+    }
+
+    private Map<String, java.lang.Object> toMap(java.lang.Object value) {
+        if (!(value instanceof MutableObject record)) {
+            throw new IllegalArgumentException("Not a record value: " + value);
+        }
+        Map<String, java.lang.Object> map = new LinkedHashMap<>();
+        for (Attribute attribute : record.getAttributes()) {
+            String fieldName = attribute.getName().get().toLowerCase();
+            java.lang.Object fieldValue = ((PascalExpression) record.get(attribute)).evaluate();
+            if (fieldValue instanceof MutableObject nested) {
+                map.put(fieldName, toMap(nested));
+            }
+            else {
+                map.put(fieldName, fieldValue);
+            }
+        }
+        return map;
+    }
 
     private void execute(run.Statement statement) {
         if (statement.equals(NO_OPERATION)) {
@@ -881,10 +920,65 @@ public class PascalCompiler {
     }
 
     private void assign(Expression assignable, Expression valueExpression) {
-        if (!(assignable instanceof ProgramVariableExpression variable)) {
+        java.lang.Object value = evaluate(valueExpression);
+        if (assignable instanceof ProgramVariableExpression variable) {
+            programObject.set(variable.getAttribute(), literalExpression(variable.getType().get(), value));
+        }
+        else if (assignable instanceof IndexAccessExpression indexAccess) {
+            java.lang.Object[] container = resolveArrayContainer(indexAccess.base);
+            container[arraySlot(indexAccess.arrayType(), (Integer) indexAccess.index.evaluate())] = value;
+        }
+        else if (assignable instanceof MemberAccessExpression memberAccess) {
+            assignMember(memberAccess, value);
+        }
+        else {
             throw new IllegalStateException("Unsupported assignable: " + assignable);
         }
-        programObject.set(variable.getAttribute(), literalExpression(variable.getType().get(), evaluate(valueExpression)));
+    }
+
+    private void assignMember(MemberAccessExpression memberAccess, java.lang.Object value) {
+        MutableObject record = mutableObject(memberAccess.receiver);
+        Attribute attribute = findRecordAttribute(record, memberAccess.member);
+        record.set(attribute, literalExpression(attribute.getType().get(), value));
+    }
+
+    private java.lang.Object[] resolveArrayContainer(PascalExpression base) {
+        if (base instanceof ProgramVariableExpression variable) {
+            return (java.lang.Object[]) variable.evaluate();
+        }
+        if (base instanceof MemberAccessExpression memberAccess) {
+            return (java.lang.Object[]) memberAccess.evaluate();
+        }
+        if (base instanceof IndexAccessExpression indexAccess) {
+            java.lang.Object[] array = resolveArrayContainer(indexAccess.base);
+            return (java.lang.Object[]) array[arraySlot(indexAccess.arrayType(), (Integer) indexAccess.index.evaluate())];
+        }
+        throw new IllegalStateException("Unsupported array base: " + base);
+    }
+
+    private MutableObject mutableObject(PascalExpression expression) {
+        if (expression instanceof ProgramVariableExpression variable) {
+            return (MutableObject) ((PascalExpression) programObject.get(variable.getAttribute())).evaluate();
+        }
+        if (expression instanceof MemberAccessExpression memberAccess) {
+            MutableObject parent = mutableObject(memberAccess.receiver);
+            return (MutableObject) ((PascalExpression) parent.get(findRecordAttribute(parent, memberAccess.member))).evaluate();
+        }
+        if (expression instanceof IndexAccessExpression indexAccess) {
+            return (MutableObject) indexAccess.evaluate();
+        }
+        throw new IllegalStateException("Not a record reference: " + expression);
+    }
+
+    private Attribute findRecordAttribute(MutableObject record, String name) {
+        return record.getAttributes().stream()
+            .filter(attribute -> attribute.getName().isPresent() && name.equalsIgnoreCase(attribute.getName().get()))
+            .findAny()
+            .orElseThrow(() -> new NoSuchElementException("No such field: " + name));
+    }
+
+    private static int arraySlot(ArrayType arrayType, int index) {
+        return index - arrayType.getLowerBound();
     }
 
     private Attribute findProgramAttribute(String name) {
@@ -928,17 +1022,33 @@ public class PascalCompiler {
     }
 
     private PascalExpression uninitializedExpression(Type type) {
-        return new PascalExpression() {
-            @Override
-            public Optional<Type> getType() {
-                return Optional.of(type);
-            }
+        return literalExpression(type, initialValue(type));
+    }
 
-            @Override
-            public java.lang.Object evaluate() {
-                return StateMachine.UNINITIALIZED;
-            }
-        };
+    private java.lang.Object initialValue(Type type) {
+        if (type instanceof ArrayType arrayType) {
+            return createArrayValue(arrayType);
+        }
+        if (type instanceof uml.structure.Class recordType) {
+            return createRecordValue(recordType);
+        }
+        return StateMachine.UNINITIALIZED;
+    }
+
+    private MutableObject createRecordValue(uml.structure.Class recordType) {
+        Map<Attribute, Expression> attributeValues = recordType.getAttributes().stream()
+            .collect(Collectors.toMap(Function.identity(), attribute -> uninitializedExpression(attribute.getType().get())));
+        return new MutableObject(null, recordType, attributeValues);
+    }
+
+    private java.lang.Object[] createArrayValue(ArrayType arrayType) {
+        return IntStream.range(0, arraySize(arrayType))
+            .mapToObj(i -> initialValue(arrayType.getElementType()))
+            .toArray();
+    }
+
+    private static int arraySize(ArrayType arrayType) {
+        return arrayType.getUpperBound() - arrayType.getLowerBound() + 1;
     }
 
     private PascalExpression pascalExpression(Expression expression) {
@@ -1011,8 +1121,8 @@ public class PascalCompiler {
 
         @Override
         public java.lang.Object evaluate() {
-            uml.structure.Object value = (uml.structure.Object) receiver.evaluate();
-            return ((PascalExpression) value.getAttributeValues().get(member)).evaluate();
+            MutableObject record = mutableObject(receiver);
+            return ((PascalExpression) record.get(findRecordAttribute(record, member))).evaluate();
         }
 
         @Override
@@ -1045,14 +1155,14 @@ public class PascalCompiler {
         @Override
         public java.lang.Object evaluate() {
             java.lang.Object[] value = (java.lang.Object[]) base.evaluate();
-            return value[(Integer) index.evaluate()];
+            return value[arraySlot(arrayType(), (Integer) index.evaluate())];
         }
 
         @Override
         public String toString() {
             return base + "[" + index + "]";
         }
-
+        
         private final PascalExpression base;
         private final PascalExpression index;
 

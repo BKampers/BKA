@@ -39,6 +39,22 @@ public final class LoopStatement implements Statement {
         return string.toString();
     }
     
+    public Optional<Expression> getEntryCondition() {
+        return entryCondition;
+    }
+
+    public Optional<Expression> getExitCondition() {
+        return exitCondition;
+    }
+
+    public Statement getAction() {
+        return action;
+    }
+
+    public Optional<Statement> getIncrementAction() {
+        return incrementAction;
+    }
+
     private final Optional<Expression> entryCondition;
     private final Optional<Expression> exitCondition;
     private final Statement action;

@@ -7,12 +7,9 @@ package bka.text.parser.pascal;
 import bka.text.parser.*;
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.*;
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import run.*;
-import uml.structure.*;
 
 public class PascalExecutionTest {
 
@@ -75,7 +72,6 @@ public class PascalExecutionTest {
         assertEquals("A string", compiler.getVariableValue("s"));
     }
 
-    @Disabled("Loop execution not supported yet")
     @Test
     public void testWhileLoop() {
         Node tree = parser.parse("""
@@ -91,7 +87,6 @@ public class PascalExecutionTest {
         assertEquals(0, compiler.getVariableValue("i"));
     }
 
-    @Disabled("Branch execution not supported yet")
     @Test
     public void testThenBranch() {
         Node tree = parser.parse("""
@@ -107,7 +102,6 @@ public class PascalExecutionTest {
         assertEquals(4, compiler.getVariableValue("i"));
     }
 
-    @Disabled("Branch execution not supported yet")
     @Test
     public void testSkipThenBranch() {
         Node tree = parser.parse("""
@@ -123,7 +117,6 @@ public class PascalExecutionTest {
         assertEquals(8, compiler.getVariableValue("i"));
     }
 
-    @Disabled("Branch execution not supported yet")
     @Test
     public void testElseBranch() {
         Node tree = parser.parse("""
@@ -141,7 +134,6 @@ public class PascalExecutionTest {
         assertEquals(16, compiler.getVariableValue("i"));
     }
 
-    @Disabled("Loop execution not supported yet")
     @Test
     public void testForLoop() {
         Node tree = parser.parse("""
@@ -160,7 +152,6 @@ public class PascalExecutionTest {
         assertEquals(3, compiler.getVariableValue("i"));
     }
 
-    @Disabled("Loop execution not supported yet")
     @Test
     public void testForLoopOneIteration() {
         Node tree = parser.parse("""
@@ -179,7 +170,6 @@ public class PascalExecutionTest {
         assertEquals(1, compiler.getVariableValue("i"));
     }
 
-    @Disabled("Loop execution not supported yet")
     @Test
     public void testForLoopNoIterations() {
         Node tree = parser.parse("""
@@ -198,7 +188,6 @@ public class PascalExecutionTest {
         assertEquals(1, compiler.getVariableValue("i"));
     }
 
-    @Disabled("Loop execution not supported yet")
     @Test
     public void testForLoopWithStep() {
         Node tree = parser.parse("""
@@ -218,7 +207,6 @@ public class PascalExecutionTest {
         assertEquals(4, compiler.getVariableValue("i"));
     }
 
-    @Disabled("Loop execution not supported yet")
     @Test
     public void testRepeatLoop() {
         Node tree = parser.parse("""

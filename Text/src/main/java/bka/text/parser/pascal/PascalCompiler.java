@@ -597,42 +597,14 @@ public class PascalCompiler {
         ExpressionStatement initialization = createExpressionStatement(
             createIdentifierExpression(scope, statementNode.getChild("Identifier")),
             createExpression(scope, statementNode.getChildren().get(3)));
-        PascalExpression condition = new PascalExpression() {
-            @Override
-            public Optional<Type> getType() {
-                return Optional.of(BOOLEAN);
-            }
-            @Override
-            public java.lang.Object evaluate() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public String toString() {
-                return statementNode.getChild("Identifier").content() + " <= " + statementNode.getChildren().get(5).content();
-            }
-        };
+        PascalExpression loopVariable = createIdentifierExpression(scope, statementNode.getChild("Identifier"));
+        PascalExpression condition = new OperatorExpression(
+            loopVariable,
+            Operator.LESS_EQUAL,
+            createExpression(scope, statementNode.getChildren().get(5)));
         ExpressionStatement incrementAction = createExpressionStatement(
-            createIdentifierExpression(
-                scope,
-                statementNode.getChild("Identifier")),
-            new PascalExpression() {
-            @Override
-            public Optional<Type> getType() {
-                return Optional.of(INTEGER);
-            }
-
-            @Override
-            public java.lang.Object evaluate() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public String toString() {
-                return "@Inc(" + statementNode.getChild("Identifier").content() + ")";
-            }
-        }
-        );
+            loopVariable,
+            new OperatorExpression(loopVariable, Operator.ADDITION, literalExpression(INTEGER, 1)));
         LoopStatement loop = LoopStatement.forLoop(
             condition, 
             createStatement(scope, statementNode.getChild("Statement")), 
@@ -914,25 +886,88 @@ public class PascalCompiler {
                     evaluate(expressionStatement.getExpression());
                 }
             }
+            case LoopStatement loop ->
+                executeLoop(loop);
+            case BranchStatement branch ->
+                executeBranch(branch);
             default ->
                 throw new IllegalStateException("Unsupported statement: " + statement.getClass().getName());
         }
     }
 
+    private void executeBranch(BranchStatement branch) {
+        Optional<run.Statement> ifClause = branch.getIfClause();
+        if (ifClause.isPresent()) {
+            if (requireBoolean(evaluate(branch.getCondition()))) {
+                execute(ifClause.get());
+            }
+            else {
+                branch.getDefaultChoice().ifPresent(this::execute);
+            }
+            return;
+        }
+        java.lang.Object value = evaluate(branch.getCondition());
+        for (Map.Entry<Expression, run.Statement> choice : branch.getChoices().entrySet()) {
+            if (Objects.equals(value, evaluate(choice.getKey()))) {
+                execute(choice.getValue());
+                return;
+            }
+        }
+        branch.getDefaultChoice().ifPresent(this::execute);
+    }
+
+    private void executeLoop(LoopStatement loop) {
+        if (loop.getExitCondition().isPresent()) {
+            do {
+                execute(loop.getAction());
+            } while (!requireBoolean(evaluate(loop.getExitCondition().get())));
+            return;
+        }
+        if (loop.getIncrementAction().isPresent()) {
+            executeForLoop(loop);
+            return;
+        }
+        while (requireBoolean(evaluate(loop.getEntryCondition().get()))) {
+            execute(loop.getAction());
+        }
+    }
+
+    private void executeForLoop(LoopStatement loop) {
+        Expression entryCondition = loop.getEntryCondition().orElseThrow(() -> new IllegalStateException("No loop condition"));
+        if (!(entryCondition instanceof OperatorExpression loopCondition && loopCondition.operator == Operator.LESS_EQUAL)) {
+            throw new IllegalStateException("Unsupported for loop condition: " + entryCondition);
+        }
+        OperatorExpression incrementCondition = new OperatorExpression(loopCondition.left, Operator.LESS_THAN, loopCondition.right);
+        boolean doLoop = requireBoolean(evaluate(loopCondition));
+        while (doLoop) {
+            execute(loop.getAction());
+            if (requireBoolean(evaluate(incrementCondition))) {
+                execute(loop.getIncrementAction().get());
+            }
+            else {
+                doLoop = false;
+            }
+        }
+    }
+
+    private static boolean requireBoolean(java.lang.Object value) {
+        if (value instanceof Boolean booleanValue) {
+            return booleanValue;
+        }
+        throw new IllegalStateException("Boolean expected: " + value);
+    }
+
     private void assign(Expression assignable, Expression valueExpression) {
         java.lang.Object value = evaluate(valueExpression);
-        if (assignable instanceof ProgramVariableExpression variable) {
-            programObject.set(variable.getAttribute(), literalExpression(variable.getType().get(), value));
-        }
-        else if (assignable instanceof IndexAccessExpression indexAccess) {
-            java.lang.Object[] container = resolveArrayContainer(indexAccess.base);
-            container[arraySlot(indexAccess.arrayType(), (Integer) indexAccess.index.evaluate())] = value;
-        }
-        else if (assignable instanceof MemberAccessExpression memberAccess) {
-            assignMember(memberAccess, value);
-        }
-        else {
-            throw new IllegalStateException("Unsupported assignable: " + assignable);
+        switch (assignable) {
+            case ProgramVariableExpression variable -> 
+                programObject.set(variable.getAttribute(), literalExpression(variable.getType().get(), value));
+            case IndexAccessExpression indexAccess -> 
+                resolveArrayContainer(indexAccess.base)[arraySlot(indexAccess.arrayType(), (Integer) indexAccess.index.evaluate())] = value;
+            case MemberAccessExpression memberAccess -> 
+                assignMember(memberAccess, value);
+            default -> 
+                throw new IllegalStateException("Unsupported assignable: " + assignable);
         }
     }
 

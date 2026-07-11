@@ -39,6 +39,22 @@ public final class BranchStatement implements Statement {
         return string.toString();
     }
     
+    public Expression getCondition() {
+        return condition;
+    }
+
+    public Map<Expression, Statement> getChoices() {
+        return choices;
+    }
+
+    public Optional<Statement> getDefaultChoice() {
+        return defaultChoice;
+    }
+
+    public Optional<Statement> getIfClause() {
+        return Optional.ofNullable(choices.get(TRUE));
+    }
+
     private final Expression condition;
     private final Map<Expression, Statement> choices;
     private final Optional<Statement> defaultChoice;

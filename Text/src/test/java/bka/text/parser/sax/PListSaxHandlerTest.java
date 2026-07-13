@@ -45,15 +45,17 @@ public class PListSaxHandlerTest {
         assertEquals(expecteObjectdNested(), handler.getContent());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testDuplicates() throws SAXException, ParserConfigurationException, IOException {
         createSaxParser().parse("src/test/resources/plists/duplicates.plist", handler);
-        Map<String, Object> map1 = (Map) ((List) handler.getContent()).get(0);
-        Map<String, Object> map2 = (Map) ((List) handler.getContent()).get(1);
+        List<Object> content = handler.getContent();
+        Map<String, Object> map1 = (Map<String, Object>) content.get(0);
+        Map<String, Object> map2 = (Map<String, Object>) content.get(1);
         assertSameKeys(map1, map2);
         assertSame(map1.get("String"), map2.get("String"));
-        List<Integer> integers1 = (List) map1.get("Integers");
-        List<Integer> integers2 = (List) map2.get("Integers");
+        List<?> integers1 = (List<?>) map1.get("Integers");
+        List<?> integers2 = (List<?>) map2.get("Integers");
         assertSame(integers1.get(0), integers2.get(0));
         assertSame(integers1.get(1), integers2.get(1));
     }

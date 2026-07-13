@@ -55,7 +55,7 @@ public class PListSaxHandler extends DefaultHandler {
     public void endElement(String uri, String localName, String qualifiedName) throws SAXException {
         Element element = stack.pop();
         if (stack.isEmpty()) {
-            plists.add(Collections.unmodifiableList((List) element.getValue()));
+            plists.add(Collections.unmodifiableList(asObjectList(element.getValue())));
         }
         else {
             element.getType().assignChildToParent(stack.peek(), element);
@@ -68,13 +68,24 @@ public class PListSaxHandler extends DefaultHandler {
     }
 
     private Object finalObject(Object object) {
-        if (object instanceof List list) {
+        if (object instanceof List<?> list) {
             return Collections.unmodifiableList(list);
         }
-        if (object instanceof Map map) {
+        if (object instanceof Map<?, ?> map) {
             return Collections.unmodifiableMap(map);
         }
         return pool.computeIfAbsent(object, Function.identity());
+    }
+
+
+    @SuppressWarnings("unchecked")
+    private static List<Object> asObjectList(Object value) {
+        return (List<Object>) value;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> asStringObjectMap(Object value) {
+        return (Map<String, Object>) value;
     }
 
 
@@ -151,9 +162,9 @@ public class PListSaxHandler extends DefaultHandler {
         public void add(String childKey, Object childValue) {
             switch(type) {
                 case PLIST, ARRAY -> 
-                    ((List) value).add(finalObject(childValue));
+                    asObjectList(value).add(finalObject(childValue));
                 case DICT ->
-                    ((Map) value).put(childKey, finalObject(childValue));
+                    asStringObjectMap(value).put(childKey, finalObject(childValue));
                 case STRING, DATE, INTEGER, REAL, FALSE, TRUE, KEY ->
                     throw new IllegalStateException("Cannot add '" + childValue.toString() + "' to " + type.name());
                 default ->

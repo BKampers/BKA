@@ -11,8 +11,33 @@ import java.util.function.*;
 import org.xml.sax.*;
 
 
+/**
+ * Default {@link XmlElement} implementation used by {@link SaxStackHandler} while parsing XML.
+ *
+ * <p>An {@code Element} is created for each start tag and holds the element's namespace URI, names,
+ * SAX attributes, and accumulated text content. When the matching end tag is reached, the handler's
+ * converter produces an application object for that element; child objects are stored on the parent
+ * element, keyed by qualified name.
+ *
+ * <p>Converters receive fully populated elements: character data is available through
+ * {@link #getCharacters()}, and child objects are available through {@link #getChild(String)} and
+ * {@link #getChildren(String)}. This class is not intended for direct use outside the SAX handler.
+ *
+ * @see SaxStackHandler
+ * @see XmlElement
+ */
 public class Element implements XmlElement {
 
+    /**
+     * Creates an element node for the current parse position.
+     *
+     * @param uri namespace URI of the element
+     * @param localName local part of the element name
+     * @param qualifiedName qualified name including an optional namespace prefix
+     * @param attributes SAX attributes of the start tag
+     * @param parent parent element, or {@code null} for the document root
+     * @param namespaces maps namespace URIs to prefixes discovered during parsing
+     */
     public Element(String uri, String localName, String qualifiedName, Attributes attributes, Element parent, Function<String, String> namespaces) {
         this.uri = Objects.requireNonNull(uri);
         this.localName = Objects.requireNonNull(localName);
@@ -22,6 +47,7 @@ public class Element implements XmlElement {
         this.namespaces = Objects.requireNonNull(namespaces);
     }
 
+    @Override
     public String getUri() {
         return uri;
     }
@@ -41,7 +67,14 @@ public class Element implements XmlElement {
         return attributes;
     }
 
-    void appendCharacters(char buffer[], int start, int length) {
+    /**
+     * Appends character data reported by the SAX parser for this element.
+     *
+     * @param buffer character buffer from the parser
+     * @param start index of the first character to append
+     * @param length number of characters to append
+     */
+    public void appendCharacters(char buffer[], int start, int length) {
         characters.append(buffer, start, length);
     }
 
@@ -51,9 +84,10 @@ public class Element implements XmlElement {
     }
 
     @Override
+    @SuppressWarnings("unchecked") // casts Object child to user defined T
     public <T> T getChild(String qualifiedName) {
         List<Object> elements = children.get(qualifiedName);
-        if (elements == null) {
+        if (elements == null || elements.isEmpty()) {
             throw new NoSuchElementException(qualifiedName);
         }
         if (elements.size() > 1) {
@@ -63,6 +97,7 @@ public class Element implements XmlElement {
     }
 
     @Override
+    @SuppressWarnings("unchecked") // casts List<Object> with children to user defined List<T>
     public <T> List<T> getChildren(String qualifiedName) {
         List<Object> elements = children.get(qualifiedName);
         if (elements == null) {
@@ -91,11 +126,20 @@ public class Element implements XmlElement {
         return getChildren(getQualifiedName(localName).get());
     }
 
+    /**
+     * @return the namespace prefix of this element's qualified name, or an empty string when this element has no prefix
+     */
     public String getNamespace() {
         return SaxStackHandler.getNamespace(qualifiedName, localName);
     }
 
-    void addChild(String qualifiedName, Object child) {
+    /**
+     * Registers a converted child object under the given qualified name.
+     *
+     * @param qualifiedName qualified name of the child element
+     * @param child object returned by the converter for that child
+     */
+    public void addChild(String qualifiedName, Object child) {
         children
             .computeIfAbsent(qualifiedName, name -> new ArrayList<>())
             .add(child);

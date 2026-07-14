@@ -91,7 +91,7 @@ public final class Statement {
 
     private Action createIncrementAction(Node identifier) {
         return createAction(
-            memory -> memory.store(identifier.content(), ((Integer) memory.load(identifier.content())) + 1),
+            memory -> store(memory, identifier.content(), ((Integer) load(memory, identifier.content())) + 1),
             () -> ".INC. " + identifier.content());
     }
 
@@ -258,7 +258,7 @@ public final class Statement {
             case "Call" ->
                 evaluateCall(node, memory);
             case "Identifier" ->
-                new Value(memory.load(node.content().toLowerCase()), typeOf(node));
+                new Value(load(memory, node.content().toLowerCase()), typeOf(node));
             default ->
                 throw new StateMachineException("Cannot evaluate " + node);
         };
@@ -449,7 +449,7 @@ public final class Statement {
         stateMachine.start();
         for (int i = 0; i < parameterCount; ++i) {
             if (signatureParameters.get(i).getDirection() == Parameter.Direction.INOUT) {
-                memory.store(identifier(arguments.get(i)), stateMachine.getMemoryObject(signatureParameters.get(i).getName().get()));
+                store(memory, identifier(arguments.get(i)), stateMachine.getMemoryObject(signatureParameters.get(i).getName().get()));
             }
         }
         return (methodProperties.isProcedure(name))
@@ -668,10 +668,10 @@ public final class Statement {
         Node target = assignable.get();
         Optional<Node> identifier = target.findChild("Identifier");
         if (identifier.isPresent()) {
-            memory.store(identifier(target), value);
+            store(memory, identifier(target), value);
         }
         else {
-            memory.store(target.content(), value);
+            store(memory, target.content(), value);
         }
     }
 
@@ -689,7 +689,7 @@ public final class Statement {
     }
 
     private java.lang.Object indirectTargetValue(List<Node> indirections, Memory memory) throws StateMachineException {
-        java.lang.Object targetValue = memory.load(identifier(assignable.get()));
+        java.lang.Object targetValue = load(memory, identifier(assignable.get()));
         int lastIndex = indirections.size() - 1;
         for (int i = 0; i < lastIndex; ++i) {
             Node indirection = indirections.get(i);
@@ -751,6 +751,24 @@ public final class Statement {
 
     private static Logger getLogger() {
         return Logger.getLogger(Statement.class.getName());
+    }
+
+    private static java.lang.Object load(Memory memory, String name) throws StateMachineException {
+        try {
+            return memory.load(name);
+        }
+        catch (MemoryException ex) {
+            throw new StateMachineException(ex.getMessage(), ex);
+        }
+    }
+
+    private static void store(Memory memory, String name, java.lang.Object value) throws StateMachineException {
+        try {
+            memory.store(name, value);
+        }
+        catch (MemoryException ex) {
+            throw new StateMachineException(ex.getMessage(), ex);
+        }
     }
 
     private interface OperandEvaluator {

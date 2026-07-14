@@ -7,8 +7,8 @@ package run;
 
 public interface Memory {
 
-    Object load(String name) throws StateMachineException;
+    Object load(String name) throws MemoryException;
 
-    void store(String name, Object value) throws StateMachineException;
+    void store(String name, Object value) throws MemoryException;
 
 }

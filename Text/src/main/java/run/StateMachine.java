@@ -163,7 +163,12 @@ public class StateMachine {
     }
 
     public Object getMemoryObject(String identifier) throws StateMachineException {
-        return memory.load(identifier);
+        try {
+            return memory.load(identifier);
+        }
+        catch (MemoryException ex) {
+            throw new StateMachineException(ex);
+        }
     }
 
     private class Scope implements Memory {
@@ -174,11 +179,11 @@ public class StateMachine {
         }
 
         @Override
-        public Object load(String identifier) throws StateMachineException {
+        public Object load(String identifier) throws MemoryException {
             Object value = map.get(identifier);
             if (value == null) {
                 if (parent == null) {
-                    throw new StateMachineException("Memory does not contain value for identifier '" + identifier + "'");
+                    throw new MemoryException("Memory does not contain value for identifier '" + identifier + "'");
                 }
                 return parent.load(identifier);
             }
@@ -186,10 +191,10 @@ public class StateMachine {
         }
 
         @Override
-        public void store(String identifier, Object value) throws StateMachineException {
+        public void store(String identifier, Object value) throws MemoryException {
             if (!map.containsKey(identifier)) {
                 if (parent == null) {
-                    throw new StateMachineException("Memory does not contain identifier '" + identifier + "'");
+                    throw new MemoryException("Memory does not contain identifier '" + identifier + "'");
                 }
                 parent.store(identifier, value);
             }

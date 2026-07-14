@@ -223,7 +223,6 @@ public class PascalExecutionTest {
         assertEquals(7, compiler.getVariableValue("sum"));
     }
 
-    @Disabled("Call execution not supported yet")
     @Test
     public void testFunctionCallWithoutParameters() {
         Node tree = parser.parse("""
@@ -237,13 +236,13 @@ public class PascalExecutionTest {
 
             BEGIN
             result := get_result;
+            get_result (* ignore return value *)
             END.
             """);
         execute(tree);
         assertEquals(0xF, compiler.getVariableValue("result"));
     }
 
-    @Disabled("Call execution not supported yet")
     @Test
     public void testFunctionCallWithParameters() {
         Node tree = parser.parse("""
@@ -265,10 +264,9 @@ public class PascalExecutionTest {
             END.
             """);
         execute(tree);
-        assertEquals(1001, compiler.getVariableValue("result")); // FIXME should expect 1001f
+        assertEquals(1001.0f, compiler.getVariableValue("result"));
     }
 
-    @Disabled("Call execution not supported yet")
     @Test
     public void testProcedureCallWithInputParameter() {
         Node tree = parser.parse("""
@@ -288,7 +286,6 @@ public class PascalExecutionTest {
         assertEquals(20, compiler.getVariableValue("result"));
     }
 
-    @Disabled("Call execution not supported yet")
     @Test
     public void testProcedureCallWithInOutParameter() {
         Node tree = parser.parse("""
@@ -309,7 +306,6 @@ public class PascalExecutionTest {
         assertEquals(11, compiler.getVariableValue("result"));
     }
 
-    @Disabled("Call execution not supported yet")
     @Test
     public void testLocalVariable() {
         Node tree = parser.parse("""

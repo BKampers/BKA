@@ -485,7 +485,7 @@ public class PascalCompiler {
 
     private PascalExpression createCallExpression(Operation scope, Node callNode) {
         Operation operation = getOperation(callNode.getChild("Identifier"));
-        return pascalExpression(new CallExpression(operation, createArgumentMap(scope, operation.getParameters(), callNode.getChild("ArgumentList"))));
+        return new CallEvaluationExpression(operation, createArgumentMap(scope, operation.getParameters(), callNode.getChild("ArgumentList")));
     }
 
     private Map<Parameter, Expression> createArgumentMap(Operation scope, List<Parameter> parameters, Node argumentList) {
@@ -508,46 +508,18 @@ public class PascalCompiler {
 
     private PascalExpression createIdentifierExpression(Operation scope, Node identifierNode) {
         String identifier = identifierNode.content();
-        if (scope.getName().isPresent() && identifier.equalsIgnoreCase(scope.getName().get())) {
-            return new PascalExpression() {
-                @Override
-                public Optional<Type> getType() {
-                    return scope.getType();
-                }
-
-                @Override
-                public java.lang.Object evaluate() {
-                    throw new UnsupportedOperationException();
-                }
-                @Override
-                public String toString() {
-                    return "@ReturnValue (" + identifier + ")";
-                }
-            };
+        if (scope.getName().isPresent() && identifier.equalsIgnoreCase(scope.getName().get()) && scope.getType().isPresent() && !isProcedure(scope)) {
+            return new ScopeVariableExpression(identifier, scope.getType().get());
         }
         Optional<Parameter> parameter = scope.getParameters().stream().filter(p -> identifier.equalsIgnoreCase(p.getName().get())).findAny();
         if (parameter.isPresent()) {
-            return new PascalExpression() {
-                @Override
-                public Optional<Type> getType() {
-                    return parameter.get().getType();
-                }
-                @Override
-                public java.lang.Object evaluate() {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Override
-                public String toString() {
-                    return identifier;
-                }
-            };
+            return new ScopeVariableExpression(identifier, parameter.get().getType().get());
         }
         Optional<uml.structure.Object> variable = findVariable(scope, identifier);
         if (variable.isPresent()) {
-            return new ProgramVariableExpression(identifier, variable.get().getType().get());
+            return new ScopeVariableExpression(identifier, variable.get().getType().get());
         }
-        return pascalExpression(new CallExpression(getOperation(identifierNode)));
+        return new CallEvaluationExpression(getOperation(identifierNode), Collections.emptyMap());
     }
     
     private Optional<uml.structure.Object> findVariable(Operation scope, String identifier) {
@@ -604,7 +576,7 @@ public class PascalCompiler {
             createExpression(scope, statementNode.getChildren().get(5)));
         ExpressionStatement incrementAction = createExpressionStatement(
             loopVariable,
-            new OperatorExpression(loopVariable, Operator.ADDITION, literalExpression(INTEGER, 1)));
+            new OperatorExpression(loopVariable, Operator.ADDITION, valueExpression(INTEGER, 1)));
         LoopStatement loop = LoopStatement.forLoop(
             condition, 
             createStatement(scope, statementNode.getChild("Statement")), 
@@ -669,12 +641,7 @@ public class PascalCompiler {
                     }
                     @Override
                     public java.lang.Object evaluate() {
-                        try {
-                            return Integer.valueOf(literalNode.content());
-                        }
-                        catch (NumberFormatException ex) {
-                            throw new IllegalStateException(ex);
-                        }
+                        return parseIntegerLiteral(head(literalNode));
                     }
 
                     @Override
@@ -717,6 +684,18 @@ public class PascalCompiler {
             default ->
                 throw new IllegalStateException("Unsupported literal: " + head(literalNode).getSymbol());
 
+        };
+    }
+
+    private static Integer parseIntegerLiteral(Node integerLiteral) {
+        Node head = head(integerLiteral);
+        return switch (head.getSymbol()) {
+            case "\\d+" ->
+                Integer.valueOf(head.content());
+            case "\\$[0-9A-F]+" ->
+                Integer.valueOf(head.content().substring(1), 0x10);
+            default ->
+                throw new IllegalStateException("Invalid integer literal: " + integerLiteral.content());
         };
     }
 
@@ -815,10 +794,87 @@ public class PascalCompiler {
             programClass.getName().orElse(null),
             programClass,
             attributeValues);
+        currentScope = new ObjectScope(programObject);
         methods.get(mainOperation).getStatements().forEach(this::execute);
         programObject.getAttributeValues().forEach((attribute, expression) -> {
             System.out.println(attribute.getName().get() + " = (" + typeName((PascalExpression) expression) + ") " + toString((PascalExpression) expression));
         });
+    }
+
+    /**
+     * Executes a procedure or function in a new {@link ObjectScope}.
+     *
+     * <p>The call frame contains the operation's parameters, local variables, and — for functions —
+     * a return-value slot named after the function. The parent scope provides access to enclosing
+     * variables. Argument expressions are evaluated in the caller's scope; {@code VAR} parameters
+     * are written back after the call.
+     *
+     * @param operation procedure or function to execute
+     * @param parentScope scope of the caller
+     * @param arguments actual argument expressions, keyed by formal parameter
+     * @return function result, or {@code null} for a procedure
+     */
+    private java.lang.Object execute(Operation operation, ObjectScope parentScope, Map<Parameter, Expression> arguments) {
+        Map<Parameter, java.lang.Object> argumentValues = new LinkedHashMap<>();
+        arguments.forEach((parameter, argument) -> argumentValues.put(parameter, evaluate(argument)));
+        ObjectScope callScope = createCallScope(operation, parentScope, argumentValues);
+        ObjectScope previousScope = currentScope;
+        currentScope = callScope;
+        try {
+            execute(methods.get(operation));
+        }
+        finally {
+            currentScope = previousScope;
+        }
+        writeBackInOutParameters(arguments, callScope);
+        if (isProcedure(operation)) {
+            return VOID;
+        }
+        return loadFromScope(callScope, operation.getName().get());
+    }
+
+    private void writeBackInOutParameters(Map<Parameter, Expression> arguments, ObjectScope callScope) {
+        arguments.entrySet().stream()
+            .filter(entry -> entry.getKey().getDirection() == Parameter.Direction.INOUT)
+            .forEach(entry -> assign(
+                entry.getValue(),
+                valueExpression(entry.getKey().getType().get(), loadFromScope(callScope, entry.getKey().getName().get()))));
+    }
+
+    private static java.lang.Object loadFromScope(ObjectScope scope, String name) {
+        try {
+            return scope.load(name);
+        }
+        catch (MemoryException ex) {
+            throw new IllegalStateException(ex);
+        }
+    }
+
+    private ObjectScope createCallScope(Operation operation, ObjectScope parentScope, Map<Parameter, java.lang.Object> argumentValues) {
+        UmlClassBuilder builder = new UmlClassBuilder(operation.getName().orElse("anonymous"));
+        Map<Attribute, Expression> values = new LinkedHashMap<>();
+        for (Parameter parameter : methodParameters.getOrDefault(operation, List.of())) {
+            Attribute attribute = builder.withAttribute(parameter.getName().get(), parameter.getType().get(), Member.Visibility.PRIVATE);
+            java.lang.Object argumentValue = argumentValues.get(parameter);
+            if (argumentValue == null && !argumentValues.containsKey(parameter)) {
+                throw new IllegalStateException("Missing argument for parameter: " + parameter.getName().get());
+            }
+            values.put(attribute, valueExpression(parameter.getType().get(), argumentValue));
+        }
+        for (uml.structure.Object local : methodLocals.getOrDefault(operation, List.of())) {
+            Attribute attribute = builder.withAttribute(local.getName().get(), local.getType().get(), Member.Visibility.PRIVATE);
+            values.put(attribute, uninitializedExpression(local.getType().get()));
+        }
+        if (!isProcedure(operation)) {
+            Attribute attribute = builder.withAttribute(operation.getName().get(), operation.getType().get(), Member.Visibility.PRIVATE);
+            values.put(attribute, uninitializedExpression(operation.getType().get()));
+        }
+        uml.structure.Class frameType = builder.build();
+        return new ObjectScope(parentScope, new MutableObject(null, frameType, values));
+    }
+
+    private boolean isProcedure(Operation operation) {
+        return operation.getType().map(VOID_TYPE::equals).orElse(true);
     }
     
     private static String typeName(PascalExpression expression) {
@@ -882,8 +938,8 @@ public class PascalCompiler {
                 if (expressionStatement.getAssignable().isPresent()) {
                     assign(expressionStatement.getAssignable().get(), expressionStatement.getExpression());
                 }
-                else {
-                    evaluate(expressionStatement.getExpression());
+                else if (!evaluate(expressionStatement.getExpression()).equals(VOID)) {
+                    java.util.logging.Logger.getLogger(getClass().getName()).log(java.util.logging.Level.INFO, "Return value of {0} ignored", expressionStatement);
                 }
             }
             case LoopStatement loop ->
@@ -960,8 +1016,8 @@ public class PascalCompiler {
     private void assign(Expression assignable, Expression valueExpression) {
         java.lang.Object value = evaluate(valueExpression);
         switch (assignable) {
-            case ProgramVariableExpression variable -> 
-                programObject.set(variable.getAttribute(), literalExpression(variable.getType().get(), value));
+            case ScopeVariableExpression variable -> 
+                currentScope.storeExpression(variable.name, valueExpression(variable.getType().get(), value));
             case IndexAccessExpression indexAccess -> 
                 resolveArrayContainer(indexAccess.base)[arraySlot(indexAccess.arrayType(), (Integer) indexAccess.index.evaluate())] = value;
             case MemberAccessExpression memberAccess -> 
@@ -974,12 +1030,12 @@ public class PascalCompiler {
     private void assignMember(MemberAccessExpression memberAccess, java.lang.Object value) {
         MutableObject record = mutableObject(memberAccess.receiver);
         Attribute attribute = findRecordAttribute(record, memberAccess.member);
-        record.set(attribute, literalExpression(attribute.getType().get(), value));
+        record.set(attribute, valueExpression(attribute.getType().get(), value));
     }
 
     private java.lang.Object[] resolveArrayContainer(PascalExpression base) {
-        if (base instanceof ProgramVariableExpression variable) {
-            return (java.lang.Object[]) variable.evaluate();
+        if (base instanceof ScopeVariableExpression) {
+            return (java.lang.Object[]) base.evaluate();
         }
         if (base instanceof MemberAccessExpression memberAccess) {
             return (java.lang.Object[]) memberAccess.evaluate();
@@ -992,8 +1048,8 @@ public class PascalCompiler {
     }
 
     private MutableObject mutableObject(PascalExpression expression) {
-        if (expression instanceof ProgramVariableExpression variable) {
-            return (MutableObject) ((PascalExpression) programObject.get(variable.getAttribute())).evaluate();
+        if (expression instanceof ScopeVariableExpression) {
+            return (MutableObject) expression.evaluate();
         }
         if (expression instanceof MemberAccessExpression memberAccess) {
             MutableObject parent = mutableObject(memberAccess.receiver);
@@ -1039,7 +1095,7 @@ public class PascalCompiler {
     }
 
 
-    private PascalExpression literalExpression(Type type, java.lang.Object value) {
+    private PascalExpression valueExpression(Type type, java.lang.Object value) {
         return new PascalExpression() {
             @Override
             public Optional<Type> getType() {
@@ -1057,7 +1113,7 @@ public class PascalCompiler {
     }
 
     private PascalExpression uninitializedExpression(Type type) {
-        return literalExpression(type, initialValue(type));
+        return valueExpression(type, initialValue(type));
     }
 
     private java.lang.Object initialValue(Type type) {
@@ -1087,36 +1143,24 @@ public class PascalCompiler {
     }
 
     private PascalExpression pascalExpression(Expression expression) {
-        return new PascalExpression() {
-            @Override
-            public java.lang.Object evaluate() {
-                throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-            }
-
-            @Override
-            public Optional<Type> getType() {
-                return expression.getType();
-            }
-
-        };
+        if (expression instanceof PascalExpression pascalExpression) {
+            return pascalExpression;
+        }
+        throw new IllegalStateException("Unsupported expression: " + expression);
     }
 
 
-    private abstract class PascalExpression extends Expression {
+    private abstract class PascalExpression extends Expression implements RuntimeExpression {
 
         public abstract java.lang.Object evaluate();
 
     }
 
-    private class ProgramVariableExpression extends PascalExpression {
+    private class ScopeVariableExpression extends PascalExpression {
 
-        ProgramVariableExpression(String name, Type type) {
+        ScopeVariableExpression(String name, Type type) {
             this.name = name;
             this.type = type;
-        }
-
-        Attribute getAttribute() {
-            return findProgramAttribute(name);
         }
 
         @Override
@@ -1126,7 +1170,7 @@ public class PascalCompiler {
 
         @Override
         public java.lang.Object evaluate() {
-            return ((PascalExpression) programObject.get(getAttribute())).evaluate();
+            return loadFromScope(currentScope, name);
         }
 
         @Override
@@ -1136,6 +1180,33 @@ public class PascalCompiler {
 
         private final String name;
         private final Type type;
+
+    }
+
+    private class CallEvaluationExpression extends PascalExpression {
+
+        CallEvaluationExpression(Operation operation, Map<Parameter, Expression> arguments) {
+            this.operation = Objects.requireNonNull(operation);
+            this.arguments = Map.copyOf(arguments);
+        }
+
+        @Override
+        public Optional<Type> getType() {
+            return operation.getType();
+        }
+
+        @Override
+        public java.lang.Object evaluate() {
+            return execute(operation, currentScope, arguments);
+        }
+
+        @Override
+        public String toString() {
+            return new CallExpression(operation, arguments).toString();
+        }
+
+        private final Operation operation;
+        private final Map<Parameter, Expression> arguments;
 
     }
 
@@ -1316,7 +1387,7 @@ public class PascalCompiler {
                 return leftInteger + rightInteger;
             }
             if (left instanceof Number leftNumber && right instanceof Number rightNumber) {
-                return leftNumber.floatValue() - rightNumber.floatValue();
+                return leftNumber.floatValue() + rightNumber.floatValue();
             }
             throw new IllegalStateException();
         }
@@ -1449,6 +1520,7 @@ public class PascalCompiler {
     private final Collection<Type> declaredTypes = new ArrayList<>();
     private final Map<Operation, CompoundStatement> methods = new HashMap<>();
     private MutableObject programObject;
+    private ObjectScope currentScope;
 
     private static final run.Statement NO_OPERATION = new run.Statement(){
         @Override
@@ -1458,5 +1530,11 @@ public class PascalCompiler {
     };
     
     private static final Type VOID_TYPE = UmlTypeFactory.create("void");
+    private static final java.lang.Object VOID = new java.lang.Object() {
+        @Override
+        public String toString() {
+            return "@VOID";
+        }
+    };
 
 }

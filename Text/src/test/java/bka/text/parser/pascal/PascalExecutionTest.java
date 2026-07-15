@@ -8,6 +8,7 @@ import bka.text.parser.*;
 import java.io.IOException;
 import java.util.*;
 import org.junit.jupiter.api.*;
+import run.Engine;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -51,25 +52,25 @@ public class PascalExecutionTest {
             END.
             """);
         execute(tree);
-        assertEquals(1, compiler.getVariableValue("one"));
-        assertEquals(3, compiler.getVariableValue("sum"));
-        assertEquals(12, compiler.getVariableValue("product"));
-        assertEquals(26, compiler.getVariableValue("expression"));
-        assertEquals(70, compiler.getVariableValue("braces"));
-        assertEquals(false, compiler.getVariableValue("f0"));
-        assertEquals(true, compiler.getVariableValue("t0"));
-        assertEquals(false, compiler.getVariableValue("both"));
-        assertEquals(true, compiler.getVariableValue("at_least_one"));
-        assertEquals(false, compiler.getVariableValue("one_and_only_one"));
-        assertEquals(true, compiler.getVariableValue("equals"));
-        assertEquals(true, compiler.getVariableValue("less_than"));
-        assertEquals(true, compiler.getVariableValue("less_equal"));
-        assertEquals(false, compiler.getVariableValue("greater_than"));
-        assertEquals(false, compiler.getVariableValue("greater_equal"));
-        assertEquals(true, compiler.getVariableValue("unequal"));
-        assertEquals(10.0f, compiler.getVariableValue("r1"));
-        //assertEquals(1.0f, compiler.getVariableValue("r2")); FIXME r2 evaluates to Integer 1
-        assertEquals("A string", compiler.getVariableValue("s"));
+        assertEquals(1, engine.getVariableValue("one"));
+        assertEquals(3, engine.getVariableValue("sum"));
+        assertEquals(12, engine.getVariableValue("product"));
+        assertEquals(26, engine.getVariableValue("expression"));
+        assertEquals(70, engine.getVariableValue("braces"));
+        assertEquals(false, engine.getVariableValue("f0"));
+        assertEquals(true, engine.getVariableValue("t0"));
+        assertEquals(false, engine.getVariableValue("both"));
+        assertEquals(true, engine.getVariableValue("at_least_one"));
+        assertEquals(false, engine.getVariableValue("one_and_only_one"));
+        assertEquals(true, engine.getVariableValue("equals"));
+        assertEquals(true, engine.getVariableValue("less_than"));
+        assertEquals(true, engine.getVariableValue("less_equal"));
+        assertEquals(false, engine.getVariableValue("greater_than"));
+        assertEquals(false, engine.getVariableValue("greater_equal"));
+        assertEquals(true, engine.getVariableValue("unequal"));
+        assertEquals(10.0f, engine.getVariableValue("r1"));
+        //assertEquals(1.0f, engine.getVariableValue("r2")); FIXME r2 evaluates to Integer 1
+        assertEquals("A string", engine.getVariableValue("s"));
     }
 
     @Test
@@ -84,7 +85,7 @@ public class PascalExecutionTest {
             END.
             """);
         execute(tree);
-        assertEquals(0, compiler.getVariableValue("i"));
+        assertEquals(0, engine.getVariableValue("i"));
     }
 
     @Test
@@ -99,7 +100,7 @@ public class PascalExecutionTest {
             END.
             """);
         execute(tree);
-        assertEquals(4, compiler.getVariableValue("i"));
+        assertEquals(4, engine.getVariableValue("i"));
     }
 
     @Test
@@ -114,7 +115,7 @@ public class PascalExecutionTest {
             END.
             """);
         execute(tree);
-        assertEquals(8, compiler.getVariableValue("i"));
+        assertEquals(8, engine.getVariableValue("i"));
     }
 
     @Test
@@ -131,7 +132,7 @@ public class PascalExecutionTest {
             END.
             """);
         execute(tree);
-        assertEquals(16, compiler.getVariableValue("i"));
+        assertEquals(16, engine.getVariableValue("i"));
     }
 
     @Test
@@ -148,8 +149,8 @@ public class PascalExecutionTest {
             END.
             """);
         execute(tree);
-        assertEquals(6, compiler.getVariableValue("sum"));
-        assertEquals(3, compiler.getVariableValue("i"));
+        assertEquals(6, engine.getVariableValue("sum"));
+        assertEquals(3, engine.getVariableValue("i"));
     }
 
     @Test
@@ -166,8 +167,8 @@ public class PascalExecutionTest {
             END.
             """);
         execute(tree);
-        assertEquals(1, compiler.getVariableValue("sum"));
-        assertEquals(1, compiler.getVariableValue("i"));
+        assertEquals(1, engine.getVariableValue("sum"));
+        assertEquals(1, engine.getVariableValue("i"));
     }
 
     @Test
@@ -184,8 +185,8 @@ public class PascalExecutionTest {
             END.
             """);
         execute(tree);
-        assertEquals(0, compiler.getVariableValue("sum"));
-        assertEquals(1, compiler.getVariableValue("i"));
+        assertEquals(0, engine.getVariableValue("sum"));
+        assertEquals(1, engine.getVariableValue("i"));
     }
 
     @Test
@@ -203,8 +204,8 @@ public class PascalExecutionTest {
             END.
             """);
         execute(tree);
-        assertEquals(4, compiler.getVariableValue("sum"));
-        assertEquals(4, compiler.getVariableValue("i"));
+        assertEquals(4, engine.getVariableValue("sum"));
+        assertEquals(4, engine.getVariableValue("i"));
     }
 
     @Test
@@ -220,7 +221,7 @@ public class PascalExecutionTest {
             END.
             """);
         execute(tree);
-        assertEquals(7, compiler.getVariableValue("sum"));
+        assertEquals(7, engine.getVariableValue("sum"));
     }
 
     @Test
@@ -240,7 +241,7 @@ public class PascalExecutionTest {
             END.
             """);
         execute(tree);
-        assertEquals(0xF, compiler.getVariableValue("result"));
+        assertEquals(0xF, engine.getVariableValue("result"));
     }
 
     @Test
@@ -264,7 +265,7 @@ public class PascalExecutionTest {
             END.
             """);
         execute(tree);
-        assertEquals(1001.0f, compiler.getVariableValue("result"));
+        assertEquals(1001.0f, engine.getVariableValue("result"));
     }
 
     @Test
@@ -283,7 +284,7 @@ public class PascalExecutionTest {
             END.
             """);
         execute(tree);
-        assertEquals(20, compiler.getVariableValue("result"));
+        assertEquals(20, engine.getVariableValue("result"));
     }
 
     @Test
@@ -303,7 +304,7 @@ public class PascalExecutionTest {
             END.
             """);
         execute(tree);
-        assertEquals(11, compiler.getVariableValue("result"));
+        assertEquals(11, engine.getVariableValue("result"));
     }
 
     @Test
@@ -325,7 +326,7 @@ public class PascalExecutionTest {
             END.
             """);
         execute(tree);
-        assertEquals(144, compiler.getVariableValue("result"));
+        assertEquals(144, engine.getVariableValue("result"));
     }
 
     @Test
@@ -348,11 +349,11 @@ public class PascalExecutionTest {
             END.
             """);
         execute(tree);
-        assertArrayEquals(new java.lang.Object[]{1, 2}, (java.lang.Object[]) compiler.getVariableValue("integers"));
-        assertEquals(2, compiler.getVariableValue("i"));
-        assertEquals(1, compiler.getVariableValue("p0"));
-        assertEquals(2, compiler.getVariableValue("p1"));
-        assertArrayEquals(new java.lang.Object[]{1, 2}, (java.lang.Object[]) compiler.getVariableValue("p"));
+        assertArrayEquals(new java.lang.Object[]{1, 2}, (java.lang.Object[]) engine.getVariableValue("integers"));
+        assertEquals(2, engine.getVariableValue("i"));
+        assertEquals(1, engine.getVariableValue("p0"));
+        assertEquals(2, engine.getVariableValue("p1"));
+        assertArrayEquals(new java.lang.Object[]{1, 2}, (java.lang.Object[]) engine.getVariableValue("p"));
     }
 
     @Test
@@ -378,9 +379,9 @@ public class PascalExecutionTest {
             END.
             """);
         execute(tree);
-        assertEquals(Map.of("x", 0.1f, "y", 0.2f), compiler.getRecordValue("p1"));
-        assertEquals(Map.of("x", -0.3f, "y", -0.4f), compiler.getRecordValue("p2"));
-        assertEquals(0.1f, compiler.getVariableValue("x"));
+        assertEquals(Map.of("x", 0.1f, "y", 0.2f), engine.getRecordValue("p1"));
+        assertEquals(Map.of("x", -0.3f, "y", -0.4f), engine.getRecordValue("p2"));
+        assertEquals(0.1f, engine.getVariableValue("x"));
     }
 
     @Test
@@ -407,11 +408,11 @@ public class PascalExecutionTest {
         execute(tree);
         assertArrayEquals(
             new java.lang.Object[]{Map.of("x", 1.0f, "y", 2.0f), Map.of("x", 3.0f, "y", 4.0f)},
-            recordArray(compiler.getVariableValue("line")));
-        assertEquals(1.0f, compiler.getVariableValue("x0"));
-        assertEquals(2.0f, compiler.getVariableValue("y0"));
-        assertEquals(3.0f, compiler.getVariableValue("x1"));
-        assertEquals(4.0f, compiler.getVariableValue("y1"));
+            recordArray(engine.getVariableValue("line")));
+        assertEquals(1.0f, engine.getVariableValue("x0"));
+        assertEquals(2.0f, engine.getVariableValue("y0"));
+        assertEquals(3.0f, engine.getVariableValue("x1"));
+        assertEquals(4.0f, engine.getVariableValue("y1"));
     }
 
     @Test
@@ -442,11 +443,11 @@ public class PascalExecutionTest {
         execute(tree);
         assertEquals(
             Map.of("s", Map.of("x", 0.1f, "y", 0.2f), "e", Map.of("x", 0.3f, "y", 0.4f)),
-            compiler.getRecordValue("line"));
-        assertEquals(0.1f, compiler.getVariableValue("sx"));
-        assertEquals(0.2f, compiler.getVariableValue("sy"));
-        assertEquals(0.3f, compiler.getVariableValue("ex"));
-        assertEquals(0.4f, compiler.getVariableValue("ey"));
+            engine.getRecordValue("line"));
+        assertEquals(0.1f, engine.getVariableValue("sx"));
+        assertEquals(0.2f, engine.getVariableValue("sy"));
+        assertEquals(0.3f, engine.getVariableValue("ex"));
+        assertEquals(0.4f, engine.getVariableValue("ey"));
     }
 
     @Test
@@ -483,31 +484,33 @@ public class PascalExecutionTest {
             new java.lang.Object[]{0, 1, 2},
             new java.lang.Object[]{10, 11, 12},
             new java.lang.Object[]{20, 21, 22}
-        }, (java.lang.Object[]) compiler.getVariableValue("matrix"));
-        assertEquals(0, compiler.getVariableValue("m00"));
-        assertEquals(1, compiler.getVariableValue("m01"));
-        assertEquals(2, compiler.getVariableValue("m02"));
-        assertEquals(10, compiler.getVariableValue("m10"));
-        assertEquals(11, compiler.getVariableValue("m11"));
-        assertEquals(12, compiler.getVariableValue("m12"));
-        assertEquals(20, compiler.getVariableValue("m20"));
-        assertEquals(21, compiler.getVariableValue("m21"));
-        assertEquals(22, compiler.getVariableValue("m22"));
+        }, (java.lang.Object[]) engine.getVariableValue("matrix"));
+        assertEquals(0, engine.getVariableValue("m00"));
+        assertEquals(1, engine.getVariableValue("m01"));
+        assertEquals(2, engine.getVariableValue("m02"));
+        assertEquals(10, engine.getVariableValue("m10"));
+        assertEquals(11, engine.getVariableValue("m11"));
+        assertEquals(12, engine.getVariableValue("m12"));
+        assertEquals(20, engine.getVariableValue("m20"));
+        assertEquals(21, engine.getVariableValue("m21"));
+        assertEquals(22, engine.getVariableValue("m22"));
     }
 
     private void execute(Node tree) {
-        uml.structure.Class program = (uml.structure.Class) compiler.createProgramClass(tree);
-        compiler.execute(program);
+        uml.structure.Class program = compiler.createProgramClass(tree);
+        engine = new Engine(program, compiler.getMethods());
+        engine.execute();
     }
 
     private java.lang.Object[] recordArray(java.lang.Object value) {
         java.lang.Object[] array = (java.lang.Object[]) value;
         return Arrays.stream(array)
-            .map(compiler::toRecordMap)
+            .map(engine::toRecordMap)
             .toArray();
     }
 
     private Parser parser;
     private PascalCompiler compiler;
+    private Engine engine;
 
 }

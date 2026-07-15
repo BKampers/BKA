@@ -14,7 +14,7 @@ import uml.structure.*;
  *
  * @see StateMachine
  */
-public class ObjectScope implements Memory {
+public final class ObjectScope implements Memory {
 
     public ObjectScope(MutableObject object) {
         this(null, object);

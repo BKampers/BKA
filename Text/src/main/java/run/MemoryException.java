@@ -5,7 +5,7 @@
 package run;
 
 
-public class MemoryException extends Exception {
+public final class MemoryException extends Exception {
 
     public MemoryException(String message) {
         super(message);

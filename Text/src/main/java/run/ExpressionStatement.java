@@ -6,7 +6,7 @@ import java.util.*;
 /**
  * Statement with an evaluable expression and an optional assignable
  */
-public class ExpressionStatement implements Statement {
+public final class ExpressionStatement implements Statement {
 
     public ExpressionStatement(Expression assignable, Expression expression) {
         this(Optional.of(assignable), expression);

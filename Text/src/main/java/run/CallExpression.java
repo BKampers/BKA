@@ -7,7 +7,7 @@ import uml.structure.*;
 
 /**
  */
-public class CallExpression extends Expression {
+public final class CallExpression extends Expression {
 
     public CallExpression(Operation operation) {
         this(operation, Collections.emptyMap());

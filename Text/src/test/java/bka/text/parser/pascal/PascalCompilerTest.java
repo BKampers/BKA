@@ -250,6 +250,7 @@ public class PascalCompilerTest {
 
             BEGIN
             result := get_result;
+            get_result (* ignore return value *)
             END.
             """);
         StateMachine stateMachine = createStateMachine(tree);

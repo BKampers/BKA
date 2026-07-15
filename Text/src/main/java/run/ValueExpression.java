@@ -7,7 +7,7 @@ import uml.structure.*;
 /**
  * Expression that holds a runtime value.
  */
-public class ValueExpression extends Expression implements RuntimeExpression {
+public final class ValueExpression extends Expression implements RuntimeExpression {
 
     public ValueExpression(java.lang.Object value, Type type) {
         this.value = value;

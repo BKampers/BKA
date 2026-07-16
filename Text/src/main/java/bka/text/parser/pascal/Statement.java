@@ -299,17 +299,17 @@ public final class Statement {
         Node operator = node.getChild("RelationalOperator").getChildren().getFirst();
         return switch (operator.getSymbol()) {
             case "\\=" ->
-                new Value(comparison == 0, PascalCompiler.BOOLEAN);
+                new Value(comparison == 0, PascalTypes.BOOLEAN);
             case "\\<\\>" ->
-                new Value(comparison != 0, PascalCompiler.BOOLEAN);
+                new Value(comparison != 0, PascalTypes.BOOLEAN);
             case "\\<\\=" ->
-                new Value(comparison <= 0, PascalCompiler.BOOLEAN);
+                new Value(comparison <= 0, PascalTypes.BOOLEAN);
             case "\\<" ->
-                new Value(comparison < 0, PascalCompiler.BOOLEAN);
+                new Value(comparison < 0, PascalTypes.BOOLEAN);
             case "\\>\\=" ->
-                new Value(comparison >= 0, PascalCompiler.BOOLEAN);
+                new Value(comparison >= 0, PascalTypes.BOOLEAN);
             case "\\>" ->
-                new Value(comparison > 0, PascalCompiler.BOOLEAN);
+                new Value(comparison > 0, PascalTypes.BOOLEAN);
             default ->
                 throw new StateMachineException("Unsupported relational operator" + operator.content());
         };
@@ -359,7 +359,7 @@ public final class Statement {
             nodes.getFirst().getChildren().getFirst().getSymbol(),
             operandEvaluator.evaluate(nodes.get(1), memory).object());
         return evaluateOperation(
-            new Value(result, (result instanceof Boolean) ? PascalCompiler.BOOLEAN : (result instanceof Integer) ? PascalCompiler.INTEGER : PascalCompiler.REAL),
+            new Value(result, (result instanceof Boolean) ? PascalTypes.BOOLEAN : (result instanceof Integer) ? PascalTypes.INTEGER : PascalTypes.REAL),
             nodes.getLast(),
             operandEvaluator,
             operation,
@@ -493,16 +493,16 @@ public final class Statement {
     private Value evaluateUnaryOperation(Node operator, Value operand) throws StateMachineException {
         Node head = operator.getChildren().getFirst();
         if ("\\-".equals(head.getSymbol())) {
-            if (PascalCompiler.INTEGER.equals(operand.type())) {
+            if (PascalTypes.INTEGER.equals(operand.type())) {
                 return new Value(-requireInteger(operand.object()), operand.type());
             }
-            if (PascalCompiler.REAL.equals(operand.type())) {
+            if (PascalTypes.REAL.equals(operand.type())) {
                 return new Value(-requireReal(operand.object()), operand.type());
             }
             throw new StateMachineException("Integer or Real expected: " + operand.object());
         }
         if ("NOT\\b".equals(head.getSymbol())) {
-            return new Value(!requireBoolean(operand.object()), PascalCompiler.BOOLEAN);
+            return new Value(!requireBoolean(operand.object()), PascalTypes.BOOLEAN);
         }
         throw new StateMachineException("Unsupported unnary operator: " + operator.content());
     }
@@ -572,15 +572,15 @@ public final class Statement {
         Node head = node.getChildren().getFirst();
         return switch (head.getSymbol()) {
             case "\\'" ->
-                new Value(node.getChild("[^']*").content(), PascalCompiler.STRING);
+                new Value(node.getChild("[^']*").content(), PascalTypes.STRING);
             case "RealLiteral" ->
                 parseReal(head.content());
             case "IntegerLiteral" ->
                 parseInteger(head.getChildren());
             case "FALSE\\b" ->
-                new Value(Boolean.FALSE, PascalCompiler.BOOLEAN);
+                new Value(Boolean.FALSE, PascalTypes.BOOLEAN);
             case "TRUE\\b" ->
-                new Value(Boolean.TRUE, PascalCompiler.BOOLEAN);
+                new Value(Boolean.TRUE, PascalTypes.BOOLEAN);
             default ->
                 throw new StateMachineException("Cannot evaluate literal " + node);
         };
@@ -588,7 +588,7 @@ public final class Statement {
 
     private static Value parseReal(String string) throws StateMachineException {
         try {
-            return new Value(Float.valueOf(string), PascalCompiler.REAL);
+            return new Value(Float.valueOf(string), PascalTypes.REAL);
         }
         catch (NumberFormatException ex) {
             throw new StateMachineException("Invalid real: " + string, ex);
@@ -608,7 +608,7 @@ public final class Statement {
 
     private static Value parseInteger(String string, int radix) throws StateMachineException {
         try {
-            return new Value(Integer.valueOf(string, radix), PascalCompiler.INTEGER);
+            return new Value(Integer.valueOf(string, radix), PascalTypes.INTEGER);
         }
         catch (NumberFormatException ex) {
             throw new StateMachineException("Invalid integer: " + string, ex);

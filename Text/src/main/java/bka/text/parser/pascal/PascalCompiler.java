@@ -19,18 +19,12 @@ import uml.structure.*;
  */
 public final class PascalCompiler {
 
-    public static final Type STRING = PascalTypes.STRING;
-    public static final Type CHAR = PascalTypes.CHAR;
-    public static final Type REAL = PascalTypes.REAL;
-    public static final Type INTEGER = PascalTypes.INTEGER;
-    public static final Type BOOLEAN = PascalTypes.BOOLEAN;
-
     public PascalCompiler() {
-        declaredTypes.add(BOOLEAN);
-        declaredTypes.add(INTEGER);
-        declaredTypes.add(REAL);
-        declaredTypes.add(CHAR);
-        declaredTypes.add(STRING);
+        declaredTypes.add(PascalTypes.BOOLEAN);
+        declaredTypes.add(PascalTypes.INTEGER);
+        declaredTypes.add(PascalTypes.REAL);
+        declaredTypes.add(PascalTypes.CHAR);
+        declaredTypes.add(PascalTypes.STRING);
     }
 
     public uml.structure.Class createProgramClass(Node node) {
@@ -565,7 +559,7 @@ public final class PascalCompiler {
         if (left.equals(right)) {
             return true;
         }
-        if (REAL.equals(left) && INTEGER.equals(right)) {
+        if (PascalTypes.REAL.equals(left) && PascalTypes.INTEGER.equals(right)) {
             return true;
         }
         if (left instanceof ArrayType leftArray && right instanceof ArrayType rightArray) {

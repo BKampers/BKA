@@ -22,10 +22,10 @@ public final class Engine {
         Operation mainOperation = programClass.getOperations().stream()
             .filter(operation -> operation.getStereotypes().stream().anyMatch(stereotype -> "Main".equals(stereotype.getName())))
             .findAny().get();
-        Map<Attribute, Expression> attributeValues = programClass.getAttributes().stream()
-            .collect(Collectors.toMap(Function.identity(), attribute -> PascalValues.uninitialized(attribute.getType().get())));
-        programObject = new MutableObject(
-            programClass.getName().orElse(null),
+        Map<Attribute, Expression> attributeValues = programClass.getAttributes().stream().collect(Collectors.toMap(
+            Function.identity(), 
+            attribute -> PascalValues.uninitialized(attribute.getType().get())));
+        programObject = MutableObject.constructAnonymous(
             programClass,
             attributeValues);
         currentScope = new ObjectScope(programObject);
@@ -186,7 +186,7 @@ public final class Engine {
             values.put(attribute, PascalValues.uninitialized(operation.getType().get()));
         }
         uml.structure.Class frameType = builder.build();
-        return new ObjectScope(parentScope, new MutableObject(null, frameType, values));
+        return new ObjectScope(parentScope, MutableObject.constructAnonymous(frameType, values));
     }
 
     private boolean isProcedure(Operation operation) {

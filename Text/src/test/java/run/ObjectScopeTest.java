@@ -52,7 +52,7 @@ public class ObjectScopeTest {
         Attribute attribute = builder.withAttribute(name, type, Member.Visibility.PRIVATE);
         uml.structure.Class scopeType = builder.build();
         Map<Attribute, Expression> values = Map.of(attribute, new ValueExpression(initialValue, type));
-        return new ObjectScope(parent, new MutableObject(null, scopeType, values));
+        return new ObjectScope(parent, MutableObject.constructAnonymous(scopeType, values));
     }
 
     private static Type integerType() {

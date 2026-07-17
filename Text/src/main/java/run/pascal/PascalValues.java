@@ -133,7 +133,7 @@ public final class PascalValues {
     private static MutableObject createRecordValue(uml.structure.Class recordType) {
         Map<Attribute, run.Expression> attributeValues = recordType.getAttributes().stream()
             .collect(Collectors.toMap(Function.identity(), attribute -> uninitialized(attribute.getType().get())));
-        return new MutableObject(null, recordType, attributeValues);
+        return MutableObject.constructAnonymous(recordType, attributeValues);
     }
 
     private static java.lang.Object[] createArrayValue(ArrayType arrayType) {

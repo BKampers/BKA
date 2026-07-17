@@ -11,37 +11,45 @@ import uml.structure.*;
 public class MutableObject implements uml.structure.Object {
 
     /**
-     * Creates an object with the given name, type and attribute values.
-     *
-     * @param name object name, may be {@code null}
      * @param type object type
      * @param attributeValues initial attribute values
+     * @return new anonymous Mutable with the given type and attribute values
+     * @throws IllegalArgumentException if attributeValues do not match type's attributes
      */
-    public MutableObject(String name, Type type, Map<Attribute, run.Expression> attributeValues) {
+    public static MutableObject constructAnonymous(uml.structure.Class type, Map<Attribute, run.Expression> attributeValues) {
+        return new MutableObject(Optional.empty(), type, attributeValues);
+    }
+
+    /**
+     * @param name object name
+     * @param type object type
+     * @param attributeValues initial attribute values
+     * @return new MutableObject with the given name, type and attribute values
+     * @throws IllegalArgumentException if attributeValues do not match type's attributes
+     */
+    public static MutableObject construct(String name, uml.structure.Class type, Map<Attribute, run.Expression> attributeValues) {
+        return new MutableObject(Optional.of(name), type, attributeValues);
+    }
+
+    private MutableObject(Optional<String> name, uml.structure.Class type, Map<Attribute, run.Expression> attributeValues) {
+        if (attributeValues.size() != type.getAttributes().size() || !attributeValues.keySet().containsAll(type.getAttributes())) {
+            throw new IllegalArgumentException("attributeValues keys do not match type attributes ");
+        }
         this.name = name;
-        this.type = Objects.requireNonNull(type);
+        this.type = type;
         this.attributeValues = new HashMap<>(attributeValues);
     }
 
-    /**
-     * @return the name of this object
-     */
     @Override
     public Optional<String> getName() {
-        return Optional.ofNullable(name);
+        return name;
     }
 
-    /**
-     * @return the type of this object
-     */
     @Override
     public Optional<Type> getType() {
         return Optional.of(type);
     }
 
-    /**
-     * @return an unmodifiable view of the attribute values of this object
-     */
     @Override
     public Map<Attribute, uml.structure.Expression> getAttributeValues() {
         return Collections.unmodifiableMap(attributeValues);
@@ -84,7 +92,7 @@ public class MutableObject implements uml.structure.Object {
         }
     }
 
-    private final String name;
+    private final Optional<String> name;
     private final Type type;
     private final Map<Attribute, uml.structure.Expression> attributeValues;
 

@@ -10,8 +10,8 @@ import uml.structure.*;
 public final class ValueExpression extends Expression implements RuntimeExpression {
 
     public ValueExpression(java.lang.Object value, Type type) {
-        this.value = value;
-        this.type = Objects.requireNonNull(type);
+        this.value = Objects.requireNonNull(value);
+        this.type = Optional.of(type);
     }
 
     @Override
@@ -19,16 +19,12 @@ public final class ValueExpression extends Expression implements RuntimeExpressi
         return value;
     }
 
-    public java.lang.Object getValue() {
-        return value;
-    }
-
     @Override
     public Optional<Type> getType() {
-        return Optional.of(type);
+        return type;
     }
 
     private final java.lang.Object value;
-    private final Type type;
+    private final Optional<Type> type;
 
 }

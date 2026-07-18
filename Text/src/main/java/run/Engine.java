@@ -62,6 +62,9 @@ public final class Engine {
     }
 
     public java.lang.Object evaluate(Expression expression) {
+        if (expression.equals(BranchStatement.TRUE)) {
+            return true;
+        }
         if (expression instanceof EngineExpression engineExpression) {
             return engineExpression.evaluate(this);
         }
@@ -77,7 +80,10 @@ public final class Engine {
     }
 
     public void assign(Expression assignable, Expression valueExpression) {
-        java.lang.Object value = evaluate(valueExpression);
+        assignValue(assignable, evaluate(valueExpression));
+    }
+
+    private void assignValue(Expression assignable, java.lang.Object value) {
         switch (assignable) {
             case ScopeVariableExpression variable ->
                 getCurrentScope().storeExpression(variable.getName(), PascalValues.valueOf(variable.getType().get(), value));
@@ -227,23 +233,14 @@ public final class Engine {
     }
 
     private void execute(Statement statement) {
-        if (statement == Statement.NO_OPERATION) {
+        if (statement.equals(Statement.NO_OPERATION)) {
             return;
         }
         switch (statement) {
             case CompoundStatement compound ->
                 compound.getStatements().forEach(this::execute);
-            case ExpressionStatement expressionStatement -> {
-                if (expressionStatement.getAssignable().isPresent()) {
-                    assign(expressionStatement.getAssignable().get(), expressionStatement.getExpression());
-                }
-                else if (!evaluate(expressionStatement.getExpression()).equals(VOID)) {
-                    java.util.logging.Logger.getLogger(getClass().getName()).log(
-                        java.util.logging.Level.INFO,
-                        "Return value of {0} ignored",
-                        expressionStatement);
-                }
-            }
+            case ExpressionStatement expressionStatement ->
+                executeExpression(expressionStatement);
             case LoopStatement loop ->
                 executeLoop(loop);
             case BranchStatement branch ->
@@ -253,17 +250,24 @@ public final class Engine {
         }
     }
 
+    private void executeExpression(ExpressionStatement expressionStatement) {
+        java.lang.Object result = evaluate(expressionStatement.getExpression());
+        expressionStatement.getAssignable().ifPresentOrElse(
+            assignable -> assignValue(assignable, result), 
+            () -> java.util.logging.Logger.getLogger(getClass().getName()).log(java.util.logging.Level.INFO, "Return value of {0} ignored", expressionStatement));
+    }
+
     private void executeBranch(BranchStatement branch) {
-        Optional<Statement> ifClause = branch.getIfClause();
-        if (ifClause.isPresent()) {
-            if (requireBoolean(evaluate(branch.getCondition()))) {
-                execute(ifClause.get());
-            }
-            else {
-                branch.getDefaultChoice().ifPresent(this::execute);
-            }
-            return;
-        }
+//        Optional<Statement> ifClause = branch.getIfClause();
+//        if (ifClause.isPresent()) {
+//            if (requireBoolean(evaluate(branch.getCondition()))) {
+//                execute(ifClause.get());
+//            }
+//            else {
+//                branch.getDefaultChoice().ifPresent(this::execute);
+//            }
+//            return;
+//        }
         java.lang.Object value = evaluate(branch.getCondition());
         for (Map.Entry<Expression, Statement> choice : branch.getChoices().entrySet()) {
             if (Objects.equals(value, evaluate(choice.getKey()))) {

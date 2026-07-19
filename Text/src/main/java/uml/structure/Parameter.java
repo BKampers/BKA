@@ -18,7 +18,7 @@ public interface Parameter extends Typed {
 
     Direction getDirection();
 
-    default Optional<Expression> getDefaultValue() {
+    default Optional<ValueSpecification> getDefaultValue() {
         return Optional.empty();
     }
 

@@ -7,16 +7,7 @@ import uml.structure.*;
  */
 public final class BranchStatement implements Statement {
 
-    public static final Expression TRUE = new Expression() {
-        @Override
-        public Optional<Type> getType() {
-            return Optional.of(UmlTypeFactory.create("Boolean"));
-        }
-        @Override
-        public String toString() {
-            return "@TRUE";
-        } 
-    };    
+    public static final Expression TRUE = new ValueExpression(true, UmlTypeFactory.create("Boolean"));    
     
     public static BranchStatement ifStatement(Expression condition, Statement ifClause) {
         return new BranchStatement(condition, Map.of(TRUE, ifClause), Optional.empty());

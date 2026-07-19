@@ -1,7 +1,6 @@
 package run;
 
 import java.util.*;
-import java.util.stream.*;
 import uml.structure.*;
 
 
@@ -17,8 +16,8 @@ public class UmlObjectFactory {
         return createObject(Optional.of(name), Optional.of(type), Collections.emptyMap());
     }
 
-    private static uml.structure.Object createObject(Optional<String> name, Optional<Type> type, Map<Attribute, Expression> attributeValues) {
-        final Map<Attribute, uml.structure.Expression> values = attributeValues.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    private static uml.structure.Object createObject(Optional<String> name, Optional<Type> type, Map<Attribute, ValueSpecification> attributeValues) {
+        final Map<Attribute, ValueSpecification> values = Map.copyOf(attributeValues);
         return new uml.structure.Object() {
             @Override
             public Optional<String> getName() {
@@ -31,7 +30,7 @@ public class UmlObjectFactory {
             }
 
             @Override
-            public Map<Attribute, uml.structure.Expression> getAttributeValues() {
+            public Map<Attribute, ValueSpecification> getAttributeValues() {
                 return values;
             }
 

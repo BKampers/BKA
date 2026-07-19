@@ -30,8 +30,9 @@ public final class Engine {
             attributeValues);
         currentScope = new ObjectScope(programObject);
         methods.get(mainOperation).getStatements().forEach(this::execute);
-        programObject.getAttributeValues().forEach((attribute, expression) -> {
-            System.out.println(attribute.getName().get() + " = (" + typeName((Expression) expression) + ") " + displayValue((Expression) expression));
+        programObject.getAttributeValues().forEach((attribute, valueSpecification) -> {
+            Expression expression = asExpression(valueSpecification);
+            System.out.println(attribute.getName().get() + " = (" + typeName(expression) + ") " + displayValue(expression));
         });
     }
 
@@ -62,21 +63,7 @@ public final class Engine {
     }
 
     public java.lang.Object evaluate(Expression expression) {
-        if (expression.equals(BranchStatement.TRUE)) {
-            return true;
-        }
-        if (expression instanceof EngineExpression engineExpression) {
-            return engineExpression.evaluate(this);
-        }
-        if (expression instanceof RuntimeExpression runtimeExpression) {
-            try {
-                return runtimeExpression.evaluate();
-            }
-            catch (MemoryException ex) {
-                throw new IllegalStateException(ex);
-            }
-        }
-        throw new IllegalStateException("Unsupported expression type: " + expression.getClass());
+        return expression.evaluate(this);
     }
 
     public void assign(Expression assignable, Expression valueExpression) {
@@ -116,7 +103,7 @@ public final class Engine {
         }
         if (expression instanceof MemberAccessExpression memberAccess) {
             MutableObject parent = mutableObject(memberAccess.getReceiver());
-            return (MutableObject) evaluate((AbstractPascalExpression) parent.get(MemberAccessExpression.findRecordAttribute(parent, memberAccess.getMember())));
+            return (MutableObject) evaluate(asExpression(parent.get(MemberAccessExpression.findRecordAttribute(parent, memberAccess.getMember()))));
         }
         if (expression instanceof IndexAccessExpression indexAccess) {
             return (MutableObject) evaluate(indexAccess);
@@ -130,7 +117,7 @@ public final class Engine {
 
     public java.lang.Object getVariableValue(String name) {
         Attribute attribute = findProgramAttribute(name);
-        return evaluate((Expression) programObject.get(attribute));
+        return evaluate(asExpression(programObject.get(attribute)));
     }
 
     public Map<String, java.lang.Object> getRecordValue(String name) {
@@ -158,7 +145,7 @@ public final class Engine {
     public java.lang.Object loadFromScope(ObjectScope scope, String name) {
         Optional<Attribute> attribute = findScopeAttribute(scope, name);
         if (attribute.isPresent()) {
-            return evaluate((Expression) scope.getObject().get(attribute.get()));
+            return evaluate(asExpression(scope.getObject().get(attribute.get())));
         }
         if (scope.getParent().isPresent() && scope.getParent().get() instanceof ObjectScope parentScope) {
             return loadFromScope(parentScope, name);
@@ -221,7 +208,7 @@ public final class Engine {
         Map<String, java.lang.Object> map = new LinkedHashMap<>();
         for (Attribute attribute : record.getAttributes()) {
             String fieldName = attribute.getName().get().toLowerCase();
-            java.lang.Object fieldValue = evaluate((Expression) record.get(attribute));
+            java.lang.Object fieldValue = evaluate(asExpression(record.get(attribute)));
             if (fieldValue instanceof MutableObject nested) {
                 map.put(fieldName, toMap(nested));
             }
@@ -327,6 +314,13 @@ public final class Engine {
             .filter(attribute -> attribute.getName().isPresent() && name.equalsIgnoreCase(attribute.getName().get()))
             .findAny()
             .orElseThrow(() -> new NoSuchElementException("No such program variable: " + name));
+    }
+
+    public static Expression asExpression(ValueSpecification valueSpecification) {
+        if (valueSpecification instanceof Expression expression) {
+            return expression;
+        }
+        throw new IllegalStateException("Not a runtime expression: " + valueSpecification);
     }
 
     private static final java.lang.Object VOID = new java.lang.Object() {

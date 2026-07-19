@@ -5,6 +5,6 @@ import java.util.*;
 
 public interface Object extends Structural, Typed {
 
-    Map<Attribute, Expression> getAttributeValues();
+    Map<Attribute, ValueSpecification> getAttributeValues();
 
 }

@@ -8,9 +8,12 @@ import uml.structure.*;
  * {@link Memory} implementation with a parent chain, backed by a {@link MutableObject}.
  *
  * <p>Each scope stores its variables as attributes on a {@link MutableObject}. {@link #load(String)}
- * evaluates the attribute's expression; {@link #store(String, Object)} updates the attribute with a
+ * evaluates a {@link ValueExpression}; {@link #store(String, Object)} updates the attribute with a
  * {@link ValueExpression}. When an identifier is not declared in the current scope, lookup and
  * assignment are delegated to the parent scope.
+ *
+ * <p>For Pascal expressions that need an {@link Engine}, use {@link Engine#loadFromScope} instead of
+ * {@link #load(String)}.
  *
  * @see StateMachine
  */
@@ -84,11 +87,11 @@ public final class ObjectScope implements Memory {
             .findAny();
     }
 
-    private static java.lang.Object evaluate(uml.structure.Expression expression) throws MemoryException {
-        if (expression instanceof RuntimeExpression runtimeExpression) {
-            return runtimeExpression.evaluate();
+    private static java.lang.Object evaluate(ValueSpecification valueSpecification) throws MemoryException {
+        if (valueSpecification instanceof ValueExpression valueExpression) {
+            return valueExpression.getValue();
         }
-        throw new MemoryException("Cannot evaluate expression: " + expression);
+        throw new MemoryException("Cannot evaluate without engine: " + valueSpecification);
     }
 
     private final Memory parent;

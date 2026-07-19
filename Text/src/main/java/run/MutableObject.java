@@ -16,7 +16,7 @@ public class MutableObject implements uml.structure.Object {
      * @return new anonymous Mutable with the given type and attribute values
      * @throws IllegalArgumentException if attributeValues do not match type's attributes
      */
-    public static MutableObject constructAnonymous(uml.structure.Class type, Map<Attribute, run.Expression> attributeValues) {
+    public static MutableObject constructAnonymous(uml.structure.Class type, Map<Attribute, ? extends ValueSpecification> attributeValues) {
         return new MutableObject(Optional.empty(), type, attributeValues);
     }
 
@@ -27,11 +27,11 @@ public class MutableObject implements uml.structure.Object {
      * @return new MutableObject with the given name, type and attribute values
      * @throws IllegalArgumentException if attributeValues do not match type's attributes
      */
-    public static MutableObject construct(String name, uml.structure.Class type, Map<Attribute, run.Expression> attributeValues) {
+    public static MutableObject construct(String name, uml.structure.Class type, Map<Attribute, ? extends ValueSpecification> attributeValues) {
         return new MutableObject(Optional.of(name), type, attributeValues);
     }
 
-    private MutableObject(Optional<String> name, uml.structure.Class type, Map<Attribute, run.Expression> attributeValues) {
+    private MutableObject(Optional<String> name, uml.structure.Class type, Map<Attribute, ? extends ValueSpecification> attributeValues) {
         if (attributeValues.size() != type.getAttributes().size() || !attributeValues.keySet().containsAll(type.getAttributes())) {
             throw new IllegalArgumentException("attributeValues keys do not match type attributes ");
         }
@@ -51,7 +51,7 @@ public class MutableObject implements uml.structure.Object {
     }
 
     @Override
-    public Map<Attribute, uml.structure.Expression> getAttributeValues() {
+    public Map<Attribute, ValueSpecification> getAttributeValues() {
         return Collections.unmodifiableMap(attributeValues);
     }
 
@@ -66,12 +66,12 @@ public class MutableObject implements uml.structure.Object {
      * Sets the value of the given attribute.
      *
      * @param attribute attribute to set
-     * @param expression new value
+     * @param valueSpecification new value
      * @throws NoSuchElementException if this object has no such attribute
      */
-    public void set(Attribute attribute, uml.structure.Expression expression) {
+    public void set(Attribute attribute, ValueSpecification valueSpecification) {
         requireAttribute(attribute);
-        attributeValues.put(attribute, expression);
+        attributeValues.put(attribute, valueSpecification);
     }
 
     /**
@@ -81,7 +81,7 @@ public class MutableObject implements uml.structure.Object {
      * @return the value of the attribute
      * @throws NoSuchElementException if this object has no such attribute
      */
-    public uml.structure.Expression get(Attribute attribute) {
+    public ValueSpecification get(Attribute attribute) {
         requireAttribute(attribute);
         return attributeValues.get(attribute);
     }
@@ -94,6 +94,6 @@ public class MutableObject implements uml.structure.Object {
 
     private final Optional<String> name;
     private final Type type;
-    private final Map<Attribute, uml.structure.Expression> attributeValues;
+    private final Map<Attribute, ValueSpecification> attributeValues;
 
 }

@@ -1,13 +1,16 @@
-
 package run;
 
 import java.util.*;
+import uml.structure.*;
 
 
 /**
+ * Executable runtime expression.
  */
-public abstract class Expression implements uml.structure.Expression {
+public interface Expression extends ValueSpecification {
 
-    public abstract Optional<uml.structure.Type> getType();
+    Optional<Type> getType();
+
+    java.lang.Object evaluate(Engine engine);
 
 }

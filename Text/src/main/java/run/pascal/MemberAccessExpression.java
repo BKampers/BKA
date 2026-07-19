@@ -38,7 +38,7 @@ public final class MemberAccessExpression extends AbstractPascalExpression {
     @Override
     public java.lang.Object evaluate(Engine engine) {
         MutableObject record = engine.mutableObject(receiver);
-        return engine.evaluate((AbstractPascalExpression) record.get(findRecordAttribute(record, member)));
+        return engine.evaluate(Engine.asExpression(record.get(findRecordAttribute(record, member))));
     }
 
     public static Attribute findRecordAttribute(MutableObject record, String name) {

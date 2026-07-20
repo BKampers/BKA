@@ -245,16 +245,6 @@ public final class Engine {
     }
 
     private void executeBranch(BranchStatement branch) {
-//        Optional<Statement> ifClause = branch.getIfClause();
-//        if (ifClause.isPresent()) {
-//            if (requireBoolean(evaluate(branch.getCondition()))) {
-//                execute(ifClause.get());
-//            }
-//            else {
-//                branch.getDefaultChoice().ifPresent(this::execute);
-//            }
-//            return;
-//        }
         java.lang.Object value = evaluate(branch.getCondition());
         for (Map.Entry<Expression, Statement> choice : branch.getChoices().entrySet()) {
             if (Objects.equals(value, evaluate(choice.getKey()))) {

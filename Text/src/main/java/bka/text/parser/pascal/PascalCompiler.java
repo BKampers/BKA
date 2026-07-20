@@ -230,9 +230,11 @@ public final class PascalCompiler {
 
     private Collection<uml.structure.Object> createVariables(Node variableDeclarationList) {
         Collection<uml.structure.Object> variables = new ArrayList<>();
-        variables.addAll(createObjects(variableDeclarationList.getChild("VariableDeclarationExpression")));
-        variableDeclarationList.findChild("VariableDeclarationList")
-            .ifPresent(next -> variables.addAll(createVariables(next)));
+        Node listNode = variableDeclarationList;
+        do {
+            variables.addAll(createObjects(listNode.getChild("VariableDeclarationExpression")));
+            listNode = listNode.findChild("VariableDeclarationList").orElse(null);
+        } while (listNode != null);
         return variables;
     }
 

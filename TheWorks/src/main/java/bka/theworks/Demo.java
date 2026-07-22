@@ -105,9 +105,9 @@ public final class Demo {
         Argument argument = Argument.of(nameValuePair);
         switch (argument.name()) {
             case "where" ->
-                replace(query, target(argument), "WHERE " + fixQuotes(argument.value()));
+                replace(query, target(argument), "WHERE", fixQuotes(argument.value()));
             case "order" ->
-                replace(query, target(argument), "ORDER BY " + argument.value());
+                replace(query, target(argument), "ORDER BY", argument.value());
             default ->
                 throw new IllegalArgumentException("Unsupported argument: " + argument.name());
         }
@@ -119,6 +119,15 @@ public final class Demo {
 
     private static void substituteUnnamedArgument(StringBuilder query, String argument) throws IllegalArgumentException {
         replace(query, "?", fixQuotes(argument));
+    }
+
+    private static void replace(StringBuilder builder, String target, String keyword, String argument) {
+        if (argument.isBlank()) {
+            replace(builder, target, "");
+        }
+        else {
+            replace(builder, target, keyword + ' ' + argument);
+        }
     }
 
     private static void replace(StringBuilder builder, String target, String replacement) {

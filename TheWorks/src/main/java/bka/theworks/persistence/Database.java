@@ -1,8 +1,8 @@
 package bka.theworks.persistence;
 
-import java.math.BigInteger;
+import java.math.*;
 import java.sql.*;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.util.*;
 import java.util.stream.*;
 
@@ -17,6 +17,7 @@ public final class Database {
         try {
             if (connection == null || connection.isClosed()) {
                 connection = createConnection();
+                prepareAliases();
                 initializeTables();
             }
             return connection;
@@ -47,6 +48,15 @@ public final class Database {
             catch (SQLException ex) {
                 throw new DatabaseException("Failed to close database connection", ex);
             }
+        }
+    }
+
+    private static void prepareAliases() throws DatabaseException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("CREATE ALIAS IF NOT EXISTS UNACCENT FOR \"bka.theworks.persistence.SqlFunctions.unaccent\"");
+        }
+        catch (SQLException ex) {
+            throw new DatabaseException("Failed to prepare aliases", ex);
         }
     }
 
@@ -148,18 +158,23 @@ public final class Database {
 
     public static List<Map<String, Object>> query(String sql) throws DatabaseException {
         List<Map<String, Object>> rows = new ArrayList<>();
-        try (ResultSet result = getConnection().createStatement().executeQuery(sql)) {
-            ResultSetMetaData metadata = result.getMetaData();
-            while (result.next()) {
-                Map<String, Object> row = new LinkedHashMap<>();
-                for (int i = 1; i <= metadata.getColumnCount(); i++) {
-                    row.put(metadata.getTableName(i) + "." + metadata.getColumnName(i), result.getObject(i));
+        try (Statement statement = getConnection().createStatement()) {
+            try (ResultSet result = statement.executeQuery(sql)) {
+                ResultSetMetaData metadata = result.getMetaData();
+                while (result.next()) {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    for (int i = 1; i <= metadata.getColumnCount(); i++) {
+                        row.put(metadata.getTableName(i) + "." + metadata.getColumnName(i), result.getObject(i));
+                    }
+                    rows.add(row);
                 }
-                rows.add(row);
+            }
+            catch (SQLException ex) {
+                throw new DatabaseException(String.format("Failed to execute:%n```%s```", sql), ex);
             }
         }
         catch (SQLException ex) {
-            throw new DatabaseException(String.format("Failed to execute:%n```%s```", sql), ex);
+            throw new DatabaseException(String.format("Failed create statment:%n```%s```", sql), ex);
         }
         return rows;
     }

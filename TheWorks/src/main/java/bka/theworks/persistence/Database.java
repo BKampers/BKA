@@ -10,10 +10,10 @@ import java.util.stream.*;
 public final class Database {
 
     private Database() {
-        // Util class must not be instantiated
+        // Util class should not be instantiated
     }
 
-    public static synchronized Connection getConnection() throws DatabaseException {
+    private static synchronized Connection getConnection() throws DatabaseException {
         try {
             if (connection == null || connection.isClosed()) {
                 connection = createConnection();
@@ -88,38 +88,73 @@ public final class Database {
     }
 
     public static void storeAlbum(Map<String, Object> album) throws DatabaseException {
-        long albumId;
-        try (Connection batchConnection = getConnection()) {
+        executeBatch(Database::storeAlbum, album);
+    }
+
+    private static void storeAlbum(Connection batchConnection, Map<String, Object> album) throws DatabaseException, SQLException {
+        long albumId = insertAlbum(batchConnection, album);
+        try (PreparedStatement statement = batchConnection.prepareStatement(insertStatement(TRACKS), Statement.RETURN_GENERATED_KEYS)) {
+            for (Map<String, Object> track : (List<Map<String, Object>>) album.get(TRACKS)) {
+                Map<String, Object> mutableTrack = new HashMap<>(track);
+                mutableTrack.put("Album Id", BigInteger.valueOf(albumId));
+                setTrack(statement, mutableTrack);
+                statement.addBatch();
+            }
+            statement.executeBatch();
+        }
+    }
+
+    private static long insertAlbum(Connection batchConnection, Map<String, Object> album) throws DatabaseException, SQLException {
+        try (PreparedStatement statement = batchConnection.prepareStatement(insertStatement(ALBUMS), Statement.RETURN_GENERATED_KEYS)) {
+            statement.setString(1, (String) album.get("Name"));
+            statement.setString(2, (String) album.get("Artist"));
+            if (statement.executeUpdate() == 0) {
+                throw new DatabaseException("Creating album failed, no rows affected.");
+            }
+            return generateKey(statement);
+        }
+    }
+
+    private static long generateKey(PreparedStatement statement) throws SQLException, DatabaseException {
+        try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+            if (!generatedKeys.next()) {
+                throw new DatabaseException("No ID obtained.");
+            }
+            return generatedKeys.getLong(1);
+        }
+    }
+
+    private static void executeBatch(Batch batch, Map<String, Object> record) throws DatabaseException {
+        Connection batchConnection = getConnection();
+        try {
             batchConnection.setAutoCommit(false);
-            try (PreparedStatement statement = batchConnection.prepareStatement(insertStatement(ALBUMS), Statement.RETURN_GENERATED_KEYS)) {
-                statement.setString(1, (String) album.get("Name"));
-                statement.setString(2, (String) album.get("Artist"));
-                int affectedRows = statement.executeUpdate();
-                if (affectedRows == 0) {
-                    throw new DatabaseException("Creating album failed, no rows affected.");
-                }
-                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        albumId = generatedKeys.getLong(1);
-                    }
-                    else {
-                        throw new DatabaseException("Creating album failed, no ID obtained.");
-                    }
-                }
-            }
-            try (PreparedStatement statement = getConnection().prepareStatement(insertStatement(TRACKS), Statement.RETURN_GENERATED_KEYS)) {
-                for (Map<String, Object> track : (List<Map<String, Object>>) album.get(TRACKS)) {
-                    Map<String, Object> mutableTrack = new HashMap<>(track);
-                    mutableTrack.put("Album Id", BigInteger.valueOf(albumId));
-                    setTrack(statement, mutableTrack);
-                    statement.addBatch();
-                }
-                statement.executeBatch();
-            }
+            batch.execute(batchConnection, record);
             batchConnection.commit();
         }
+        catch (SQLException | DatabaseException ex) {
+            rollback(batchConnection, ex);
+        }
+        finally {
+            clearAutoCommit(batchConnection);
+        }
+    }
+
+    private static void rollback(Connection batchConnection, Throwable throwable) throws DatabaseException {
+        try {
+            batchConnection.rollback();
+        }
         catch (SQLException ex) {
-            throw new DatabaseException("Failed to store album", ex);
+            throw new DatabaseException(ex);
+        }
+        throw new DatabaseException("Failed to rollback batch", throwable);
+    }
+
+    private static void clearAutoCommit(Connection batchConnection) throws DatabaseException {
+        try {
+            batchConnection.setAutoCommit(true);
+        }
+        catch (SQLException ex) {
+            throw new DatabaseException(ex);
         }
     }
 
@@ -204,13 +239,19 @@ public final class Database {
     private static String insertStatement(String tableName) {
         ColumnDefinition[] columns = TABLE_DEFINITIONS.get(tableName);
         return String.format("""
-            INSERT INTO %s
-            %s
-            VALUES %s
-        """,
+                INSERT INTO %s
+                %s
+                VALUES %s
+            """,
             tableName,
             Arrays.stream(columns).map(ColumnDefinition::name).collect(Collectors.joining(", ", "(", ")")),
             Arrays.stream(columns).map(column -> "?").collect(Collectors.joining(", ", "(", ")")));
+    }
+
+
+    private interface Batch {
+
+        void execute(Connection batchConnection, Map<String, Object> record) throws DatabaseException, SQLException;
     }
 
 

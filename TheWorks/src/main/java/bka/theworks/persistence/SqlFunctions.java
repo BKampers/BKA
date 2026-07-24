@@ -4,9 +4,18 @@ import java.text.*;
 
 
 /**
+ * Provides special functions for database queries
  */
-public class SqlFunctions {
+public final class SqlFunctions {
 
+    private SqlFunctions() {
+        // Utility class should not be instantiated
+    }
+
+    /**
+     * @param text
+     * @return given text without diacritical signs
+     */
     public static String unaccent(String text) {
         if (text == null) {
             return null;

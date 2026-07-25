@@ -35,7 +35,7 @@ public final class Demo {
     }
 
     private static void populateDatabase() throws DatabaseException, SAXException, IOException, ParserConfigurationException {
-        LibraryLoader libraryLoader = new LibraryLoader("/Users/bartkampers/iCloud Drive/Bibliotheek.xml");
+        LibraryLoader libraryLoader = new LibraryLoader(libraryPath());
         Map<String, Map<String, AlbumEntity>> albumEntities = new HashMap<>();
         System.out.println("Loading tracks... ");
         Collection<Map<String, Object>> tracks = libraryLoader.getTracks();
@@ -69,6 +69,26 @@ public final class Demo {
                 Database.storeAlbum(album);
             }
         }
+    }
+
+    private static String libraryPath() throws IOException {
+        Properties properties = loadProperties();
+        String library = properties.getProperty("library");
+        if (library == null || library.isBlank()) {
+            throw new IOException("Property 'library' is missing in Demo.properties");
+        }
+        return library;
+    }
+
+    private static Properties loadProperties() throws IOException {
+        Properties properties = new Properties();
+        try (InputStream input = Demo.class.getResourceAsStream("Demo.properties")) {
+            if (input == null) {
+                throw new FileNotFoundException("Demo.properties not found on classpath");
+            }
+            properties.load(input);
+        }
+        return properties;
     }
 
     private static String getQuery(String[] arguments) throws IOException {
@@ -146,9 +166,11 @@ public final class Demo {
         Map<String, Integer> widths = new LinkedHashMap<>();
         records.forEach((Map<String, Object> record) -> {
             record.entrySet().forEach((Map.Entry<String, Object> entry) -> {
-                int length = displayValue(entry.getKey(), entry.getValue()).length();
-                Integer max = widths.get(entry.getKey());
-                widths.put(entry.getKey(), (max == null) ? Math.max(length, entry.getKey().length()) : Math.max(length, max));
+                String displayValue = displayValue(entry.getKey(), entry.getValue());
+                int max = widths.computeIfAbsent(entry.getKey(), k -> displayValue.length());
+                if (max < displayValue.length()) {
+                    widths.put(entry.getKey(), displayValue.length());
+                }
             });
         });
         return widths;

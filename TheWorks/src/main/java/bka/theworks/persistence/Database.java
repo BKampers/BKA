@@ -118,7 +118,7 @@ public final class Database {
     private static long generateKey(PreparedStatement statement) throws SQLException, DatabaseException {
         try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
             if (!generatedKeys.next()) {
-                throw new DatabaseException("No ID obtained.");
+                throw new DatabaseException("Key could not be generated for statement " + statement);
             }
             return generatedKeys.getLong(1);
         }

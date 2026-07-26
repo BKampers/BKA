@@ -164,16 +164,16 @@ public final class Demo {
 
     private static Map<String, Integer> computeColumnsWidths(List<Map<String, Object>> records) {
         Map<String, Integer> widths = new LinkedHashMap<>();
-        records.forEach((Map<String, Object> record) -> {
-            record.entrySet().forEach((Map.Entry<String, Object> entry) -> {
-                String displayValue = displayValue(entry.getKey(), entry.getValue());
-                int max = widths.computeIfAbsent(entry.getKey(), k -> displayValue.length());
-                if (max < displayValue.length()) {
-                    widths.put(entry.getKey(), displayValue.length());
-                }
-            });
-        });
+        records.forEach(record -> record.entrySet().forEach(entry -> computecolumnWidth(entry, widths)));
         return widths;
+    }
+
+    private static void computecolumnWidth(Map.Entry<String, Object> entry, Map<String, Integer> widths) {
+        int width = displayValue(entry.getKey(), entry.getValue()).length();
+        int max = widths.computeIfAbsent(entry.getKey(), k -> entry.getKey().length());
+        if (max < width) {
+            widths.put(entry.getKey(), width);
+        }
     }
 
     private static void printHeader(Map<String, Integer> widths) {

@@ -231,7 +231,7 @@ public final class Statement {
 
     public void execute(Memory memory) throws StateMachineException {
         Value value = evaluate(expression, memory);
-        boolean isVoid = value.equals(Value.VOID) || methodProperties.isVoid(value.type());
+        boolean isVoid = value.equals(Value.VOID);
         if (assignable.isPresent()) {
             if (isVoid) {
                 throw new IllegalStateException(assignable.get() + " cannot be assigned with void");
@@ -454,7 +454,7 @@ public final class Statement {
         }
         return (methodProperties.isProcedure(name))
             ? Value.VOID
-            : new Value(stateMachine.getMemoryObject(name), methodProperties.getType(name));
+            : new Value(stateMachine.getMemoryObject(name), methodProperties.getType(name).get());
     }
 
     private List<Node> createArgumentList(Optional<Node> argumentList) {
@@ -478,16 +478,22 @@ public final class Statement {
         String name = node.content();
         Collection<Transition<Event, GuardCondition, Action>> method = methodProperties.getBody(name);
         return (method != null)
-            ? evaluate(name, method, memory)
+            ? evaluateMethod(name, method, memory)
             : evaluate(node, memory);
     }
 
-    private Value evaluate(String name, Collection<Transition<Event, GuardCondition, Action>> method, Memory memory) throws StateMachineException {
-        Collection<String> identifiers = new ArrayList<>(localNames(name));
-        identifiers.add(name);
-        StateMachine stateMachine = new StateMachine(method, memory, identifiers);
+    private Value evaluateMethod(String name, Collection<Transition<Event, GuardCondition, Action>> method, Memory memory) throws StateMachineException {
+        Optional<Type> returnType = methodProperties.getType(name);
+        Collection<String> locals = new ArrayList<>(localNames(name));
+        if (returnType.isPresent()) {
+            locals.add(name);
+        }
+        StateMachine stateMachine = new StateMachine(method, memory, locals);
         stateMachine.start();
-        return new Value(stateMachine.getMemoryObject(name), methodProperties.getType(name));
+        if (returnType.isEmpty()) {
+            return Value.VOID;
+        }
+        return new Value(stateMachine.getMemoryObject(name), returnType.get());
     }
 
     private Value evaluateUnaryOperation(Node operator, Value operand) throws StateMachineException {

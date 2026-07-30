@@ -90,18 +90,20 @@ public final class PascalCompiler {
 
     private void addPrivateFunctionOperations(UmlClassBuilder builder, Node declarations) {
         declarations.findChild("ProcedureDeclaration")
-            .ifPresent(procedureDeclaration -> addMethod(builder, VOID_TYPE, procedureDeclaration));
+            .ifPresent(procedureDeclaration -> addMethod(builder, Optional.empty(), procedureDeclaration));
         declarations.findChild("FunctionDeclaration")
-            .ifPresent(functionDeclaration -> addMethod(builder, getType(functionDeclaration.getChild("TypeExpression")), functionDeclaration));
+            .ifPresent(functionDeclaration -> addMethod(builder, Optional.of(getType(functionDeclaration.getChild("TypeExpression"))), functionDeclaration));
         declarations.findChild("Declarations")
             .ifPresent(next -> addPrivateFunctionOperations(builder, next));
     }
 
-    private void addMethod(UmlClassBuilder builder, Type type, Node declaration) {
+    private void addMethod(UmlClassBuilder builder, Optional<Type> type, Node declaration) {
         String methodName = identifier(declaration);
         List<Parameter> parameters = createParameterList(declaration.getChild("ParameterDeclaration"));
         Collection<uml.structure.Object> locals = createLocals(declaration.getChild("Declarations"));
-        Operation operation = builder.withOperation(methodName, parameters, type, Member.Visibility.PRIVATE);
+        Operation operation = (type.isEmpty())
+            ? builder.withOperation(methodName, parameters, Member.Visibility.PRIVATE)
+            : builder.withOperation(methodName, parameters, type.get(), Member.Visibility.PRIVATE);
         methodLocals.put(operation, locals);
         methodBodies.put(operation, createBody(operation, declaration.getChild("CompoundStatement")));
         methods.put(operation, createCompoundStatement(operation, declaration.getChild("CompoundStatement"), locals));
@@ -465,7 +467,7 @@ public final class PascalCompiler {
 
     private AbstractPascalExpression createIdentifierExpression(Operation scope, Node identifierNode) {
         String identifier = identifierNode.content();
-        if (scope.getName().isPresent() && identifier.equalsIgnoreCase(scope.getName().get()) && scope.getType().isPresent() && !isProcedure(scope)) {
+        if (scope.getName().isPresent() && identifier.equalsIgnoreCase(scope.getName().get()) && scope.getType().isPresent()) {
             return new ScopeVariableExpression(identifier, scope.getType().get());
         }
         Optional<Parameter> parameter = scope.getParameters().stream().filter(p -> identifier.equalsIgnoreCase(p.getName().get())).findAny();
@@ -483,10 +485,6 @@ public final class PascalCompiler {
             return new ScopeVariableExpression(identifier, variable.get().getType().get());
         }
         return new MethodCallExpression(getOperation(identifierNode), Collections.emptyMap());
-    }
-    
-    private boolean isProcedure(Operation operation) {
-        return operation.getType().map(VOID_TYPE::equals).orElse(true);
     }
     
     private Optional<uml.structure.Object> findLocal(Operation scope, String identifier) {
@@ -711,20 +709,16 @@ public final class PascalCompiler {
             return Collections.unmodifiableList(getOperation(name).getParameters());
         }
 
-        public Type getType(String name) {
-            return getOperation(name).getType().get();
+        public Optional<Type> getType(String name) {
+            return getOperation(name).getType();
         }
 
         public Collection<uml.structure.Object> getLocals(String name) {
             return Collections.unmodifiableCollection(methodLocals.getOrDefault(getOperation(name), Collections.emptyList()));
         }
 
-        public boolean isVoid(Type type) {
-            return VOID_TYPE.equals(type);
-        }
-
         public boolean isProcedure(String name) {
-            return isVoid(getOperation(name).getType().get());
+            return getOperation(name).getType().isEmpty();
         }
 
         private Operation getOperation(String name) {
@@ -745,7 +739,5 @@ public final class PascalCompiler {
     private final Map<Operation, CompoundStatement> methods = new HashMap<>();
 
     private static final run.Statement NO_OPERATION = run.Statement.NO_OPERATION;
-    
-    private static final Type VOID_TYPE = PascalTypes.VOID;
 
 }

@@ -183,7 +183,7 @@ public final class Engine {
     }
 
     private boolean isProcedure(Operation operation) {
-        return operation.getType().map(PascalTypes.VOID::equals).orElse(true);
+        return operation.getType().isEmpty();
     }
 
     private static String typeName(Expression expression) {

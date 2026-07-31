@@ -37,7 +37,12 @@ public final class Engine {
     }
 
     /**
-     * Executes a procedure or function in a new {@link ObjectScope}.
+     * Executes a method in a new {@link ObjectScope}.
+     *
+     * @param operation
+     * @param parentScope
+     * @param arguments
+     * @return execution result if given opertion has a type, VOID otherwise
      */
     public java.lang.Object execute(Operation operation, ObjectScope parentScope, Map<Parameter, Expression> arguments) {
         Map<Parameter, java.lang.Object> argumentValues = new LinkedHashMap<>();

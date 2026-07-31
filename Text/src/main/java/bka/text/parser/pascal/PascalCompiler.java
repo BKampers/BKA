@@ -284,7 +284,7 @@ public final class PascalCompiler {
             throw new IllegalStateException("Not a statement: " + statementNode.content());
         }
         if (statementNode.getChildren().isEmpty()) {
-            return NO_OPERATION;
+            return run.Statement.NO_OPERATION;
         }
         return switch (head(statementNode).getSymbol()) {
             case "Assignable" ->
@@ -737,7 +737,5 @@ public final class PascalCompiler {
     private final Map<Operation, Collection<uml.structure.Object>> methodLocals = new HashMap<>();
     private final Collection<Type> declaredTypes = new ArrayList<>();
     private final Map<Operation, CompoundStatement> methods = new HashMap<>();
-
-    private static final run.Statement NO_OPERATION = run.Statement.NO_OPERATION;
 
 }

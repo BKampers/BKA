@@ -11,7 +11,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import run.ArrayType;
-import run.Engine;
+import run.Execution;
 import run.MutableObject;
 import run.StateMachine;
 import uml.structure.Attribute;
@@ -31,7 +31,7 @@ public final class PascalValues {
             }
 
             @Override
-            public java.lang.Object evaluate(Engine engine) {
+            public java.lang.Object evaluate(Execution execution) {
                 if (REAL.equals(type)) {
                     return ((Number) value).floatValue();
                 }
@@ -62,7 +62,7 @@ public final class PascalValues {
             }
 
             @Override
-            public java.lang.Object evaluate(Engine engine) {
+            public java.lang.Object evaluate(Execution execution) {
                 return value;
             }
 
@@ -81,7 +81,7 @@ public final class PascalValues {
             }
 
             @Override
-            public java.lang.Object evaluate(Engine engine) {
+            public java.lang.Object evaluate(Execution execution) {
                 return value;
             }
 
@@ -100,7 +100,7 @@ public final class PascalValues {
             }
 
             @Override
-            public java.lang.Object evaluate(Engine engine) {
+            public java.lang.Object evaluate(Execution execution) {
                 return value;
             }
 
@@ -119,7 +119,7 @@ public final class PascalValues {
             }
 
             @Override
-            public java.lang.Object evaluate(Engine engine) {
+            public java.lang.Object evaluate(Execution execution) {
                 return value;
             }
 

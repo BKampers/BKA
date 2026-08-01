@@ -7,7 +7,7 @@ import static run.PascalTypes.REAL;
 import java.util.Objects;
 import java.util.Optional;
 import run.BinaryOperatorExpression;
-import run.Engine;
+import run.Execution;
 import run.Expression;
 import run.Operator;
 import uml.structure.Type;
@@ -61,38 +61,38 @@ public final class OperatorExpression extends AbstractPascalExpression implement
     }
 
     @Override
-    public java.lang.Object evaluate(Engine engine) {
+    public java.lang.Object evaluate(Execution execution) {
         return switch (operator) {
             case EQUALS ->
-                engine.evaluate(left).equals(engine.evaluate(right));
+                execution.evaluate(left).equals(execution.evaluate(right));
             case LESS_THAN ->
-                ((Number) engine.evaluate(left)).doubleValue() < ((Number) engine.evaluate(right)).doubleValue();
+                ((Number) execution.evaluate(left)).doubleValue() < ((Number) execution.evaluate(right)).doubleValue();
             case GREATER_THAN ->
-                ((Number) engine.evaluate(left)).doubleValue() > ((Number) engine.evaluate(right)).doubleValue();
+                ((Number) execution.evaluate(left)).doubleValue() > ((Number) execution.evaluate(right)).doubleValue();
             case LESS_EQUAL ->
-                ((Number) engine.evaluate(left)).doubleValue() <= ((Number) engine.evaluate(right)).doubleValue();
+                ((Number) execution.evaluate(left)).doubleValue() <= ((Number) execution.evaluate(right)).doubleValue();
             case GREATER_EQUAL ->
-                ((Number) engine.evaluate(left)).doubleValue() >= ((Number) engine.evaluate(right)).doubleValue();
+                ((Number) execution.evaluate(left)).doubleValue() >= ((Number) execution.evaluate(right)).doubleValue();
             case UNEQUALS ->
-                !engine.evaluate(left).equals(engine.evaluate(right));
+                !execution.evaluate(left).equals(execution.evaluate(right));
             case AND ->
-                and(engine.evaluate(left), engine.evaluate(right));
+                and(execution.evaluate(left), execution.evaluate(right));
             case OR ->
-                or(engine.evaluate(left), engine.evaluate(right));
+                or(execution.evaluate(left), execution.evaluate(right));
             case XOR ->
-                xor(engine.evaluate(left), engine.evaluate(right));
+                xor(execution.evaluate(left), execution.evaluate(right));
             case MULTIPLICATION ->
-                product(engine.evaluate(left), engine.evaluate(right));
+                product(execution.evaluate(left), execution.evaluate(right));
             case REAL_DIVISION ->
-                ((Number) engine.evaluate(left)).floatValue() / ((Number) engine.evaluate(right)).floatValue();
+                ((Number) execution.evaluate(left)).floatValue() / ((Number) execution.evaluate(right)).floatValue();
             case INTEGER_DIVISION ->
-                (Integer) engine.evaluate(left) / (Integer) engine.evaluate(right);
+                (Integer) execution.evaluate(left) / (Integer) execution.evaluate(right);
             case MODULUS ->
-                (Integer) engine.evaluate(left) % (Integer) engine.evaluate(right);
+                (Integer) execution.evaluate(left) % (Integer) execution.evaluate(right);
             case ADDITION ->
-                sum(engine.evaluate(left), engine.evaluate(right));
+                sum(execution.evaluate(left), execution.evaluate(right));
             case SUBTRACTION ->
-                difference(engine.evaluate(left), engine.evaluate(right));
+                difference(execution.evaluate(left), execution.evaluate(right));
             default ->
                 throw new IllegalStateException();
         };

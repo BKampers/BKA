@@ -12,7 +12,7 @@ import uml.structure.*;
  * {@link ValueExpression}. When an identifier is not declared in the current scope, lookup and
  * assignment are delegated to the parent scope.
  *
- * <p>For Pascal expressions that need an {@link Engine}, use {@link Engine#loadFromScope} instead of
+ * <p>For Pascal expressions that need an {@link Execution}, use {@link Execution#loadFromScope} instead of
  * {@link #load(String)}.
  *
  * @see StateMachine

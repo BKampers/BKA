@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
-import run.Engine;
+import run.Execution;
 import uml.structure.Type;
 
 
@@ -32,12 +32,12 @@ public final class UnaryOperatorExpression extends AbstractPascalExpression {
     }
 
     @Override
-    public java.lang.Object evaluate(Engine engine) {
+    public java.lang.Object evaluate(Execution execution) {
         return switch (operator) {
             case NEGATION ->
-                minus((Number) engine.evaluate(expression));
+                minus((Number) execution.evaluate(expression));
             case NOT ->
-                !(Boolean) engine.evaluate(expression);
+                !(Boolean) execution.evaluate(expression);
         };
     }
 

@@ -2,7 +2,7 @@ package run.pascal;
 
 import java.util.Objects;
 import java.util.Optional;
-import run.Engine;
+import run.Execution;
 import uml.structure.Type;
 
 
@@ -26,8 +26,8 @@ public final class ScopeVariableExpression extends AbstractPascalExpression {
     }
 
     @Override
-    public java.lang.Object evaluate(Engine engine) {
-        return engine.loadFromScope(engine.getCurrentScope(), name);
+    public java.lang.Object evaluate(Execution execution) {
+        return execution.loadFromScope(execution.getCurrentScope(), name);
     }
 
     @Override

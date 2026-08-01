@@ -3,7 +3,7 @@ package run.pascal;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
-import run.Engine;
+import run.Execution;
 import run.MutableObject;
 import uml.structure.Attribute;
 import uml.structure.Type;
@@ -36,9 +36,9 @@ public final class MemberAccessExpression extends AbstractPascalExpression {
     }
 
     @Override
-    public java.lang.Object evaluate(Engine engine) {
-        MutableObject record = engine.mutableObject(receiver);
-        return engine.evaluate(Engine.asExpression(record.get(findRecordAttribute(record, member))));
+    public java.lang.Object evaluate(Execution execution) {
+        MutableObject record = execution.mutableObject(receiver);
+        return execution.evaluate(Execution.asExpression(record.get(findRecordAttribute(record, member))));
     }
 
     public static Attribute findRecordAttribute(MutableObject record, String name) {

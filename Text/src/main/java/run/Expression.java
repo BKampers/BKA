@@ -11,6 +11,6 @@ public interface Expression extends ValueSpecification {
 
     Optional<Type> getType();
 
-    java.lang.Object evaluate(Engine engine);
+    java.lang.Object evaluate(Execution execution);
 
 }

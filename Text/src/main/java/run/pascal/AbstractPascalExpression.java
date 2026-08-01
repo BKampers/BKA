@@ -1,18 +1,18 @@
 package run.pascal;
 
 import java.util.Optional;
-import run.Engine;
+import run.Execution;
 import run.Expression;
 import uml.structure.Type;
 
 
 /**
- * Base class for Pascal expressions evaluated by {@link Engine}.
+ * Base class for Pascal expressions evaluated by {@link Execution}.
  */
 public abstract class AbstractPascalExpression implements Expression {
 
     @Override
-    public abstract java.lang.Object evaluate(Engine engine);
+    public abstract java.lang.Object evaluate(Execution execution);
 
     @Override
     public abstract Optional<Type> getType();

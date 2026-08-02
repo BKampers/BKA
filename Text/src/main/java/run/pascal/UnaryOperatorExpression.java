@@ -5,6 +5,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import run.Execution;
+import run.ObjectScope;
 import uml.structure.Type;
 
 
@@ -32,12 +33,12 @@ public final class UnaryOperatorExpression extends AbstractPascalExpression {
     }
 
     @Override
-    public java.lang.Object evaluate(Execution execution) {
+    public java.lang.Object evaluate(Execution execution, ObjectScope scope) {
         return switch (operator) {
             case NEGATION ->
-                minus((Number) execution.evaluate(expression));
+                minus((Number) execution.evaluate(expression, scope));
             case NOT ->
-                !(Boolean) execution.evaluate(expression);
+                !(Boolean) execution.evaluate(expression, scope);
         };
     }
 

@@ -3,6 +3,7 @@ package run.pascal;
 import java.util.Optional;
 import run.Execution;
 import run.Expression;
+import run.ObjectScope;
 import uml.structure.Type;
 
 
@@ -12,7 +13,7 @@ import uml.structure.Type;
 public abstract class AbstractPascalExpression implements Expression {
 
     @Override
-    public abstract java.lang.Object evaluate(Execution execution);
+    public abstract java.lang.Object evaluate(Execution execution, ObjectScope scope);
 
     @Override
     public abstract Optional<Type> getType();

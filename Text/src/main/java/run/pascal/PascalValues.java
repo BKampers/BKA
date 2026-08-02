@@ -13,6 +13,7 @@ import java.util.stream.IntStream;
 import run.ArrayType;
 import run.Execution;
 import run.MutableObject;
+import run.ObjectScope;
 import run.StateMachine;
 import uml.structure.Attribute;
 import uml.structure.Type;
@@ -31,7 +32,7 @@ public final class PascalValues {
             }
 
             @Override
-            public java.lang.Object evaluate(Execution execution) {
+            public java.lang.Object evaluate(Execution execution, ObjectScope scope) {
                 if (REAL.equals(type)) {
                     return ((Number) value).floatValue();
                 }
@@ -62,7 +63,7 @@ public final class PascalValues {
             }
 
             @Override
-            public java.lang.Object evaluate(Execution execution) {
+            public java.lang.Object evaluate(Execution execution, ObjectScope scope) {
                 return value;
             }
 
@@ -81,7 +82,7 @@ public final class PascalValues {
             }
 
             @Override
-            public java.lang.Object evaluate(Execution execution) {
+            public java.lang.Object evaluate(Execution execution, ObjectScope scope) {
                 return value;
             }
 
@@ -100,7 +101,7 @@ public final class PascalValues {
             }
 
             @Override
-            public java.lang.Object evaluate(Execution execution) {
+            public java.lang.Object evaluate(Execution execution, ObjectScope scope) {
                 return value;
             }
 
@@ -119,7 +120,7 @@ public final class PascalValues {
             }
 
             @Override
-            public java.lang.Object evaluate(Execution execution) {
+            public java.lang.Object evaluate(Execution execution, ObjectScope scope) {
                 return value;
             }
 

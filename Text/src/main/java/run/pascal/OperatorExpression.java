@@ -9,6 +9,7 @@ import java.util.Optional;
 import run.BinaryOperatorExpression;
 import run.Execution;
 import run.Expression;
+import run.ObjectScope;
 import run.Operator;
 import uml.structure.Type;
 
@@ -61,38 +62,38 @@ public final class OperatorExpression extends AbstractPascalExpression implement
     }
 
     @Override
-    public java.lang.Object evaluate(Execution execution) {
+    public java.lang.Object evaluate(Execution execution, ObjectScope scope) {
         return switch (operator) {
             case EQUALS ->
-                execution.evaluate(left).equals(execution.evaluate(right));
+                execution.evaluate(left, scope).equals(execution.evaluate(right, scope));
             case LESS_THAN ->
-                ((Number) execution.evaluate(left)).doubleValue() < ((Number) execution.evaluate(right)).doubleValue();
+                ((Number) execution.evaluate(left, scope)).doubleValue() < ((Number) execution.evaluate(right, scope)).doubleValue();
             case GREATER_THAN ->
-                ((Number) execution.evaluate(left)).doubleValue() > ((Number) execution.evaluate(right)).doubleValue();
+                ((Number) execution.evaluate(left, scope)).doubleValue() > ((Number) execution.evaluate(right, scope)).doubleValue();
             case LESS_EQUAL ->
-                ((Number) execution.evaluate(left)).doubleValue() <= ((Number) execution.evaluate(right)).doubleValue();
+                ((Number) execution.evaluate(left, scope)).doubleValue() <= ((Number) execution.evaluate(right, scope)).doubleValue();
             case GREATER_EQUAL ->
-                ((Number) execution.evaluate(left)).doubleValue() >= ((Number) execution.evaluate(right)).doubleValue();
+                ((Number) execution.evaluate(left, scope)).doubleValue() >= ((Number) execution.evaluate(right, scope)).doubleValue();
             case UNEQUALS ->
-                !execution.evaluate(left).equals(execution.evaluate(right));
+                !execution.evaluate(left, scope).equals(execution.evaluate(right, scope));
             case AND ->
-                and(execution.evaluate(left), execution.evaluate(right));
+                and(execution.evaluate(left, scope), execution.evaluate(right, scope));
             case OR ->
-                or(execution.evaluate(left), execution.evaluate(right));
+                or(execution.evaluate(left, scope), execution.evaluate(right, scope));
             case XOR ->
-                xor(execution.evaluate(left), execution.evaluate(right));
+                xor(execution.evaluate(left, scope), execution.evaluate(right, scope));
             case MULTIPLICATION ->
-                product(execution.evaluate(left), execution.evaluate(right));
+                product(execution.evaluate(left, scope), execution.evaluate(right, scope));
             case REAL_DIVISION ->
-                ((Number) execution.evaluate(left)).floatValue() / ((Number) execution.evaluate(right)).floatValue();
+                ((Number) execution.evaluate(left, scope)).floatValue() / ((Number) execution.evaluate(right, scope)).floatValue();
             case INTEGER_DIVISION ->
-                (Integer) execution.evaluate(left) / (Integer) execution.evaluate(right);
+                (Integer) execution.evaluate(left, scope) / (Integer) execution.evaluate(right, scope);
             case MODULUS ->
-                (Integer) execution.evaluate(left) % (Integer) execution.evaluate(right);
+                (Integer) execution.evaluate(left, scope) % (Integer) execution.evaluate(right, scope);
             case ADDITION ->
-                sum(execution.evaluate(left), execution.evaluate(right));
+                sum(execution.evaluate(left, scope), execution.evaluate(right, scope));
             case SUBTRACTION ->
-                difference(execution.evaluate(left), execution.evaluate(right));
+                difference(execution.evaluate(left, scope), execution.evaluate(right, scope));
             default ->
                 throw new IllegalStateException();
         };

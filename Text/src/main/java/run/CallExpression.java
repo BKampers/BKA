@@ -42,7 +42,7 @@ public final class CallExpression implements Expression {
     }
 
     @Override
-    public java.lang.Object evaluate(Execution execution) {
+    public java.lang.Object evaluate(Execution execution, ObjectScope scope) {
         throw new UnsupportedOperationException("CallExpression is not executable; use MethodCallExpression");
     }
 

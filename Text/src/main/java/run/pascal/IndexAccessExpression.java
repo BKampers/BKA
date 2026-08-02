@@ -4,6 +4,7 @@ import java.util.Objects;
 import java.util.Optional;
 import run.ArrayType;
 import run.Execution;
+import run.ObjectScope;
 import uml.structure.Type;
 
 
@@ -39,9 +40,9 @@ public final class IndexAccessExpression extends AbstractPascalExpression {
     }
 
     @Override
-    public java.lang.Object evaluate(Execution execution) {
-        java.lang.Object[] value = (java.lang.Object[]) execution.evaluate(base);
-        return value[arraySlot(getArrayType(), (Integer) execution.evaluate(index))];
+    public java.lang.Object evaluate(Execution execution, ObjectScope scope) {
+        java.lang.Object[] value = (java.lang.Object[]) execution.evaluate(base, scope);
+        return value[arraySlot(getArrayType(), (Integer) execution.evaluate(index, scope))];
     }
 
     @Override

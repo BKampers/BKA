@@ -6,6 +6,7 @@ import java.util.Optional;
 import run.CallExpression;
 import run.Execution;
 import run.Expression;
+import run.ObjectScope;
 import uml.structure.Operation;
 import uml.structure.Parameter;
 import uml.structure.Type;
@@ -35,8 +36,8 @@ public final class MethodCallExpression extends AbstractPascalExpression {
     }
 
     @Override
-    public java.lang.Object evaluate(Execution execution) {
-        return execution.execute(operation, execution.getCurrentScope(), arguments);
+    public java.lang.Object evaluate(Execution execution, ObjectScope scope) {
+        return execution.execute(operation, scope, arguments);
     }
 
     @Override

@@ -23,14 +23,14 @@ public final class Execution {
             .filter(Execution::hasMainStereotype)
             .findAny()
             .orElseThrow(NoSuchElementException::new);
-        Map<Attribute, Expression> attributeValues = engine.getProgramClass().getAttributes().stream().collect(Collectors.toMap(
+        Map<Attribute, Evaluable> attributeValues = engine.getProgramClass().getAttributes().stream().collect(Collectors.toMap(
             Function.identity(),
             attribute -> PascalValues.uninitialized(attribute.getType().get())));
         programObject = MutableObject.constructAnonymous(engine.getProgramClass(), attributeValues);
         ObjectScope programScope = new ObjectScope(programObject);
         execute(engine.getMethods().get(mainOperation), programScope);
         programObject.getAttributeValues().forEach((attribute, valueSpecification) -> {
-            Expression expression = asExpression(valueSpecification);
+            Evaluable expression = asEvaluable(valueSpecification);
             System.out.println(attribute.getName().get() + " = (" + typeName(expression) + ") " + displayValue(expression, programScope));
         });
     }
@@ -51,7 +51,7 @@ public final class Execution {
      * @param arguments actual arguments keyed by formal parameters
      * @return the function result, or {@code VOID} if the operation is a procedure
      */
-    public java.lang.Object execute(Operation operation, ObjectScope parentScope, Map<Parameter, Expression> arguments) {
+    public java.lang.Object execute(Operation operation, ObjectScope parentScope, Map<Parameter, Evaluable> arguments) {
         Map<Parameter, java.lang.Object> argumentValues = new LinkedHashMap<>();
         arguments.forEach((parameter, expression) -> argumentValues.put(parameter, evaluate(expression, parentScope)));
         ObjectScope callScope = createCallScope(operation, parentScope, argumentValues);
@@ -63,15 +63,15 @@ public final class Execution {
         return loadFromScope(callScope, operation.getName().get());
     }
 
-    public java.lang.Object evaluate(Expression expression, ObjectScope scope) {
+    public java.lang.Object evaluate(Evaluable expression, ObjectScope scope) {
         return expression.evaluate(this, scope);
     }
 
-    private void assign(Expression assignable, Expression valueExpression, ObjectScope scope) {
+    private void assign(Evaluable assignable, Evaluable valueExpression, ObjectScope scope) {
         assignValue(assignable, evaluate(valueExpression, scope), scope);
     }
 
-    private void assignValue(Expression assignable, java.lang.Object value, ObjectScope scope) {
+    private void assignValue(Evaluable assignable, java.lang.Object value, ObjectScope scope) {
         switch (assignable) {
             case ScopeVariableExpression variable ->
                 scope.storeExpression(variable.getName(), PascalValues.valueOf(variable.getType().get(), value));
@@ -84,7 +84,7 @@ public final class Execution {
         }
     }
 
-    public java.lang.Object[] resolveArrayContainer(AbstractPascalExpression base, ObjectScope scope) {
+    public java.lang.Object[] resolveArrayContainer(Evaluable base, ObjectScope scope) {
         if (base instanceof ScopeVariableExpression) {
             return (java.lang.Object[]) evaluate(base, scope);
         }
@@ -98,13 +98,13 @@ public final class Execution {
         throw new IllegalStateException("Unsupported array base: " + base);
     }
 
-    public MutableObject mutableObject(AbstractPascalExpression expression, ObjectScope scope) {
+    public MutableObject mutableObject(Evaluable expression, ObjectScope scope) {
         if (expression instanceof ScopeVariableExpression) {
             return (MutableObject) evaluate(expression, scope);
         }
         if (expression instanceof MemberAccessExpression memberAccess) {
             MutableObject parent = mutableObject(memberAccess.getReceiver(), scope);
-            return (MutableObject) evaluate(asExpression(parent.get(MemberAccessExpression.findRecordAttribute(parent, memberAccess.getMember()))), scope);
+            return (MutableObject) evaluate(asEvaluable(parent.get(MemberAccessExpression.findRecordAttribute(parent, memberAccess.getMember()))), scope);
         }
         if (expression instanceof IndexAccessExpression indexAccess) {
             return (MutableObject) evaluate(indexAccess, scope);
@@ -114,7 +114,7 @@ public final class Execution {
 
     public java.lang.Object getVariableValue(String name) {
         Attribute attribute = findProgramAttribute(name);
-        return evaluate(asExpression(programObject.get(attribute)), new ObjectScope(programObject));
+        return evaluate(asEvaluable(programObject.get(attribute)), new ObjectScope(programObject));
     }
 
     public Map<String, java.lang.Object> getRecordValue(String name) {
@@ -131,7 +131,7 @@ public final class Execution {
         record.set(attribute, PascalValues.valueOf(attribute.getType().get(), value));
     }
 
-    private void writeBackInOutParameters(Map<Parameter, Expression> arguments, ObjectScope parentScope, ObjectScope callScope) {
+    private void writeBackInOutParameters(Map<Parameter, Evaluable> arguments, ObjectScope parentScope, ObjectScope callScope) {
         arguments.entrySet().stream()
             .filter(entry -> entry.getKey().getDirection() == Parameter.Direction.INOUT)
             .forEach(entry -> assign(
@@ -143,7 +143,7 @@ public final class Execution {
     public java.lang.Object loadFromScope(ObjectScope scope, String name) {
         Optional<Attribute> attribute = findScopeAttribute(scope, name);
         if (attribute.isPresent()) {
-            return evaluate(asExpression(scope.getObject().get(attribute.get())), scope);
+            return evaluate(asEvaluable(scope.getObject().get(attribute.get())), scope);
         }
         if (scope.getParent().isPresent() && scope.getParent().get() instanceof ObjectScope parentScope) {
             return loadFromScope(parentScope, name);
@@ -159,7 +159,7 @@ public final class Execution {
 
     private ObjectScope createCallScope(Operation operation, ObjectScope parentScope, Map<Parameter, java.lang.Object> argumentValues) {
         UmlClassBuilder builder = new UmlClassBuilder(operation.getName().orElse("anonymous"));
-        Map<Attribute, Expression> values = new LinkedHashMap<>();
+        Map<Attribute, Evaluable> values = new LinkedHashMap<>();
         for (Parameter parameter : operation.getParameters()) {
             Attribute attribute = builder.withAttribute(parameter.getName().get(), parameter.getType().get(), Member.Visibility.PRIVATE);
             java.lang.Object argumentValue = argumentValues.get(parameter);
@@ -191,7 +191,7 @@ public final class Execution {
         return expression.getType().get().getName().orElse("@Anonimous");
     }
 
-    private String displayValue(Expression expression, ObjectScope scope) {
+    private String displayValue(Evaluable expression, ObjectScope scope) {
         java.lang.Object value = evaluate(expression, scope);
         if (value instanceof java.lang.Object[] array) {
             return Arrays.stream(array).map(java.lang.Object::toString).collect(Collectors.joining(",", "[", "]"));
@@ -207,7 +207,7 @@ public final class Execution {
         Map<String, java.lang.Object> map = new LinkedHashMap<>();
         for (Attribute attribute : record.getAttributes()) {
             String fieldName = attribute.getName().get().toLowerCase();
-            java.lang.Object fieldValue = evaluate(asExpression(record.get(attribute)), scope);
+            java.lang.Object fieldValue = evaluate(asEvaluable(record.get(attribute)), scope);
             if (fieldValue instanceof MutableObject nested) {
                 map.put(fieldName, toMap(nested));
             }
@@ -248,7 +248,7 @@ public final class Execution {
 
     private void executeBranch(BranchStatement branch, ObjectScope scope) {
         java.lang.Object value = evaluate(branch.getCondition(), scope);
-        for (Map.Entry<Expression, Statement> choice : branch.getChoices().entrySet()) {
+        for (Map.Entry<Evaluable, Statement> choice : branch.getChoices().entrySet()) {
             if (Objects.equals(value, evaluate(choice.getKey(), scope))) {
                 execute(choice.getValue(), scope);
                 return;
@@ -274,14 +274,14 @@ public final class Execution {
     }
 
     private void executeForLoop(LoopStatement loop, ObjectScope scope) {
-        Expression entryCondition = loop.getEntryCondition().orElseThrow(() -> new IllegalStateException("No loop condition"));
+        Evaluable entryCondition = loop.getEntryCondition().orElseThrow(() -> new IllegalStateException("No loop condition"));
         if (!(entryCondition instanceof BinaryOperatorExpression loopCondition && loopCondition.getOperator() == Operator.LESS_EQUAL)) {
             throw new IllegalStateException("Unsupported for loop condition: " + entryCondition);
         }
-        Expression incrementCondition = new OperatorExpression(
-            (AbstractPascalExpression) loopCondition.getLeft(),
+        Evaluable incrementCondition = new OperatorExpression(
+            loopCondition.getLeft(),
             Operator.LESS_THAN,
-            (AbstractPascalExpression) loopCondition.getRight());
+            loopCondition.getRight());
         boolean doLoop = requireBoolean(evaluate(entryCondition, scope));
         while (doLoop) {
             execute(loop.getAction(), scope);
@@ -308,11 +308,11 @@ public final class Execution {
             .orElseThrow(() -> new NoSuchElementException("No such program variable: " + name));
     }
 
-    public static Expression asExpression(ValueSpecification valueSpecification) {
-        if (valueSpecification instanceof Expression expression) {
-            return expression;
+    public static Evaluable asEvaluable(ValueSpecification valueSpecification) {
+        if (valueSpecification instanceof Evaluable evaluable) {
+            return evaluable;
         }
-        throw new IllegalStateException("Not a runtime expression: " + valueSpecification);
+        throw new IllegalStateException("Not an evaluable expression: " + valueSpecification);
     }
 
     private static final java.lang.Object VOID = new java.lang.Object() {

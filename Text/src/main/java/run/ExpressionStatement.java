@@ -8,28 +8,28 @@ import java.util.*;
  */
 public final class ExpressionStatement implements Statement {
 
-    public ExpressionStatement(Expression assignable, Expression expression) {
+    public ExpressionStatement(Evaluable assignable, Evaluable expression) {
         this(Optional.of(assignable), expression);
     }
 
-    public ExpressionStatement(Expression expression) {
+    public ExpressionStatement(Evaluable expression) {
         this(Optional.empty(), expression);
     }
 
-    private ExpressionStatement(Optional<Expression> assignable, Expression expression) {
+    private ExpressionStatement(Optional<Evaluable> assignable, Evaluable expression) {
         this.assignable = assignable;
         this.expression = Objects.requireNonNull(expression);
     }
 
-    public Optional<Expression> getAssignable() {
+    public Optional<Evaluable> getAssignable() {
         return assignable;
     }
 
-    public Expression getExpression() {
+    public Evaluable getExpression() {
         return expression;
     }
-    
-    @Override 
+
+    @Override
     public String toString() {
         if (assignable.isEmpty()) {
             return expression.toString();
@@ -37,6 +37,6 @@ public final class ExpressionStatement implements Statement {
         return assignable.get().toString() + " <- " + expression.toString();
     }
 
-    private final Optional<Expression> assignable;
-    private final Expression expression;
+    private final Optional<Evaluable> assignable;
+    private final Evaluable expression;
 }

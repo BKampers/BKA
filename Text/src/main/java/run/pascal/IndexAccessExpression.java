@@ -1,28 +1,25 @@
 package run.pascal;
 
-import java.util.Objects;
-import java.util.Optional;
-import run.ArrayType;
-import run.Execution;
-import run.ObjectScope;
-import uml.structure.Type;
+import java.util.*;
+import run.*;
+import uml.structure.*;
 
 
 /**
  * Indexed access to an array element.
  */
-public final class IndexAccessExpression extends AbstractPascalExpression {
+public final class IndexAccessExpression implements Evaluable {
 
-    public IndexAccessExpression(AbstractPascalExpression base, AbstractPascalExpression index) {
+    public IndexAccessExpression(Evaluable base, Evaluable index) {
         this.base = Objects.requireNonNull(base);
         this.index = Objects.requireNonNull(index);
     }
 
-    public AbstractPascalExpression getBase() {
+    public Evaluable getBase() {
         return base;
     }
 
-    public AbstractPascalExpression getIndex() {
+    public Evaluable getIndex() {
         return index;
     }
 
@@ -50,7 +47,7 @@ public final class IndexAccessExpression extends AbstractPascalExpression {
         return base + "[" + index + "]";
     }
 
-    private final AbstractPascalExpression base;
-    private final AbstractPascalExpression index;
+    private final Evaluable base;
+    private final Evaluable index;
 
 }

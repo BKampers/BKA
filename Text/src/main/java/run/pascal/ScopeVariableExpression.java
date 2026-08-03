@@ -1,16 +1,14 @@
 package run.pascal;
 
-import java.util.Objects;
-import java.util.Optional;
-import run.Execution;
-import run.ObjectScope;
-import uml.structure.Type;
+import java.util.*;
+import run.*;
+import uml.structure.*;
 
 
 /**
  * Reference to a variable in the current scope.
  */
-public final class ScopeVariableExpression extends AbstractPascalExpression {
+public final class ScopeVariableExpression implements Evaluable {
 
     public ScopeVariableExpression(String name, Type type) {
         this.name = Objects.requireNonNull(name);

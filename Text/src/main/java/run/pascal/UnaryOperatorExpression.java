@@ -1,20 +1,16 @@
 package run.pascal;
 
-import java.util.Arrays;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.Optional;
-import run.Execution;
-import run.ObjectScope;
-import uml.structure.Type;
+import java.util.*;
+import run.*;
+import uml.structure.*;
 
 
 /**
  * Unary operator expression.
  */
-public final class UnaryOperatorExpression extends AbstractPascalExpression {
+public final class UnaryOperatorExpression implements Evaluable {
 
-    public UnaryOperatorExpression(UnaryOperator operator, AbstractPascalExpression expression) {
+    public UnaryOperatorExpression(UnaryOperator operator, Evaluable expression) {
         this.operator = Objects.requireNonNull(operator);
         this.expression = Objects.requireNonNull(expression);
     }
@@ -23,7 +19,7 @@ public final class UnaryOperatorExpression extends AbstractPascalExpression {
         return operator;
     }
 
-    public AbstractPascalExpression getExpression() {
+    public Evaluable getExpression() {
         return expression;
     }
 
@@ -77,6 +73,6 @@ public final class UnaryOperatorExpression extends AbstractPascalExpression {
     }
 
     private final UnaryOperator operator;
-    private final AbstractPascalExpression expression;
+    private final Evaluable expression;
 
 }

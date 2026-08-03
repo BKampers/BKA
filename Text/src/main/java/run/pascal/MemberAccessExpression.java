@@ -1,26 +1,21 @@
 package run.pascal;
 
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.Optional;
-import run.Execution;
-import run.MutableObject;
-import run.ObjectScope;
-import uml.structure.Attribute;
-import uml.structure.Type;
+import java.util.*;
+import run.*;
+import uml.structure.*;
 
 
 /**
  * Access to a field of a record value.
  */
-public final class MemberAccessExpression extends AbstractPascalExpression {
+public final class MemberAccessExpression implements Evaluable {
 
-    public MemberAccessExpression(AbstractPascalExpression receiver, String member) {
+    public MemberAccessExpression(Evaluable receiver, String member) {
         this.receiver = Objects.requireNonNull(receiver);
         this.member = Objects.requireNonNull(member);
     }
 
-    public AbstractPascalExpression getReceiver() {
+    public Evaluable getReceiver() {
         return receiver;
     }
 
@@ -39,7 +34,7 @@ public final class MemberAccessExpression extends AbstractPascalExpression {
     @Override
     public java.lang.Object evaluate(Execution execution, ObjectScope scope) {
         MutableObject record = execution.mutableObject(receiver, scope);
-        return execution.evaluate(Execution.asExpression(record.get(findRecordAttribute(record, member))), scope);
+        return execution.evaluate(Execution.asEvaluable(record.get(findRecordAttribute(record, member))), scope);
     }
 
     public static Attribute findRecordAttribute(MutableObject record, String name) {
@@ -54,7 +49,7 @@ public final class MemberAccessExpression extends AbstractPascalExpression {
         return receiver + "." + member;
     }
 
-    private final AbstractPascalExpression receiver;
+    private final Evaluable receiver;
     private final String member;
 
 }

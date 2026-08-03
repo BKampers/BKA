@@ -314,7 +314,7 @@ public final class PascalCompiler {
         };
     }
     
-    private AbstractPascalExpression createAssignableExpression(Operation scope, Node assignableNode) {
+    private Evaluable createAssignableExpression(Operation scope, Node assignableNode) {
         return createAccessExpression(
             scope, 
             createIdentifierExpression(scope, assignableNode.getChild("Identifier")),
@@ -322,7 +322,7 @@ public final class PascalCompiler {
  
     }
 
-    private AbstractPascalExpression createExpression(Operation scope, Node expressionNode) {
+    private Evaluable createExpression(Operation scope, Node expressionNode) {
         if (!"Expression".equals(expressionNode.getSymbol())) {
             throw new IllegalArgumentException(expressionNode.getSymbol());
         }
@@ -336,7 +336,7 @@ public final class PascalCompiler {
         return createComparableExpression(scope, head(expressionNode));
     }
 
-    private AbstractPascalExpression createComparableExpression(Operation scope, Node comparableNode) {
+    private Evaluable createComparableExpression(Operation scope, Node comparableNode) {
         if (!"Comparable".equals(comparableNode.getSymbol())) {
             throw new IllegalArgumentException(comparableNode.getSymbol());
         }
@@ -346,14 +346,14 @@ public final class PascalCompiler {
             comparableNode.getChild("AdditiveOperation"));
     }
 
-    private AbstractPascalExpression createTermExpression(Operation scope, Node termNode) {
+    private Evaluable createTermExpression(Operation scope, Node termNode) {
         return createMultiplicativeExpression(
             scope,
             createFactorExpression(scope, termNode.getChild("Factor")),
             termNode.getChild("MultiplicativeOperation"));
     }
 
-    private AbstractPascalExpression createFactorExpression(Operation scope, Node factorNode) {
+    private Evaluable createFactorExpression(Operation scope, Node factorNode) {
         return switch (head(factorNode).getSymbol()) {
             case "Call" ->
                 createAccessExpression(
@@ -378,7 +378,7 @@ public final class PascalCompiler {
         };
     }
 
-    private AbstractPascalExpression createAccessExpression(Operation scope, AbstractPascalExpression referenceExpression, Node targetNode) {
+    private Evaluable createAccessExpression(Operation scope, Evaluable referenceExpression, Node targetNode) {
         if (targetNode.getChildren().isEmpty()) {
             return referenceExpression;
         }
@@ -392,23 +392,23 @@ public final class PascalCompiler {
         };
     }
 
-    private AbstractPascalExpression memberExpression(Operation scope, AbstractPascalExpression receiver, Node identifierNode, Node accessExtensionNode) {
-        AbstractPascalExpression expression = new MemberAccessExpression(receiver, identifierNode.content());
+    private Evaluable memberExpression(Operation scope, Evaluable receiver, Node identifierNode, Node accessExtensionNode) {
+        Evaluable expression = new MemberAccessExpression(receiver, identifierNode.content());
         if (accessExtensionNode.getChildren().isEmpty()) {
             return expression;
         }
         return createAccessExpression(scope, expression, accessExtensionNode);
     }
 
-    private AbstractPascalExpression indexedExpression(Operation scope, AbstractPascalExpression base, Node indexNode, Node accessExtensionNode) {
-        AbstractPascalExpression expression = new IndexAccessExpression(base, createExpression(scope, indexNode));
+    private Evaluable indexedExpression(Operation scope, Evaluable base, Node indexNode, Node accessExtensionNode) {
+        Evaluable expression = new IndexAccessExpression(base, createExpression(scope, indexNode));
         if (accessExtensionNode.getChildren().isEmpty()) {
             return expression;
         }
         return createAccessExpression(scope, expression, accessExtensionNode);
     }
 
-    private AbstractPascalExpression createAdditiveExpression(Operation scope, AbstractPascalExpression leftExpression, Node additiveOperationNode) {
+    private Evaluable createAdditiveExpression(Operation scope, Evaluable leftExpression, Node additiveOperationNode) {
         if (additiveOperationNode.getChildren().isEmpty()) {
             return leftExpression;
         }
@@ -421,7 +421,7 @@ public final class PascalCompiler {
             additiveOperationNode.getChild("AdditiveOperation"));
     }
 
-    private AbstractPascalExpression createMultiplicativeExpression(Operation scope, AbstractPascalExpression leftExpression, Node multiplicativeOperationNode) {
+    private Evaluable createMultiplicativeExpression(Operation scope, Evaluable leftExpression, Node multiplicativeOperationNode) {
         if (multiplicativeOperationNode.getChildren().isEmpty()) {
             return leftExpression;
         }
@@ -434,38 +434,38 @@ public final class PascalCompiler {
             multiplicativeOperationNode.getChild("MultiplicativeOperation"));
     }
 
-    private AbstractPascalExpression createUnaryExpression(UnaryOperatorExpression.UnaryOperator operator, AbstractPascalExpression expression) {
+    private Evaluable createUnaryExpression(UnaryOperatorExpression.UnaryOperator operator, Evaluable expression) {
         return new UnaryOperatorExpression(operator, expression);
     }
 
-    private AbstractPascalExpression createRelationalOperationExpression(AbstractPascalExpression leftExpression, Node operatorNode, AbstractPascalExpression rightExpression) {
+    private Evaluable createRelationalOperationExpression(Evaluable leftExpression, Node operatorNode, Evaluable rightExpression) {
         return new OperatorExpression(leftExpression, Operator.lookup(head(operatorNode).getSymbol()), rightExpression);
     }
 
-    private AbstractPascalExpression createCallExpression(Operation scope, Node callNode) {
+    private Evaluable createCallExpression(Operation scope, Node callNode) {
         Operation operation = getOperation(callNode.getChild("Identifier"));
         return new MethodCallExpression(operation, createArgumentMap(scope, operation.getParameters(), callNode.getChild("ArgumentList")));
     }
 
-    private Map<Parameter, run.Expression> createArgumentMap(Operation scope, List<Parameter> parameters, Node argumentList) {
-        Map<Parameter, run.Expression> arguments = new HashMap<>();
+    private Map<Parameter, Evaluable> createArgumentMap(Operation scope, List<Parameter> parameters, Node argumentList) {
+        Map<Parameter, Evaluable> arguments = new HashMap<>();
         populateArgumentMap(scope, parameters, argumentList, arguments);
         return arguments;
     }
 
-    private void populateArgumentMap(Operation scope, List<Parameter> parameters, Node argumentList, Map<Parameter, run.Expression> arguments) {
+    private void populateArgumentMap(Operation scope, List<Parameter> parameters, Node argumentList, Map<Parameter, Evaluable> arguments) {
         if (arguments.size() >= parameters.size()) {
             throw new IllegalStateException("Too many arguments in list");
         }
         Parameter parameter = parameters.get(arguments.size());
-        AbstractPascalExpression argument = createExpression(scope, argumentList.getChild("Expression"));
+        Evaluable argument = createExpression(scope, argumentList.getChild("Expression"));
         requireTypeMatch(parameter.getType().get(), argument.getType().get());
         arguments.put(parameters.get(arguments.size()), createExpression(scope, argumentList.getChild("Expression")));
         Optional<Node> remainder = argumentList.findChild("ArgumentList");
         remainder.ifPresent(tail -> populateArgumentMap(scope, parameters, tail, arguments));
     }
 
-    private AbstractPascalExpression createIdentifierExpression(Operation scope, Node identifierNode) {
+    private Evaluable createIdentifierExpression(Operation scope, Node identifierNode) {
         String identifier = identifierNode.content();
         if (scope.getName().isPresent() && identifier.equalsIgnoreCase(scope.getName().get()) && scope.getType().isPresent()) {
             return new ScopeVariableExpression(identifier, scope.getType().get());
@@ -529,8 +529,8 @@ public final class PascalCompiler {
         ExpressionStatement initialization = createExpressionStatement(
             createIdentifierExpression(scope, statementNode.getChild("Identifier")),
             createExpression(scope, statementNode.getChildren().get(3)));
-        AbstractPascalExpression loopVariable = createIdentifierExpression(scope, statementNode.getChild("Identifier"));
-        AbstractPascalExpression condition = new OperatorExpression(
+        Evaluable loopVariable = createIdentifierExpression(scope, statementNode.getChild("Identifier"));
+        Evaluable condition = new OperatorExpression(
             loopVariable,
             Operator.LESS_EQUAL,
             createExpression(scope, statementNode.getChildren().get(5)));
@@ -544,7 +544,7 @@ public final class PascalCompiler {
         return new CompoundStatement(List.of(initialization, loop));
     }
 
-    private ExpressionStatement createExpressionStatement(AbstractPascalExpression assignable, AbstractPascalExpression expression) {
+    private ExpressionStatement createExpressionStatement(Evaluable assignable, Evaluable expression) {
         requireTypeMatch(assignable.getType().get(), expression.getType().get());
         return new ExpressionStatement(assignable, expression);
     }
@@ -570,7 +570,7 @@ public final class PascalCompiler {
         return false;
     }
 
-    private AbstractPascalExpression createLiteralExpression(Node literalNode) {
+    private Evaluable createLiteralExpression(Node literalNode) {
         return switch (head(literalNode).getSymbol()) {
             case "RealLiteral" ->
                 PascalValues.realLiteral(Float.parseFloat(literalNode.content()));

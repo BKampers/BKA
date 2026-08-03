@@ -15,7 +15,7 @@ public final class CallExpression implements Expression {
         this(operation, Collections.emptyMap());
     }
 
-    public CallExpression(Operation operation, Map<Parameter, Expression> arguments) {
+    public CallExpression(Operation operation, Map<Parameter, ? extends Expression> arguments) {
         Collection<Parameter> missingParameters = operation.getParameters().stream()
             .filter(parameter -> !arguments.containsKey(parameter))
             .toList();
@@ -25,7 +25,9 @@ public final class CallExpression implements Expression {
                 .collect(Collectors.joining(", ")));
         }
         this.operation = Objects.requireNonNull(operation);
-        this.arguments = Map.copyOf(arguments);
+        Map<Parameter, Expression> copy = new LinkedHashMap<>();
+        copy.putAll(arguments);
+        this.arguments = Collections.unmodifiableMap(copy);
     }
 
     public Operation getOperation() {
@@ -39,11 +41,6 @@ public final class CallExpression implements Expression {
     @Override
     public Optional<Type> getType() {
         return operation.getType();
-    }
-
-    @Override
-    public java.lang.Object evaluate(Execution execution, ObjectScope scope) {
-        throw new UnsupportedOperationException("CallExpression is not executable; use MethodCallExpression");
     }
 
     @Override

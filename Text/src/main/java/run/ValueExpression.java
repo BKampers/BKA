@@ -7,7 +7,7 @@ import uml.structure.*;
 /**
  * Expression that holds a runtime value.
  */
-public final class ValueExpression implements Expression {
+public final class ValueExpression implements Evaluable {
 
     public ValueExpression(java.lang.Object value, Type type) {
         this.value = Objects.requireNonNull(value);

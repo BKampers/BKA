@@ -5,18 +5,11 @@ import static run.PascalTypes.INTEGER;
 import static run.PascalTypes.REAL;
 import static run.PascalTypes.STRING;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import run.ArrayType;
-import run.Execution;
-import run.MutableObject;
-import run.ObjectScope;
-import run.StateMachine;
-import uml.structure.Attribute;
-import uml.structure.Type;
+import java.util.*;
+import java.util.function.*;
+import java.util.stream.*;
+import run.*;
+import uml.structure.*;
 
 
 /**
@@ -24,8 +17,8 @@ import uml.structure.Type;
  */
 public final class PascalValues {
 
-    public static AbstractPascalExpression valueOf(Type type, java.lang.Object value) {
-        return new AbstractPascalExpression() {
+    public static Evaluable valueOf(Type type, java.lang.Object value) {
+        return new Evaluable() {
             @Override
             public Optional<Type> getType() {
                 return Optional.of(type);
@@ -41,7 +34,7 @@ public final class PascalValues {
         };
     }
 
-    public static AbstractPascalExpression uninitialized(Type type) {
+    public static Evaluable uninitialized(Type type) {
         return valueOf(type, initialValue(type));
     }
 
@@ -55,8 +48,8 @@ public final class PascalValues {
         return StateMachine.UNINITIALIZED;
     }
 
-    public static AbstractPascalExpression intLiteral(int value) {
-        return new AbstractPascalExpression() {
+    public static Evaluable intLiteral(int value) {
+        return new Evaluable() {
             @Override
             public Optional<Type> getType() {
                 return Optional.of(INTEGER);
@@ -74,8 +67,8 @@ public final class PascalValues {
         };
     }
 
-    public static AbstractPascalExpression realLiteral(float value) {
-        return new AbstractPascalExpression() {
+    public static Evaluable realLiteral(float value) {
+        return new Evaluable() {
             @Override
             public Optional<Type> getType() {
                 return Optional.of(REAL);
@@ -93,8 +86,8 @@ public final class PascalValues {
         };
     }
 
-    public static AbstractPascalExpression stringLiteral(String value) {
-        return new AbstractPascalExpression() {
+    public static Evaluable stringLiteral(String value) {
+        return new Evaluable() {
             @Override
             public Optional<Type> getType() {
                 return Optional.of(STRING);
@@ -112,8 +105,8 @@ public final class PascalValues {
         };
     }
 
-    public static AbstractPascalExpression booleanLiteral(boolean value) {
-        return new AbstractPascalExpression() {
+    public static Evaluable booleanLiteral(boolean value) {
+        return new Evaluable() {
             @Override
             public Optional<Type> getType() {
                 return Optional.of(BOOLEAN);
@@ -132,7 +125,7 @@ public final class PascalValues {
     }
 
     private static MutableObject createRecordValue(uml.structure.Class recordType) {
-        Map<Attribute, run.Expression> attributeValues = recordType.getAttributes().stream()
+        Map<Attribute, Evaluable> attributeValues = recordType.getAttributes().stream()
             .collect(Collectors.toMap(Function.identity(), attribute -> uninitialized(attribute.getType().get())));
         return MutableObject.constructAnonymous(recordType, attributeValues);
     }

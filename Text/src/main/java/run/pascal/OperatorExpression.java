@@ -6,20 +6,16 @@ import static run.PascalTypes.REAL;
 
 import java.util.Objects;
 import java.util.Optional;
-import run.BinaryOperatorExpression;
-import run.Execution;
-import run.Expression;
-import run.ObjectScope;
-import run.Operator;
-import uml.structure.Type;
+import run.*;
+import uml.structure.*;
 
 
 /**
  * Binary operator expression.
  */
-public final class OperatorExpression extends AbstractPascalExpression implements BinaryOperatorExpression {
+public final class OperatorExpression implements BinaryOperatorExpression {
 
-    public OperatorExpression(AbstractPascalExpression left, Operator operator, AbstractPascalExpression right) {
+    public OperatorExpression(Evaluable left, Operator operator, Evaluable right) {
         if (left.getType().isEmpty() || right.getType().isEmpty()) {
             throw new IllegalArgumentException();
         }
@@ -34,12 +30,12 @@ public final class OperatorExpression extends AbstractPascalExpression implement
     }
 
     @Override
-    public Expression getLeft() {
+    public Evaluable getLeft() {
         return left;
     }
 
     @Override
-    public Expression getRight() {
+    public Evaluable getRight() {
         return right;
     }
 
@@ -164,8 +160,8 @@ public final class OperatorExpression extends AbstractPascalExpression implement
         return "{" + left + " " + operator + " " + right + "}";
     }
 
-    private final AbstractPascalExpression left;
+    private final Evaluable left;
     private final Operator operator;
-    private final AbstractPascalExpression right;
+    private final Evaluable right;
 
 }

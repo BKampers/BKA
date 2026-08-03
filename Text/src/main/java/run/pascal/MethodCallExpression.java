@@ -1,23 +1,16 @@
 package run.pascal;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import run.CallExpression;
-import run.Execution;
-import run.Expression;
-import run.ObjectScope;
-import uml.structure.Operation;
-import uml.structure.Parameter;
-import uml.structure.Type;
+import java.util.*;
+import run.*;
+import uml.structure.*;
 
 
 /**
  * Call to a Pascal procedure or function.
  */
-public final class MethodCallExpression extends AbstractPascalExpression {
+public final class MethodCallExpression implements Evaluable {
 
-    public MethodCallExpression(Operation operation, Map<Parameter, Expression> arguments) {
+    public MethodCallExpression(Operation operation, Map<Parameter, Evaluable> arguments) {
         this.operation = Objects.requireNonNull(operation);
         this.arguments = Map.copyOf(arguments);
     }
@@ -26,7 +19,7 @@ public final class MethodCallExpression extends AbstractPascalExpression {
         return operation;
     }
 
-    public Map<Parameter, Expression> getArguments() {
+    public Map<Parameter, Evaluable> getArguments() {
         return arguments;
     }
 
@@ -46,6 +39,6 @@ public final class MethodCallExpression extends AbstractPascalExpression {
     }
 
     private final Operation operation;
-    private final Map<Parameter, Expression> arguments;
+    private final Map<Parameter, Evaluable> arguments;
 
 }

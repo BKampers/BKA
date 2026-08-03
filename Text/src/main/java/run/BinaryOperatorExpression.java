@@ -2,14 +2,14 @@ package run;
 
 
 /**
- * Binary operator expression used at runtime by {@link Engine}.
+ * Binary operator expression used at runtime by {@link Execution}.
  */
-public interface BinaryOperatorExpression extends Expression {
+public interface BinaryOperatorExpression extends Evaluable {
 
     Operator getOperator();
 
-    Expression getLeft();
+    Evaluable getLeft();
 
-    Expression getRight();
+    Evaluable getRight();
 
 }

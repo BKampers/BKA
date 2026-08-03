@@ -2,33 +2,34 @@ package run;
 
 import java.util.*;
 
+
 /**
  */
 public final class LoopStatement implements Statement {
 
-    public static LoopStatement whileLoop(Expression condition, Statement action) {
+    public static LoopStatement whileLoop(Evaluable condition, Statement action) {
         return new LoopStatement(Optional.of(condition), Optional.empty(), action, Optional.empty());
     }
-    
-    public static LoopStatement untilLoop(Expression condition, Statement action) {
+
+    public static LoopStatement untilLoop(Evaluable condition, Statement action) {
         return new LoopStatement(Optional.empty(), Optional.of(condition), action, Optional.empty());
     }
-    
-    public static LoopStatement forLoop(Expression condition, Statement action, Statement incrementAction) {
+
+    public static LoopStatement forLoop(Evaluable condition, Statement action, Statement incrementAction) {
         return new LoopStatement(Optional.of(condition), Optional.empty(), action, Optional.of(incrementAction));
     }
-    
+
     public static LoopStatement foreverLoop(Statement action) {
         return new LoopStatement(Optional.empty(), Optional.empty(), action, Optional.empty());
     }
-    
-    private LoopStatement(Optional<Expression> entryCondition, Optional<Expression> exitCondition, Statement action, Optional<Statement> incrementAction) {
+
+    private LoopStatement(Optional<Evaluable> entryCondition, Optional<Evaluable> exitCondition, Statement action, Optional<Statement> incrementAction) {
         this.entryCondition = entryCondition;
         this.exitCondition = exitCondition;
         this.action = Objects.requireNonNull(action);
         this.incrementAction = incrementAction;
     }
-    
+
     @Override
     public String toString() {
         StringBuilder string = new StringBuilder("@Loop\n");
@@ -38,12 +39,12 @@ public final class LoopStatement implements Statement {
         exitCondition.ifPresent(expression -> string.append("@Until ").append(expression));
         return string.toString();
     }
-    
-    public Optional<Expression> getEntryCondition() {
+
+    public Optional<Evaluable> getEntryCondition() {
         return entryCondition;
     }
 
-    public Optional<Expression> getExitCondition() {
+    public Optional<Evaluable> getExitCondition() {
         return exitCondition;
     }
 
@@ -55,9 +56,9 @@ public final class LoopStatement implements Statement {
         return incrementAction;
     }
 
-    private final Optional<Expression> entryCondition;
-    private final Optional<Expression> exitCondition;
+    private final Optional<Evaluable> entryCondition;
+    private final Optional<Evaluable> exitCondition;
     private final Statement action;
     private final Optional<Statement> incrementAction;
-    
+
 }

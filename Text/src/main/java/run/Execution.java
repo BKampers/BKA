@@ -3,6 +3,7 @@ package run;
 
 import java.util.*;
 import java.util.function.*;
+import java.util.logging.*;
 import java.util.stream.*;
 import run.pascal.*;
 import uml.annotation.*;
@@ -240,10 +241,7 @@ public final class Execution {
         java.lang.Object result = evaluate(expressionStatement.getExpression(), scope);
         expressionStatement.getAssignable().ifPresentOrElse(
             assignable -> assignValue(assignable, result, scope),
-            () -> java.util.logging.Logger.getLogger(getClass().getName()).log(
-                java.util.logging.Level.INFO,
-                "Return value of {0} ignored",
-                expressionStatement));
+            () -> Logger.getLogger(getClass().getName()).log(Level.INFO, "Return value of {0} ignored", expressionStatement));
     }
 
     private void executeBranch(BranchStatement branch, ObjectScope scope) {

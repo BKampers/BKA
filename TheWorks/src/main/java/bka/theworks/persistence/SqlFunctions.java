@@ -1,6 +1,7 @@
 package bka.theworks.persistence;
 
 import java.text.*;
+import java.time.*;
 
 
 /**
@@ -21,6 +22,18 @@ public final class SqlFunctions {
             return null;
         }
         return Normalizer.normalize(text, Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
+    }
+
+    public static long hours(long count) {
+        return Duration.ofHours(count).toMillis();
+    }
+
+    public static long minutes(long count) {
+        return Duration.ofMinutes(count).toMillis();
+    }
+
+    public static long seconds(long count) {
+        return Duration.ofSeconds(count).toMillis();
     }
 
 }

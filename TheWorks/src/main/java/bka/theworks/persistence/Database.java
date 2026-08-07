@@ -52,8 +52,11 @@ public final class Database {
     }
 
     private static void prepareAliases() throws DatabaseException {
+        String statements = ALIASES.stream()
+            .map(alias -> String.format("CREATE ALIAS IF NOT EXISTS %s FOR \"bka.theworks.persistence.SqlFunctions.%s\"", alias, alias))
+            .collect(Collectors.joining(";\n"));
         try (Statement statement = connection.createStatement()) {
-            statement.execute("CREATE ALIAS IF NOT EXISTS UNACCENT FOR \"bka.theworks.persistence.SqlFunctions.unaccent\"");
+            statement.execute(statements);
         }
         catch (SQLException ex) {
             throw new DatabaseException("Failed to prepare aliases", ex);
@@ -333,6 +336,8 @@ public final class Database {
     private static final String DB_URL = "jdbc:h2:mem:theworks;DB_CLOSE_DELAY=-1";
     private static final String DB_USER = "sa";
     private static final String DB_PASSWORD = "";
+
+    private static Collection<String> ALIASES = List.of("unaccent", "seconds", "minutes", "hours");
 
     private static final Map<String, ColumnDefinition[]> TABLE_DEFINITIONS = new LinkedHashMap() {
         {

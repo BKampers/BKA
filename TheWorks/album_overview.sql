@@ -9,4 +9,5 @@ FROM tracks
 JOIN albums ON tracks.album_id = albums.id
 $where
 GROUP BY tracks.album_id
+$having
 $order

@@ -25,7 +25,7 @@ public final class Demo {
         String sql = getQuery(args);
         Files.writeString(Paths.get("latest.sql"), sql);
         records = Database.query(sql);
-        Map<String, Integer> widths = computeColumnsWidths(records);
+        SequencedMap<String, Integer> widths = computeColumnsWidths(records);
         widths.forEach((key, value) -> System.out.printf(columnFormat(value), key));
         System.out.println();
         printHeader(widths);
@@ -126,6 +126,8 @@ public final class Demo {
         switch (argument.name()) {
             case "where" ->
                 replace(query, target(argument), "WHERE", fixQuotes(argument.value()));
+            case "having" ->
+                replace(query, target(argument), "HAVING", fixQuotes(argument.value()));
             case "order" ->
                 replace(query, target(argument), "ORDER BY", argument.value());
             default ->
@@ -159,11 +161,11 @@ public final class Demo {
     }
 
     private static String fixQuotes(String string) {
-        return string.replace('\\', '\'');
+        return string.replace('\\', '\'').replace('"', '\'');
     }
 
-    private static Map<String, Integer> computeColumnsWidths(List<Map<String, Object>> records) {
-        Map<String, Integer> widths = new LinkedHashMap<>();
+    private static SequencedMap<String, Integer> computeColumnsWidths(List<Map<String, Object>> records) {
+        SequencedMap<String, Integer> widths = new LinkedHashMap<>();
         records.forEach(record -> record.entrySet().forEach(entry -> computecolumnWidth(entry, widths)));
         return widths;
     }

@@ -32,6 +32,11 @@ public interface XmlElement {
     <T> T getChild(String qualifiedName);
 
     /**
+     * @return all converted child objects in document order
+     */
+    List<Object> getChildren();
+
+    /**
      * @param <T> type of children
      * @param qualifiedName of the children to get
      * @return List of children with given qualified name, an empty list if no such children are present
@@ -60,20 +65,20 @@ public interface XmlElement {
     /**
      * @param <T> type of child
      * @param localName of the child to get
-     * @return Single child of given local name in the parent's namespace
-     * @throws IllegalStateException if the parent element has no namespace
-     * @throws NoSuchElementException if no elements with given localName are available in the parents namespace
+     * @return Single child of given local name in this element's namespace
+     * @throws IllegalStateException if this element has no namespace prefix
+     * @throws NoSuchElementException if no elements with given localName are available in this element's namespace
      * @throws ClassCastException if the single element is not of type T
-     * @throws IllegalArgumentException if multiple elements with given qualifieName are available
+     * @throws IllegalArgumentException if multiple elements with given qualified name are available
      */
     <T> T getLocalChild(String localName);
 
     /**
      * @param <T> type of children
      * @param localName of the children to get
-     * @return List of children with given local name in the parent's namespace. An empty list if no children with local name are present for the
-     * parent's namespace.
-     * @throws IllegalStateException if the parent element has no namespace
+     * @return List of children with given local name in this element's namespace. An empty list if no children with local name are present for
+     * this element's namespace.
+     * @throws IllegalStateException if this element has no namespace prefix
      */
     <T> List<T> getLocalChildren(String localName);
 

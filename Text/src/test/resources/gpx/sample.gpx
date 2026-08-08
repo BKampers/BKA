@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1"
+     creator="Apple iOS"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+    <metadata>
+        <name>Morning Walk</name>
+        <desc>Sample track similar to iCloud Drive exports</desc>
+        <author>
+            <name>Bart</name>
+            <email id="bart" domain="example.com"/>
+            <link href="https://example.com/bart">
+                <text>Homepage</text>
+                <type>text/html</type>
+            </link>
+        </author>
+        <copyright author="Bart Kampers">
+            <year>2026</year>
+            <license>https://example.com/license</license>
+        </copyright>
+        <link href="https://example.com/walk">
+            <text>Walk details</text>
+        </link>
+        <time>2026-07-17T08:00:00Z</time>
+        <keywords>walk, icloud</keywords>
+        <bounds minlat="52.0900" minlon="5.1100" maxlat="52.1000" maxlon="5.1300"/>
+    </metadata>
+    <wpt lat="52.0907" lon="5.1214">
+        <ele>4.5</ele>
+        <time>2026-07-17T08:00:00Z</time>
+        <name>Start</name>
+        <cmt>Meeting point</cmt>
+        <desc>Domplein</desc>
+        <src>iPhone</src>
+        <sym>Flag</sym>
+        <type>Waypoint</type>
+        <fix>3d</fix>
+        <sat>12</sat>
+        <hdop>0.9</hdop>
+        <vdop>1.1</vdop>
+        <pdop>1.4</pdop>
+    </wpt>
+    <rte>
+        <name>Short route</name>
+        <number>1</number>
+        <type>Walking</type>
+        <rtept lat="52.0907" lon="5.1214">
+            <name>A</name>
+        </rtept>
+        <rtept lat="52.0910" lon="5.1220">
+            <name>B</name>
+        </rtept>
+    </rte>
+    <trk>
+        <name>Morning Walk</name>
+        <cmt>Recorded on iPhone</cmt>
+        <desc>Utrecht centre</desc>
+        <src>Apple Watch</src>
+        <number>1</number>
+        <type>Walk</type>
+        <trkseg>
+            <trkpt lat="52.0907" lon="5.1214">
+                <ele>4.5</ele>
+                <time>2026-07-17T08:00:00Z</time>
+                <extensions>
+                    <gpxtpx:TrackPointExtension>
+                        <gpxtpx:hr>98</gpxtpx:hr>
+                    </gpxtpx:TrackPointExtension>
+                </extensions>
+            </trkpt>
+            <trkpt lat="52.0912" lon="5.1225">
+                <ele>5.0</ele>
+                <time>2026-07-17T08:01:00+02:00</time>
+            </trkpt>
+            <trkpt lat="52.0918" lon="5.1238">
+                <ele>5.2</ele>
+                <time>2026-07-17T06:02:00Z</time>
+            </trkpt>
+        </trkseg>
+    </trk>
+</gpx>

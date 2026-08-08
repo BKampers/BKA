@@ -9,15 +9,17 @@ package bka.text.parser.sax;
 import java.util.*;
 import java.util.function.*;
 import org.xml.sax.*;
+import org.xml.sax.helpers.*;
 
 
 /**
  * Default {@link XmlElement} implementation used by {@link SaxStackHandler} while parsing XML.
  *
  * <p>An {@code Element} is created for each start tag and holds the element's namespace URI, names,
- * SAX attributes, and accumulated text content. When the matching end tag is reached, the handler's
- * converter produces an application object for that element; child objects are stored on the parent
- * element, keyed by qualified name.
+ * a copy of the SAX attributes, and accumulated text content. Attributes are copied because the SAX
+ * parser reuses the {@link Attributes} instance. When the matching end tag is reached, the handler's
+ * converter produces an application object for that element; child objects are stored in document
+ * order, each with its qualified name.
  *
  * <p>Converters receive fully populated elements: character data is available through
  * {@link #getCharacters()}, and child objects are available through {@link #getChild(String)} and
@@ -35,15 +37,13 @@ public class Element implements XmlElement {
      * @param localName local part of the element name
      * @param qualifiedName qualified name including an optional namespace prefix
      * @param attributes SAX attributes of the start tag
-     * @param parent parent element, or {@code null} for the document root
      * @param namespaces maps namespace URIs to prefixes discovered during parsing
      */
-    public Element(String uri, String localName, String qualifiedName, Attributes attributes, Element parent, Function<String, String> namespaces) {
+    public Element(String uri, String localName, String qualifiedName, Attributes attributes, Function<String, String> namespaces) {
         this.uri = Objects.requireNonNull(uri);
         this.localName = Objects.requireNonNull(localName);
         this.qualifiedName = Objects.requireNonNull(qualifiedName);
-        this.attributes = Objects.requireNonNull(attributes);
-        this.parent = parent;
+        this.attributes = new AttributesImpl(attributes);
         this.namespaces = Objects.requireNonNull(namespaces);
     }
 
@@ -84,26 +84,30 @@ public class Element implements XmlElement {
     }
 
     @Override
+    public List<Object> getChildren() {
+        return children.stream().map(Child::object).toList();
+    }
+
+    @Override
     @SuppressWarnings("unchecked") // casts Object child to user defined T
     public <T> T getChild(String qualifiedName) {
-        List<Object> elements = children.get(qualifiedName);
-        if (elements == null || elements.isEmpty()) {
+        List<T> elements = getChildren(qualifiedName);
+        if (elements.isEmpty()) {
             throw new NoSuchElementException(qualifiedName);
         }
         if (elements.size() > 1) {
             throw new IllegalArgumentException("Multiple elements of '" + qualifiedName + "'");
         }
-        return (T) elements.get(0);
+        return elements.getFirst();
     }
 
     @Override
-    @SuppressWarnings("unchecked") // casts List<Object> with children to user defined List<T>
+    @SuppressWarnings("unchecked") // casts Object child to user defined T
     public <T> List<T> getChildren(String qualifiedName) {
-        List<Object> elements = children.get(qualifiedName);
-        if (elements == null) {
-            return Collections.emptyList();
-        }
-        return (List<T>) Collections.unmodifiableList(elements);
+        return (List<T>) children.stream()
+            .filter(child -> child.qualifiedName().equals(qualifiedName))
+            .map(Child::object)
+            .toList();
     }
 
     @Override
@@ -140,9 +144,7 @@ public class Element implements XmlElement {
      * @param child object returned by the converter for that child
      */
     public void addChild(String qualifiedName, Object child) {
-        children
-            .computeIfAbsent(qualifiedName, name -> new ArrayList<>())
-            .add(child);
+        children.add(new Child(qualifiedName, child));
     }
 
     private String getQualifiedName(String uri, String localName) {
@@ -153,23 +155,27 @@ public class Element implements XmlElement {
     }
 
     private Optional<String> getQualifiedName(String localName) {
-        if (parent == null) {
-            throw new IllegalStateException("Cannot determine namespace for " + localName);
-        }
         String namespace = getNamespace();
         if (namespace.isEmpty()) {
             throw new IllegalStateException("Cannot determine namespace for " + localName);
         }
-        return children.keySet().stream().filter(key -> key.equals(namespace + localName)).findAny();
+        String expectedName = namespace + localName;
+        return children.stream()
+            .map(Child::qualifiedName)
+            .filter(expectedName::equals)
+            .findAny();
     }
 
 
-    private final Element parent;
+    private record Child(String qualifiedName, Object object) {
+    }
+
+
     private final String uri;
     private final String localName;
     private final String qualifiedName;
     private final Attributes attributes;
     private final StringBuilder characters = new StringBuilder();
-    private final Map<String, List<Object>> children = new HashMap<>();
+    private final List<Child> children = new ArrayList<>();
     private final Function<String, String> namespaces;
 }

@@ -64,7 +64,7 @@ public class SaxStackHandler extends DefaultHandler {
 
     @Override
     public void startElement(String uri, String localName, String qualifiedName, Attributes attributes) {
-        stack.push(new Element(uri, localName, qualifiedName, attributes, stack.isEmpty() ? null : stack.peek(), namespaces::get));
+        stack.push(new Element(uri, localName, qualifiedName, attributes, namespaces::get));
         if (!uri.isEmpty() && !namespaces.containsKey(uri)) {
             namespaces.put(uri, getNamespace(qualifiedName, localName));
         }

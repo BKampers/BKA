@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1"
-     creator="Apple iOS"
+     creator="GPS app"
      xmlns="http://www.topografix.com/GPX/1/1"
      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
      xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v1"
@@ -9,14 +9,14 @@
         <name>Morning Walk</name>
         <desc>Sample track similar to iCloud Drive exports</desc>
         <author>
-            <name>Bart</name>
-            <email id="bart" domain="example.com"/>
-            <link href="https://example.com/bart">
+            <name>Walker</name>
+            <email id="user" domain="example.com"/>
+            <link href="https://example.com/home">
                 <text>Homepage</text>
                 <type>text/html</type>
             </link>
         </author>
-        <copyright author="Bart Kampers">
+        <copyright author="Owner">
             <year>2026</year>
             <license>https://example.com/license</license>
         </copyright>

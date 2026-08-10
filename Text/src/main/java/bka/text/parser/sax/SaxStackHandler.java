@@ -39,7 +39,7 @@ public class SaxStackHandler extends DefaultHandler {
      * @param converter returns an object for each XML element; children are already converted. The return value
      *                  for the document root becomes {@link #getRoot()}; it must not be {@code null}
      */
-    public SaxStackHandler(Function<XmlElement, Object> converter) {
+    public SaxStackHandler(SaxElementConverter converter) {
         this.converter = Objects.requireNonNull(converter);
     }
 
@@ -74,10 +74,10 @@ public class SaxStackHandler extends DefaultHandler {
     public void endElement(String uri, String localName, String qualifiedName) throws SAXException {
         Element element = stack.pop();
         if (stack.isEmpty()) {
-            root = Objects.requireNonNull(converter.apply(element), "Root element must not be null");
+            root = Objects.requireNonNull(converter.convert(element), "Root element must not be null");
         }
         else {
-            stack.peek().addChild(qualifiedName, converter.apply(element));
+            stack.peek().addChild(qualifiedName, converter.convert(element));
         }
     }
     
@@ -105,7 +105,7 @@ public class SaxStackHandler extends DefaultHandler {
     }
 
 
-    private final Function<XmlElement, Object> converter;
+    private final SaxElementConverter converter;
     private final Deque<Element> stack = new LinkedList<>();
     private final Map<String, String> namespaces = new HashMap<>();
 

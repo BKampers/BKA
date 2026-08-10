@@ -83,7 +83,7 @@ public class SaxStackHandlerTest {
             list.get(3));
     }
 
-    private static Function<XmlElement, Object> getTableModel() {
+    private static SaxElementConverter getTableModel() {
         return element -> switch (element.getUri()) {
             case "" ->
                 handleTableRoot(element);
@@ -156,7 +156,7 @@ public class SaxStackHandlerTest {
         return factory.newSAXParser();
     }
 
-    private static Function<XmlElement, Object> getArrayModel() {
+    private static SaxElementConverter getArrayModel() {
         return (element) -> switch (element.getQualifiedName()) {
             case "root" ->
                 element.getChildren("element");
@@ -167,7 +167,7 @@ public class SaxStackHandlerTest {
         };
     }
 
-    private static Function<XmlElement, Object> getBookshlefModel() {
+    private static SaxElementConverter getBookshlefModel() {
         return (element) -> switch (element.getQualifiedName()) {
             case "shelf" ->
                 element.getChildren("book");
@@ -192,7 +192,7 @@ public class SaxStackHandlerTest {
         );
     }
 
-    private static Function<XmlElement, Object> getIntegerModel() {
+    private static SaxElementConverter getIntegerModel() {
         return (element) -> switch (element.getQualifiedName()) {
             case "integers" ->
                 element.getChildren("integer");
@@ -218,7 +218,7 @@ public class SaxStackHandlerTest {
         };
     }
 
-    private static Function<XmlElement, Object> getHtmlTableModel() {
+    private static SaxElementConverter getHtmlTableModel() {
         return (element) -> switch (element.getQualifiedName()) {
             case "table" ->
                 getTable(element);

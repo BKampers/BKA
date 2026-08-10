@@ -10,7 +10,6 @@ import bka.text.parser.sax.*;
 import gpx.*;
 import java.time.*;
 import java.util.*;
-import java.util.function.*;
 import org.xml.sax.*;
 
 
@@ -20,211 +19,228 @@ import org.xml.sax.*;
  * <p>Designed for use with {@link SaxStackHandler}. Elements in the GPX namespace are mapped to the
  * corresponding types in {@link gpx}; foreign-namespace content becomes {@link Extension}.
  */
-public final class GpxConverter implements Function<XmlElement, Object> {
+public final class GpxConverter implements SaxElementConverter {
 
     public static final String NAMESPACE = "http://www.topografix.com/GPX/1/1";
 
     @Override
-    public Object apply(XmlElement element) {
+    public Object convert(Element element) throws SAXException {
         if (NAMESPACE.equals(element.getUri())) {
             return convertGpxElement(element);
         }
         return convertExtension(element);
     }
 
-    private static Object convertGpxElement(XmlElement element) {
+    private static Object convertGpxElement(XmlElement element) throws SAXException {
         return switch (element.getLocalName()) {
-            case "gpx" -> createGpx(element);
-            case "metadata" -> createMetadata(element);
-            case "wpt", "rtept", "trkpt" -> createWaypoint(element);
-            case "rte" -> createRoute(element);
-            case "trk" -> createTrack(element);
-            case "trkseg" -> createTrackSegment(element);
-            case "link" -> createLink(element);
-            case "email" -> createEmail(element);
-            case "author" -> createPerson(element);
-            case "copyright" -> createCopyright(element);
-            case "bounds" -> createBounds(element);
-            case "extensions" -> extensionElements(element.getChildren());
-            case "pt" -> createPoint(element);
-            case "ptseg" -> createPointSegment(element);
-            case "name", "desc", "cmt", "src", "type", "sym", "keywords", "text", "license" -> element.getCharacters().strip();
-            case "year" -> Year.parse(element.getCharacters().strip());
-            case "time" -> parseTime(element.getCharacters());
-            case "ele", "magvar", "geoidheight", "hdop", "vdop", "pdop", "ageofdgpsdata" -> Double.valueOf(element.getCharacters().strip());
-            case "sat", "number", "dgpsid" -> Integer.valueOf(element.getCharacters().strip());
-            case "fix" -> Fix.fromValue(element.getCharacters().strip());
-            default -> throw new IllegalArgumentException("Unsupported GPX element: " + element.getLocalName());
+            case GPX_ROOT -> createGpx(element);
+            case METADATA -> createMetadata(element);
+            case WAYPOINT, ROUTE_POINT, TRACK_POINT -> createWaypoint(element);
+            case ROUTE -> createRoute(element);
+            case TRACK -> createTrack(element);
+            case TRACK_SEGMENT -> createTrackSegment(element);
+            case LINK -> createLink(element);
+            case EMAIL -> createEmail(element);
+            case AUTHOR -> createPerson(element);
+            case COPYRIGHT -> createCopyright(element);
+            case BOUNDS -> createBounds(element);
+            case EXTENSIONS -> extensionElements(element);
+            case POINT -> createPoint(element);
+            case POINT_SEGMENT -> createPointSegment(element);
+            case NAME, DESCRIPTION, COMMENT, SOURCE, TYPE, SYMBOL, KEYWORDS, TEXT, LICENSE -> element.getCharacters().strip();
+            case YEAR -> Year.parse(element.getCharacters().strip());
+            case TIME -> parseTime(element);
+            case ELEVATION, MAGNETIC_VARIATION, GEOID_HEIGHT, HDOP, VDOP, PDOP, AGE_OF_DGPS_DATA -> parseDouble(element);
+            case SATELLITES, NUMBER, DGPS_ID -> parseInteger(element);
+            case FIX -> Fix.fromValue(element.getCharacters().strip());
+            default -> throw new SAXException("Unsupported GPX element: " + element.getLocalName());
         };
     }
 
-    private static Extension convertExtension(XmlElement element) {
+    private static Extension convertExtension(XmlElement element) throws SAXException {
         return new Extension(
             element.getUri(),
             element.getLocalName(),
             element.getCharacters(),
-            extensionElements(element.getChildren())
+            extensionElements(element)
         );
     }
 
-    private static Gpx createGpx(XmlElement element) {
+    private static Gpx createGpx(XmlElement element) throws SAXException {
         return new Gpx(
-            requiredAttribute(element, "version"),
-            requiredAttribute(element, "creator"),
-            optionalChild(element, "metadata"),
-            children(element, "wpt"),
-            children(element, "rte"),
-            children(element, "trk"),
+            requiredAttribute(element, VERSION),
+            requiredAttribute(element, CREATOR),
+            optionalChild(element, METADATA),
+            children(element, WAYPOINT),
+            children(element, ROUTE),
+            children(element, TRACK),
             extensions(element)
         );
     }
 
     private static Metadata createMetadata(XmlElement element) {
         return new Metadata(
-            optionalChild(element, "name"),
-            optionalChild(element, "desc"),
-            optionalChild(element, "author"),
-            optionalChild(element, "copyright"),
-            children(element, "link"),
-            optionalChild(element, "time"),
-            optionalChild(element, "keywords"),
-            optionalChild(element, "bounds"),
+            optionalChild(element, NAME),
+            optionalChild(element, DESCRIPTION),
+            optionalChild(element, AUTHOR),
+            optionalChild(element, COPYRIGHT),
+            children(element, LINK),
+            optionalChild(element, TIME),
+            optionalChild(element, KEYWORDS),
+            optionalChild(element, BOUNDS),
             extensions(element)
         );
     }
 
-    private static Waypoint createWaypoint(XmlElement element) {
+    private static Waypoint createWaypoint(XmlElement element) throws SAXException {
         return new Waypoint(
-            Double.parseDouble(requiredAttribute(element, "lat")),
-            Double.parseDouble(requiredAttribute(element, "lon")),
-            optionalDouble(element, "ele"),
-            optionalChild(element, "time"),
-            optionalDouble(element, "magvar"),
-            optionalDouble(element, "geoidheight"),
-            optionalChild(element, "name"),
-            optionalChild(element, "cmt"),
-            optionalChild(element, "desc"),
-            optionalChild(element, "src"),
-            children(element, "link"),
-            optionalChild(element, "sym"),
-            optionalChild(element, "type"),
-            optionalChild(element, "fix"),
-            optionalInt(element, "sat"),
-            optionalDouble(element, "hdop"),
-            optionalDouble(element, "vdop"),
-            optionalDouble(element, "pdop"),
-            optionalDouble(element, "ageofdgpsdata"),
-            optionalInt(element, "dgpsid"),
+            Double.parseDouble(requiredAttribute(element, LATITUDE)),
+            Double.parseDouble(requiredAttribute(element, LONGITUDE)),
+            optionalDouble(element, ELEVATION),
+            optionalChild(element, TIME),
+            optionalDouble(element, MAGNETIC_VARIATION),
+            optionalDouble(element, GEOID_HEIGHT),
+            optionalChild(element, NAME),
+            optionalChild(element, COMMENT),
+            optionalChild(element, DESCRIPTION),
+            optionalChild(element, SOURCE),
+            children(element, LINK),
+            optionalChild(element, SYMBOL),
+            optionalChild(element, TYPE),
+            optionalChild(element, FIX),
+            optionalInt(element, SATELLITES),
+            optionalDouble(element, HDOP),
+            optionalDouble(element, VDOP),
+            optionalDouble(element, PDOP),
+            optionalDouble(element, AGE_OF_DGPS_DATA),
+            optionalInt(element, DGPS_ID),
             extensions(element)
         );
     }
 
     private static Route createRoute(XmlElement element) {
         return new Route(
-            optionalChild(element, "name"),
-            optionalChild(element, "cmt"),
-            optionalChild(element, "desc"),
-            optionalChild(element, "src"),
-            children(element, "link"),
-            optionalInt(element, "number"),
-            optionalChild(element, "type"),
+            optionalChild(element, NAME),
+            optionalChild(element, COMMENT),
+            optionalChild(element, DESCRIPTION),
+            optionalChild(element, SOURCE),
+            children(element, LINK),
+            optionalInt(element, NUMBER),
+            optionalChild(element, TYPE),
             extensions(element),
-            children(element, "rtept")
+            children(element, ROUTE_POINT)
         );
     }
 
     private static Track createTrack(XmlElement element) {
         return new Track(
-            optionalChild(element, "name"),
-            optionalChild(element, "cmt"),
-            optionalChild(element, "desc"),
-            optionalChild(element, "src"),
-            children(element, "link"),
-            optionalInt(element, "number"),
-            optionalChild(element, "type"),
+            optionalChild(element, NAME),
+            optionalChild(element, COMMENT),
+            optionalChild(element, DESCRIPTION),
+            optionalChild(element, SOURCE),
+            children(element, LINK),
+            optionalInt(element, NUMBER),
+            optionalChild(element, TYPE),
             extensions(element),
-            children(element, "trkseg")
+            children(element, TRACK_SEGMENT)
         );
     }
 
     private static TrackSegment createTrackSegment(XmlElement element) {
         return new TrackSegment(
-            children(element, "trkpt"),
+            children(element, TRACK_POINT),
             extensions(element)
         );
     }
 
-    private static Link createLink(XmlElement element) {
+    private static Link createLink(XmlElement element) throws SAXException {
         return new Link(
-            requiredAttribute(element, "href"),
-            optionalChild(element, "text"),
-            optionalChild(element, "type")
+            requiredAttribute(element, HYPERTEXT_REFERENCE),
+            optionalChild(element, TEXT),
+            optionalChild(element, TYPE)
         );
     }
 
-    private static Email createEmail(XmlElement element) {
+    private static Email createEmail(XmlElement element) throws SAXException {
         return new Email(
-            requiredAttribute(element, "id"),
-            requiredAttribute(element, "domain")
+            requiredAttribute(element, ID),
+            requiredAttribute(element, DOMAIN)
         );
     }
 
     private static Person createPerson(XmlElement element) {
         return new Person(
-            optionalChild(element, "name"),
-            optionalChild(element, "email"),
-            optionalChild(element, "link")
+            optionalChild(element, NAME),
+            optionalChild(element, EMAIL),
+            optionalChild(element, LINK)
         );
     }
 
-    private static Copyright createCopyright(XmlElement element) {
+    private static Copyright createCopyright(XmlElement element) throws SAXException {
         return new Copyright(
-            requiredAttribute(element, "author"),
-            optionalChild(element, "year"),
-            optionalChild(element, "license")
+            requiredAttribute(element, AUTHOR),
+            optionalChild(element, YEAR),
+            optionalChild(element, LICENSE)
         );
     }
 
-    private static Bounds createBounds(XmlElement element) {
+    private static Bounds createBounds(XmlElement element) throws SAXException {
         return new Bounds(
-            Double.parseDouble(requiredAttribute(element, "minlat")),
-            Double.parseDouble(requiredAttribute(element, "minlon")),
-            Double.parseDouble(requiredAttribute(element, "maxlat")),
-            Double.parseDouble(requiredAttribute(element, "maxlon"))
+            Double.parseDouble(requiredAttribute(element, MIN_LATITUDE)),
+            Double.parseDouble(requiredAttribute(element, MIN_LONGITUDE)),
+            Double.parseDouble(requiredAttribute(element, MAX_LATITUDE)),
+            Double.parseDouble(requiredAttribute(element, MAX_LONGITUDE))
         );
     }
 
-    private static Point createPoint(XmlElement element) {
+    private static Point createPoint(XmlElement element) throws SAXException {
         return new Point(
-            Double.parseDouble(requiredAttribute(element, "lat")),
-            Double.parseDouble(requiredAttribute(element, "lon")),
-            optionalDouble(element, "ele"),
-            optionalChild(element, "time")
+            Double.parseDouble(requiredAttribute(element, LATITUDE)),
+            Double.parseDouble(requiredAttribute(element, LONGITUDE)),
+            optionalDouble(element, ELEVATION),
+            optionalChild(element, TIME)
         );
     }
 
     private static PointSegment createPointSegment(XmlElement element) {
-        return new PointSegment(children(element, "pt"));
+        return new PointSegment(children(element, POINT));
     }
 
-    private static Instant parseTime(String characters) {
-        String text = characters.strip();
+    private static Integer parseInteger(XmlElement element) throws SAXException {
         try {
-            return Instant.parse(text);
+            return Integer.valueOf(element.getCharacters().strip());
         }
-        catch (DateTimeException exception) {
-            return OffsetDateTime.parse(text).toInstant();
+        catch (NumberFormatException ex) {
+            throw new SAXException("Invalid integer", ex);
         }
     }
 
-    private static String requiredAttribute(XmlElement element, String name) {
+    private static Double parseDouble(XmlElement element) throws SAXException {
+        try {
+            return Double.valueOf(element.getCharacters().strip());
+        }
+        catch (NumberFormatException ex) {
+            throw new SAXException("Invalid number", ex);
+        }
+    }
+
+    private static Instant parseTime(XmlElement element) throws SAXException {
+        try {
+            return OffsetDateTime.parse(element.getCharacters().strip()).toInstant();
+        }
+        catch (DateTimeException ex) {
+            throw new SAXException("Invalid time", ex);
+        }
+    }
+
+    private static String requiredAttribute(XmlElement element, String name) throws SAXException {
         Attributes attributes = element.getAttributes();
         String value = attributes.getValue(name);
         if (value == null) {
             value = attributes.getValue("", name);
         }
         if (value == null) {
-            throw new IllegalArgumentException("Missing attribute '" + name + "' on " + element.getLocalName());
+            throw new SAXException("Missing attribute '" + name + "' on " + element.getLocalName());
         }
         return value;
     }
@@ -238,22 +254,21 @@ public final class GpxConverter implements Function<XmlElement, Object> {
     }
 
     private static List<Extension> extensions(XmlElement element) {
-        Optional<List<Extension>> extensions = optionalChild(element, "extensions");
+        Optional<List<Extension>> extensions = optionalChild(element, EXTENSIONS);
         return extensions.orElseGet(List::of);
     }
 
-    private static List<Extension> extensionElements(List<Object> children) {
-        return children.stream().map(GpxConverter::requireExtension).toList();
-    }
-
-    private static Extension requireExtension(Object child) {
-        if (child instanceof Extension extension) {
-            return extension;
+    private static List<Extension> extensionElements(XmlElement element) throws SAXException {
+        List<Extension> extensions = new ArrayList<>();
+        for (Object child : element.getChildren()) {
+            if (child instanceof Extension extension) {
+                extensions.add(extension);
+            }
+            else {
+                throw new SAXException("Extensions may only contain foreign-namespace elements, got: " + (child == null ? "null" : child.getClass().getName()));
+            }
         }
-        throw new IllegalArgumentException(
-            "Extensions may only contain foreign-namespace elements, got: "
-                + (child == null ? "null" : child.getClass().getName())
-        );
+        return extensions;
     }
 
     private static OptionalInt optionalInt(XmlElement element, String localName) {
@@ -269,5 +284,55 @@ public final class GpxConverter implements Function<XmlElement, Object> {
             .map(OptionalDouble::of)
             .orElseGet(OptionalDouble::empty);
     }
+
+    private static final String GPX_ROOT = "gpx";
+    private static final String METADATA = "metadata";
+    private static final String WAYPOINT = "wpt";
+    private static final String ROUTE_POINT = "rtept";
+    private static final String TRACK_POINT = "trkpt";
+    private static final String ROUTE = "rte";
+    private static final String TRACK = "trk";
+    private static final String TRACK_SEGMENT = "trkseg";
+    private static final String LINK = "link";
+    private static final String EMAIL = "email";
+    private static final String AUTHOR = "author";
+    private static final String COPYRIGHT = "copyright";
+    private static final String BOUNDS = "bounds";
+    private static final String EXTENSIONS = "extensions";
+    private static final String POINT = "pt";
+    private static final String POINT_SEGMENT = "ptseg";
+    private static final String NAME = "name";
+    private static final String DESCRIPTION = "desc";
+    private static final String COMMENT = "cmt";
+    private static final String SOURCE = "src";
+    private static final String TYPE = "type";
+    private static final String SYMBOL = "sym";
+    private static final String KEYWORDS = "keywords";
+    private static final String TEXT = "text";
+    private static final String LICENSE = "license";
+    private static final String YEAR = "year";
+    private static final String TIME = "time";
+    private static final String ELEVATION = "ele";
+    private static final String MAGNETIC_VARIATION = "magvar";
+    private static final String GEOID_HEIGHT = "geoidheight";
+    private static final String HDOP = "hdop";
+    private static final String VDOP = "vdop";
+    private static final String PDOP = "pdop";
+    private static final String AGE_OF_DGPS_DATA = "ageofdgpsdata";
+    private static final String SATELLITES = "sat";
+    private static final String NUMBER = "number";
+    private static final String DGPS_ID = "dgpsid";
+    private static final String FIX = "fix";
+    private static final String VERSION = "version";
+    private static final String CREATOR = "creator";
+    private static final String LATITUDE = "lat";
+    private static final String LONGITUDE = "lon";
+    private static final String HYPERTEXT_REFERENCE = "href";
+    private static final String ID = "id";
+    private static final String DOMAIN = "domain";
+    private static final String MIN_LATITUDE = "minlat";
+    private static final String MIN_LONGITUDE = "minlon";
+    private static final String MAX_LATITUDE = "maxlat";
+    private static final String MAX_LONGITUDE = "maxlon";
 
 }

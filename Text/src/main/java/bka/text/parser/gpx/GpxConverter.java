@@ -25,10 +25,10 @@ public final class GpxConverter implements SaxElementConverter {
 
     @Override
     public Object convert(Element element) throws SAXException {
-        if (NAMESPACE.equals(element.getUri())) {
-            return convertGpxElement(element);
+        if (!NAMESPACE.equals(element.getUri())) {
+            return convertExtension(element);
         }
-        return convertExtension(element);
+        return convertGpxElement(element);
     }
 
     private static Object convertGpxElement(XmlElement element) throws SAXException {
@@ -94,8 +94,8 @@ public final class GpxConverter implements SaxElementConverter {
 
     private static Waypoint createWaypoint(XmlElement element) throws SAXException {
         return new Waypoint(
-            Double.parseDouble(requiredAttribute(element, LATITUDE)),
-            Double.parseDouble(requiredAttribute(element, LONGITUDE)),
+            parseDouble(requiredAttribute(element, LATITUDE)),
+            parseDouble(requiredAttribute(element, LONGITUDE)),
             optionalDouble(element, ELEVATION),
             optionalChild(element, TIME),
             optionalDouble(element, MAGNETIC_VARIATION),
@@ -186,17 +186,17 @@ public final class GpxConverter implements SaxElementConverter {
 
     private static Bounds createBounds(XmlElement element) throws SAXException {
         return new Bounds(
-            Double.parseDouble(requiredAttribute(element, MIN_LATITUDE)),
-            Double.parseDouble(requiredAttribute(element, MIN_LONGITUDE)),
-            Double.parseDouble(requiredAttribute(element, MAX_LATITUDE)),
-            Double.parseDouble(requiredAttribute(element, MAX_LONGITUDE))
+            parseDouble(requiredAttribute(element, MIN_LATITUDE)),
+            parseDouble(requiredAttribute(element, MIN_LONGITUDE)),
+            parseDouble(requiredAttribute(element, MAX_LATITUDE)),
+            parseDouble(requiredAttribute(element, MAX_LONGITUDE))
         );
     }
 
     private static Point createPoint(XmlElement element) throws SAXException {
         return new Point(
-            Double.parseDouble(requiredAttribute(element, LATITUDE)),
-            Double.parseDouble(requiredAttribute(element, LONGITUDE)),
+            parseDouble(requiredAttribute(element, LATITUDE)),
+            parseDouble(requiredAttribute(element, LONGITUDE)),
             optionalDouble(element, ELEVATION),
             optionalChild(element, TIME)
         );
@@ -206,18 +206,22 @@ public final class GpxConverter implements SaxElementConverter {
         return new PointSegment(children(element, POINT));
     }
 
-    private static Integer parseInteger(XmlElement element) throws SAXException {
+    private static int parseInteger(XmlElement element) throws SAXException {
         try {
-            return Integer.valueOf(element.getCharacters().strip());
+            return Integer.parseInt(element.getCharacters().strip());
         }
         catch (NumberFormatException ex) {
             throw new SAXException("Invalid integer", ex);
         }
     }
 
-    private static Double parseDouble(XmlElement element) throws SAXException {
+    private static double parseDouble(XmlElement element) throws SAXException {
+        return parseDouble(element.getCharacters());
+    }
+
+    private static double parseDouble(String string) throws SAXException {
         try {
-            return Double.valueOf(element.getCharacters().strip());
+            return Double.parseDouble(string.strip());
         }
         catch (NumberFormatException ex) {
             throw new SAXException("Invalid number", ex);
@@ -236,13 +240,13 @@ public final class GpxConverter implements SaxElementConverter {
     private static String requiredAttribute(XmlElement element, String name) throws SAXException {
         Attributes attributes = element.getAttributes();
         String value = attributes.getValue(name);
-        if (value == null) {
-            value = attributes.getValue("", name);
+        if (value != null) {
         }
-        if (value == null) {
-            throw new SAXException("Missing attribute '" + name + "' on " + element.getLocalName());
+        value = attributes.getValue("", name);
+        if (value != null) {
+            return value;
         }
-        return value;
+        throw new SAXException("Missing attribute '" + name + "' on " + element.getLocalName());
     }
 
     private static <T> Optional<T> optionalChild(XmlElement element, String localName) {
@@ -255,7 +259,7 @@ public final class GpxConverter implements SaxElementConverter {
 
     private static List<Extension> extensions(XmlElement element) {
         Optional<List<Extension>> extensions = optionalChild(element, EXTENSIONS);
-        return extensions.orElseGet(List::of);
+        return extensions.orElseGet(Collections::emptyList);
     }
 
     private static List<Extension> extensionElements(XmlElement element) throws SAXException {

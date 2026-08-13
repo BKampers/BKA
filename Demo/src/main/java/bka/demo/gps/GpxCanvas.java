@@ -132,15 +132,15 @@ public final class GpxCanvas extends JPanel {
 
     private void zoomTo(Rectangle area) {
         ViewTransform transform = viewTransform();
-        double latitude1 = transform.toLatitude(area.getMinY());
-        double longitude1 = transform.toLongitude(area.getMinX());
-        double latitude2 = transform.toLatitude(area.getMaxY());
-        double longitude2 = transform.toLongitude(area.getMaxX());
+        double latitudeMin = transform.toLatitude(area.getMinY());
+        double longitudeMin = transform.toLongitude(area.getMinX());
+        double latitudeMax = transform.toLatitude(area.getMaxY());
+        double longitudeMax = transform.toLongitude(area.getMaxX());
         GeographicBounds zoomed = new GeographicBounds(
-            Math.min(latitude1, latitude2),
-            Math.min(longitude1, longitude2),
-            Math.max(latitude1, latitude2),
-            Math.max(longitude1, longitude2)
+            Math.min(latitudeMin, latitudeMax),
+            Math.min(longitudeMin, longitudeMax),
+            Math.max(latitudeMin, latitudeMax),
+            Math.max(longitudeMin, longitudeMax)
         );
         if (!zoomed.isEmpty()) {
             bounds = zoomed;

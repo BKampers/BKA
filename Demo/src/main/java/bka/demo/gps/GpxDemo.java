@@ -79,16 +79,21 @@ public final class GpxDemo extends JFrame {
     }
 
     private static void setLookAndFeel(String name) {
+        Arrays.stream(UIManager.getInstalledLookAndFeels())
+            .filter(info -> name.equals(info.getName()))
+            .findAny()
+            .ifPresentOrElse(
+                GpxDemo::setLookAndFeel, 
+                lookAndFeelNotPresent(name));
+    }
+
+    private static Runnable lookAndFeelNotPresent(String name) {
+        return () -> getLogger().log(Level.WARNING, "Look and feel ''{0}'' is not present", name);
+    }
+    
+    private static void setLookAndFeel(UIManager.LookAndFeelInfo info) {
         try {
-            Optional<UIManager.LookAndFeelInfo> lookAndFeel = Arrays.stream(UIManager.getInstalledLookAndFeels())
-                .filter(info -> name.equals(info.getName()))
-                .findAny();
-            if (lookAndFeel.isPresent()) {
-                UIManager.setLookAndFeel(lookAndFeel.get().getClassName());
-            }
-            else {
-                getLogger().log(Level.WARNING, "Look and feel ''{0}'' is not present", name);
-            }
+            UIManager.setLookAndFeel(info.getClassName());
         }
         catch (ReflectiveOperationException | UnsupportedLookAndFeelException ex) {
             getLogger().log(Level.WARNING, "Could not set look and feel", ex);

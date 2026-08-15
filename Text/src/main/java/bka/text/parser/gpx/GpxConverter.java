@@ -46,7 +46,7 @@ public final class GpxConverter implements SaxElementConverter {
             case BOUNDS -> createBounds(element);
             case EXTENSIONS -> extensionElements(element);
             case POINT -> createPoint(element);
-            case POINT_SEGMENT -> createPointSegment(element);
+            case POINT_SEGMENT -> List.copyOf(children(element, POINT));
             case NAME, DESCRIPTION, COMMENT, SOURCE, TYPE, SYMBOL, KEYWORDS, TEXT, LICENSE -> element.getCharacters().strip();
             case YEAR -> Year.parse(element.getCharacters().strip());
             case TIME -> parseTime(element);
@@ -200,10 +200,6 @@ public final class GpxConverter implements SaxElementConverter {
             optionalDouble(element, ELEVATION),
             optionalChild(element, TIME)
         );
-    }
-
-    private static PointSegment createPointSegment(XmlElement element) {
-        return new PointSegment(children(element, POINT));
     }
 
     private static int parseInteger(XmlElement element) throws SAXException {

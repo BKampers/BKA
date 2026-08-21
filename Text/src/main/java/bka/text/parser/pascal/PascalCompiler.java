@@ -314,11 +314,11 @@ public final class PascalCompiler {
         };
     }
     
-    private Evaluable createAssignableExpression(Operation scope, Node assignableNode) {
-        return createAccessExpression(
+    private Assignable createAssignableExpression(Operation scope, Node assignableNode) {
+        return Execution.asAssignable(createAccessExpression(
             scope, 
             createIdentifierExpression(scope, assignableNode.getChild("Identifier")),
-            assignableNode.getChild("AccessExtension"));
+            assignableNode.getChild("AccessExtension")));
  
     }
 
@@ -526,10 +526,10 @@ public final class PascalCompiler {
     }
     
     private run.Statement createForLoop(Operation scope, Node statementNode) {
+        Assignable loopVariable = Execution.asAssignable(createIdentifierExpression(scope, statementNode.getChild("Identifier")));
         ExpressionStatement initialization = createExpressionStatement(
-            createIdentifierExpression(scope, statementNode.getChild("Identifier")),
+            loopVariable,
             createExpression(scope, statementNode.getChildren().get(3)));
-        Evaluable loopVariable = createIdentifierExpression(scope, statementNode.getChild("Identifier"));
         Evaluable condition = new OperatorExpression(
             loopVariable,
             Operator.LESS_EQUAL,
@@ -544,7 +544,7 @@ public final class PascalCompiler {
         return new CompoundStatement(List.of(initialization, loop));
     }
 
-    private ExpressionStatement createExpressionStatement(Evaluable assignable, Evaluable expression) {
+    private ExpressionStatement createExpressionStatement(Assignable assignable, Evaluable expression) {
         requireTypeMatch(assignable.getType().get(), expression.getType().get());
         return new ExpressionStatement(assignable, expression);
     }

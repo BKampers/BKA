@@ -68,23 +68,6 @@ public final class Execution {
         return expression.evaluate(this, scope);
     }
 
-    private void assign(Evaluable assignable, Evaluable valueExpression, ObjectScope scope) {
-        assignValue(assignable, evaluate(valueExpression, scope), scope);
-    }
-
-    private void assignValue(Evaluable assignable, java.lang.Object value, ObjectScope scope) {
-        switch (assignable) {
-            case ScopeVariableExpression variable ->
-                scope.storeExpression(variable.getName(), PascalValues.valueOf(variable.getType().get(), value));
-            case IndexAccessExpression indexAccess ->
-                resolveArrayContainer(indexAccess.getBase(), scope)[IndexAccessExpression.arraySlot(indexAccess.getArrayType(), (Integer) evaluate(indexAccess.getIndex(), scope))] = value;
-            case MemberAccessExpression memberAccess ->
-                assignMember(memberAccess, value, scope);
-            default ->
-                throw new IllegalStateException("Unsupported assignable: " + assignable);
-        }
-    }
-
     public java.lang.Object[] resolveArrayContainer(Evaluable base, ObjectScope scope) {
         if (base instanceof ScopeVariableExpression) {
             return (java.lang.Object[]) evaluate(base, scope);
@@ -126,18 +109,12 @@ public final class Execution {
         return toMap(value);
     }
 
-    private void assignMember(MemberAccessExpression memberAccess, java.lang.Object value, ObjectScope scope) {
-        MutableObject record = mutableObject(memberAccess.getReceiver(), scope);
-        Attribute attribute = MemberAccessExpression.findRecordAttribute(record, memberAccess.getMember());
-        record.set(attribute, PascalValues.valueOf(attribute.getType().get(), value));
-    }
-
     private void writeBackInOutParameters(Map<Parameter, Evaluable> arguments, ObjectScope parentScope, ObjectScope callScope) {
         arguments.entrySet().stream()
             .filter(entry -> entry.getKey().getDirection() == Parameter.Direction.INOUT)
-            .forEach(entry -> assign(
-                entry.getValue(),
-                PascalValues.valueOf(entry.getKey().getType().get(), loadFromScope(callScope, entry.getKey().getName().get())),
+            .forEach(entry -> asAssignable(entry.getValue()).assign(
+                this,
+                evaluate(PascalValues.valueOf(entry.getKey().getType().get(), loadFromScope(callScope, entry.getKey().getName().get())), parentScope),
                 parentScope));
     }
 
@@ -240,7 +217,7 @@ public final class Execution {
     private void executeExpression(ExpressionStatement expressionStatement, ObjectScope scope) {
         java.lang.Object result = evaluate(expressionStatement.getExpression(), scope);
         expressionStatement.getAssignable().ifPresentOrElse(
-            assignable -> assignValue(assignable, result, scope),
+            assignable -> assignable.assign(this, result, scope),
             () -> Logger.getLogger(getClass().getName()).log(Level.INFO, "Return value of {0} ignored", expressionStatement));
     }
 
@@ -311,6 +288,13 @@ public final class Execution {
             return evaluable;
         }
         throw new IllegalStateException("Not an evaluable expression: " + valueSpecification);
+    }
+
+    public static Assignable asAssignable(Evaluable expression) {
+        if (expression instanceof Assignable assignable) {
+            return assignable;
+        }
+        throw new IllegalStateException("Not an assignable expression: " + expression);
     }
 
     private static final java.lang.Object VOID = new java.lang.Object() {

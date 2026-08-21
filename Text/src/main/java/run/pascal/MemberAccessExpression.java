@@ -8,7 +8,7 @@ import uml.structure.*;
 /**
  * Access to a field of a record value.
  */
-public final class MemberAccessExpression implements Evaluable {
+public final class MemberAccessExpression implements Assignable {
 
     public MemberAccessExpression(Evaluable receiver, String member) {
         this.receiver = Objects.requireNonNull(receiver);
@@ -35,6 +35,13 @@ public final class MemberAccessExpression implements Evaluable {
     public java.lang.Object evaluate(Execution execution, ObjectScope scope) {
         MutableObject record = execution.mutableObject(receiver, scope);
         return execution.evaluate(Execution.asEvaluable(record.get(findRecordAttribute(record, member))), scope);
+    }
+
+    @Override
+    public void assign(Execution execution, java.lang.Object value, ObjectScope scope) {
+        MutableObject record = execution.mutableObject(receiver, scope);
+        Attribute attribute = findRecordAttribute(record, member);
+        record.set(attribute, PascalValues.valueOf(attribute.getType().get(), value));
     }
 
     public static Attribute findRecordAttribute(MutableObject record, String name) {

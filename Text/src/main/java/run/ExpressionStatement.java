@@ -8,7 +8,7 @@ import java.util.*;
  */
 public final class ExpressionStatement implements Statement {
 
-    public ExpressionStatement(Evaluable assignable, Evaluable expression) {
+    public ExpressionStatement(Assignable assignable, Evaluable expression) {
         this(Optional.of(assignable), expression);
     }
 
@@ -16,12 +16,12 @@ public final class ExpressionStatement implements Statement {
         this(Optional.empty(), expression);
     }
 
-    private ExpressionStatement(Optional<Evaluable> assignable, Evaluable expression) {
+    private ExpressionStatement(Optional<Assignable> assignable, Evaluable expression) {
         this.assignable = assignable;
         this.expression = Objects.requireNonNull(expression);
     }
 
-    public Optional<Evaluable> getAssignable() {
+    public Optional<Assignable> getAssignable() {
         return assignable;
     }
 
@@ -37,6 +37,6 @@ public final class ExpressionStatement implements Statement {
         return assignable.get().toString() + " <- " + expression.toString();
     }
 
-    private final Optional<Evaluable> assignable;
+    private final Optional<Assignable> assignable;
     private final Evaluable expression;
 }

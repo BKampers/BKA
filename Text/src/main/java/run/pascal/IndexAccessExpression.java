@@ -8,7 +8,7 @@ import uml.structure.*;
 /**
  * Indexed access to an array element.
  */
-public final class IndexAccessExpression implements Evaluable {
+public final class IndexAccessExpression implements Assignable {
 
     public IndexAccessExpression(Evaluable base, Evaluable index) {
         this.base = Objects.requireNonNull(base);
@@ -40,6 +40,11 @@ public final class IndexAccessExpression implements Evaluable {
     public java.lang.Object evaluate(Execution execution, ObjectScope scope) {
         java.lang.Object[] value = (java.lang.Object[]) execution.evaluate(base, scope);
         return value[arraySlot(getArrayType(), (Integer) execution.evaluate(index, scope))];
+    }
+
+    @Override
+    public void assign(Execution execution, java.lang.Object value, ObjectScope scope) {
+        execution.resolveArrayContainer(base, scope)[arraySlot(getArrayType(), (Integer) execution.evaluate(index, scope))] = value;
     }
 
     @Override

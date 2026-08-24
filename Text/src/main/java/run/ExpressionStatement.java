@@ -1,6 +1,7 @@
 package run;
 
 import java.util.*;
+import java.util.logging.*;
 
 
 /**
@@ -27,6 +28,14 @@ public final class ExpressionStatement implements Statement {
 
     public Evaluable getExpression() {
         return expression;
+    }
+
+    @Override
+    public void execute(Execution execution, ObjectScope scope) {
+        java.lang.Object result = execution.evaluate(expression, scope);
+        assignable.ifPresentOrElse(
+            target -> target.assign(execution, result, scope),
+            () -> Logger.getLogger(getClass().getName()).log(Level.INFO, "Return value of {0} ignored", this));
     }
 
     @Override

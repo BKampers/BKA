@@ -1,6 +1,7 @@
 package run;
 
 import java.util.*;
+import run.pascal.*;
 
 
 /**
@@ -54,6 +55,44 @@ public final class LoopStatement implements Statement {
 
     public Optional<Statement> getIncrementAction() {
         return incrementAction;
+    }
+
+    @Override
+    public void execute(Execution execution, ObjectScope scope) {
+        if (exitCondition.isPresent()) {
+            do {
+                execution.execute(action, scope);
+            } while (!execution.evaluateBoolean(exitCondition.get(), scope));
+        }
+        else if (incrementAction.isPresent()) {
+            executeForLoop(execution, scope);
+        }
+        else {
+            while (execution.evaluateBoolean(entryCondition.get(), scope)) {
+                execution.execute(action, scope);
+            }
+        }
+    }
+
+    private void executeForLoop(Execution execution, ObjectScope scope) {
+        Evaluable condition = entryCondition.orElseThrow(() -> new IllegalStateException("No loop condition"));
+        if (!(condition instanceof BinaryOperatorExpression loopCondition && loopCondition.getOperator() == Operator.LESS_EQUAL)) {
+            throw new IllegalStateException("Unsupported for loop condition: " + condition);
+        }
+        Evaluable incrementCondition = new OperatorExpression(
+            loopCondition.getLeft(),
+            Operator.LESS_THAN,
+            loopCondition.getRight());
+        boolean doLoop = execution.evaluateBoolean(condition, scope);
+        while (doLoop) {
+            execution.execute(action, scope);
+            if (execution.evaluateBoolean(incrementCondition, scope)) {
+                execution.execute(incrementAction.get(), scope);
+            }
+            else {
+                doLoop = false;
+            }
+        }
     }
 
     private final Optional<Evaluable> entryCondition;

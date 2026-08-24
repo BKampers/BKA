@@ -24,6 +24,11 @@ public final class CompoundStatement implements Statement {
     public List<uml.structure.Object> getLocals() {
         return locals;
     }
+
+    @Override
+    public void execute(Execution execution, ObjectScope scope) {
+        statements.forEach(child -> execution.execute(child, scope));
+    }
     
     @Override
     public String toString() {

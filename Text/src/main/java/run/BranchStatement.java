@@ -1,7 +1,6 @@
 package run;
 
 import java.util.*;
-import uml.structure.*;
 
 
 /**
@@ -56,6 +55,18 @@ public final class BranchStatement implements Statement {
 
     public Optional<Statement> getIfClause() {
         return Optional.ofNullable(choices.get(TRUE));
+    }
+
+    @Override
+    public void execute(Execution execution, ObjectScope scope) {
+        java.lang.Object value = execution.evaluate(condition, scope);
+        choices.entrySet().stream()
+            .filter(choice -> Objects.equals(value, execution.evaluate(choice.getKey(), scope)))
+            .map(Map.Entry::getValue)
+            .findAny()
+            .ifPresentOrElse(
+                statement -> execution.execute(statement, scope),
+                () -> defaultChoice.ifPresent(statement -> execution.execute(statement, scope)));
     }
 
     private final Evaluable condition;

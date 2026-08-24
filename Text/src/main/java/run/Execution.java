@@ -3,7 +3,6 @@ package run;
 
 import java.util.*;
 import java.util.function.*;
-import java.util.logging.*;
 import java.util.stream.*;
 import run.pascal.*;
 import uml.annotation.*;
@@ -66,6 +65,18 @@ public final class Execution {
 
     public java.lang.Object evaluate(Evaluable expression, ObjectScope scope) {
         return expression.evaluate(this, scope);
+    }
+
+    public boolean evaluateBoolean(Evaluable expression, ObjectScope scope) {
+        java.lang.Object value = evaluate(expression, scope);
+        if (value instanceof Boolean booleanValue) {
+            return booleanValue;
+        }
+        throw new IllegalStateException("Boolean expected: " + value);
+    }
+
+    public void execute(Statement statement, ObjectScope scope) {
+        statement.execute(this, scope);
     }
 
     public java.lang.Object[] resolveArrayContainer(Evaluable base, ObjectScope scope) {
@@ -194,86 +205,6 @@ public final class Execution {
             }
         }
         return map;
-    }
-
-    private void execute(Statement statement, ObjectScope scope) {
-        if (statement.equals(Statement.NO_OPERATION)) {
-            return;
-        }
-        switch (statement) {
-            case CompoundStatement compound ->
-                compound.getStatements().forEach(child -> execute(child, scope));
-            case ExpressionStatement expressionStatement ->
-                executeExpression(expressionStatement, scope);
-            case LoopStatement loop ->
-                executeLoop(loop, scope);
-            case BranchStatement branch ->
-                executeBranch(branch, scope);
-            default ->
-                throw new IllegalStateException("Unsupported statement: " + statement.getClass().getName());
-        }
-    }
-
-    private void executeExpression(ExpressionStatement expressionStatement, ObjectScope scope) {
-        java.lang.Object result = evaluate(expressionStatement.getExpression(), scope);
-        expressionStatement.getAssignable().ifPresentOrElse(
-            assignable -> assignable.assign(this, result, scope),
-            () -> Logger.getLogger(getClass().getName()).log(Level.INFO, "Return value of {0} ignored", expressionStatement));
-    }
-
-    private void executeBranch(BranchStatement branch, ObjectScope scope) {
-        java.lang.Object value = evaluate(branch.getCondition(), scope);
-        for (Map.Entry<Evaluable, Statement> choice : branch.getChoices().entrySet()) {
-            if (Objects.equals(value, evaluate(choice.getKey(), scope))) {
-                execute(choice.getValue(), scope);
-                return;
-            }
-        }
-        branch.getDefaultChoice().ifPresent(statement -> execute(statement, scope));
-    }
-
-    private void executeLoop(LoopStatement loop, ObjectScope scope) {
-        if (loop.getExitCondition().isPresent()) {
-            do {
-                execute(loop.getAction(), scope);
-            } while (!requireBoolean(evaluate(loop.getExitCondition().get(), scope)));
-            return;
-        }
-        if (loop.getIncrementAction().isPresent()) {
-            executeForLoop(loop, scope);
-            return;
-        }
-        while (requireBoolean(evaluate(loop.getEntryCondition().get(), scope))) {
-            execute(loop.getAction(), scope);
-        }
-    }
-
-    private void executeForLoop(LoopStatement loop, ObjectScope scope) {
-        Evaluable entryCondition = loop.getEntryCondition().orElseThrow(() -> new IllegalStateException("No loop condition"));
-        if (!(entryCondition instanceof BinaryOperatorExpression loopCondition && loopCondition.getOperator() == Operator.LESS_EQUAL)) {
-            throw new IllegalStateException("Unsupported for loop condition: " + entryCondition);
-        }
-        Evaluable incrementCondition = new OperatorExpression(
-            loopCondition.getLeft(),
-            Operator.LESS_THAN,
-            loopCondition.getRight());
-        boolean doLoop = requireBoolean(evaluate(entryCondition, scope));
-        while (doLoop) {
-            execute(loop.getAction(), scope);
-            if (requireBoolean(evaluate(incrementCondition, scope))) {
-                execute(loop.getIncrementAction().get(), scope);
-            }
-            else {
-                doLoop = false;
-            }
-        }
-    }
-
-    private static boolean requireBoolean(java.lang.Object value) {
-        if (value instanceof Boolean booleanValue) {
-            return booleanValue;
-        }
-        throw new IllegalStateException("Boolean expected: " + value);
     }
 
     private Attribute findProgramAttribute(String name) {

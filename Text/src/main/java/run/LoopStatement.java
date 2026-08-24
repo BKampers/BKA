@@ -36,7 +36,7 @@ public final class LoopStatement implements Statement {
         StringBuilder string = new StringBuilder("@Loop\n");
         entryCondition.ifPresent(expression -> string.append("@While ").append(expression).append('\n'));
         string.append(action);
-        incrementAction.ifPresent(action -> string.append(action).append('\n'));
+        incrementAction.ifPresent(increment -> string.append(increment).append('\n'));
         exitCondition.ifPresent(expression -> string.append("@Until ").append(expression));
         return string.toString();
     }
@@ -60,18 +60,26 @@ public final class LoopStatement implements Statement {
     @Override
     public void execute(Execution execution, ObjectScope scope) {
         if (exitCondition.isPresent()) {
-            do {
-                execution.execute(action, scope);
-            } while (!execution.evaluateBoolean(exitCondition.get(), scope));
+            executeUntilLoop(execution, scope);
         }
         else if (incrementAction.isPresent()) {
             executeForLoop(execution, scope);
         }
         else {
-            while (execution.evaluateBoolean(entryCondition.get(), scope)) {
-                execution.execute(action, scope);
-            }
+            executeWhileLoop(execution, scope);
         }
+    }
+
+    private void executeWhileLoop(Execution execution, ObjectScope scope) {
+        while (execution.evaluateBoolean(entryCondition.get(), scope)) {
+            execution.execute(action, scope);
+        }
+    }
+
+    private void executeUntilLoop(Execution execution, ObjectScope scope) {
+        do {
+            execution.execute(action, scope);
+        } while (!execution.evaluateBoolean(exitCondition.get(), scope));
     }
 
     private void executeForLoop(Execution execution, ObjectScope scope) {

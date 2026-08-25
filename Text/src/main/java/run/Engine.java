@@ -17,7 +17,8 @@ public final class Engine {
     }
 
     /**
-     * Runs the main operation and returns the resulting execution state.
+     * Runs the main operation of this Engine's program class.
+     * @return the resulting execution state
      */
     public Execution execute() {
         Execution execution = new Execution(this);

@@ -33,19 +33,27 @@ public final class MemberAccessExpression implements Assignable {
 
     @Override
     public java.lang.Object evaluate(Execution execution, ObjectScope scope) {
-        MutableObject record = execution.mutableObject(receiver, scope);
-        return execution.evaluate(Execution.asEvaluable(record.get(findRecordAttribute(record, member))), scope);
+        MutableObject target = requireRecord(execution, scope);
+        return execution.evaluate(Execution.asEvaluable(target.get(findRecordAttribute(target, member))), scope);
     }
 
     @Override
     public void assign(Execution execution, java.lang.Object value, ObjectScope scope) {
-        MutableObject record = execution.mutableObject(receiver, scope);
-        Attribute attribute = findRecordAttribute(record, member);
-        record.set(attribute, PascalValues.valueOf(attribute.getType().get(), value));
+        MutableObject target = requireRecord(execution, scope);
+        Attribute attribute = findRecordAttribute(target, member);
+        target.set(attribute, PascalValues.valueOf(attribute.getType().get(), value));
     }
 
-    public static Attribute findRecordAttribute(MutableObject record, String name) {
-        return record.getAttributes().stream()
+    private MutableObject requireRecord(Execution execution, ObjectScope scope) {
+        java.lang.Object value = execution.evaluate(receiver, scope);
+        if (value instanceof MutableObject mutableObject) {
+            return mutableObject;
+        }
+        throw new IllegalStateException("Not a record reference: " + receiver);
+    }
+
+    private static Attribute findRecordAttribute(MutableObject object, String name) {
+        return object.getAttributes().stream()
             .filter(attribute -> attribute.getName().isPresent() && name.equalsIgnoreCase(attribute.getName().get()))
             .findAny()
             .orElseThrow(() -> new NoSuchElementException("No such field: " + name));

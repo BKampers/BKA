@@ -530,16 +530,22 @@ public final class PascalCompiler {
         ExpressionStatement initialization = createExpressionStatement(
             loopVariable,
             createExpression(scope, statementNode.getChildren().get(3)));
+        Evaluable upperBound = createExpression(scope, statementNode.getChildren().get(5));
         Evaluable condition = new OperatorExpression(
             loopVariable,
             Operator.LESS_EQUAL,
-            createExpression(scope, statementNode.getChildren().get(5)));
+            upperBound);
+        Evaluable incrementGuard = new OperatorExpression(
+            loopVariable,
+            Operator.LESS_THAN,
+            upperBound);
         ExpressionStatement incrementAction = createExpressionStatement(
             loopVariable,
             new OperatorExpression(loopVariable, Operator.ADDITION, PascalValues.intLiteral(1)));
         LoopStatement loop = LoopStatement.forLoop(
-            condition, 
-            createStatement(scope, statementNode.getChild("Statement")), 
+            condition,
+            incrementGuard,
+            createStatement(scope, statementNode.getChild("Statement")),
             incrementAction);
         return new CompoundStatement(List.of(initialization, loop));
     }

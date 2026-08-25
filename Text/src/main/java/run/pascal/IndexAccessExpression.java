@@ -27,7 +27,7 @@ public final class IndexAccessExpression implements Assignable {
         return (ArrayType) base.getType().get();
     }
 
-    public static int arraySlot(ArrayType arrayType, int index) {
+    private static int arraySlot(ArrayType arrayType, int index) {
         return index - arrayType.getLowerBound();
     }
 
@@ -38,13 +38,24 @@ public final class IndexAccessExpression implements Assignable {
 
     @Override
     public java.lang.Object evaluate(Execution execution, ObjectScope scope) {
-        java.lang.Object[] value = (java.lang.Object[]) execution.evaluate(base, scope);
-        return value[arraySlot(getArrayType(), (Integer) execution.evaluate(index, scope))];
+        return array(execution, scope)[slot(execution, scope)];
     }
 
     @Override
     public void assign(Execution execution, java.lang.Object value, ObjectScope scope) {
-        execution.resolveArrayContainer(base, scope)[arraySlot(getArrayType(), (Integer) execution.evaluate(index, scope))] = value;
+        array(execution, scope)[slot(execution, scope)] = value;
+    }
+
+    private java.lang.Object[] array(Execution execution, ObjectScope scope) {
+        java.lang.Object value = execution.evaluate(base, scope);
+        if (value instanceof java.lang.Object[] container) {
+            return container;
+        }
+        throw new IllegalStateException("Not an array: " + base);
+    }
+
+    private int slot(Execution execution, ObjectScope scope) {
+        return arraySlot(getArrayType(), (Integer) execution.evaluate(index, scope));
     }
 
     @Override

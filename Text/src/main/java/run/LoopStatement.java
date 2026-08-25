@@ -1,7 +1,6 @@
 package run;
 
 import java.util.*;
-import run.pascal.*;
 
 
 /**
@@ -9,25 +8,26 @@ import run.pascal.*;
 public final class LoopStatement implements Statement {
 
     public static LoopStatement whileLoop(Evaluable condition, Statement action) {
-        return new LoopStatement(Optional.of(condition), Optional.empty(), action, Optional.empty());
+        return new LoopStatement(Optional.of(condition), Optional.empty(), action, Optional.empty(), Optional.empty());
     }
 
     public static LoopStatement untilLoop(Evaluable condition, Statement action) {
-        return new LoopStatement(Optional.empty(), Optional.of(condition), action, Optional.empty());
+        return new LoopStatement(Optional.empty(), Optional.of(condition), action, Optional.empty(), Optional.empty());
     }
 
-    public static LoopStatement forLoop(Evaluable condition, Statement action, Statement incrementAction) {
-        return new LoopStatement(Optional.of(condition), Optional.empty(), action, Optional.of(incrementAction));
+    public static LoopStatement forLoop(Evaluable condition, Evaluable incrementGuard, Statement action, Statement incrementAction) {
+        return new LoopStatement(Optional.of(condition), Optional.empty(), action, Optional.of(incrementGuard), Optional.of(incrementAction));
     }
 
     public static LoopStatement foreverLoop(Statement action) {
-        return new LoopStatement(Optional.empty(), Optional.empty(), action, Optional.empty());
+        return new LoopStatement(Optional.empty(), Optional.empty(), action, Optional.empty(), Optional.empty());
     }
 
-    private LoopStatement(Optional<Evaluable> entryCondition, Optional<Evaluable> exitCondition, Statement action, Optional<Statement> incrementAction) {
+    private LoopStatement(Optional<Evaluable> entryCondition, Optional<Evaluable> exitCondition, Statement action, Optional<Evaluable> incrementGuard, Optional<Statement> incrementAction) {
         this.entryCondition = entryCondition;
         this.exitCondition = exitCondition;
         this.action = Objects.requireNonNull(action);
+        this.incrementGuard = incrementGuard;
         this.incrementAction = incrementAction;
     }
 
@@ -51,6 +51,10 @@ public final class LoopStatement implements Statement {
 
     public Statement getAction() {
         return action;
+    }
+
+    public Optional<Evaluable> getIncrementGuard() {
+        return incrementGuard;
     }
 
     public Optional<Statement> getIncrementAction() {
@@ -83,18 +87,10 @@ public final class LoopStatement implements Statement {
     }
 
     private void executeForLoop(Execution execution, ObjectScope scope) {
-        Evaluable condition = entryCondition.orElseThrow(() -> new IllegalStateException("No loop condition"));
-        if (!(condition instanceof BinaryOperatorExpression loopCondition && loopCondition.getOperator() == Operator.LESS_EQUAL)) {
-            throw new IllegalStateException("Unsupported for loop condition: " + condition);
-        }
-        Evaluable incrementCondition = new OperatorExpression(
-            loopCondition.getLeft(),
-            Operator.LESS_THAN,
-            loopCondition.getRight());
-        boolean doLoop = execution.evaluateBoolean(condition, scope);
+        boolean doLoop = execution.evaluateBoolean(entryCondition.get(), scope);
         while (doLoop) {
             execution.execute(action, scope);
-            if (execution.evaluateBoolean(incrementCondition, scope)) {
+            if (execution.evaluateBoolean(incrementGuard.get(), scope)) {
                 execution.execute(incrementAction.get(), scope);
             }
             else {
@@ -106,6 +102,7 @@ public final class LoopStatement implements Statement {
     private final Optional<Evaluable> entryCondition;
     private final Optional<Evaluable> exitCondition;
     private final Statement action;
+    private final Optional<Evaluable> incrementGuard;
     private final Optional<Statement> incrementAction;
 
 }

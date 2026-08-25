@@ -4,7 +4,7 @@ package run;
 import java.util.*;
 import java.util.function.*;
 import java.util.stream.*;
-import run.pascal.*;
+import run.pascal.PascalValues;
 import uml.annotation.*;
 import uml.structure.*;
 
@@ -77,34 +77,6 @@ public final class Execution {
 
     public void execute(Statement statement, ObjectScope scope) {
         statement.execute(this, scope);
-    }
-
-    public java.lang.Object[] resolveArrayContainer(Evaluable base, ObjectScope scope) {
-        if (base instanceof ScopeVariableExpression) {
-            return (java.lang.Object[]) evaluate(base, scope);
-        }
-        if (base instanceof MemberAccessExpression memberAccess) {
-            return (java.lang.Object[]) evaluate(memberAccess, scope);
-        }
-        if (base instanceof IndexAccessExpression indexAccess) {
-            java.lang.Object[] array = resolveArrayContainer(indexAccess.getBase(), scope);
-            return (java.lang.Object[]) array[IndexAccessExpression.arraySlot(indexAccess.getArrayType(), (Integer) evaluate(indexAccess.getIndex(), scope))];
-        }
-        throw new IllegalStateException("Unsupported array base: " + base);
-    }
-
-    public MutableObject mutableObject(Evaluable expression, ObjectScope scope) {
-        if (expression instanceof ScopeVariableExpression) {
-            return (MutableObject) evaluate(expression, scope);
-        }
-        if (expression instanceof MemberAccessExpression memberAccess) {
-            MutableObject parent = mutableObject(memberAccess.getReceiver(), scope);
-            return (MutableObject) evaluate(asEvaluable(parent.get(MemberAccessExpression.findRecordAttribute(parent, memberAccess.getMember()))), scope);
-        }
-        if (expression instanceof IndexAccessExpression indexAccess) {
-            return (MutableObject) evaluate(indexAccess, scope);
-        }
-        throw new IllegalStateException("Not a record reference: " + expression);
     }
 
     public java.lang.Object getVariableValue(String name) {

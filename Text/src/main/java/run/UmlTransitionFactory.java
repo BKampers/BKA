@@ -11,7 +11,7 @@ import uml.annotation.*;
 import uml.statechart.*;
 
 
-public class UmlTransitionFactory extends Factory {
+public class UmlTransitionFactory {
 
     private UmlTransitionFactory() {
         // Utility class should not be instantiated
@@ -22,15 +22,15 @@ public class UmlTransitionFactory extends Factory {
     }
 
     public static Transition<Event, GuardCondition, Action> createTransition(TransitionSource source, TransitionTarget target, Set<Stereotype> stereotypes) {
-        return createTransition(Objects.requireNonNull(source), Objects.requireNonNull(target), Optional.empty(), Optional.empty(), Optional.empty(), unmodifiable(stereotypes));
+        return createTransition(Objects.requireNonNull(source), Objects.requireNonNull(target), Optional.empty(), Optional.empty(), Optional.empty(), Set.copyOf(stereotypes));
     }
 
     public static Transition<Event, GuardCondition, Action> createTransition(TransitionSource source, TransitionTarget target, GuardCondition guardCondition, Set<Stereotype> stereotypes) {
-        return createTransition(Objects.requireNonNull(source), Objects.requireNonNull(target), Optional.empty(), Optional.of(guardCondition), Optional.empty(), unmodifiable(stereotypes));
+        return createTransition(Objects.requireNonNull(source), Objects.requireNonNull(target), Optional.empty(), Optional.of(guardCondition), Optional.empty(), Set.copyOf(stereotypes));
     }
 
     public static Transition<Event, GuardCondition, Action> copyTransition(Transition<Event, GuardCondition, Action> transition, Optional<GuardCondition> guardCondition, Set<Stereotype> stereotypes) {
-        return createTransition(transition.getSource(), transition.getTarget(), transition.getEvent(), guardCondition, transition.getAction(), unmodifiable(stereotypes));
+        return createTransition(transition.getSource(), transition.getTarget(), transition.getEvent(), guardCondition, transition.getAction(), Set.copyOf(stereotypes));
     }
 
     private static Transition<Event, GuardCondition, Action> createTransition(TransitionSource source, TransitionTarget target, Optional<Event> event, Optional<GuardCondition> guardCondition, Optional<Action> action, Set<Stereotype> stereotypes) {

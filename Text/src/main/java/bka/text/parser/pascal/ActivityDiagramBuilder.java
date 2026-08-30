@@ -1,13 +1,16 @@
 /*
 ** © Bart Kampers
 ** This code may not be used for any purpose that harms humans, humanity, the environment or the universe.
- */
+*/
+
 package bka.text.parser.pascal;
 
 import java.util.*;
 import java.util.function.*;
 import run.*;
+import run.statemachine.*;
 import uml.annotation.*;
+import uml.factory.*;
 import uml.statechart.*;
 
 /**

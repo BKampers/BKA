@@ -3,51 +3,59 @@ package run;
 import java.util.*;
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
+import uml.factory.*;
 import uml.structure.*;
 
 
 public class ObjectScopeTest {
 
     @Test
-    public void loadAndStoreLocalVariable() throws MemoryException {
+    public void storeAndFindLocalVariable() {
         ObjectScope scope = createScope("count", integerType(), 0);
-        scope.store("count", 7);
-        assertEquals(7, scope.load("count"));
+        scope.store("count", new ValueExpression(7, integerType()));
+        assertEquals(7, value(scope, "count"));
     }
 
     @Test
-    public void loadDelegatesToParent() throws MemoryException {
+    public void findDoesNotSeeParent() {
         ObjectScope parent = createScope("result", integerType(), 10);
-        ObjectScope child = createScope(parent, "local", integerType(), StateMachine.UNINITIALIZED);
-        assertEquals(10, child.load("result"));
+        ObjectScope child = createScope(parent, "local", integerType(), ObjectScope.UNINITIALIZED);
+        assertTrue(child.find("result").isEmpty());
+        assertEquals(10, value(parent, "result"));
     }
 
     @Test
-    public void storeDelegatesToParent() throws MemoryException {
-        ObjectScope parent = createScope("result", integerType(), 10);
-        ObjectScope child = createScope(parent, "local", integerType(), StateMachine.UNINITIALIZED);
-        child.store("result", 20);
-        assertEquals(20, parent.load("result"));
-        assertEquals(20, child.load("result"));
+    public void storeDelegatesToParent() {
+        Type type = integerType();
+        ObjectScope parent = createScope("result", type, 10);
+        ObjectScope child = createScope(parent, "local", type, ObjectScope.UNINITIALIZED);
+        child.store("result", new ValueExpression(20, type));
+        assertEquals(20, value(parent, "result"));
+        assertTrue(child.find("result").isEmpty());
     }
 
     @Test
-    public void loadUnknownIdentifierThrows() {
+    public void findUnknownIdentifierIsEmpty() {
         ObjectScope scope = createScope("count", integerType(), 0);
-        assertThrows(MemoryException.class, () -> scope.load("missing"));
+        assertTrue(scope.find("missing").isEmpty());
     }
 
     @Test
     public void storeUnknownIdentifierThrows() {
         ObjectScope scope = createScope("count", integerType(), 0);
-        assertThrows(MemoryException.class, () -> scope.store("missing", 1));
+        assertThrows(IllegalStateException.class, () -> scope.store("missing", new ValueExpression(1, integerType())));
+    }
+
+    private static java.lang.Object value(ObjectScope scope, String name) {
+        Expression expression = scope.find(name).orElseThrow();
+        return ((ValueExpression) expression).getValue();
     }
 
     private static ObjectScope createScope(String name, Type type, java.lang.Object initialValue) {
         return createScope(null, name, type, initialValue);
     }
 
-    private static ObjectScope createScope(Memory parent, String name, Type type, java.lang.Object initialValue) {
+    private static ObjectScope createScope(ObjectScope parent, String name, Type type, java.lang.Object initialValue) {
         UmlClassBuilder builder = new UmlClassBuilder("scope");
         Attribute attribute = builder.withAttribute(name, type, Member.Visibility.PRIVATE);
         uml.structure.Class scopeType = builder.build();

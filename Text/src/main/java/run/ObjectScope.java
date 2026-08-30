@@ -1,3 +1,8 @@
+/*
+** © Bart Kampers
+** This code may not be used for any purpose that harms humans, humanity, the environment or the universe.
+*/
+
 package run;
 
 import java.util.*;
@@ -5,30 +10,31 @@ import uml.structure.*;
 
 
 /**
- * {@link Memory} implementation with a parent chain, backed by a {@link MutableObject}.
+ * Scope with a parent chain, backed by a {@link MutableObject}.
  *
- * <p>Each scope stores its variables as attributes on a {@link MutableObject}. {@link #load(String)}
- * evaluates a {@link ValueExpression}; {@link #store(String, Object)} updates the attribute with a
- * {@link ValueExpression}. When an identifier is not declared in the current scope, lookup and
- * assignment are delegated to the parent scope.
- *
- * <p>For Pascal expressions that need an {@link Execution}, use {@link Execution#loadFromScope} instead of
- * {@link #load(String)}.
- *
- * @see StateMachine
+ * <p>Each scope stores its variables as attributes on a {@link MutableObject}.
+ * {@link #find(String)} returns the stored {@link Expression} in this frame only.
+ * {@link #store(String, Expression)} writes in this frame or a parent that declares the name.
  */
-public final class ObjectScope implements Memory {
+public final class ObjectScope {
+
+    public static final java.lang.Object UNINITIALIZED = new java.lang.Object() {
+        @Override
+        public String toString() {
+            return "@uninitialized";
+        }
+    };
 
     public ObjectScope(MutableObject object) {
         this(null, object);
     }
 
-    public ObjectScope(Memory parent, MutableObject object) {
+    public ObjectScope(ObjectScope parent, MutableObject object) {
         this.parent = parent;
         this.object = Objects.requireNonNull(object);
     }
 
-    public Optional<Memory> getParent() {
+    public Optional<ObjectScope> getParent() {
         return Optional.ofNullable(parent);
     }
 
@@ -36,49 +42,25 @@ public final class ObjectScope implements Memory {
         return object;
     }
 
-    @Override
-    public java.lang.Object load(String name) throws MemoryException {
-        Optional<Attribute> attribute = findAttribute(name);
-        if (attribute.isPresent()) {
-            return evaluate(object.get(attribute.get()));
-        }
-        if (parent != null) {
-            return parent.load(name);
-        }
-        throw new MemoryException("Memory does not contain value for identifier '" + name + "'");
+    public Optional<Expression> find(String name) {
+        return findAttribute(name).map(attribute -> requireExpression(object.get(attribute)));
     }
 
-    @Override
-    public void store(String name, java.lang.Object value) throws MemoryException {
-        Optional<Attribute> attribute = findAttribute(name);
-        if (attribute.isPresent()) {
-            object.set(attribute.get(), new ValueExpression(value, attribute.get().getType().get()));
-            return;
-        }
-        if (parent != null) {
-            parent.store(name, value);
-            return;
-        }
-        throw new MemoryException("Memory does not contain identifier '" + name + "'");
-    }
-
-    /**
-     * Stores an expression for the given identifier in this scope or a parent scope.
-     *
-     * @param name identifier to store
-     * @param expression expression to store
-     */
-    public void storeExpression(String name, Expression expression) {
+    public void store(String name, Expression expression) {
         Optional<Attribute> attribute = findAttribute(name);
         if (attribute.isPresent()) {
             object.set(attribute.get(), expression);
             return;
         }
-        if (parent instanceof ObjectScope objectScope) {
-            objectScope.storeExpression(name, expression);
+        if (parent != null) {
+            parent.store(name, expression);
             return;
         }
         throw new IllegalStateException("Memory does not contain identifier '" + name + "'");
+    }
+
+    public void storeExpression(String name, Expression expression) {
+        store(name, expression);
     }
 
     private Optional<Attribute> findAttribute(String name) {
@@ -87,14 +69,14 @@ public final class ObjectScope implements Memory {
             .findAny();
     }
 
-    private static java.lang.Object evaluate(ValueSpecification valueSpecification) throws MemoryException {
-        if (valueSpecification instanceof ValueExpression valueExpression) {
-            return valueExpression.getValue();
+    private static Expression requireExpression(ValueSpecification valueSpecification) {
+        if (valueSpecification instanceof Expression expression) {
+            return expression;
         }
-        throw new MemoryException("Cannot evaluate without engine: " + valueSpecification);
+        throw new IllegalStateException("Not an expression: " + valueSpecification);
     }
 
-    private final Memory parent;
+    private final ObjectScope parent;
     private final MutableObject object;
 
 }

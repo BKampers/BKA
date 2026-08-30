@@ -2,6 +2,7 @@
 ** © Bart Kampers
 ** This code may not be used for any purpose that harms humans, humanity, the environment or the universe.
 */
+
 package bka.text.parser.pascal;
 
 import bka.text.parser.*;
@@ -10,6 +11,8 @@ import java.util.function.*;
 import java.util.logging.*;
 import java.util.stream.*;
 import run.*;
+import run.statemachine.*;
+import uml.factory.*;
 import uml.statechart.*;
 import uml.structure.*;
 

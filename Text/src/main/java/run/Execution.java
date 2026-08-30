@@ -1,3 +1,8 @@
+/*
+** © Bart Kampers
+** This code may not be used for any purpose that harms humans, humanity, the environment or the universe.
+*/
+
 package run;
 
 
@@ -6,6 +11,7 @@ import java.util.function.*;
 import java.util.stream.*;
 import run.pascal.PascalValues;
 import uml.annotation.*;
+import uml.factory.UmlClassBuilder;
 import uml.structure.*;
 
 
@@ -56,7 +62,7 @@ public final class Execution {
         arguments.forEach((parameter, expression) -> argumentValues.put(parameter, evaluate(expression, parentScope)));
         ObjectScope callScope = createCallScope(operation, parentScope, argumentValues);
         execute(engine.getMethods().get(operation), callScope);
-        writeBackInOutParameters(arguments, parentScope, callScope);
+        writeBackOutParameters(arguments, parentScope, callScope);
         if (isProcedure(operation)) {
             return VOID;
         }
@@ -92,9 +98,9 @@ public final class Execution {
         return toMap(value);
     }
 
-    private void writeBackInOutParameters(Map<Parameter, Evaluable> arguments, ObjectScope parentScope, ObjectScope callScope) {
+    private void writeBackOutParameters(Map<Parameter, Evaluable> arguments, ObjectScope parentScope, ObjectScope callScope) {
         arguments.entrySet().stream()
-            .filter(entry -> entry.getKey().getDirection() == Parameter.Direction.INOUT)
+            .filter(entry -> entry.getKey().getDirection() != Parameter.Direction.IN)
             .forEach(entry -> asAssignable(entry.getValue()).assign(
                 this,
                 evaluate(PascalValues.valueOf(entry.getKey().getType().get(), loadFromScope(callScope, entry.getKey().getName().get())), parentScope),
@@ -102,20 +108,13 @@ public final class Execution {
     }
 
     public java.lang.Object loadFromScope(ObjectScope scope, String name) {
-        Optional<Attribute> attribute = findScopeAttribute(scope, name);
-        if (attribute.isPresent()) {
-            return evaluate(asEvaluable(scope.getObject().get(attribute.get())), scope);
+        Optional<Expression> expression = scope.find(name);
+        if (expression.isPresent()) {
+            return evaluate(asEvaluable(expression.get()), scope);
         }
-        if (scope.getParent().isPresent() && scope.getParent().get() instanceof ObjectScope parentScope) {
-            return loadFromScope(parentScope, name);
-        }
-        throw new IllegalStateException("No such variable in scope: " + name);
-    }
-
-    private static Optional<Attribute> findScopeAttribute(ObjectScope scope, String name) {
-        return scope.getObject().getAttributes().stream()
-            .filter(attribute -> attribute.getName().isPresent() && name.equalsIgnoreCase(attribute.getName().get()))
-            .findAny();
+        return scope.getParent()
+            .map(parent -> loadFromScope(parent, name))
+            .orElseThrow(() -> new IllegalStateException("No such variable in scope: " + name));
     }
 
     private ObjectScope createCallScope(Operation operation, ObjectScope parentScope, Map<Parameter, java.lang.Object> argumentValues) {

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import run.*;
+import run.statemachine.*;
 import uml.statechart.*;
 import uml.structure.*;
 

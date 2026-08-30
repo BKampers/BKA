@@ -1,3 +1,8 @@
+/*
+** © Bart Kampers
+** This code may not be used for any purpose that harms humans, humanity, the environment or the universe.
+*/
+
 package run.pascal;
 
 import static run.PascalTypes.BOOLEAN;
@@ -45,7 +50,7 @@ public final class PascalValues {
         if (type instanceof uml.structure.Class recordType) {
             return createRecordValue(recordType);
         }
-        return StateMachine.UNINITIALIZED;
+        return ObjectScope.UNINITIALIZED;
     }
 
     public static Evaluable intLiteral(int value) {

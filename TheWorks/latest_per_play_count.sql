@@ -1,8 +1,11 @@
 SELECT 
   latest_play_count,
   latest_play_date, 
-  COALESCE(albums.artist, track_artist),
-  COALESCE(albums.title, track_title)
+  CASE
+    WHEN latest_album_id IS NULL THEN track_artist
+    ELSE COALESCE(albums.artist, '-')
+  END AS artist,
+  COALESCE(albums.title, track_title) AS title
 FROM albums RIGHT JOIN (
   SELECT tracks.id, tracks.album_id AS latest_album_id, latest.play_count AS latest_play_count, latest.max_play_date AS latest_play_date, tracks.artist AS track_artist, tracks.title AS track_title
   FROM tracks RIGHT JOIN (

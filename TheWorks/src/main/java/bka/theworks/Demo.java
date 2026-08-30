@@ -47,9 +47,7 @@ public final class Demo {
             }
             String albumTitle = (String) track.get("Album");
             if (albumTitle != null) {
-                String albumArtist = (Boolean.TRUE.equals(track.get("Compilation")))
-                    ? null
-                    : (String) (track.containsKey("Album Artist") ? track.get("Album Artist") : track.get("Artist"));
+                String albumArtist = albumArtistOf(track);
                 AlbumEntity albumEntity = albumEntities.computeIfAbsent(
                     albumArtist,
                     artist -> new HashMap<>()).computeIfAbsent(albumTitle, title -> new AlbumEntity(albumTitle, albumArtist));
@@ -232,6 +230,17 @@ public final class Demo {
             return DISPLAY_DATE_FORMAT.format(timestamp);
         }
         return Objects.toString(object);
+    }
+
+    private static String albumArtistOf(Map<String, Object> track) {
+        String albumArtist = (String) track.get("Album Artist");
+        if (albumArtist != null) {
+            return albumArtist;
+        }
+        if (Boolean.TRUE.equals(track.get("Compilation"))) {
+            return null;
+        }
+        return (String) track.get("Artist");
     }
 
     private record AlbumEntity(String title, String artist) {

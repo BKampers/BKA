@@ -3,7 +3,7 @@
 ** This code may not be used for any purpose that harms humans, humanity, the environment or the universe.
 */
 
-package run.statemachine;
+package uml.factory;
 
 import java.util.*;
 import uml.statechart.*;
@@ -15,14 +15,14 @@ public class UmlStateFactory {
         // Utility class should not be instantiated
     }
 
-    public static ActionState<Action> createActionState(Action action) {
+    public static <A> ActionState<A> createActionState(A action) {
         return createActionState(Optional.of(action));
     }
 
-    private static ActionState<Action> createActionState(Optional<Action> action) {
+    private static <A> ActionState<A> createActionState(Optional<A> action) {
         return new ActionState() {
             @Override
-            public Optional<Action> getAction() {
+            public Optional<A> getAction() {
                 return action;
             }
             @Override

@@ -5,6 +5,7 @@
 
 package bka.text.parser.pascal;
 
+import uml.factory.UmlTransitionFactory;
 import bka.text.parser.*;
 import java.util.*;
 import java.util.function.*;
@@ -65,7 +66,7 @@ public final class Statement {
         Decision<Evaluator> decision = createDecision(expression.getChild("Expression"));
         diagram.add(leave -> UmlTransitionFactory.createTransition(leave, decision), decision);
         createTransitions(expression.getChild("Statement"), diagram);
-        diagram.addGuardCondition(transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), "then");
+        diagram.addGuardCondition(transition -> decision.equals(transition.getSource()), GuardConditionFactory.pass(decision), "then");
         Node elseClause = expression.getChild("ElseClause");
         if (elseClause.getChildren().isEmpty()) {
             diagram.addLeaf(decision);
@@ -85,7 +86,7 @@ public final class Statement {
         Decision<Evaluator> loopStartDecision = createDecision(identifier, expressions.getLast(), ".LE.", i -> i <= 0);
         diagram.add(loopInitialization, loopStartDecision);
         createTransitions(expression.getChild("Statement"), diagram);
-        diagram.addGuardCondition(loopStartDecision, UmlGuardConditionFactory.pass(loopStartDecision), "for");
+        diagram.addGuardCondition(loopStartDecision, GuardConditionFactory.pass(loopStartDecision), "for");
         TransitionTarget loopStart = diagram.targetOf(loopStartDecision);
         Decision<Evaluator> loopEndDecision = createDecision(identifier, expressions.getLast(), ".LT.", i -> i < 0);
         diagram.add(loopEndDecision, UmlStateFactory.createActionState(createIncrementAction(identifier)), loopStart, "for");
@@ -115,7 +116,7 @@ public final class Statement {
         Decision<Evaluator> decision = createDecision(expression.getChild("Expression"));
         diagram.add(leave -> UmlTransitionFactory.createTransition(leave, decision), decision);
         createTransitions(expression.getChild("Statement"), diagram);
-        diagram.addGuardCondition(transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), "while");
+        diagram.addGuardCondition(transition -> decision.equals(transition.getSource()), GuardConditionFactory.pass(decision), "while");
         diagram.add(decision, UmlStereotypeFactory.createStereotypes("loop"));
     }
 
@@ -125,7 +126,7 @@ public final class Statement {
         Decision<Evaluator> decision = createDecision(expression.getChild("Expression"));
         diagram.add(leave -> UmlTransitionFactory.createTransition(leave, decision), decision);
         TransitionTarget loopStart = diagram.targetOf(loopRoot);
-        diagram.addTransition(decision, loopStart, UmlGuardConditionFactory.fail(decision), "repeat");
+        diagram.addTransition(decision, loopStart, GuardConditionFactory.fail(decision), "repeat");
     }
 
     private Decision<Evaluator> createDecision(Node node) {

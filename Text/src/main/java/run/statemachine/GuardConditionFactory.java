@@ -8,9 +8,9 @@ package run.statemachine;
 import uml.statechart.*;
 
 
-public class UmlGuardConditionFactory {
+public class GuardConditionFactory {
 
-    private UmlGuardConditionFactory() {
+    private GuardConditionFactory() {
         // Utility class should not be instantiated
     }
 

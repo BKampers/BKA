@@ -5,9 +5,9 @@
 
 package bka.text.parser.pascal;
 
+import uml.factory.UmlTransitionFactory;
 import java.util.*;
 import java.util.function.*;
-import run.*;
 import run.statemachine.*;
 import uml.annotation.*;
 import uml.factory.*;
@@ -43,7 +43,7 @@ public final class ActivityDiagramBuilder {
     public void add(ActionState<Action> incrementActionState, Decision decision, String stereotype) {
         requireNotFinished();
         leaves().forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, incrementActionState)));
-        addGuardCondition(transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), stereotype);
+        addGuardCondition(transition -> decision.equals(transition.getSource()), GuardConditionFactory.pass(decision), stereotype);
         transitions.add(UmlTransitionFactory.createTransition(incrementActionState, decision));
         setLeaf(decision);
     }
@@ -53,7 +53,7 @@ public final class ActivityDiagramBuilder {
         leaves().forEach(leave -> transitions.add(UmlTransitionFactory.createTransition(leave, decision)));
         transitions.add(UmlTransitionFactory.createTransition(decision, incrementActionState));
         transitions.add(UmlTransitionFactory.createTransition(incrementActionState, loopStart));
-        addGuardCondition(transition -> decision.equals(transition.getSource()), UmlGuardConditionFactory.pass(decision), stereotype);
+        addGuardCondition(transition -> decision.equals(transition.getSource()), GuardConditionFactory.pass(decision), stereotype);
         setLeaf(decision);
     }
 
@@ -84,7 +84,7 @@ public final class ActivityDiagramBuilder {
 
     public void addTransition(Decision decision, TransitionTarget loopTarget, GuardCondition guardCondition, String stereotype) {
         requireNotFinished();
-        transitions.add(UmlTransitionFactory.createTransition(decision, loopTarget, UmlGuardConditionFactory.fail(decision), UmlStereotypeFactory.createStereotypes(stereotype)));
+        transitions.add(UmlTransitionFactory.createTransition(decision, loopTarget, GuardConditionFactory.fail(decision), UmlStereotypeFactory.createStereotypes(stereotype)));
         setLeaf(decision);
     }
 

@@ -3,7 +3,7 @@
 ** This code may not be used for any purpose that harms humans, humanity, the environment or the universe.
 */
 
-package run.statemachine;
+package uml.factory;
 
 import java.util.*;
 import java.util.stream.*;
@@ -18,24 +18,24 @@ public class UmlTransitionFactory {
         // Utility class should not be instantiated
     }
 
-    public static Transition<Event, GuardCondition, Action> createTransition(TransitionSource source, TransitionTarget target) {
+    public static <E, G, A> Transition<E, G, A> createTransition(TransitionSource source, TransitionTarget target) {
         return createTransition(Objects.requireNonNull(source), Objects.requireNonNull(target), Optional.empty(), Optional.empty(), Optional.empty(), Collections.emptySet());
     }
 
-    public static Transition<Event, GuardCondition, Action> createTransition(TransitionSource source, TransitionTarget target, Set<Stereotype> stereotypes) {
+    public static <E, G, A> Transition<E, G, A> createTransition(TransitionSource source, TransitionTarget target, Set<Stereotype> stereotypes) {
         return createTransition(Objects.requireNonNull(source), Objects.requireNonNull(target), Optional.empty(), Optional.empty(), Optional.empty(), Set.copyOf(stereotypes));
     }
 
-    public static Transition<Event, GuardCondition, Action> createTransition(TransitionSource source, TransitionTarget target, GuardCondition guardCondition, Set<Stereotype> stereotypes) {
+    public static <E, G, A> Transition<E, G, A> createTransition(TransitionSource source, TransitionTarget target, G guardCondition, Set<Stereotype> stereotypes) {
         return createTransition(Objects.requireNonNull(source), Objects.requireNonNull(target), Optional.empty(), Optional.of(guardCondition), Optional.empty(), Set.copyOf(stereotypes));
     }
 
-    public static Transition<Event, GuardCondition, Action> copyTransition(Transition<Event, GuardCondition, Action> transition, Optional<GuardCondition> guardCondition, Set<Stereotype> stereotypes) {
+    public static <E, G, A> Transition<E, G, A> copyTransition(Transition<E, G, A> transition, Optional<G> guardCondition, Set<Stereotype> stereotypes) {
         return createTransition(transition.getSource(), transition.getTarget(), transition.getEvent(), guardCondition, transition.getAction(), Set.copyOf(stereotypes));
     }
 
-    private static Transition<Event, GuardCondition, Action> createTransition(TransitionSource source, TransitionTarget target, Optional<Event> event, Optional<GuardCondition> guardCondition, Optional<Action> action, Set<Stereotype> stereotypes) {
-        return new Transition<>() {
+    private static <E, G, A> Transition<E, G, A> createTransition(TransitionSource source, TransitionTarget target, Optional<E> event, Optional<G> guardCondition, Optional<A> action, Set<Stereotype> stereotypes) {
+        return new Transition<E,G,A>() {
 
             @Override
             public TransitionSource getSource() {
@@ -48,17 +48,17 @@ public class UmlTransitionFactory {
             }
 
             @Override
-            public Optional<Event> getEvent() {
+            public Optional<E> getEvent() {
                 return event;
             }
 
             @Override
-            public Optional<GuardCondition> getGuardCondition() {
+            public Optional<G> getGuardCondition() {
                 return guardCondition;
             }
 
             @Override
-            public Optional<Action> getAction() {
+            public Optional<A> getAction() {
                 return action;
             }
 

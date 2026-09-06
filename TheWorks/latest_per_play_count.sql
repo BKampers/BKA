@@ -16,3 +16,4 @@ FROM albums RIGHT JOIN (
   ON tracks.play_date = latest.max_play_date
 )
 ON latest_album_id = albums.id
+WHERE latest_play_count > 0

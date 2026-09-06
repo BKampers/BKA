@@ -36,37 +36,38 @@ public final class Demo {
 
     private static void populateDatabase() throws DatabaseException, SAXException, IOException, ParserConfigurationException {
         LibraryLoader libraryLoader = new LibraryLoader(libraryPath());
-        Map<String, Map<String, AlbumEntity>> albumEntities = new HashMap<>();
         System.out.println("Loading tracks... ");
         Collection<Map<String, Object>> tracks = libraryLoader.getTracks();
         Map<AlbumEntity, List<Map<String, Object>>> albumTracks = new HashMap<>();
         for (Map<String, Object> track : tracks) {
-            if (!track.containsKey("Play Count")) {
-                track = new HashMap<>(track);
-                track.put("PlayCount", BigInteger.ZERO);
-            }
-            String albumTitle = (String) track.get("Album");
-            if (albumTitle != null) {
-                String albumArtist = albumArtistOf(track);
-                AlbumEntity albumEntity = albumEntities.computeIfAbsent(
-                    albumArtist,
-                    artist -> new HashMap<>()).computeIfAbsent(albumTitle, title -> new AlbumEntity(albumTitle, albumArtist));
-                albumTracks.computeIfAbsent(albumEntity, entity -> new ArrayList<>()).add(track);
-
+            track = withPlayCount(track);
+            if (albumTitleOf(track) != null) {
+                albumTracks.computeIfAbsent(AlbumEntity.of(track), entity -> new ArrayList<>()).add(track);
             }
             else {
                 Database.storeTrack(track);
             }
         }
-        for (Map<String, AlbumEntity> albumMap : albumEntities.values()) {
-            for (AlbumEntity entity : albumMap.values()) {
-                Map<String, Object> album = new HashMap<>();
-                album.put("Name", entity.title());
-                album.put("Artist", entity.artist());
-                album.put("tracks", albumTracks.get(entity));
-                Database.storeAlbum(album);
-            }
+        for (Map.Entry<AlbumEntity, List<Map<String, Object>>> albumEntry : albumTracks.entrySet()) {
+            Database.storeAlbum(albumMapOf(albumEntry.getKey(), albumEntry.getValue()));
         }
+    }
+
+    private static Map<String, Object> albumMapOf(AlbumEntity albumEntity, List<Map<String, Object>> albumTracks) {
+        Map<String, Object> albumMap = new HashMap<>();
+        albumMap.put("Name", albumEntity.title());
+        albumMap.put("Artist", albumEntity.artist());
+        albumMap.put("tracks", albumTracks);
+        return albumMap;
+    }
+
+    private static Map<String, Object> withPlayCount(Map<String, Object> track) {
+        if (track.containsKey("Play Count")) {
+            return track;
+        }
+        Map<String, Object> copy = new HashMap<>(track);
+        copy.put("Play Count", BigInteger.ZERO);
+        return copy;
     }
 
     private static String libraryPath() throws IOException {
@@ -232,6 +233,10 @@ public final class Demo {
         return Objects.toString(object);
     }
 
+    private static String albumTitleOf(Map<String, Object> track) {
+        return (String) track.get("Album");
+    }
+
     private static String albumArtistOf(Map<String, Object> track) {
         String albumArtist = (String) track.get("Album Artist");
         if (albumArtist != null) {
@@ -244,7 +249,9 @@ public final class Demo {
     }
 
     private record AlbumEntity(String title, String artist) {
-
+        public static AlbumEntity of(Map<String, Object> track) {
+            return new AlbumEntity(albumTitleOf(track), albumArtistOf(track));
+        }
     }
 
     private record Argument(String name, String value) {

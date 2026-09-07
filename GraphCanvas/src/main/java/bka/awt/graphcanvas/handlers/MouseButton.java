@@ -11,7 +11,6 @@ import java.awt.event.*;
 import java.util.*;
 
 /**
- ** @author bartkampers
  */
 public enum MouseButton {
 
@@ -36,7 +35,7 @@ public enum MouseButton {
     }
 
     public static MouseButton get(MouseEvent event) {
-        return Arrays.asList(values()).stream()
+        return Arrays.stream(values())
             .filter(button -> event.getButton() == button.buttonId)
             .filter(button -> event.getClickCount() == button.clickCount)
             .filter(button -> button.matchesModifier(event))

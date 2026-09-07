@@ -19,6 +19,7 @@ public abstract class CanvasEventHandler {
     }
 
     public void paint(Graphics2D graphics) {
+        // Do not paint
     }
 
     public CanvasUpdate mouseMoved(MouseEvent event) {

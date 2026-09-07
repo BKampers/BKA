@@ -15,7 +15,7 @@ import java.util.*;
 import java.util.stream.*;
 
 
-public class GraphCanvas extends CompositeRenderer {
+public final class GraphCanvas extends CompositeRenderer {
 
     public GraphCanvas(ApplicationContext context) {
         this.context = context;
@@ -42,6 +42,8 @@ public class GraphCanvas extends CompositeRenderer {
         });
         selection.forEach(renderer -> renderer.paintHighlight(graphics, SELECTION_HIGHLIGHT_COLOR, new BasicStroke(3f)));
         mouseHandler.paint(graphics);
+        vertices.forEach(vertex -> vertex.paintLabels(graphics));
+        edges.forEach(edge -> edge.paintLabels(graphics));
     }
 
     public void addHistory(Mutation mutation) {

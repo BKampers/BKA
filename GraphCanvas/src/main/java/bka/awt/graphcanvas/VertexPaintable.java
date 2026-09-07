@@ -26,7 +26,7 @@ public abstract class VertexPaintable extends Paintable {
     }
 
     public final void setSize(int width, int height) {
-        size = new Dimension(width, height);
+        size = new Dimension(Math.max(MINIMUM_SIZE, width), Math.max(MINIMUM_SIZE, height));
     }
 
     protected Dimension getSize() {
@@ -44,4 +44,6 @@ public abstract class VertexPaintable extends Paintable {
     public abstract Point getConnectorPoint(Point location, Point point);
 
     private Dimension size;
+
+    private static final int MINIMUM_SIZE = 2;
 }

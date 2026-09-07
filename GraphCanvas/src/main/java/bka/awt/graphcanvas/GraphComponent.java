@@ -41,6 +41,10 @@ public abstract class GraphComponent implements Renderer {
         return Collections.unmodifiableCollection(labels);
     }
 
+    public void paintLabels(Graphics2D graphics) {
+        labels.forEach(label -> label.paint(graphics));
+    }
+
     private final Collection<Label> labels = new HashSet<>();
 
 }

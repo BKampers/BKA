@@ -7,7 +7,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 
-public class DistanceToLinePositionerTest {
+public final class DistanceToLinePositionerTest {
     
     @Test
     public void testMovingLine() {

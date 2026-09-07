@@ -37,10 +37,9 @@ public final class Line {
 
     @Override
     public boolean equals(Object other) {
-        if (!(other instanceof Line)) {
+        if (!(other instanceof Line line)) {
             return false;
         }
-        Line line = (Line) other;
         return slope == line.slope && offset == line.offset;
     }
 

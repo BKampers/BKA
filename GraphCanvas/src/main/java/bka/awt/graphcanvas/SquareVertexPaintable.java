@@ -13,7 +13,7 @@ import java.util.function.*;
 import java.util.stream.*;
 
 
-public class SquareVertexPaintable extends VertexPaintable {
+public final class SquareVertexPaintable extends VertexPaintable {
 
     public SquareVertexPaintable(Dimension size) {
         super(size);

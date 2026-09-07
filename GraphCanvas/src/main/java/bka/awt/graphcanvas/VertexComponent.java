@@ -12,7 +12,7 @@ import java.util.*;
 import java.util.function.*;
 
 
-public class VertexComponent extends GraphComponent {
+public final class VertexComponent extends GraphComponent {
 
     public VertexComponent(VertexPaintable vertexPaintable, Point location) {
         this.vertexPaintable = Objects.requireNonNull(vertexPaintable);
@@ -64,7 +64,6 @@ public class VertexComponent extends GraphComponent {
         graphics.translate(location.x, location.y);
         vertexPaintable.paint(graphics);
         graphics.translate(-location.x, -location.y);
-        getLabels().forEach(label -> label.paint(graphics));
     }
 
     @Override

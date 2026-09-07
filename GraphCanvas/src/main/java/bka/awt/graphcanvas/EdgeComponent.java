@@ -13,7 +13,7 @@ import java.util.function.*;
 import java.util.stream.*;
 
 
-public class EdgeComponent extends GraphComponent {
+public final class EdgeComponent extends GraphComponent {
 
     public EdgeComponent(VertexComponent start, VertexComponent end, PolygonPaintable.Factory polygonFactory, EdgeDecorationPaintable.Factory decorationFactory) {
         this.start = Objects.requireNonNull(start);
@@ -105,7 +105,6 @@ public class EdgeComponent extends GraphComponent {
         if (directed) {
             decorationPaintable.paint(graphics);
         }
-        getLabels().forEach(label -> label.paint(graphics));
     }
 
     @Override

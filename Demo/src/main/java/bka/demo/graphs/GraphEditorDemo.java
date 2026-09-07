@@ -4,6 +4,7 @@
 package bka.demo.graphs;
 
 import bka.awt.graphcanvas.*;
+import bka.demo.swing.*;
 import bka.swing.popup.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -24,6 +25,7 @@ public class GraphEditorDemo extends JFrame {
             new VertexFactory(SquareVertexPaintable::new, defaultStrokes, paints(Color.BLACK, Color.WHITE))
         ));
         populateEdgeSelectorPanel(Arrays.stream(EdgeFactory.Decoration.values()).map(EdgeFactory::new).collect(Collectors.toList()));
+        getDecorator().updateIcon();
     }
 
     private static Map<Object, Paint> paints(Paint borderPaint, Paint fillPaint) {
@@ -369,6 +371,53 @@ public class GraphEditorDemo extends JFrame {
         return null;
     }
 
+    private FrameDecorator getDecorator() {
+        return new FrameDecorator(this, GraphEditorDemo::createFrameIcon);
+    }
+
+    private static Image createFrameIcon(int size) {
+        Image image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = (Graphics2D) image.getGraphics();
+        graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        FrameDecorator.drawIconBackground(graphics, size);
+        paintGraphIcon(graphics, size);
+        graphics.dispose();
+        return image;
+    }
+
+    private static void paintGraphIcon(Graphics2D graphics, int size) {
+        graphics.scale(size / (double) FRAME_ICON_CANVAS_SIZE, size / (double) FRAME_ICON_CANVAS_SIZE);
+        VertexComponent square = createFrameIconVertex(new SquareVertexPaintable(FRAME_ICON_VERTEX_SIZE), FRAME_ICON_SQUARE_LOCATION, Color.WHITE);
+        VertexComponent round = createFrameIconVertex(new RoundVertexPaintable(FRAME_ICON_VERTEX_SIZE), FRAME_ICON_ROUND_LOCATION, Color.BLACK);
+        createFrameIconEdge(square, round).paint(graphics);
+        square.paint(graphics);
+        round.paint(graphics);
+    }
+
+    private static VertexComponent createFrameIconVertex(VertexPaintable paintable, Point location, Color fill) {
+        paintable.setPaint(VertexPaintable.BORDER_PAINT_KEY, Color.BLACK);
+        paintable.setPaint(VertexPaintable.FILL_PAINT_KEY, fill);
+        paintable.setStroke(VertexPaintable.BORDER_STROKE_KEY, FRAME_ICON_STROKE);
+        return new VertexComponent(paintable, location);
+    }
+
+    private static EdgeComponent createFrameIconEdge(VertexComponent origin, VertexComponent terminus) {
+        EdgeComponent edge = new EdgeComponent(
+            origin,
+            terminus,
+            PolygonPaintable::create,
+            (start, end) -> {
+                ArrowheadPaintable arrowhead = new ArrowheadPaintable(start, end);
+                arrowhead.setPaint(ArrowheadPaintable.ARROWHEAD_PAINT_KEY, Color.BLACK);
+                arrowhead.setStroke(ArrowheadPaintable.ARROWHEAD_STROKE_KEY, FRAME_ICON_STROKE);
+                return arrowhead;
+            });
+        edge.setDirected(true);
+        edge.getPaintable().setPaint(PolygonPaintable.LINE_PAINT_KEY, Color.BLACK);
+        edge.getPaintable().setStroke(PolygonPaintable.LINE_STROKE_KEY, FRAME_ICON_STROKE);
+        return edge;
+    }
+
     private static Icon createIcon(Paintable paintable) {
         return createIcon(paintable::paint);
     }
@@ -595,5 +644,11 @@ public class GraphEditorDemo extends JFrame {
 
     private static final Color TRANSPARENT = new Color(0, true);
     private static final BasicStroke SOLID_STROKE = new BasicStroke();
+
+    private static final int FRAME_ICON_CANVAS_SIZE = 100;
+    private static final Dimension FRAME_ICON_VERTEX_SIZE = new Dimension(22, 22);
+    private static final Point FRAME_ICON_SQUARE_LOCATION = new Point(27, 50);
+    private static final Point FRAME_ICON_ROUND_LOCATION = new Point(73, 50);
+    private static final Stroke FRAME_ICON_STROKE = new BasicStroke(2f);
 
 }

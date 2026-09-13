@@ -8,8 +8,8 @@ import bka.demo.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.*;
-import java.util.List;
 import java.util.*;
+import java.util.List;
 import java.util.stream.*;
 
 public class CalendarDemo extends javax.swing.JFrame {
@@ -27,8 +27,9 @@ public class CalendarDemo extends javax.swing.JFrame {
         gregorianPanel.addMouseListener(mouseListener);
         republicanPanel.addMouseListener(mouseListener);
         earthianPanel.addMouseListener(mouseListener);
-        Timer timer = new Timer();
-        timer.schedule(timerTask, nextSecond(), MILLIS_PER_SECOND);
+        javax.swing.Timer timer = new javax.swing.Timer(MILLIS_PER_SECOND, event -> updateCalendars());
+        timer.setInitialDelay(nextSecond());
+        timer.start();
     }
 
     private MouseListener getMouseListener() {
@@ -40,8 +41,8 @@ public class CalendarDemo extends javax.swing.JFrame {
         };
     }
 
-    private static long nextSecond() {
-        return MILLIS_PER_SECOND - System.currentTimeMillis() % MILLIS_PER_SECOND;
+    private static int nextSecond() {
+        return MILLIS_PER_SECOND - (int) (System.currentTimeMillis() % MILLIS_PER_SECOND);
     }
 
     /**
@@ -102,19 +103,16 @@ public class CalendarDemo extends javax.swing.JFrame {
         java.awt.EventQueue.invokeLater(() -> new CalendarDemo().setVisible(true));
     }
 
-    private final TimerTask timerTask = new TimerTask() {
-        @Override
-        public void run() {
-            long millis = System.currentTimeMillis();
-            gregorian.setTimeInMillis(millis);
-            gregorianPanel.update();
-            republican.setTimeInMillis(millis);
-            republicanPanel.update();
-            earthian.setTimeInMillis(millis);
-            earthianPanel.update();
-            setIcon(hoveredPanel.getModel());
-        }
-    };
+    private void updateCalendars() {
+        long millis = System.currentTimeMillis();
+        gregorian.setTimeInMillis(millis);
+        gregorianPanel.update();
+        republican.setTimeInMillis(millis);
+        republicanPanel.update();
+        earthian.setTimeInMillis(millis);
+        earthianPanel.update();
+        setIcon(hoveredPanel.getModel());
+    }
 
     private FrameDecorator getDecorator(CalendarModel model) {
         return new FrameDecorator(this, size -> createIcon(model, size));
@@ -223,7 +221,7 @@ public class CalendarDemo extends javax.swing.JFrame {
     private javax.swing.JPanel calendarsPanel;
     // End of variables declaration//GEN-END:variables
 
-    private static final long MILLIS_PER_SECOND = 1000;
+    private static final int MILLIS_PER_SECOND = 1000;
 
     private static final int DEFAULT_ICON_SIZE = 1024;
 

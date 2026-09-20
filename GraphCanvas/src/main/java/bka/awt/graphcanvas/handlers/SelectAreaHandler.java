@@ -12,7 +12,7 @@ import java.awt.event.*;
 import java.util.*;
 
 
-public class SelectAreaHandler extends CanvasEventHandler {
+public final class SelectAreaHandler extends CanvasEventHandler {
 
     public SelectAreaHandler(GraphCanvas canvas, Point dragStartPoint) {
         super(canvas);

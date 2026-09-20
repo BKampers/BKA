@@ -7,8 +7,8 @@
 package bka.awt.graphcanvas.handlers;
 
 import bka.awt.*;
-import bka.awt.graphcanvas.Label;
 import bka.awt.graphcanvas.*;
+import bka.awt.graphcanvas.Label;
 import bka.awt.graphcanvas.history.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -35,13 +35,13 @@ public final class DefaultEventHandler extends CanvasEventHandler {
         if (label != null) {
             return handleLabelHovered(label, event);
         }
-        VertexComponent nearestVertex = getCanvas().findNearestVertex(cursor);
-        if (nearestVertex != null) {
-            return handleVertexHovered(nearestVertex, event);
+        Optional<VertexComponent> nearestVertex = getCanvas().findNearestVertex(cursor);
+        if (nearestVertex.isPresent()) {
+            return handleVertexHovered(nearestVertex.get(), event);
         }
-        EdgeComponent nearestEdge = getCanvas().findNearestEdge(cursor);
-        if (nearestEdge != null && MouseButton.MAIN.matchesModifier(event)) {
-            return handleEdgeHovered(nearestEdge, cursor);
+        Optional<EdgeComponent> nearestEdge = getCanvas().findNearestEdge(cursor);
+        if (nearestEdge.isPresent() && MouseButton.MAIN.matchesModifier(event)) {
+            return handleEdgeHovered(nearestEdge.get(), cursor);
         }
         boolean needRepaint =
             setEdgePoint(null) |
@@ -129,14 +129,14 @@ public final class DefaultEventHandler extends CanvasEventHandler {
             return CanvasUpdate.NO_OPERATION;
         }
         Point cursor = event.getPoint();
-        VertexComponent nearestVertex = getCanvas().findNearestVertex(cursor);
-        if (nearestVertex != null) {
-            handleVertexPressed(cursor, nearestVertex);
+        Optional<VertexComponent> nearestVertex = getCanvas().findNearestVertex(cursor);
+        if (nearestVertex.isPresent()) {
+            handleVertexPressed(cursor, nearestVertex.get());
         }
         else {
-            EdgeComponent nearestEdge = getCanvas().findNearestEdge(cursor);
-            if (nearestEdge != null) {
-                handleEdgePressed(cursor, nearestEdge);
+            Optional<EdgeComponent> nearestEdge = getCanvas().findNearestEdge(cursor);
+            if (nearestEdge.isPresent()) {
+                handleEdgePressed(cursor, nearestEdge.get());
             }
         }
         return CanvasUpdate.NO_OPERATION;
@@ -153,7 +153,7 @@ public final class DefaultEventHandler extends CanvasEventHandler {
             }
             else {
                 if (!getCanvas().getSelection().contains(vertex)) {
-                    getCanvas().selectSingleVertex(vertex);
+                    getCanvas().selectSingle(vertex);
                 }
                 getCanvas().setEventHandler(new SelectionMoveHandler(getCanvas(), cursor));
             }
@@ -161,6 +161,9 @@ public final class DefaultEventHandler extends CanvasEventHandler {
     }
 
     private void handleEdgePressed(Point cursor, EdgeComponent nearestEdge) {
+        if (!getCanvas().getSelection().contains(nearestEdge)) {
+            getCanvas().selectSingle(nearestEdge);
+        }
         EdgeComponent.Excerpt originalShape = nearestEdge.getExcerpt();
         getCanvas().setEventHandler(new EdgePointMoveHandler(getCanvas(), dragPoint(nearestEdge, cursor), nearestEdge, originalShape));
     }
@@ -205,32 +208,42 @@ public final class DefaultEventHandler extends CanvasEventHandler {
 
     @Override
     public CanvasUpdate mouseClicked(MouseEvent event) {
-        if (button == MouseButton.MAIN) {
-            return mainButtonClicked(event.getPoint());
-        }
-        if (button == MouseButton.TOGGLE_SELECT) {
-            return toggleSelection(event.getPoint());
-        }
-        if (button == MouseButton.CONTEXT) {
-            return contextButtonClicked(event);
-        }
-        if (button == MouseButton.EDIT) {
-            return editLabel(event.getPoint());
-        }
-        return CanvasUpdate.NO_OPERATION;
+        return switch (button) {
+            case MAIN ->
+                mainButtonClicked(event.getPoint());
+            case TOGGLE_SELECT ->
+                toggleSelection(event.getPoint());
+            case CONTEXT ->
+                contextButtonClicked(event);
+            case EDIT ->
+                editLabel(event.getPoint());
+            case UNSUPPORTED ->
+                CanvasUpdate.NO_OPERATION;
+            default ->
+                throw new IllegalStateException(button.name());
+        };
     }
 
     private CanvasUpdate mainButtonClicked(Point cursor) {
         getCanvas().clearSelection();
-        GraphComponent nearest = getCanvas().findNearestEdge(cursor);
-        if (nearest == null) {
-            nearest = getCanvas().findNearestVertex(cursor);
-        }
+        GraphComponent nearest = findNearestComponent(cursor);
         if (nearest != null) {
             getCanvas().select(nearest);
             return CanvasUpdate.REPAINT;
         }
         return addNewVertex(cursor);
+    }
+
+    private GraphComponent findNearestComponent(Point cursor) {
+        Optional<EdgeComponent> nearestEdge = getCanvas().findNearestEdge(cursor);
+        if (nearestEdge.isPresent()) {
+            return nearestEdge.get();
+        }
+        Optional<VertexComponent> nearestVertex = getCanvas().findNearestVertex(cursor);
+        if (nearestVertex.isPresent()) {
+            return nearestVertex.get();
+        }
+        return null;
     }
 
     private CanvasUpdate addNewVertex(Point cursor) {
@@ -244,19 +257,19 @@ public final class DefaultEventHandler extends CanvasEventHandler {
     }
 
     private CanvasUpdate toggleSelection(Point cursor) {
-        VertexComponent nearestVertex = getCanvas().findNearestVertex(cursor);
-        if (nearestVertex != null) {
-            if (getCanvas().getSelection().contains(nearestVertex)) {
-                getCanvas().removeSelected(nearestVertex);
+        Optional<VertexComponent> nearestVertex = getCanvas().findNearestVertex(cursor);
+        if (nearestVertex.isPresent()) {
+            if (getCanvas().getSelection().contains(nearestVertex.get())) {
+                getCanvas().removeSelected(nearestVertex.get());
             }
             else {
-                getCanvas().select(nearestVertex);
+                getCanvas().select(nearestVertex.get());
             }
             return CanvasUpdate.REPAINT;
         }
-        EdgeComponent nearestEdge = getCanvas().findNearestEdge(cursor);
-        if (nearestEdge != null) {
-            getCanvas().toggleSelected(nearestEdge);
+        Optional<EdgeComponent> nearestEdge = getCanvas().findNearestEdge(cursor);
+        if (nearestEdge.isPresent()) {
+            getCanvas().toggleSelected(nearestEdge.get());
             return CanvasUpdate.REPAINT;
         }
         return CanvasUpdate.NO_OPERATION;
@@ -264,15 +277,15 @@ public final class DefaultEventHandler extends CanvasEventHandler {
 
     private CanvasUpdate contextButtonClicked(MouseEvent event) {
         Point cursor = event.getPoint();
-        EdgeComponent nearestEdge = getCanvas().findNearestEdge(cursor);
-        if (nearestEdge != null) {
-            getCanvas().getContext().showEdgeMenu(nearestEdge, cursor);
+        Optional<EdgeComponent> nearestEdge = getCanvas().findNearestEdge(cursor);
+        if (nearestEdge.isPresent()) {
+            getCanvas().getContext().showEdgeMenu(nearestEdge.get(), cursor);
             getCanvas().resetEventHandler();
             return CanvasUpdate.repaint(java.awt.Cursor.DEFAULT_CURSOR);
         }
-        VertexComponent nearestVertex = getCanvas().findNearestVertex(cursor);
-        if (nearestVertex != null) {
-            getCanvas().getContext().showVertexMenu(nearestVertex, cursor);
+        Optional<VertexComponent> nearestVertex = getCanvas().findNearestVertex(cursor);
+        if (nearestVertex.isPresent()) {
+            getCanvas().getContext().showVertexMenu(nearestVertex.get(), cursor);
             getCanvas().resetEventHandler();
             return CanvasUpdate.repaint(java.awt.Cursor.DEFAULT_CURSOR);
         }
@@ -297,13 +310,13 @@ public final class DefaultEventHandler extends CanvasEventHandler {
         if (label != null) {
             return label.getElement();
         }
-        VertexComponent vertex = getCanvas().findNearestVertex(cursor);
-        if (vertex != null) {
-            return vertex;
+        Optional<VertexComponent> vertex = getCanvas().findNearestVertex(cursor);
+        if (vertex.isPresent()) {
+            return vertex.get();
         }
-        EdgeComponent edge = getCanvas().findNearestEdge(cursor);
-        if (edge != null) {
-            return edge;
+        Optional<EdgeComponent> edge = getCanvas().findNearestEdge(cursor);
+        if (edge.isPresent()) {
+            return edge.get();
         }
         return highlightedElement;
     }

@@ -37,8 +37,12 @@ public final class GraphCanvas extends CompositeRenderer {
         vertices.forEach(renderer -> renderer.paint(graphics));
         edges.forEach(edge -> {
             edge.paint(graphics);
-            PaintUtil.paintConnectorPoint(graphics, edge.getStartConnectorPoint());
-            PaintUtil.paintConnectorPoint(graphics, edge.getEndConnectorPoint());
+            if (selection.contains(edge) || selection.contains(edge.getStart())) {
+                PaintUtil.paintConnectorPoint(graphics, edge.getStartConnectorPoint());
+            }
+            if (selection.contains(edge) || selection.contains(edge.getEnd())) {
+                PaintUtil.paintConnectorPoint(graphics, edge.getEndConnectorPoint());
+            }
         });
         selection.forEach(renderer -> renderer.paintHighlight(graphics, SELECTION_HIGHLIGHT_COLOR, new BasicStroke(3f)));
         mouseHandler.paint(graphics);
@@ -101,7 +105,7 @@ public final class GraphCanvas extends CompositeRenderer {
         Collection<EdgeComponent> edgesToRemove = new HashSet<>();
         Collection<VertexComponent> verticesToRemove = new ArrayList<>();
         selection.forEach(element -> {
-            if (element instanceof EdgeComponent) {
+            if (element instanceof EdgeComponent) { // TODO use sealed classes. A GraphComponent is eather a VertexComponent or an EdgeComponent.
                 edgesToRemove.add((EdgeComponent) element);
             }
             else {
@@ -157,20 +161,18 @@ public final class GraphCanvas extends CompositeRenderer {
         return distances.firstEntry().getValue();
     }
 
-    public VertexComponent findNearestVertex(Point point) {
-        TreeMap<Long, VertexComponent> distances = new TreeMap<>();
-        vertices.forEach(vertexRenderer -> distances.put(vertexRenderer.squareDistance(point), vertexRenderer));
-        Map.Entry<Long, VertexComponent> nearest = distances.floorEntry(CanvasUtil.NEAR_DISTANCE);
-        if (nearest == null) {
-            return null;
-        }
-        return nearest.getValue();
+    public Optional<VertexComponent> findNearestVertex(Point point) {
+        return Optional.ofNullable(findNearest(vertices, point));
     }
 
-    public EdgeComponent findNearestEdge(Point point) {
-        TreeMap<Long, EdgeComponent> distances = new TreeMap<>();
-        edges.forEach(edgeRenderer -> distances.put(edgeRenderer.squareDistance(point), edgeRenderer));
-        Map.Entry<Long, EdgeComponent> nearest = distances.floorEntry(CanvasUtil.NEAR_DISTANCE);
+    public Optional<EdgeComponent> findNearestEdge(Point point) {
+        return Optional.ofNullable(findNearest(edges, point));
+    }
+
+    private <T extends GraphComponent> T findNearest(Collection<T> components, Point point) {
+        TreeMap<Long, T> distances = new TreeMap<>();
+        components.forEach(component -> distances.put(component.squareDistance(point), component));
+        Map.Entry<Long, T> nearest = distances.floorEntry(CanvasUtil.NEAR_DISTANCE);
         if (nearest == null) {
             return null;
         }
@@ -223,9 +225,9 @@ public final class GraphCanvas extends CompositeRenderer {
         selection.add(element);
     }
 
-    public void selectSingleVertex(VertexComponent vertex) {
+    public void selectSingle(GraphComponent element) {
         selection.clear();
-        selection.add(vertex);
+        selection.add(element);
     }
 
     public void removeSelected(GraphComponent element) {

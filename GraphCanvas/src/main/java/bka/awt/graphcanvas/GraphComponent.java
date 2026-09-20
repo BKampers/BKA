@@ -19,6 +19,8 @@ public abstract class GraphComponent implements Renderer {
 
     public abstract Paintable getPaintable();
 
+    public abstract long squareDistance(Point point);
+
     public abstract Supplier<Point> distancePositioner(Point point);
 
     public Collection<Paintable> getCustomizablePaintables() {

@@ -7,8 +7,8 @@
 package bka.awt.graphcanvas;
 
 import java.awt.*;
-import java.util.List;
 import java.util.*;
+import java.util.List;
 import java.util.function.*;
 
 
@@ -44,6 +44,7 @@ public final class VertexComponent extends GraphComponent {
         return vertexPaintable.getConnectorPoint(location, edgePoint);
     }
 
+    @Override
     public long squareDistance(Point point) {
         double distance = distance(point);
         long squareDistance = Math.round(distance * distance);

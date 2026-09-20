@@ -13,11 +13,20 @@ import java.awt.event.*;
 import java.util.*;
 
 
-public class EdgePointMoveHandler extends CanvasEventHandler {
+public final class EdgePointMoveHandler extends CanvasEventHandler {
 
-    public EdgePointMoveHandler(GraphCanvas canvas, Point dragStartPoint, EdgeComponent draggingEdgeRenderer, EdgeComponent.Excerpt originalShape) {
+    /**
+     * Handles moving of a point on an edge. The coordinates of given {@code dragPoint} are updated while the mouse is dragged. Pass the live
+     * {@link Point} that belongs to {@code draggingEdgeRenderer} (an existing bend, or a newly inserted one).
+     *
+     * @param canvas canvas that owns this handler
+     * @param dragPoint live edge point that will be moved
+     * @param draggingEdgeRenderer edge whose geometry is being edited
+     * @param originalShape excerpt of the edge before this drag, used for undo
+     */
+    public EdgePointMoveHandler(GraphCanvas canvas, Point dragPoint, EdgeComponent draggingEdgeRenderer, EdgeComponent.Excerpt originalShape) {
         super(canvas);
-        this.dragPoint = Objects.requireNonNull(dragStartPoint);
+        this.dragPoint = Objects.requireNonNull(dragPoint);
         this.draggingEdgeRenderer = draggingEdgeRenderer;
         this.originalShape = originalShape;
         edgeBendSelected = originalShape.getPoints().size() == draggingEdgeRenderer.getPoints().size();

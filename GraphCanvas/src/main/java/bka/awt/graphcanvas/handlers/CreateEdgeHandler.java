@@ -14,7 +14,7 @@ import java.util.*;
 import java.util.function.*;
 
 
-public class CreateEdgeHandler extends CanvasEventHandler {
+public final class CreateEdgeHandler extends CanvasEventHandler {
 
     public CreateEdgeHandler(GraphCanvas canvas, VertexComponent vertex, Point cursor) {
         super(canvas);
@@ -28,9 +28,9 @@ public class CreateEdgeHandler extends CanvasEventHandler {
         }
         Point cursor = event.getPoint();
         Point newConnectorPoint = null;
-        VertexComponent nearestVertex = getCanvas().findNearestVertex(cursor);
-        if (nearestVertex != null) {
-            newConnectorPoint = nearestVertex.getConnectorPoint(cursor);
+        Optional<VertexComponent> nearestVertex = getCanvas().findNearestVertex(cursor);
+        if (nearestVertex.isPresent()) {
+            newConnectorPoint = nearestVertex.get().getConnectorPoint(cursor);
         }
         if (Objects.equals(newConnectorPoint, connectorPoint)) {
             return CanvasUpdate.NO_OPERATION;
@@ -61,12 +61,12 @@ public class CreateEdgeHandler extends CanvasEventHandler {
             return CanvasUpdate.NO_OPERATION;
         }
         Point cursor = event.getPoint();
-        VertexComponent nearestVertex = getCanvas().findNearestVertex(cursor);
-        if (nearestVertex == null) {
+        Optional<VertexComponent> nearestVertex = getCanvas().findNearestVertex(cursor);
+        if (nearestVertex.isEmpty()) {
             connectorPoint = null;
         }
-        else if (!cursor.equals(nearestVertex.getLocation())) {
-            connectorPoint = nearestVertex.getConnectorPoint(cursor);
+        else if (!cursor.equals(nearestVertex.get().getLocation())) {
+            connectorPoint = nearestVertex.get().getConnectorPoint(cursor);
         }
         draggingEdgeRenderer.getEnd().setLocation(cursor);
         return CanvasUpdate.REPAINT;
@@ -78,9 +78,9 @@ public class CreateEdgeHandler extends CanvasEventHandler {
             return CanvasUpdate.NO_OPERATION;
         }
         Point cursor = event.getPoint();
-        VertexComponent end = getCanvas().findNearestVertex(cursor);
-        if (end != null) {
-            draggingEdgeRenderer.setEnd(end);
+        Optional<VertexComponent> end = getCanvas().findNearestVertex(cursor);
+        if (end.isPresent()) {
+            draggingEdgeRenderer.setEnd(end.get());
             CanvasUtil.cleanup(draggingEdgeRenderer);
             if (!end.equals(draggingEdgeRenderer.getStart()) || !draggingEdgeRenderer.getPoints().isEmpty()) {
                 getCanvas().addEdge(draggingEdgeRenderer);

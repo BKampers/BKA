@@ -7,8 +7,8 @@
 package bka.awt.graphcanvas;
 
 import java.awt.*;
-import java.util.List;
 import java.util.*;
+import java.util.List;
 import java.util.function.*;
 import java.util.stream.*;
 
@@ -123,6 +123,7 @@ public final class EdgeComponent extends GraphComponent {
         graphics.drawLine(p1.x, p1.y, p2.x, p2.y);
     }
 
+    @Override
     public long squareDistance(Point point) {
         long distance = Long.MAX_VALUE;
         Point startPoint = getStartConnectorPoint();

@@ -15,7 +15,7 @@ import java.util.*;
 import java.util.function.*;
 
 
-public class DragLabelHandler extends CanvasEventHandler {
+public final class DragLabelHandler extends CanvasEventHandler {
 
     public DragLabelHandler(GraphCanvas canvas, Label label) {
         super(canvas);

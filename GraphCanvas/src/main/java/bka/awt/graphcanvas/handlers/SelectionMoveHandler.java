@@ -15,7 +15,7 @@ import java.util.function.*;
 import java.util.stream.*;
 
 
-public class SelectionMoveHandler extends CanvasEventHandler {
+public final class SelectionMoveHandler extends CanvasEventHandler {
 
     public SelectionMoveHandler(GraphCanvas canvas, Point dragStartPoint) {
         super(canvas);

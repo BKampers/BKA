@@ -13,7 +13,7 @@ import java.awt.event.*;
 import java.util.*;
 
 
-public class VertexResizeHandler extends CanvasEventHandler {
+public final class VertexResizeHandler extends CanvasEventHandler {
 
     public VertexResizeHandler(GraphCanvas canvas, VertexComponent draggingVertex, ResizeDirection direction) {
         super(canvas);

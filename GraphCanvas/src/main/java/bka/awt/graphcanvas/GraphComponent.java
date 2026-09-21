@@ -11,7 +11,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.function.*;
 
-public abstract class GraphComponent implements Renderer {
+public abstract sealed class GraphComponent implements Renderer permits EdgeComponent, VertexComponent {
 
     public abstract void paintHighlight(Graphics2D graphics, Color color, Stroke stroke);
 

@@ -38,10 +38,8 @@ public final class SelectionMoveHandler extends CanvasEventHandler {
     }
 
     private CanvasUpdate moveSelection(Point cursor) {
-        int deltaX = cursor.x - dragPoint.x;
-        int deltaY = cursor.y - dragPoint.y;
-        Point vector = new Point(deltaX, deltaY);
         Set<GraphComponent> selection = getCanvas().getSelection();
+        Point vector = new Point(cursor.x - dragPoint.x, cursor.y - dragPoint.y);
         selection.forEach(element -> element.move(vector));
         getCanvas().getEdges().stream()
             .filter(edge -> !selection.contains(edge))

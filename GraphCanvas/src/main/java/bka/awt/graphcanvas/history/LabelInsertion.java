@@ -10,7 +10,7 @@ import bka.awt.graphcanvas.*;
 import java.util.*;
 
 
-public class LabelInsertion implements Mutation {
+public final class LabelInsertion implements Mutation {
 
     public LabelInsertion(GraphComponent element, Label label) {
         this.element = Objects.requireNonNull(element);

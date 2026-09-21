@@ -105,18 +105,18 @@ public final class GraphCanvas extends CompositeRenderer {
         Collection<EdgeComponent> edgesToRemove = new HashSet<>();
         Collection<VertexComponent> verticesToRemove = new ArrayList<>();
         selection.forEach(element -> {
-            if (element instanceof EdgeComponent) { // TODO use sealed classes. A GraphComponent is eather a VertexComponent or an EdgeComponent.
-                edgesToRemove.add((EdgeComponent) element);
-            }
-            else {
-                VertexComponent vertex = (VertexComponent) element;
-                edgesToRemove.addAll(incidentEdges(vertex));
-                verticesToRemove.add(vertex);
+            switch (element) {
+                case EdgeComponent edge ->
+                    edgesToRemove.add(edge);
+                case VertexComponent vertex -> {
+                    edgesToRemove.addAll(incidentEdges(vertex));
+                    verticesToRemove.add(vertex);
+                }
             }
         });
         edges.removeAll(edgesToRemove);
         vertices.removeAll(verticesToRemove);
-        history.add(new ElementDeletion(verticesToRemove, edgesToRemove, GraphCanvas.this));
+        history.add(new ElementDeletion(verticesToRemove, edgesToRemove, this));
         selection.clear();
         return CanvasUpdate.repaint(Cursor.DEFAULT_CURSOR);
     }

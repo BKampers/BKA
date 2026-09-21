@@ -10,7 +10,7 @@ import bka.awt.graphcanvas.*;
 import java.util.*;
 
 
-public class ElementInsertion implements Mutation {
+public final class ElementInsertion implements Mutation {
 
     public ElementInsertion(VertexComponent vertex, GraphCanvas graphCanvas) {
         this.graphCanvas = Objects.requireNonNull(graphCanvas);

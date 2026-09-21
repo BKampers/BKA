@@ -11,13 +11,13 @@ import java.awt.*;
 import java.util.*;
 
 
-public class ElementRelocation extends Mutation.Symmetrical {
+public final class ElementRelocation extends Mutation.Symmetrical {
 
     public ElementRelocation(Collection<GraphComponent> elements, Point vector, Map<EdgeComponent, EdgeComponent.Excerpt> affectedEdges) {
         this.vertices = CollectionUtil.getVertices(elements);
         this.edges = CollectionUtil.getEdges(elements);
         this.vector = Objects.requireNonNull(vector);
-        this.affectedEdges = CollectionUtil.unmodifiableMap(affectedEdges);
+        this.affectedEdges = Map.copyOf(affectedEdges);
     }
 
     @Override

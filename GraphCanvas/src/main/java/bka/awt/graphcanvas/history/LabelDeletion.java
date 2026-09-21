@@ -10,7 +10,7 @@ import bka.awt.graphcanvas.*;
 import java.util.*;
 
 
-public class LabelDeletion implements Mutation {
+public final class LabelDeletion implements Mutation {
 
     public LabelDeletion(GraphComponent element, Label label) {
         this.element = Objects.requireNonNull(element);

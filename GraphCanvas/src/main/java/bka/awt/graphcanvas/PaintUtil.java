@@ -11,6 +11,10 @@ import java.awt.*;
 
 public class PaintUtil {
 
+    private PaintUtil() {
+        // Util class should not be instantiated.
+    }
+
     public static void paintConnectorPoint(Graphics2D graphics, Point location) {
         paintDot(graphics, location, EDGE_POINT_RADIUS, CONNECTOR_POINT_PAINT);
     }
@@ -41,8 +45,6 @@ public class PaintUtil {
         graphics.drawOval(location.x - radius, location.y - radius, size, size);
     }
 
-    private PaintUtil() {
-    }
 
     private static final int EDGE_POINT_RADIUS = 3;
     private static final int NEW_CONNECTOR_POINT_RADIUS = 4;

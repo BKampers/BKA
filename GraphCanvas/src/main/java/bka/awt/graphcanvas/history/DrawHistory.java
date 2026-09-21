@@ -9,7 +9,7 @@ package bka.awt.graphcanvas.history;
 import java.util.*;
 
 
-public class DrawHistory {
+public final class DrawHistory {
 
     public interface Listener {
 

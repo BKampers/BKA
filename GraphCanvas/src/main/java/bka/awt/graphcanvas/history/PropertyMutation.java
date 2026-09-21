@@ -24,14 +24,14 @@ public class PropertyMutation<T> extends Mutation.Symmetrical {
     }
 
     @Override
-    protected void revert() {
+    protected final void revert() {
         T swapValue = oldValue.get();
         newValue.accept(historicValue);
         historicValue = swapValue;
     }
 
     @Override
-    public Type getType() {
+    public final Type getType() {
         return type;
     }
 

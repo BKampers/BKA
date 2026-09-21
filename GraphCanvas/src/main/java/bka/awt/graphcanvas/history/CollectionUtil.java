@@ -13,32 +13,22 @@ import java.util.stream.*;
 
 public class CollectionUtil {
 
-    public static <T> Collection<T> unmodifiableCollection(Collection<T> collection) {
-        if (collection.isEmpty()) {
-            return Collections.emptyList();
-        }
-        return Collections.unmodifiableCollection(collection);
-    }
-
-    public static <K, V> Map<K, V> unmodifiableMap(Map<K, V> map) {
-        if (map.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        return Collections.unmodifiableMap(map);
+    private CollectionUtil() {
+        // Util class should not be instantiated.
     }
 
     public static Collection<VertexComponent> getVertices(Collection<GraphComponent> elements) {
-        return unmodifiableCollection(elements.stream()
+        return elements.stream()
             .filter(element -> element instanceof VertexComponent)
             .map(element -> (VertexComponent) element)
-            .collect(Collectors.toList()));
+            .collect(Collectors.toList());
     }
 
     public static Collection<EdgeComponent> getEdges(Collection<GraphComponent> elements) {
-        return unmodifiableCollection(elements.stream()
+        return elements.stream()
             .filter(element -> element instanceof EdgeComponent)
             .map(element -> (EdgeComponent) element)
-            .collect(Collectors.toList()));
+            .collect(Collectors.toList());
     }
 
 }

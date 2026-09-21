@@ -10,12 +10,12 @@ import bka.awt.graphcanvas.*;
 import java.util.*;
 
 
-public class ElementDeletion implements Mutation {
+public final class ElementDeletion implements Mutation {
 
     public ElementDeletion(Collection<VertexComponent> vertices, Collection<EdgeComponent> edges, GraphCanvas graphCanvas) {
         this.graphCanvas = Objects.requireNonNull(graphCanvas);
-        this.vertices = CollectionUtil.unmodifiableCollection(vertices);
-        this.edges = CollectionUtil.unmodifiableCollection(edges);
+        this.vertices = List.copyOf(vertices);
+        this.edges = List.copyOf(edges);
     }
 
     @Override

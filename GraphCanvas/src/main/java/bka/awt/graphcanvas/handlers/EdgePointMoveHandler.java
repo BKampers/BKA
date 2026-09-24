@@ -11,6 +11,7 @@ import bka.awt.graphcanvas.history.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
+import java.util.function.*;
 
 
 public final class EdgePointMoveHandler extends CanvasEventHandler {
@@ -29,7 +30,9 @@ public final class EdgePointMoveHandler extends CanvasEventHandler {
         this.dragPoint = Objects.requireNonNull(dragPoint);
         this.draggingEdgeRenderer = draggingEdgeRenderer;
         this.originalShape = originalShape;
-        edgeBendSelected = originalShape.getPoints().size() == draggingEdgeRenderer.getPoints().size();
+        renderer = (originalShape.getPoints().size() == draggingEdgeRenderer.getPoints().size())
+            ? PaintUtil::paintEdgePoint
+            : PaintUtil::paintNewEdgePoint;
     }
 
     @Override
@@ -44,27 +47,27 @@ public final class EdgePointMoveHandler extends CanvasEventHandler {
         if (!originalShape.equals(draggingEdgeRenderer.getExcerpt())) {
             getCanvas().addHistory(new PropertyMutation<>(
                 Mutation.Type.EDGE_TRANSFORMATION,
-                () -> draggingEdgeRenderer.getExcerpt(),
-                draggingEdgeRenderer::set,
+                draggingEdgeRenderer::getExcerpt,
+                draggingEdgeRenderer::applyExcerpt,
                 originalShape));
         }
-        getCanvas().resetEventHandler();
+        if (dragPoint.equals(event.getPoint())) {
+            getCanvas().setEventHandler(DefaultEventHandler.create(getCanvas(), MouseButton.get(event)));
+        }
+        else {
+            getCanvas().resetEventHandler();
+        }
         return CanvasUpdate.REPAINT;
     }
 
     @Override
     public void paint(Graphics2D graphics) {
-        if (edgeBendSelected) {
-            PaintUtil.paintEdgePoint(graphics, dragPoint);
-        }
-        else {
-            PaintUtil.paintNewEdgePoint(graphics, dragPoint);
-        }
+        renderer.accept(graphics, dragPoint);
     }
 
-    private final boolean edgeBendSelected;
     private final Point dragPoint;
     private final EdgeComponent draggingEdgeRenderer;
     private final EdgeComponent.Excerpt originalShape;
+    private final BiConsumer<Graphics2D, Point> renderer;
 
 }

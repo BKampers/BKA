@@ -38,7 +38,7 @@ public final class EdgeComponent extends GraphComponent {
         return new Excerpt();
     }
 
-    public void set(Excerpt excerpt) {
+    public void applyExcerpt(Excerpt excerpt) {
         points.clear();
         points.addAll(excerpt.getPoints());
         excerpt.getLabelIndices().forEach((label, index) -> ((DistanceToLinePositioner) label.getPositioner()).setIndex(index));

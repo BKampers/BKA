@@ -23,7 +23,7 @@ public final class GraphCanvas extends CompositeRenderer {
     }
 
     public final void resetEventHandler() {
-        mouseHandler = new DefaultEventHandler(GraphCanvas.this);
+        mouseHandler = DefaultEventHandler.create(this);
     }
 
     public void setEventHandler(CanvasEventHandler handler) {

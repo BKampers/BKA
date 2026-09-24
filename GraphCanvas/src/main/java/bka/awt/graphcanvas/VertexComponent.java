@@ -83,6 +83,7 @@ public final class VertexComponent extends GraphComponent {
         return List.of(vertexPaintable);
     }
 
+    @Override
     public Paintable getPaintable() {
         return vertexPaintable;
     }

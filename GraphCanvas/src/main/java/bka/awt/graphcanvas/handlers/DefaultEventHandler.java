@@ -19,11 +19,15 @@ import java.util.stream.*;
 
 public final class DefaultEventHandler extends CanvasEventHandler {
 
-    public DefaultEventHandler(GraphCanvas canvas) {
-        this(canvas, null);
+    public static DefaultEventHandler create(GraphCanvas canvas) {
+        return new DefaultEventHandler(canvas, null);
     }
 
-    public DefaultEventHandler(GraphCanvas canvas, MouseButton button) {
+    public static DefaultEventHandler create(GraphCanvas canvas, MouseButton button) {
+        return new DefaultEventHandler(canvas, Objects.requireNonNull(button));
+    }
+
+    private DefaultEventHandler(GraphCanvas canvas, MouseButton button) {
         super(canvas);
         this.button = button;
     }
@@ -120,6 +124,8 @@ public final class DefaultEventHandler extends CanvasEventHandler {
 
     @Override
     public CanvasUpdate mousePressed(MouseEvent event) {
+        System.out.println("mousePressed button = " + button);
+
         button = MouseButton.get(event);
         if (button != MouseButton.MAIN) {
             return CanvasUpdate.NO_OPERATION;

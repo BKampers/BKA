@@ -6,7 +6,7 @@
     <version>0</version>
     <packaging>pom</packaging>
     <modules>
-        <module>text</module>
+        <module>Text</module>
         <module>AWT</module>
         <module>Chart</module>
         <module>Demo</module>

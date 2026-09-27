@@ -262,7 +262,7 @@ public final class EdgeComponent extends GraphComponent {
     }
 
     private int decorationLineIndex() {
-        return points.size() / 2;
+        return decorationPaintable.lineIndex(points.size() + 1);
     }
 
 
@@ -314,7 +314,7 @@ public final class EdgeComponent extends GraphComponent {
     }
 
     private final Paintable polygonPaintable;
-    private final Paintable decorationPaintable;
+    private final EdgeDecorationPaintable decorationPaintable;
 
     private final List<Point> points = new ArrayList<>();
     private VertexComponent start;

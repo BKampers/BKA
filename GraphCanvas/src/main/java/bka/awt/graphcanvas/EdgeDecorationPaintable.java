@@ -57,6 +57,14 @@ public abstract class EdgeDecorationPaintable extends Paintable {
         return coordinateOnLine(start, end, 0.5f);
     }
 
+    /**
+     * @param lineCount number of lines the edge consists of, at least 1
+     * @return index of the line of the edge on which this decoration is to be painted
+     */
+    public int lineIndex(int lineCount) {
+        return (lineCount - 1) / 2;
+    }
+
     protected Point coordinateOnLine(Point start, Point end, float position) {
         return new Point(
             Math.round(start.x + (end.x - start.x) * position),

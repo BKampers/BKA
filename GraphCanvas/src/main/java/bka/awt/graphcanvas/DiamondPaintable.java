@@ -34,6 +34,11 @@ public class DiamondPaintable extends EdgeDecorationPaintable {
     }
 
     @Override
+    public int lineIndex(int lineCount) {
+        return 0;
+    }
+
+    @Override
     protected Point location(Point start, Point end) {
         if (isCentered()) {
             return super.location(start, end);

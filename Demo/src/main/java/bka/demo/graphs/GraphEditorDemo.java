@@ -9,8 +9,8 @@ import bka.swing.popup.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.*;
-import java.util.List;
 import java.util.*;
+import java.util.List;
 import java.util.function.*;
 import java.util.stream.*;
 import javax.swing.*;
@@ -332,13 +332,12 @@ public class GraphEditorDemo extends JFrame {
     }
 
     private Factory createFactory(GraphComponent component) {
-        if (component instanceof VertexComponent) {
-            return createVertexFactory((VertexComponent) component);
-        }
-        if (component instanceof EdgeComponent) {
-            return createEdgeFactory((EdgeComponent) component);
-        }
-        throw new IllegalArgumentException();
+        return switch (component) {
+            case VertexComponent vertex ->
+                createVertexFactory(vertex);
+            case EdgeComponent edge ->
+                createEdgeFactory(edge);
+        };
     }
 
     private VertexFactory createVertexFactory(VertexComponent component) {

@@ -29,11 +29,11 @@ public final class DragLabelHandler extends CanvasEventHandler {
     public CanvasUpdate mouseDragged(MouseEvent event) {
         Point cursor = event.getPoint();
         label.setPositioner(label.getElement().distancePositioner(cursor));
-        GraphComponent nearest = getCanvas().findNearestElement(cursor);
+        GraphComponent nearest = getCanvas().findNearestElement(cursor).orElseThrow();
         if (!nearest.equals(nearestElement)) {
             nearestElement = nearest;
         }
-        nearestIndex = (nearestElement instanceof EdgeComponent) ? ((EdgeComponent) nearestElement).nearestLineIndex(cursor) : -1;
+        nearestIndex = (nearestElement instanceof EdgeComponent edge) ? edge.nearestLineIndex(cursor) : -1;
         return CanvasUpdate.REPAINT;
     }
 

@@ -31,7 +31,7 @@ public final class SelectionMoveHandler extends CanvasEventHandler {
     @Override
     public CanvasUpdate mouseReleased(MouseEvent event) {
         if (dragStartPoint.equals(event.getPoint())) {
-            getCanvas().setEventHandler(DefaultEventHandler.create(getCanvas(), MouseButton.get(event)));
+            getCanvas().resetEventHandler();
             return CanvasUpdate.REPAINT;
         }
         return finishSelectionMove(event.getPoint());

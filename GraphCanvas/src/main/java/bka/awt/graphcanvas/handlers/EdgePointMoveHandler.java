@@ -51,12 +51,7 @@ public final class EdgePointMoveHandler extends CanvasEventHandler {
                 draggingEdgeRenderer::applyExcerpt,
                 originalShape));
         }
-        if (dragPoint.equals(event.getPoint())) {
-            getCanvas().setEventHandler(DefaultEventHandler.create(getCanvas(), MouseButton.get(event)));
-        }
-        else {
-            getCanvas().resetEventHandler();
-        }
+        getCanvas().resetEventHandler();
         return CanvasUpdate.REPAINT;
     }
 

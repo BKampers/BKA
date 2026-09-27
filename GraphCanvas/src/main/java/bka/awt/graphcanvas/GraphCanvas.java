@@ -23,7 +23,7 @@ public final class GraphCanvas extends CompositeRenderer {
     }
 
     public final void resetEventHandler() {
-        mouseHandler = DefaultEventHandler.create(this);
+        mouseHandler = new DefaultEventHandler(this);
     }
 
     public void setEventHandler(CanvasEventHandler handler) {
@@ -151,14 +151,14 @@ public final class GraphCanvas extends CompositeRenderer {
         }
     }
 
-    public GraphComponent findNearestElement(Point point) {
+    public Optional<GraphComponent> findNearestElement(Point point) {
         if (vertices.isEmpty()) {
-            return null;
+            return Optional.empty();
         }
         TreeMap<Long, GraphComponent> distances = new TreeMap<>();
         vertices.forEach(vertexRenderer -> distances.put(vertexRenderer.squareDistance(point), vertexRenderer));
         edges.forEach(edgeRenderer -> distances.put(edgeRenderer.squareDistance(point), edgeRenderer));
-        return distances.firstEntry().getValue();
+        return Optional.of(distances.firstEntry().getValue());
     }
 
     public Optional<VertexComponent> findNearestVertex(Point point) {

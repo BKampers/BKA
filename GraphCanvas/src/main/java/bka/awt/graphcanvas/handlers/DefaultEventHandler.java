@@ -19,17 +19,8 @@ import java.util.stream.*;
 
 public final class DefaultEventHandler extends CanvasEventHandler {
 
-    public static DefaultEventHandler create(GraphCanvas canvas) {
-        return new DefaultEventHandler(canvas, null);
-    }
-
-    public static DefaultEventHandler create(GraphCanvas canvas, MouseButton button) {
-        return new DefaultEventHandler(canvas, Objects.requireNonNull(button));
-    }
-
-    private DefaultEventHandler(GraphCanvas canvas, MouseButton button) {
+    public DefaultEventHandler(GraphCanvas canvas) {
         super(canvas);
-        this.button = button;
     }
 
     @Override
@@ -51,9 +42,9 @@ public final class DefaultEventHandler extends CanvasEventHandler {
             setEdgePoint(null) |
             setConnectorPoint(null) |
             setHoveredLabel(null);
-        GraphComponent nearestElement = getCanvas().findNearestElement(cursor);
-        if (nearestElement != null && MouseButton.EDIT.matchesModifier(event)) {
-            return new CanvasUpdate(Cursor.TEXT_CURSOR, needRepaint | setHighlightedElement(nearestElement));
+        Optional<GraphComponent> nearestElement = getCanvas().findNearestElement(cursor);
+        if (nearestElement.isPresent() && MouseButton.EDIT.matchesModifier(event)) {
+            return new CanvasUpdate(Cursor.TEXT_CURSOR, needRepaint | setHighlightedElement(nearestElement.get()));
         }
         return new CanvasUpdate(Cursor.DEFAULT_CURSOR, needRepaint | setHighlightedElement(null));
     }
@@ -124,10 +115,7 @@ public final class DefaultEventHandler extends CanvasEventHandler {
 
     @Override
     public CanvasUpdate mousePressed(MouseEvent event) {
-        System.out.println("mousePressed button = " + button);
-
-        button = MouseButton.get(event);
-        if (button != MouseButton.MAIN) {
+        if (MouseButton.get(event) != MouseButton.MAIN) {
             return CanvasUpdate.NO_OPERATION;
         }
         if (hoveredLabel != null) {
@@ -214,7 +202,7 @@ public final class DefaultEventHandler extends CanvasEventHandler {
 
     @Override
     public CanvasUpdate mouseClicked(MouseEvent event) {
-        return switch (button) {
+        return switch (MouseButton.get(event)) {
             case MAIN ->
                 mainButtonClicked(event.getPoint());
             case TOGGLE_SELECT ->
@@ -226,7 +214,7 @@ public final class DefaultEventHandler extends CanvasEventHandler {
             case UNSUPPORTED ->
                 CanvasUpdate.NO_OPERATION;
             default ->
-                throw new IllegalStateException(button.name());
+                throw new IllegalStateException(MouseButton.get(event).name());
         };
     }
 
@@ -462,13 +450,12 @@ public final class DefaultEventHandler extends CanvasEventHandler {
         }
     }
 
-    private MouseButton button;
     private boolean editButtonDown;
-    private Point connectorPoint;
-    private Point edgePoint;
+    private Point connectorPoint; // null if no connector point is being hovered
+    private Point edgePoint; // null if no edge point is being hovered
     private boolean edgeBendSelected;
-    private Label hoveredLabel;
-    private GraphComponent highlightedElement;
+    private Label hoveredLabel; // null if no label is being hoverd
+    private GraphComponent highlightedElement; // null if no element is highlighted
 
     private static final double HORIZONTAL_MARGIN = 0.4 * Math.PI;
     private static final double VERTICAL_MARGIN = 0.1 * Math.PI;

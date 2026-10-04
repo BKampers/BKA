@@ -4,6 +4,7 @@
 package bka.demo.calendar;
 
 import bka.calendar.*;
+import bka.demo.clock.weatherstation.WeatherStationDemo;
 import bka.demo.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -11,8 +12,10 @@ import java.awt.image.*;
 import java.util.*;
 import java.util.List;
 import java.util.stream.*;
+import javax.swing.*;
 
-public class CalendarDemo extends javax.swing.JFrame {
+
+public class CalendarDemo extends JFrame {
 
     /**
      * Creates new form CalendarFrame
@@ -71,36 +74,24 @@ public class CalendarDemo extends javax.swing.JFrame {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        }
-        catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(CalendarDemo.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(CalendarDemo.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(CalendarDemo.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(CalendarDemo.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-        //</editor-fold>
-
-        /* Create and display the form */
+        setLookAndFeel("Nimbus");
         java.awt.EventQueue.invokeLater(() -> new CalendarDemo().setVisible(true));
+    }
+
+    private static void setLookAndFeel(String name) {
+        Arrays.stream(UIManager.getInstalledLookAndFeels())
+            .filter(info -> name.equals(info.getName()))
+            .findAny()
+            .ifPresent(lookAndFeelInfo -> setLookAndFeel(lookAndFeelInfo));
+    }
+
+    private static void setLookAndFeel(UIManager.LookAndFeelInfo lookAndFeelInfo) {
+        try {
+            UIManager.setLookAndFeel(lookAndFeelInfo.getClassName());
+        }
+        catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(WeatherStationDemo.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
     }
 
     private void updateCalendars() {

@@ -13,9 +13,11 @@ import java.time.*;
 import java.time.format.*;
 import java.util.*;
 import java.util.List;
+import java.util.Timer;
 import java.util.logging.*;
+import javax.swing.*;
 
-public class WeatherStationDemo extends javax.swing.JFrame {
+public class WeatherStationDemo extends JFrame {
 
     public WeatherStationDemo() {
         initComponents();
@@ -209,28 +211,29 @@ public class WeatherStationDemo extends javax.swing.JFrame {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
+        if (System.getProperty("os.name").startsWith("Mac")) {
+            System.setProperty("apple.awt.application.name", APPLICATION_TITLE);
+        }
+        setLookAndFeel("Nimbus");
+        java.awt.EventQueue.invokeLater(() -> {
+            new WeatherStationDemo().setVisible(true);
+        });
+    }
+
+    private static void setLookAndFeel(String name) {
+        Arrays.stream(UIManager.getInstalledLookAndFeels())
+            .filter(info -> name.equals(info.getName()))
+            .findAny()
+            .ifPresent(lookAndFeelInfo -> setLookAndFeel(lookAndFeelInfo));
+    }
+
+    private static void setLookAndFeel(UIManager.LookAndFeelInfo lookAndFeelInfo) {
         try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
+            UIManager.setLookAndFeel(lookAndFeelInfo.getClassName());
         }
         catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
             java.util.logging.Logger.getLogger(WeatherStationDemo.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> {
-            new WeatherStationDemo().setVisible(true);
-        });
     }
 
     @Override
@@ -295,6 +298,7 @@ public class WeatherStationDemo extends javax.swing.JFrame {
 
     private static final int TEN_MINUTES = 10 * 60 * 1000;
 
+    private static final String APPLICATION_TITLE = "Weather Station";
     private static final List<String> PREFIXES = List.of("De", "Den", "Het", "'t", "Ter");
 
 }

@@ -14,10 +14,10 @@ import java.util.*;
 import java.util.logging.*;
 
 
-public class Demo extends javax.swing.JFrame {
+public final class ChartsDemo extends javax.swing.JFrame {
 
 
-    public Demo() {
+    public ChartsDemo() {
         populateDataSets();
         chartRenderer = new ChartRenderer();
         chartRenderer.setMargins(100, 125, 50, 50);
@@ -38,26 +38,8 @@ public class Demo extends javax.swing.JFrame {
         }
         Logger.getLogger("bka.swing.chart").setLevel(Level.INFO);
 
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        }
-        catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
-            getLogger().log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-
         /* Create and display the form */
-        Demo demo = new Demo();
+        ChartsDemo demo = new ChartsDemo();
         java.awt.EventQueue.invokeLater(() -> {
             demo.setVisible(true);
             demo.startTimer();
@@ -455,7 +437,7 @@ public class Demo extends javax.swing.JFrame {
 
 
     private static Logger getLogger() {
-        return Logger.getLogger(Demo.class.getName());
+        return Logger.getLogger(ChartsDemo.class.getName());
     }
 
 

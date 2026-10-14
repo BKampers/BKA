@@ -2,12 +2,13 @@ package bka.demo.clock.time;
 
 
 
+import bka.demo.swing.*;
 import java.io.*;
 import java.util.logging.*;
 
 /**
  */
-public class ClockDemo extends javax.swing.JFrame {
+public final class ClockDemo extends javax.swing.JFrame {
 
     public ClockDemo() throws IOException {
         initComponents();
@@ -40,7 +41,7 @@ public class ClockDemo extends javax.swing.JFrame {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-        setLookAndFeel("Nimbus");
+        SwingUtil.setLookAndFeel("Nimbus");
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(() -> {
             try {
@@ -51,26 +52,6 @@ public class ClockDemo extends javax.swing.JFrame {
             }
         });
     }
-
-    // <editor-fold defaultstate="collapsed" desc="Set look and feel">
-    /**
-     * Set the given look and feel with given name If not available, stay with the default look and feel. For details see
-     * http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html
-     */
-    private static void setLookAndFeel(String name) {
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if (name.equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    return;
-                }
-            }
-        }
-        catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(ClockDemo.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-    }
-    // </editor-fold>
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel mainPanel;

@@ -6,12 +6,12 @@
 */
 package bka.demo.gps;
 
-import bka.text.parser.gpx.GpxParser;
-import gpx.Gpx;
+import bka.demo.swing.*;
+import bka.text.parser.gpx.*;
+import gpx.*;
 import java.awt.*;
 import java.io.*;
 import java.nio.file.*;
-import java.util.*;
 import java.util.logging.*;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -38,7 +38,7 @@ public final class GpxDemo extends JFrame {
     }
 
     public static void main(String[] args) {
-        setLookAndFeel("Nimbus");
+        SwingUtil.setLookAndFeel("Nimbus");
         EventQueue.invokeLater(() -> new GpxDemo().setVisible(true));
     }
 
@@ -75,28 +75,6 @@ public final class GpxDemo extends JFrame {
         }
         catch (IOException | SAXException | ParserConfigurationException ex) {
             JOptionPane.showMessageDialog(this, ex.getMessage(), "Failed to open GPX file", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    private static void setLookAndFeel(String name) {
-        Arrays.stream(UIManager.getInstalledLookAndFeels())
-            .filter(info -> name.equals(info.getName()))
-            .findAny()
-            .ifPresentOrElse(
-                GpxDemo::setLookAndFeel, 
-                lookAndFeelNotPresent(name));
-    }
-
-    private static Runnable lookAndFeelNotPresent(String name) {
-        return () -> getLogger().log(Level.WARNING, "Look and feel ''{0}'' is not present", name);
-    }
-    
-    private static void setLookAndFeel(UIManager.LookAndFeelInfo info) {
-        try {
-            UIManager.setLookAndFeel(info.getClassName());
-        }
-        catch (ReflectiveOperationException | UnsupportedLookAndFeelException ex) {
-            getLogger().log(Level.WARNING, "Could not set look and feel", ex);
         }
     }
 

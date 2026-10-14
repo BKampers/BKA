@@ -4,7 +4,6 @@
 package bka.demo.calendar;
 
 import bka.calendar.*;
-import bka.demo.clock.weatherstation.WeatherStationDemo;
 import bka.demo.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -15,7 +14,7 @@ import java.util.stream.*;
 import javax.swing.*;
 
 
-public class CalendarDemo extends JFrame {
+public final class CalendarDemo extends JFrame {
 
     /**
      * Creates new form CalendarFrame
@@ -74,24 +73,9 @@ public class CalendarDemo extends JFrame {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-        setLookAndFeel("Nimbus");
+        SwingUtil.setApplicationName("Calendars");
+        SwingUtil.setLookAndFeel("Nimbus");
         java.awt.EventQueue.invokeLater(() -> new CalendarDemo().setVisible(true));
-    }
-
-    private static void setLookAndFeel(String name) {
-        Arrays.stream(UIManager.getInstalledLookAndFeels())
-            .filter(info -> name.equals(info.getName()))
-            .findAny()
-            .ifPresent(lookAndFeelInfo -> setLookAndFeel(lookAndFeelInfo));
-    }
-
-    private static void setLookAndFeel(UIManager.LookAndFeelInfo lookAndFeelInfo) {
-        try {
-            UIManager.setLookAndFeel(lookAndFeelInfo.getClassName());
-        }
-        catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(WeatherStationDemo.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
     }
 
     private void updateCalendars() {

@@ -4,6 +4,7 @@ package bka.demo.clock.weatherstation;
 ** © Bart Kampers
 */
 
+import bka.awt.*;
 import bka.demo.swing.*;
 import bka.text.cardinal.*;
 import java.awt.*;
@@ -17,7 +18,7 @@ import java.util.Timer;
 import java.util.logging.*;
 import javax.swing.*;
 
-public class WeatherStationDemo extends JFrame {
+public final class WeatherStationDemo extends JFrame {
 
     public WeatherStationDemo() {
         initComponents();
@@ -38,7 +39,7 @@ public class WeatherStationDemo extends JFrame {
         javax.swing.JPanel weatherPanelPlaceholder = weatherPanel;
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("Weather Station");
+        setTitle(APPLICATION_TITLE);
         setPreferredSize(new java.awt.Dimension(1200 + getFrameWidthAdjustment(), 400));
         setResizable(false);
 
@@ -110,14 +111,15 @@ public class WeatherStationDemo extends JFrame {
      * @return OS dependent frame adjustment
      */
     private static int getFrameWidthAdjustment() {
-        String osName = System.getProperty("os.name");
-        if (osName.contains("Mac")) {
-            return 3;
+        Optional<Platform> platform = Platform.system();
+        if (platform.isEmpty()) {
+            return 0;
         }
-        else if (osName.contains("Windows")) {
-            return 16;
-        }
-        return 0;
+        return switch (platform.get()) {
+            case MAC -> 3;
+            case WINDOWS -> 16;
+            default -> throw new IllegalStateException(platform.get().name());
+        };
     }
 
     private void stationComboBoxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_stationComboBoxActionPerformed
@@ -211,29 +213,11 @@ public class WeatherStationDemo extends JFrame {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-        if (System.getProperty("os.name").startsWith("Mac")) {
-            System.setProperty("apple.awt.application.name", APPLICATION_TITLE);
-        }
-        setLookAndFeel("Nimbus");
+        SwingUtil.setApplicationName(APPLICATION_TITLE);
+        SwingUtil.setLookAndFeel("Nimbus");
         java.awt.EventQueue.invokeLater(() -> {
             new WeatherStationDemo().setVisible(true);
         });
-    }
-
-    private static void setLookAndFeel(String name) {
-        Arrays.stream(UIManager.getInstalledLookAndFeels())
-            .filter(info -> name.equals(info.getName()))
-            .findAny()
-            .ifPresent(lookAndFeelInfo -> setLookAndFeel(lookAndFeelInfo));
-    }
-
-    private static void setLookAndFeel(UIManager.LookAndFeelInfo lookAndFeelInfo) {
-        try {
-            UIManager.setLookAndFeel(lookAndFeelInfo.getClassName());
-        }
-        catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(WeatherStationDemo.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
     }
 
     @Override
@@ -296,9 +280,8 @@ public class WeatherStationDemo extends JFrame {
     private Timer loadTimer = new Timer();
     private final Object mutex = new Object();
 
+    private static final String APPLICATION_TITLE = "KNMI";
     private static final int TEN_MINUTES = 10 * 60 * 1000;
-
-    private static final String APPLICATION_TITLE = "Weather Station";
     private static final List<String> PREFIXES = List.of("De", "Den", "Het", "'t", "Ter");
 
 }

@@ -4,6 +4,7 @@
 
 package bka.demo.swing;
 
+import bka.awt.Platform;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
@@ -11,25 +12,30 @@ import java.util.function.*;
 import javax.swing.*;
 
 
-public class FrameDecorator {
+public final class FrameDecorator {
 
     public FrameDecorator(JFrame frame, IntFunction<Image> imageCreator) {
         this.frame = Objects.requireNonNull(frame);
         this.imageCreator = Objects.requireNonNull(imageCreator);
+        this.detectedPlatform = Platform.system();
     }
 
     public void updateIcon() {
-        String osName = System.getProperty("os.name");
-        if (osName.contains("Mac")) {
-            Taskbar.getTaskbar().setIconImage(imageCreator.apply(DEFAULT_ICON_SIZE));
-        }
-        else if (osName.contains("Windows")) {
-            frame.setIconImages(List.of(
-                imageCreator.apply(THUMB_ICON_SIZE),
-                imageCreator.apply(SMALL_ICON_SIZE)));
-        }
-        else {
-            frame.setIconImage(imageCreator.apply(DEFAULT_ICON_SIZE));
+        detectedPlatform.ifPresentOrElse(
+            this::setPlatformIcon,
+            () -> frame.setIconImage(imageCreator.apply(DEFAULT_ICON_SIZE)));
+    }
+
+    private void setPlatformIcon(Platform platform) throws IllegalStateException {
+        switch (platform) {
+            case MAC ->
+                Taskbar.getTaskbar().setIconImage(imageCreator.apply(DEFAULT_ICON_SIZE));
+            case WINDOWS ->
+                frame.setIconImages(List.of(
+                    imageCreator.apply(THUMB_ICON_SIZE),
+                    imageCreator.apply(SMALL_ICON_SIZE)));
+            default ->
+                throw new IllegalStateException(platform.name());
         }
     }
 
@@ -47,6 +53,7 @@ public class FrameDecorator {
 
     private final JFrame frame;
     private final IntFunction<Image> imageCreator;
+    private final Optional<Platform> detectedPlatform;
 
     private static final int DEFAULT_ICON_SIZE = 1024;
     private static final int SMALL_ICON_SIZE = 256;

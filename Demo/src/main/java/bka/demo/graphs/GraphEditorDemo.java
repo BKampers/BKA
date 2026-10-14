@@ -186,26 +186,12 @@ public class GraphEditorDemo extends JFrame {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-        selectNimbusLookAndFeel();
+        SwingUtil.setLookAndFeel("Nimbus");
         /* Create and display the form */
         EventQueue.invokeLater(() -> new GraphEditorDemo().setVisible(true));
     }
 
-    private static void selectNimbusLookAndFeel() {
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    return;
-                }
-            }
-        }
-        catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(GraphEditorDemo.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-    }
-
-    private void updateGraphPanel(CanvasUpdate update){
+    private void updateGraphPanel(CanvasUpdate update) {
         if (Cursor.DEFAULT_CURSOR <= update.getCursorType() && update.getCursorType() <= Cursor.MOVE_CURSOR) {
             setGraphPanelCursor(update.getCursorType());
         }

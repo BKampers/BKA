@@ -7,6 +7,7 @@
 package bka.awt;
 
 import java.awt.event.*;
+import java.util.*;
 
 
 public class Keyboard {
@@ -68,20 +69,26 @@ public class Keyboard {
     }
 
     private Keyboard() {
-        String osName = System.getProperty("os.name");
-        if (osName.contains("Mac")) {
-            toggleSelectionModifiers = InputEvent.META_DOWN_MASK;
-            undoKeyCode = KeyEvent.VK_Z;
-            undoModifiers = KeyEvent.META_DOWN_MASK;
-            redoKeyCode = KeyEvent.VK_Z;
-            redoModifiers = InputEvent.SHIFT_DOWN_MASK | InputEvent.META_DOWN_MASK;
-        }
-        else if (osName.contains("Windows")) {
-            toggleSelectionModifiers = InputEvent.CTRL_DOWN_MASK;
-            undoKeyCode = KeyEvent.VK_Z;
-            undoModifiers = InputEvent.CTRL_DOWN_MASK;
-            redoKeyCode = KeyEvent.VK_Y;
-            redoModifiers = KeyEvent.CTRL_DOWN_MASK;
+        Optional<Platform> platform = Platform.system();
+        if (platform.isPresent()) {
+            switch (platform.get()) {
+                case MAC -> {
+                    toggleSelectionModifiers = InputEvent.META_DOWN_MASK;
+                    undoKeyCode = KeyEvent.VK_Z;
+                    undoModifiers = KeyEvent.META_DOWN_MASK;
+                    redoKeyCode = KeyEvent.VK_Z;
+                    redoModifiers = InputEvent.SHIFT_DOWN_MASK | InputEvent.META_DOWN_MASK;
+                }
+                case WINDOWS -> {
+                    toggleSelectionModifiers = InputEvent.CTRL_DOWN_MASK;
+                    undoKeyCode = KeyEvent.VK_Z;
+                    undoModifiers = InputEvent.CTRL_DOWN_MASK;
+                    redoKeyCode = KeyEvent.VK_Y;
+                    redoModifiers = KeyEvent.CTRL_DOWN_MASK;
+                }
+                default ->
+                    throw new IllegalStateException(platform.get().name());
+            }
         }
         else {
             toggleSelectionModifiers = InputEvent.CTRL_DOWN_MASK;

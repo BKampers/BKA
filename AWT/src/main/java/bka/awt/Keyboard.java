@@ -10,7 +10,7 @@ import java.awt.event.*;
 import java.util.*;
 
 
-public class Keyboard {
+public final class Keyboard {
 
     public static Keyboard getInstance() {
         if (instance == null) {

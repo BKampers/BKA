@@ -11,13 +11,11 @@ import java.util.function.*;
 import java.util.stream.*;
 import run.*;
 import run.pascal.*;
-import run.statemachine.*;
 import uml.factory.*;
-import uml.statechart.*;
 import uml.structure.*;
 
 /**
- * Creates an executable state machine from a pascal parse tree.
+ * Creates executable statements from a pascal parse tree.
  */
 public final class PascalCompiler {
 
@@ -41,12 +39,7 @@ public final class PascalCompiler {
         buildOperations(builder, declarationsNode);
         Operation mainOperation = builder.withMainOperation();
         methods.put(mainOperation, createCompoundStatement(mainOperation, node.getChild("CompoundStatement")));
-        methodBodies.put(mainOperation, createBody(mainOperation, node.getChild("CompoundStatement")));
         return builder.build();
-    }
-
-    public Collection<Transition<Event, GuardCondition, Action>> getMethod(Operation operation) {
-        return Collections.unmodifiableCollection(methodBodies.get(operation));
     }
 
     public Map<Operation, CompoundStatement> getMethods() {
@@ -107,7 +100,8 @@ public final class PascalCompiler {
             ? builder.withOperation(methodName, parameters, Member.Visibility.PRIVATE)
             : builder.withOperation(methodName, parameters, type.get(), Member.Visibility.PRIVATE);
         methodLocals.put(operation, locals);
-        methodBodies.put(operation, createBody(operation, declaration.getChild("CompoundStatement")));
+        // Present before the body is built, so a recursive call resolves to this operation.
+        methods.put(operation, new CompoundStatement(List.of(), locals));
         methods.put(operation, createCompoundStatement(operation, declaration.getChild("CompoundStatement"), locals));
     }
 
@@ -263,22 +257,6 @@ public final class PascalCompiler {
 
     private void buildOperations(UmlClassBuilder builder, Node declarations) {
         addPrivateFunctionOperations(builder, declarations);
-    }
-
-    private Collection<Transition<Event, GuardCondition, Action>> createBody(Operation operation, Node compoundStatement) {
-        ActivityDiagramBuilder diagram = new ActivityDiagramBuilder();
-        createStatementSequence(operation, compoundStatement.getChild("Statements"), diagram);
-        diagram.addFinalState();
-        return diagram.getTransitions();
-    }
-
-    private void createStatementSequence(Operation operation, Node statements, ActivityDiagramBuilder diagram) {
-        Node statementNode = statements;
-        do {
-            Statement statement = new Statement(statementNode.getChild("Statement"), new MethodProperties(operation));
-            statement.createTransitions(diagram);
-            statementNode = statementNode.findChild("Statements").orElse(null);
-        } while (statementNode != null);
     }
 
     private run.Statement createStatement(Operation scope, Node statementNode) {
@@ -607,7 +585,7 @@ public final class PascalCompiler {
 
     private Operation getOperation(Node identifierNode) {
         String identifier = identifierNode.content();
-        return methodBodies.keySet().stream()
+        return methods.keySet().stream()
             .filter(o -> o.getName().isPresent() && identifier.equalsIgnoreCase(o.getName().get()))
             .findAny()
             .orElseThrow(() -> new IllegalStateException("No such operation: " + identifier));
@@ -619,68 +597,6 @@ public final class PascalCompiler {
 
     private static Node tail(Node node) {
         return node.getChildren().getLast();
-    }
-
-    private Type typeOf(Operation operation, String identifier, List<Node> accessExtensions) {
-        Type type = null;
-        if (operation.getName().isPresent() && identifier.equalsIgnoreCase(operation.getName().get())) {
-            type = operation.getType().get();
-        }
-        if (type == null) {
-            Optional<Parameter> parameter = operation.getParameters().stream()
-                .filter(p -> identifier.equalsIgnoreCase(p.getName().get()))
-                .findAny();
-            if (parameter.isPresent()) {
-                type = parameter.get().getType().get();
-            }
-        }
-        if (type == null) {
-            Optional<uml.structure.Object> local = findLocal(operation, identifier);
-            if (local.isPresent()) {
-                type = local.get().getType().get();
-            }
-        }
-        if (type == null) {
-            type = globals.stream()
-                .filter(global -> global.getName().get().equalsIgnoreCase(identifier))
-                .map(global -> global.getType().get())
-                .findAny().get();
-        }
-        for (Node extension : accessExtensions) {
-            type = switch (extension.getSymbol()) {
-                case "Identifier" ->
-                    ((uml.structure.Class) type).getAttributes().stream().filter(attribute -> attribute.getName().get().equalsIgnoreCase(extension.content())).findAny().get().getType().get();
-                case "Expression" ->
-                    ((ArrayType) type).getElementType();
-                default ->
-                    throw new IllegalStateException("Invalid access extension");
-            };
-        }
-        return type;
-    }
-
-    private static List<Node> getAccessExtensions(Node expression) {
-        List<Node> extensions = new ArrayList<>();
-        Optional<Node> next = expression.findChild("AccessExtension");
-        while (next.isPresent()) {
-            Node accessExtension = next.get();
-            if (accessExtension.getChildren().isEmpty()) {
-                next = Optional.empty();
-            }
-            else {
-                if (accessExtension.startsWith("\\.")) {
-                    extensions.add(accessExtension.getChild("Identifier"));
-                }
-                else if (accessExtension.startsWith("\\[")) {
-                    extensions.add(accessExtension.getChild("Expression"));
-                }
-                else {
-                    throw new IllegalStateException("Unsupported access extension");
-                }
-                next = accessExtension.findChild("AccessExtension");
-            }
-        }
-        return extensions;
     }
 
     private static String identifier(Node node) {
@@ -695,53 +611,7 @@ public final class PascalCompiler {
         });
     }
 
-    public final class MethodProperties {
-
-        private MethodProperties(Operation scope) {
-            this.scope = scope;
-        }
-
-        public Type determineTypeOf(Node expression) {
-            return typeOf(scope, identifier(expression), getAccessExtensions(expression));
-        }
-
-        public Type determineTypeOf(String identifier) {
-            return typeOf(scope, identifier, Collections.emptyList());
-        }
-
-        public Collection<Transition<Event, GuardCondition, Action>> getBody(String name) {
-            return methodBodies.get(getOperation(name));
-        }
-
-        public List<Parameter> getParameters(String name) {
-            return Collections.unmodifiableList(getOperation(name).getParameters());
-        }
-
-        public Optional<Type> getType(String name) {
-            return getOperation(name).getType();
-        }
-
-        public Collection<uml.structure.Object> getLocals(String name) {
-            return Collections.unmodifiableCollection(methodLocals.getOrDefault(getOperation(name), Collections.emptyList()));
-        }
-
-        public boolean isProcedure(String name) {
-            return getOperation(name).getType().isEmpty();
-        }
-
-        private Operation getOperation(String name) {
-            return methodBodies.keySet().stream()
-                .filter(operation -> operation.getName().isPresent())
-                .filter(operation -> name.equalsIgnoreCase(operation.getName().get()))
-                .findAny().orElse(null);
-        }
-
-        private final Operation scope;
-
-    }
-
     private final Collection<uml.structure.Object> globals = new ArrayList<>();
-    private final Map<Operation, Collection<Transition<Event, GuardCondition, Action>>> methodBodies = new HashMap<>();
     private final Map<Operation, Collection<uml.structure.Object>> methodLocals = new HashMap<>();
     private final Collection<Type> declaredTypes = new ArrayList<>();
     private final Map<Operation, CompoundStatement> methods = new HashMap<>();

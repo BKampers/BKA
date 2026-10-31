@@ -259,12 +259,12 @@ public final class PascalCompiler {
         addPrivateFunctionOperations(builder, declarations);
     }
 
-    private run.Statement createStatement(Operation scope, Node statementNode) {
+    private Statement createStatement(Operation scope, Node statementNode) {
         if (!"Statement".equals(statementNode.getSymbol())) {
             throw new IllegalStateException("Not a statement: " + statementNode.content());
         }
         if (statementNode.getChildren().isEmpty()) {
-            return run.Statement.NO_OPERATION;
+            return Statement.NO_OPERATION;
         }
         return switch (head(statementNode).getSymbol()) {
             case "Assignable" ->
@@ -481,8 +481,8 @@ public final class PascalCompiler {
         return new CompoundStatement(createStatementSequence(scope, compoundStatementNode.getChild("Statements")), locals);
     }
 
-    private List<run.Statement> createStatementSequence(Operation scope, Node statementsNode) {
-        List<run.Statement> statements = new ArrayList<>();
+    private List<Statement> createStatementSequence(Operation scope, Node statementsNode) {
+        List<Statement> statements = new ArrayList<>();
         Node next = statementsNode;
         do {
             Node statementNode = next.getChild("Statement");
@@ -505,7 +505,7 @@ public final class PascalCompiler {
             createStatement(scope, statementNode.getChild("Statement")));
     }
     
-    private run.Statement createForLoop(Operation scope, Node statementNode) {
+    private Statement createForLoop(Operation scope, Node statementNode) {
         Assignable loopVariable = Execution.asAssignable(createIdentifierExpression(scope, statementNode.getChild("Identifier")));
         ExpressionStatement initialization = createExpressionStatement(
             loopVariable,

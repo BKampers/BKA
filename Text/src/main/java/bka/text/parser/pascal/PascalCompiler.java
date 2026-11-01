@@ -264,7 +264,7 @@ public final class PascalCompiler {
             throw new IllegalStateException("Not a statement: " + statementNode.content());
         }
         if (statementNode.getChildren().isEmpty()) {
-            return Statement.NO_OPERATION;
+            return NoOperation.get();
         }
         return switch (head(statementNode).getSymbol()) {
             case "Assignable" ->

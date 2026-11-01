@@ -44,26 +44,18 @@ public final class ActivityDiagramGenerator {
     }
 
     private void add(Statement statement, ActivityDiagramBuilder diagram) {
-        if (statement.equals(Statement.NO_OPERATION)) {
-            return;
+        switch (statement) {
+            case NoOperation _ -> {
+            }
+            case CompoundStatement compound ->
+                compound.getStatements().forEach(child -> add(child, diagram));
+            case ExpressionStatement expression ->
+                diagram.add(actionState(expression));
+            case BranchStatement branch ->
+                addBranch(branch, diagram);
+            case LoopStatement loop ->
+                addLoop(loop, diagram);
         }
-        if (statement instanceof CompoundStatement compound) {
-            compound.getStatements().forEach(child -> add(child, diagram));
-            return;
-        }
-        if (statement instanceof ExpressionStatement expression) {
-            diagram.add(actionState(expression));
-            return;
-        }
-        if (statement instanceof BranchStatement branch) {
-            addBranch(branch, diagram);
-            return;
-        }
-        if (statement instanceof LoopStatement loop) {
-            addLoop(loop, diagram);
-            return;
-        }
-        throw new IllegalStateException("Unsupported statement: " + statement);
     }
 
     private void addBranch(BranchStatement branch, ActivityDiagramBuilder diagram) {

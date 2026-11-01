@@ -10,6 +10,5 @@ package run;
 public sealed interface Statement permits ExpressionStatement, CompoundStatement, BranchStatement, LoopStatement, NoOperation {
 
     void execute(Execution execution, ObjectScope scope);
-    Statement NO_OPERATION = NoOperation.INSTANCE;
 
 }

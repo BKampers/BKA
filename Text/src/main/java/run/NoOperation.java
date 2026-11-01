@@ -7,12 +7,14 @@ package run;
 
 /**
  */
-final class NoOperation implements Statement {
-
-    public static final NoOperation INSTANCE = new NoOperation();
+public final class NoOperation implements Statement {
 
     private NoOperation() {
         // One single INSTANCE available
+    }
+
+    public static NoOperation get() {
+        return INSTANCE;
     }
 
     @Override
@@ -24,4 +26,7 @@ final class NoOperation implements Statement {
     public String toString() {
         return "@No operation";
     }
+
+    private static final NoOperation INSTANCE = new NoOperation();
+
 }

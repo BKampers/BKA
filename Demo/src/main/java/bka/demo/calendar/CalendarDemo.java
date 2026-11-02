@@ -30,7 +30,7 @@ public final class CalendarDemo extends JFrame {
         republicanPanel.addMouseListener(mouseListener);
         earthianPanel.addMouseListener(mouseListener);
         javax.swing.Timer timer = new javax.swing.Timer(MILLIS_PER_SECOND, event -> updateCalendars());
-        timer.setInitialDelay(nextSecond());
+        timer.setInitialDelay(millisTillNextSecond());
         timer.start();
     }
 
@@ -43,7 +43,7 @@ public final class CalendarDemo extends JFrame {
         };
     }
 
-    private static int nextSecond() {
+    private static int millisTillNextSecond() {
         return MILLIS_PER_SECOND - (int) (System.currentTimeMillis() % MILLIS_PER_SECOND);
     }
 
@@ -80,13 +80,15 @@ public final class CalendarDemo extends JFrame {
 
     private void updateCalendars() {
         long millis = System.currentTimeMillis();
-        gregorian.setTimeInMillis(millis);
-        gregorianPanel.update();
-        republican.setTimeInMillis(millis);
-        republicanPanel.update();
-        earthian.setTimeInMillis(millis);
-        earthianPanel.update();
+        updateCalendar(gregorian, gregorianPanel, millis);
+        updateCalendar(republican, republicanPanel, millis);
+        updateCalendar(earthian, earthianPanel, millis);
         setIcon(hoveredPanel.getModel());
+    }
+
+    private static void updateCalendar(Calendar calendar, CalendarPanel panel, long millis) {
+        calendar.setTimeInMillis(millis);
+        panel.update();
     }
 
     private FrameDecorator getDecorator(CalendarModel model) {
@@ -126,6 +128,7 @@ public final class CalendarDemo extends JFrame {
         Image image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = (Graphics2D) image.getGraphics();
         FrameDecorator.drawIconBackground(graphics, size);
+        graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         drawDayOfMonth(graphics, model, size);
         String month = model.getMonth();
         if (!month.isBlank()) {
@@ -138,8 +141,7 @@ public final class CalendarDemo extends JFrame {
     }
 
     private static void drawDayOfMonth(Graphics2D graphics, CalendarModel model, int size) {
-        graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, size / 3));
+        graphics.setFont(new Font(ICON_FONT, Font.BOLD, size / 3));
         FontMetrics metrics = graphics.getFontMetrics();
         graphics.setColor(model.getDayOfWeekColor().orElse(CalendarPanel.FONT_COLOR));
         String date = model.getDate();
@@ -148,25 +150,22 @@ public final class CalendarDemo extends JFrame {
 
     private static void drawMonthText(Graphics2D graphics, String text, int size) {
         graphics.setColor(CalendarPanel.FONT_COLOR);
-        graphics.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, size / 8));
+        graphics.setFont(new Font(ICON_FONT, Font.PLAIN, size / 8));
         FontMetrics metrics = graphics.getFontMetrics();
         graphics.drawString(text, (size - metrics.stringWidth(text)) / 2, size - size / 4);
     }
 
     private static void drawDayOfYearText(Graphics2D graphics, CalendarModel model, int size) {
-        Optional<String> dayOfYear = model.getDayOfYear();
-        if (dayOfYear.isEmpty()) {
-            return;
-        }
-        List<String> lines = getLines(dayOfYear.get());
-        graphics.setColor(model.getDayOfYearColor().orElse(CalendarPanel.FONT_COLOR));
-        graphics.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, size / 10));
-        FontMetrics metrics = graphics.getFontMetrics();
-        int y = size - size / 4;
-        for (String line : lines) {
-            graphics.drawString(line, (size - metrics.stringWidth(line)) / 2, y);
-            y += metrics.getHeight();
-        }
+        model.getDayOfYear().ifPresent(dayOfYear -> {
+            graphics.setColor(model.getDayOfYearColor().orElse(CalendarPanel.FONT_COLOR));
+            graphics.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, size / 10));
+            FontMetrics metrics = graphics.getFontMetrics();
+            int y = size - size / 4;
+            for (String line : getLines(dayOfYear)) {
+                graphics.drawString(line, (size - metrics.stringWidth(line)) / 2, y);
+                y += metrics.getHeight();
+            }
+        });
     }
 
     private static List<String> getLines(String dayOfYear) {
@@ -200,5 +199,6 @@ public final class CalendarDemo extends JFrame {
 
     private static final int DEFAULT_ICON_SIZE = 1024;
 
+    private static final String ICON_FONT = "Helvetica";
 
 }

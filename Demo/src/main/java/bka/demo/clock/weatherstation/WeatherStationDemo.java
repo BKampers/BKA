@@ -139,7 +139,7 @@ public final class WeatherStationDemo extends JFrame {
         Graphics2D graphics = (Graphics2D) image.getGraphics();
         FrameDecorator.drawIconBackground(graphics, size);
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        graphics.setFont(new Font(Font.SANS_SERIF, Font.BOLD, size / 5));
+        graphics.setFont(new Font("Helvetica", Font.BOLD, size / 5));
         drawString(graphics, size, 1, temperatureString(station), temperatureColor(station));
         drawString(graphics, size, 2, windString(station), windColor(station));
         return image;
@@ -168,7 +168,7 @@ public final class WeatherStationDemo extends JFrame {
         if (station == null || station.getWindSpeed().isEmpty()) {
             return Color.GRAY;
         }
-        return WeatherStationPanel.beaufortColor(beaufort(station.getWindSpeed().getAsDouble()));
+        return WeatherStationPanel.beaufortColor(beaufortIndex(station.getWindSpeed().getAsDouble()));
     }
 
     private String windString(WeatherStation station) {
@@ -177,7 +177,7 @@ public final class WeatherStationDemo extends JFrame {
         }
         StringBuilder wind = new StringBuilder();
         station.getWindDirection().ifPresent(direction -> append(wind, new CardinalNumberFormat(getLocale()).format(direction)));
-        station.getWindSpeed().ifPresent(speed -> append(wind, beaufort(speed)));
+        station.getWindSpeed().ifPresent(speed -> append(wind, beaufortIndex(speed)));
         return wind.toString();
     }
 
@@ -188,7 +188,7 @@ public final class WeatherStationDemo extends JFrame {
         builder.append(object);
     }
 
-    private static int beaufort(double speed) {
+    private static int beaufortIndex(double speed) {
         List<Double> beaufortWindSpeeds = BeaufortScale.getWindSpeeds();
         for (int i = 0; i < beaufortWindSpeeds.size(); ++i) {
             if (speed < beaufortWindSpeeds.get(i)) {

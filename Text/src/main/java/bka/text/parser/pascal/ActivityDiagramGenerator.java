@@ -59,6 +59,18 @@ public final class ActivityDiagramGenerator {
     }
 
     private void addBranch(BranchStatement branch, ActivityDiagramBuilder diagram) {
+        if (isIf(branch)) {
+            addIf(branch, diagram);
+            return;
+        }
+        addCase(branch, diagram);
+    }
+
+    private static boolean isIf(BranchStatement branch) {
+        return branch.getChoices().size() == 1 && branch.getChoices().containsKey(BranchStatement.TRUE);
+    }
+
+    private void addIf(BranchStatement branch, ActivityDiagramBuilder diagram) {
         Decision<Evaluator> decision = decision(branch.getCondition());
         diagram.add(leave -> UmlTransitionFactory.createTransition(leave, decision), decision);
         add(branch.getIfClause().orElseThrow(), diagram);
@@ -75,6 +87,29 @@ public final class ActivityDiagramGenerator {
                 "else");
             diagram.join();
         }
+    }
+
+    private void addCase(BranchStatement branch, ActivityDiagramBuilder diagram) {
+        addCaseChoices(
+            branch.getCondition(),
+            new ArrayList<>(branch.getChoices().entrySet()),
+            branch.getDefaultChoice(),
+            diagram);
+    }
+
+    private void addCaseChoices(Evaluable selector, List<Map.Entry<Evaluable, Statement>> choices, Optional<Statement> defaultChoice, ActivityDiagramBuilder diagram) {
+        if (choices.isEmpty()) {
+            defaultChoice.ifPresent(statement -> add(statement, diagram));
+            return;
+        }
+        Map.Entry<Evaluable, Statement> choice = choices.getFirst();
+        Decision<Evaluator> decision = decision(new OperatorExpression(selector, Operator.EQUALS, choice.getKey()));
+        diagram.add(leave -> UmlTransitionFactory.createTransition(leave, decision), decision);
+        add(choice.getValue(), diagram);
+        diagram.addGuardCondition(decision, GuardConditionFactory.pass(decision), "case");
+        diagram.fork(decision);
+        addCaseChoices(selector, choices.subList(1, choices.size()), defaultChoice, diagram);
+        diagram.join();
     }
 
     private void addLoop(LoopStatement loop, ActivityDiagramBuilder diagram) {

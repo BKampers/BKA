@@ -456,6 +456,31 @@ public class PascalParserTest {
     }
 
     @Test
+    public void testCase() {
+        assertSuccess(parser.parse("""
+            PROGRAM program_name;
+            VAR i, s: INTEGER;
+            VAR a: ARRAY [0 .. 3] OF INTEGER;
+            VAR fruit: ( apple, banana, cherry );
+            BEGIN
+                CASE i OF
+                    1, 2: s := 1;
+                    3: a[i] := i
+                END;
+                CASE a[i] OF
+                    0: BEGIN
+                        s := 0
+                    END;
+                END;
+                CASE fruit OF
+                    apple, banana: s := 1;
+                    cherry: s := 2;
+                END
+            END.
+            """));
+    }
+
+    @Test
     public void testLiterals() {
         assertSuccess(parser.parse("""
             PROGRAM program_name;

@@ -87,12 +87,29 @@
             [ "WHILE\\b", "Expression", "DO\\b", "Statement" ],
             [ "FOR\\b", "Identifier", "\\:\\=", "Expression", "TO\\b", "Expression", "DO\\b", "Statement" ],
             [ "REPEAT\\b", "Statements", "UNTIL\\b", "Expression" ],
+            [ "CASE\\b", "Assignable", "OF\\b", "CaseLimbs", "END\\b" ],
             [ "CompoundStatement" ],
             [ ]
         ],
         "ElseClause": [
             [ "ELSE\\b", "Statement" ],
             [ ]
+        ],
+        "CaseLimbs": [
+            [ "CaseLimb", "\\;", "CaseLimbs" ],
+            [ "CaseLimb" ]
+        ],
+        "CaseLimb": [
+            [ "CaseLabelList", "\\:", "Statement" ],
+            [ ]
+        ],
+        "CaseLabelList": [
+            [ "CaseLabel", "\\,", "CaseLabelList" ],
+            [ "CaseLabel" ]
+        ],
+        "CaseLabel": [
+            [ "Literal" ],
+            [ "Identifier" ]
         ],
         "Call": [
             [ "Identifier", "\\(", "ArgumentList", "\\)" ]

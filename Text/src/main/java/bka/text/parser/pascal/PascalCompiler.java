@@ -510,9 +510,15 @@ public final class PascalCompiler {
     private BranchStatement createCaseStatement(Operation scope, Node statementNode) {
         Map<Evaluable, Statement> choices = new LinkedHashMap<>();
         collectCaseLimbs(scope, statementNode.getChild("CaseLimbs"), choices);
-        return BranchStatement.caseStatement(
-            createAssignableExpression(scope, statementNode.getChild("Assignable")),
-            choices);
+        Evaluable selector = createAssignableExpression(scope, statementNode.getChild("Assignable"));
+        Optional<Node> defaultStatement = statementNode.getChild("CaseDefault").findChild("Statement");
+        if (defaultStatement.isPresent()) {
+            return BranchStatement.caseStatement(
+                selector,
+                choices,
+                createStatement(scope, defaultStatement.get()));
+        }
+        return BranchStatement.caseStatement(selector, choices);
     }
 
     private void collectCaseLimbs(Operation scope, Node caseLimbs, Map<Evaluable, Statement> choices) {

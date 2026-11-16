@@ -167,6 +167,35 @@ public class PascalExecutionTest {
     }
 
     @Test
+    public void testCaseDefault() {
+        Node tree = parser.parse("""
+            PROGRAM case_default;
+            VAR i, s, t: INTEGER;
+            BEGIN
+                i := 2;
+                s := 0;
+                t := 0;
+                CASE i OF
+                    1: s := 10
+                OTHERWISE
+                    t := 20
+                END
+            END.
+            """);
+        uml.structure.Class program = compiler.createProgramClass(tree);
+        BranchStatement branch = compiler.getMethods().values().stream()
+            .flatMap(body -> body.getStatements().stream())
+            .filter(BranchStatement.class::isInstance)
+            .map(BranchStatement.class::cast)
+            .findFirst()
+            .orElseThrow();
+        assertTrue(branch.getDefaultChoice().isPresent());
+        execution = new Engine(program, compiler.getMethods()).execute();
+        assertEquals(0, execution.getVariableValue("s"));
+        assertEquals(20, execution.getVariableValue("t"));
+    }
+
+    @Test
     public void testForLoop() {
         Node tree = parser.parse("""
             PROGRAM for_loop;

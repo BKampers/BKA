@@ -94,12 +94,21 @@ public final class ActivityDiagramGenerator {
             branch.getCondition(),
             new ArrayList<>(branch.getChoices().entrySet()),
             branch.getDefaultChoice(),
+            false,
             diagram);
     }
 
-    private void addCaseChoices(Evaluable selector, List<Map.Entry<Evaluable, Statement>> choices, Optional<Statement> defaultChoice, ActivityDiagramBuilder diagram) {
+    private void addCaseChoices(Evaluable selector, List<Map.Entry<Evaluable, Statement>> choices, Optional<Statement> defaultChoice, boolean fromDecision, ActivityDiagramBuilder diagram) {
         if (choices.isEmpty()) {
-            defaultChoice.ifPresent(statement -> add(statement, diagram));
+            if (defaultChoice.isPresent()) {
+                TransitionSource source = diagram.anyLeaf();
+                add(defaultChoice.get(), diagram);
+                if (fromDecision) {
+                    diagram.addStereotype(
+                        transition -> source.equals(transition.getSource()) && transition.getGuardCondition().isEmpty(),
+                        "otherwise");
+                }
+            }
             return;
         }
         Map.Entry<Evaluable, Statement> choice = choices.getFirst();
@@ -108,7 +117,7 @@ public final class ActivityDiagramGenerator {
         add(choice.getValue(), diagram);
         diagram.addGuardCondition(decision, GuardConditionFactory.pass(decision), "case");
         diagram.fork(decision);
-        addCaseChoices(selector, choices.subList(1, choices.size()), defaultChoice, diagram);
+        addCaseChoices(selector, choices.subList(1, choices.size()), defaultChoice, true, diagram);
         diagram.join();
     }
 

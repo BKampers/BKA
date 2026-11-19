@@ -6,6 +6,7 @@
 package bka.text.parser.pascal;
 
 import java.util.*;
+import java.util.function.*;
 import run.*;
 import run.pascal.*;
 import run.statemachine.*;
@@ -94,31 +95,38 @@ public final class ActivityDiagramGenerator {
             branch.getCondition(),
             new ArrayList<>(branch.getChoices().entrySet()),
             branch.getDefaultChoice(),
-            false,
+            Optional.empty(),
             diagram);
     }
 
-    private void addCaseChoices(Evaluable selector, List<Map.Entry<Evaluable, Statement>> choices, Optional<Statement> defaultChoice, boolean fromDecision, ActivityDiagramBuilder diagram) {
-        if (choices.isEmpty()) {
-            if (defaultChoice.isPresent()) {
-                TransitionSource source = diagram.anyLeaf();
-                add(defaultChoice.get(), diagram);
-                if (fromDecision) {
-                    diagram.addStereotype(
-                        transition -> source.equals(transition.getSource()) && transition.getGuardCondition().isEmpty(),
-                        "otherwise");
-                }
-            }
-            return;
+    private void addCaseChoices(Evaluable selector, List<Map.Entry<Evaluable, Statement>> choices, Optional<Statement> defaultChoice, Optional<String> defaultStereotype, ActivityDiagramBuilder diagram) {
+        if (!choices.isEmpty()) {
+            addCaseChoices(choices, selector, diagram, defaultChoice);
         }
+        else {
+            defaultChoice.ifPresent(choice -> addDefaultChoice(diagram, choice, defaultStereotype));
+        }
+    }
+
+    private void addCaseChoices(List<Map.Entry<Evaluable, Statement>> choices, Evaluable selector, ActivityDiagramBuilder diagram, Optional<Statement> defaultChoice) {
         Map.Entry<Evaluable, Statement> choice = choices.getFirst();
         Decision<Evaluator> decision = decision(new OperatorExpression(selector, Operator.EQUALS, choice.getKey()));
         diagram.add(leave -> UmlTransitionFactory.createTransition(leave, decision), decision);
         add(choice.getValue(), diagram);
         diagram.addGuardCondition(decision, GuardConditionFactory.pass(decision), "case");
         diagram.fork(decision);
-        addCaseChoices(selector, choices.subList(1, choices.size()), defaultChoice, true, diagram);
+        addCaseChoices(selector, choices.subList(1, choices.size()), defaultChoice, Optional.of("otherwise"), diagram);
         diagram.join();
+    }
+
+    private void addDefaultChoice(ActivityDiagramBuilder diagram, Statement choice, Optional<String> defaultStereotype) {
+        TransitionSource source = diagram.getLeaf();
+        add(choice, diagram);
+        defaultStereotype.ifPresent(stereotype -> diagram.addStereotype(guardlessTransitionPredicate(source), stereotype));
+    }
+
+    private static Predicate<Transition<Event, GuardCondition, Action>> guardlessTransitionPredicate(TransitionSource source) {
+        return transition -> source.equals(transition.getSource()) && transition.getGuardCondition().isEmpty();
     }
 
     private void addLoop(LoopStatement loop, ActivityDiagramBuilder diagram) {
@@ -142,7 +150,7 @@ public final class ActivityDiagramGenerator {
     }
 
     private void addRepeat(LoopStatement loop, ActivityDiagramBuilder diagram) {
-        TransitionSource loopRoot = diagram.anyLeaf();
+        TransitionSource loopRoot = diagram.getLeaf();
         add(loop.getAction(), diagram);
         Decision<Evaluator> decision = decision(loop.getExitCondition().orElseThrow());
         diagram.add(leave -> UmlTransitionFactory.createTransition(leave, decision), decision);

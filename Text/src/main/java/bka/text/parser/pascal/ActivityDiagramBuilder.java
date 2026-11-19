@@ -5,7 +5,6 @@
 
 package bka.text.parser.pascal;
 
-import uml.factory.UmlTransitionFactory;
 import java.util.*;
 import java.util.function.*;
 import run.statemachine.*;
@@ -124,8 +123,16 @@ public final class ActivityDiagramBuilder {
         }
     }
 
-    public TransitionSource anyLeaf() {
-        return leaves().stream().findAny().get();
+    /**
+     * @return the leaf node as TranstionSource of the diagram that is being built
+     * @throws IllegalStateException if there are zero or more than one leaves in the diagram/
+     */
+    public TransitionSource getLeaf() {
+        Collection<TransitionSource> leaves = leaves();
+        if (leaves.size() != 1) {
+            throw new IllegalStateException("Number of leaves is not 1, but " + leaves.size());
+        }
+        return leaves.stream().findAny().get();
     }
 
     public TransitionTarget targetOf(TransitionSource source) {

@@ -145,6 +145,47 @@ public class PascalStateMachineTest {
     }
 
     @Test
+    public void testCase() throws StateMachineException {
+        Node tree = parser.parse("""
+            PROGRAM case_of;
+            VAR i, s: INTEGER;
+            BEGIN
+                i := 2;
+                s := 0;
+                CASE i OF
+                    1: s := 10;
+                    2, 3: s := 20
+                END
+            END.
+            """);
+        StateMachine stateMachine = createStateMachine(tree);
+        stateMachine.start();
+        assertEquals(20, stateMachine.getMemoryObject("s"));
+    }
+
+    @Test
+    public void testCaseDefault() throws StateMachineException {
+        Node tree = parser.parse("""
+            PROGRAM case_default;
+            VAR i, s, t: INTEGER;
+            BEGIN
+                i := 2;
+                s := 0;
+                t := 0;
+                CASE i OF
+                    1: s := 10
+                ELSE
+                    t := 20
+                END
+            END.
+            """);
+        StateMachine stateMachine = createStateMachine(tree);
+        stateMachine.start();
+        assertEquals(0, stateMachine.getMemoryObject("s"));
+        assertEquals(20, stateMachine.getMemoryObject("t"));
+    }
+
+    @Test
     public void testForLoop() throws StateMachineException {
         Node tree = parser.parse("""
             PROGRAM for_loop;

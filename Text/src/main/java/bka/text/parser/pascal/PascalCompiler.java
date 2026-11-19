@@ -289,6 +289,8 @@ public final class PascalCompiler {
                 LoopStatement.untilLoop(
                     createExpression(scope, statementNode.getChild("Expression")), 
                     createCompoundStatement(scope, statementNode));
+            case "CASE\\b" ->
+                createCaseStatement(scope, statementNode);
             default ->
                 throw new IllegalStateException("Unsupported statement: " + statementNode.content());
         };
@@ -503,6 +505,45 @@ public final class PascalCompiler {
         return BranchStatement.ifStatement(
             createExpression(scope, statementNode.getChild("Expression")), 
             createStatement(scope, statementNode.getChild("Statement")));
+    }
+
+    private BranchStatement createCaseStatement(Operation scope, Node statementNode) {
+        Map<Evaluable, Statement> choices = new LinkedHashMap<>();
+        collectCaseLimbs(scope, statementNode.getChild("CaseLimbs"), choices);
+        Evaluable selector = createAssignableExpression(scope, statementNode.getChild("Assignable"));
+        Optional<Node> defaultStatement = statementNode.getChild("CaseDefault").findChild("Statement");
+        if (defaultStatement.isPresent()) {
+            return BranchStatement.caseStatement(
+                selector,
+                choices,
+                createStatement(scope, defaultStatement.get()));
+        }
+        return BranchStatement.caseStatement(selector, choices);
+    }
+
+    private void collectCaseLimbs(Operation scope, Node caseLimbs, Map<Evaluable, Statement> choices) {
+        Node limb = caseLimbs.getChild("CaseLimb");
+        if (!limb.getChildren().isEmpty()) {
+            Statement statement = createStatement(scope, limb.getChild("Statement"));
+            addCaseLabels(scope, limb.getChild("CaseLabelList"), statement, choices);
+        }
+        caseLimbs.findChild("CaseLimbs").ifPresent(next -> collectCaseLimbs(scope, next, choices));
+    }
+
+    private void addCaseLabels(Operation scope, Node labelList, Statement statement, Map<Evaluable, Statement> choices) {
+        choices.put(createCaseLabel(scope, labelList.getChild("CaseLabel")), statement);
+        labelList.findChild("CaseLabelList").ifPresent(next -> addCaseLabels(scope, next, statement, choices));
+    }
+
+    private Evaluable createCaseLabel(Operation scope, Node label) {
+        return switch (head(label).getSymbol()) {
+            case "Literal" ->
+                createLiteralExpression(head(label));
+            case "Identifier" ->
+                createIdentifierExpression(scope, head(label));
+            default ->
+                throw new IllegalStateException("Unsupported case label: " + head(label).getSymbol());
+        };
     }
     
     private Statement createForLoop(Operation scope, Node statementNode) {

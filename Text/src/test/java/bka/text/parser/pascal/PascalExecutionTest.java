@@ -8,10 +8,12 @@ import bka.text.parser.*;
 import java.io.IOException;
 import java.util.*;
 import org.junit.jupiter.api.*;
+import run.BranchStatement;
 import run.Engine;
 import run.Execution;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PascalExecutionTest {
 
@@ -134,6 +136,63 @@ public class PascalExecutionTest {
             """);
         execute(tree);
         assertEquals(16, execution.getVariableValue("i"));
+    }
+
+    @Test
+    public void testCase() {
+        Node tree = parser.parse("""
+            PROGRAM case_of;
+            VAR i, s: INTEGER;
+            BEGIN
+                i := 2;
+                s := 0;
+                CASE i OF
+                    1: s := 10;
+                    2, 3: s := 20
+                END
+            END.
+            """);
+        uml.structure.Class program = compiler.createProgramClass(tree);
+        BranchStatement branch = compiler.getMethods().values().stream()
+            .flatMap(body -> body.getStatements().stream())
+            .filter(BranchStatement.class::isInstance)
+            .map(BranchStatement.class::cast)
+            .findFirst()
+            .orElseThrow();
+        assertEquals(3, branch.getChoices().size());
+        assertEquals(2, Set.copyOf(branch.getChoices().values()).size());
+        assertTrue(branch.getDefaultChoice().isEmpty());
+        execution = new Engine(program, compiler.getMethods()).execute();
+        assertEquals(20, execution.getVariableValue("s"));
+    }
+
+    @Test
+    public void testCaseDefault() {
+        Node tree = parser.parse("""
+            PROGRAM case_default;
+            VAR i, s, t: INTEGER;
+            BEGIN
+                i := 2;
+                s := 0;
+                t := 0;
+                CASE i OF
+                    1: s := 10
+                OTHERWISE
+                    t := 20
+                END
+            END.
+            """);
+        uml.structure.Class program = compiler.createProgramClass(tree);
+        BranchStatement branch = compiler.getMethods().values().stream()
+            .flatMap(body -> body.getStatements().stream())
+            .filter(BranchStatement.class::isInstance)
+            .map(BranchStatement.class::cast)
+            .findFirst()
+            .orElseThrow();
+        assertTrue(branch.getDefaultChoice().isPresent());
+        execution = new Engine(program, compiler.getMethods()).execute();
+        assertEquals(0, execution.getVariableValue("s"));
+        assertEquals(20, execution.getVariableValue("t"));
     }
 
     @Test

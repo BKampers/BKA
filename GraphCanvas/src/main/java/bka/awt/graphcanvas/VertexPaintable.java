@@ -33,10 +33,18 @@ public abstract class VertexPaintable extends Paintable {
         return new Dimension(size);
     }
 
+    protected int getWidth() {
+        return size.width;
+    }
+
+    protected int getHeight() {
+        return size.height;
+    }
+
     public abstract void resize(Point location, Point traget, ResizeDirection direction);
 
     public double distance(Point location, Point point) {
-        return location.distance(point) - getSize().width / 2d;
+        return location.distance(point) - getWidth() / 2d;
     }
 
     public abstract Supplier<Point> distancePositioner(Point location, Point point);

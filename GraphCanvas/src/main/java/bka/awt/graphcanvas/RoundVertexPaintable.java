@@ -26,20 +26,20 @@ public class RoundVertexPaintable extends VertexPaintable {
     public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
         graphics.setPaint(paint);
         graphics.setStroke(stroke);
-        graphics.drawOval(-widthRadius(), -heightRadius(), getSize().width, getSize().height);
+        graphics.drawOval(-widthRadius(), -heightRadius(), getWidth(), getHeight());
     }
 
     private void fill(Graphics2D graphics) {
         graphics.setPaint(getPaint(FILL_PAINT_KEY));
-        graphics.fillOval(-widthRadius(), -heightRadius(), getSize().width, getSize().height);
+        graphics.fillOval(-widthRadius(), -heightRadius(), getWidth(), getHeight());
     }
 
     private int widthRadius() {
-        return getSize().width / 2;
+        return getWidth() / 2;
     }
 
     private int heightRadius() {
-        return getSize().height / 2;
+        return getHeight() / 2;
     }
 
     @Override
@@ -56,7 +56,7 @@ public class RoundVertexPaintable extends VertexPaintable {
         double dx = point.x - location.x;
         double dy = point.y - location.y;
         double angle = Math.atan(dx / dy);
-        float radius = getSize().width / ((dy < 0) ? -2f : 2f);
+        float radius = getWidth() / ((dy < 0) ? -2f : 2f);
         float cx = (float) Math.sin(angle) * radius;
         float cy = (float) Math.cos(angle) * radius;
         return new Point(Math.round(location.x + cx), Math.round(location.y + cy));
@@ -70,7 +70,7 @@ public class RoundVertexPaintable extends VertexPaintable {
         float cos = (float) ((dy < 0) ? -Math.cos(angle) : Math.cos(angle));
         float distanceToBorder = (float) distance(location, point);
         return () -> {
-            float distanceToLocation = getSize().width / 2f + distanceToBorder;
+            float distanceToLocation = getWidth() / 2f + distanceToBorder;
             return new Point(location.x + Math.round(sin * distanceToLocation), location.y + Math.round(cos * distanceToLocation));
         };
     }

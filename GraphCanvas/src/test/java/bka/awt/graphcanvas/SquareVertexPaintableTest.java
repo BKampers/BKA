@@ -18,8 +18,8 @@ public final class SquareVertexPaintableTest {
         square.resize(location, location, ResizeDirection.NORTH_EAST);
         Point connector = square.getConnectorPoint(location, new Point(80, 60));
         assertNotNull(connector);
-        assertEquals(2, square.getSize().width);
-        assertEquals(2, square.getSize().height);
+        assertEquals(2, square.getWidth());
+        assertEquals(2, square.getHeight());
     }
 
 }

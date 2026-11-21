@@ -29,12 +29,12 @@ public final class SquareVertexPaintable extends VertexPaintable {
     public void paint(Graphics2D graphics, Paint paint, Stroke stroke) {
         graphics.setPaint(paint);
         graphics.setStroke(stroke);
-        graphics.drawRect(-widthRadius(), -heightRadius(), getSize().width, getSize().height);
+        graphics.drawRect(-widthRadius(), -heightRadius(), getWidth(), getHeight());
     }
 
     private void fill(Graphics2D graphics) {
         graphics.setPaint(getPaint(FILL_PAINT_KEY));
-        graphics.fillRect(-widthRadius(), -heightRadius(), getSize().width, getSize().height);
+        graphics.fillRect(-widthRadius(), -heightRadius(), getWidth(), getHeight());
     }
 
 
@@ -42,9 +42,9 @@ public final class SquareVertexPaintable extends VertexPaintable {
     public void resize(Point location, Point target, ResizeDirection direction) {
         switch (direction) {
             case NORTH, SOUTH ->
-                setSize(getSize().width, height(location, target));
+                setSize(getWidth(), height(location, target));
             case EAST, WEST ->
-                setSize(width(location, target), getSize().height);
+                setSize(width(location, target), getHeight());
             case NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST ->
                 setSize(width(location, target), height(location, target));
             default ->
@@ -66,7 +66,7 @@ public final class SquareVertexPaintable extends VertexPaintable {
             contour2D(location).stream()
                 .map(line -> squareDistance(point, line))
                 .sorted()
-                .findFirst().get());
+                .findFirst().orElseThrow());
         return (new Rectangle(topLeft(location), getSize()).contains(point)) ? -distance : distance;
     }
 
@@ -118,11 +118,11 @@ public final class SquareVertexPaintable extends VertexPaintable {
     }
 
     private int widthRadius() {
-        return getSize().width / 2;
+        return getWidth() / 2;
     }
 
     private int heightRadius() {
-        return getSize().height / 2;
+        return getHeight() / 2;
     }
 
     @Override

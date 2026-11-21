@@ -22,7 +22,8 @@ public class GraphEditorDemo extends JFrame {
         Map<Object, Stroke> defaultStrokes = Map.of(VertexPaintable.BORDER_STROKE_KEY, SOLID_STROKE);
         populateVertexSelectorPanel(List.of(
             new VertexFactory(RoundVertexPaintable::new, defaultStrokes, paints(Color.BLACK, Color.BLACK)),
-            new VertexFactory(SquareVertexPaintable::new, defaultStrokes, paints(Color.BLACK, Color.WHITE))
+            new VertexFactory(SquareVertexPaintable::new, defaultStrokes, paints(Color.BLACK, Color.WHITE)),
+            new VertexFactory(StadiumVertexPaintable::new, STADIUM_VERTEX_SIZE, defaultStrokes, paints(Color.BLACK, Color.WHITE))
         ));
         populateEdgeSelectorPanel(Arrays.stream(EdgeFactory.Decoration.values()).map(EdgeFactory::new).collect(Collectors.toList()));
         getDecorator().updateIcon();
@@ -334,6 +335,9 @@ public class GraphEditorDemo extends JFrame {
         if (paintable instanceof SquareVertexPaintable) {
             return new VertexFactory(SquareVertexPaintable::new, paintable);
         }
+        if (paintable instanceof StadiumVertexPaintable) {
+            return new VertexFactory(StadiumVertexPaintable::new, STADIUM_VERTEX_SIZE, paintable);
+        }
         throw new IllegalStateException("Unsupported component");
     }
 
@@ -629,6 +633,8 @@ public class GraphEditorDemo extends JFrame {
 
     private static final Color TRANSPARENT = new Color(0, true);
     private static final BasicStroke SOLID_STROKE = new BasicStroke();
+
+    private static final Dimension STADIUM_VERTEX_SIZE = new Dimension(14, 8);
 
     private static final int FRAME_ICON_CANVAS_SIZE = 100;
     private static final Dimension FRAME_ICON_VERTEX_SIZE = new Dimension(22, 22);

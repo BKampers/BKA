@@ -14,14 +14,23 @@ import java.util.stream.*;
 public class VertexFactory implements Factory {
 
     public VertexFactory(Function<Dimension, VertexPaintable> newInstance, Map<Object, Stroke> defaultStrokes, Map<Object, Paint> defaultPaints) {
+        this(newInstance, VERTEX_ICON_DIMENSION, defaultStrokes, defaultPaints);
+    }
+
+    public VertexFactory(Function<Dimension, VertexPaintable> newInstance, Dimension dimension, Map<Object, Stroke> defaultStrokes, Map<Object, Paint> defaultPaints) {
         this.newInstance = newInstance;
-        defaultInstance = newInstance.apply(VERTEX_ICON_DIMENSION);
+        this.dimension = new Dimension(dimension);
+        defaultInstance = newInstance.apply(this.dimension);
         defaultStrokes.forEach(defaultInstance::setStroke);
         defaultPaints.forEach(defaultInstance::setPaint);
     }
 
     public VertexFactory(Function<Dimension, VertexPaintable> newInstance, Paintable paintable) {
-        this(newInstance, toMap(paintable.getStrokeKeys(), paintable::getStroke), toMap(paintable.getPaintKeys(), paintable::getPaint));
+        this(newInstance, VERTEX_ICON_DIMENSION, paintable);
+    }
+
+    public VertexFactory(Function<Dimension, VertexPaintable> newInstance, Dimension dimension, Paintable paintable) {
+        this(newInstance, dimension, toMap(paintable.getStrokeKeys(), paintable::getStroke), toMap(paintable.getPaintKeys(), paintable::getPaint));
     }
 
     private static <K, V> Map<K, V> toMap(Collection<K> keys, Function<K, V> getter) {
@@ -35,7 +44,7 @@ public class VertexFactory implements Factory {
 
     @Override
     public VertexPaintable getCopyInstance() {
-        VertexPaintable copyInstance = newInstance.apply(VERTEX_ICON_DIMENSION);
+        VertexPaintable copyInstance = newInstance.apply(dimension);
         copy(defaultInstance, copyInstance);
         return copyInstance;
     }
@@ -50,6 +59,7 @@ public class VertexFactory implements Factory {
     }
 
     private final Function<Dimension, VertexPaintable> newInstance;
+    private final Dimension dimension;
     private final VertexPaintable defaultInstance;
 
     private static final Dimension VERTEX_ICON_DIMENSION = new Dimension(12, 12);

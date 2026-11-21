@@ -48,7 +48,7 @@ public final class SquareVertexPaintable extends VertexPaintable {
             case NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST ->
                 setSize(width(location, target), height(location, target));
             default ->
-                throw new IllegalStateException(direction.toString());
+                throw new IllegalStateException(direction.name());
         }
     }
 

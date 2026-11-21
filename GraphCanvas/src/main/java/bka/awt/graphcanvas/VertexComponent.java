@@ -78,6 +78,10 @@ public final class VertexComponent extends GraphComponent {
         vertexPaintable.resize(location, target, direction);
     }
 
+    public ResizeDirection resizeDirection(Point cursor) {
+        return vertexPaintable.resizeDirection(location, cursor);
+    }
+
     @Override
     public Collection<Paintable> getCustomizablePaintables() {
         return List.of(vertexPaintable);

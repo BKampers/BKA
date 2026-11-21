@@ -96,7 +96,7 @@ public final class DefaultEventHandler extends CanvasEventHandler {
             return new CanvasUpdate(Cursor.HAND_CURSOR, needRepaint | setConnectorPoint(null));
         }
         if (CanvasUtil.isOnBorder(distance)) {
-            return new CanvasUpdate(getResizeDirection(cursor, vertex.getLocation()).getCursorType(), needRepaint | setConnectorPoint(null));
+            return new CanvasUpdate(vertex.resizeDirection(cursor).getCursorType(), needRepaint | setConnectorPoint(null));
         }
         if (CanvasUtil.isNear(distance) && getCanvas().getVertices().size() > 1 && getCanvas().getContext().createEdgeAllowed()) {
             return new CanvasUpdate(Cursor.DEFAULT_CURSOR, needRepaint | setConnectorPoint(cursor));
@@ -143,7 +143,7 @@ public final class DefaultEventHandler extends CanvasEventHandler {
         else {
             long distance = vertex.squareDistance(cursor);
             if (CanvasUtil.isOnBorder(distance)) {
-                getCanvas().setEventHandler(new VertexResizeHandler(getCanvas(), vertex, getResizeDirection(cursor, vertex.getLocation())));
+                getCanvas().setEventHandler(new VertexResizeHandler(getCanvas(), vertex, vertex.resizeDirection(cursor)));
             }
             else {
                 if (!getCanvas().getSelection().contains(vertex)) {
@@ -182,22 +182,6 @@ public final class DefaultEventHandler extends CanvasEventHandler {
         }
         edge.addPoint(point);
         return point;
-    }
-
-    private static ResizeDirection getResizeDirection(Point cursor, Point vertexLocation) {
-        int dx = cursor.x - vertexLocation.x;
-        int dy = cursor.y - vertexLocation.y;
-        double angle = Math.abs(Math.atan((double) dx / dy));
-        if (angle < VERTICAL_MARGIN) {
-            return (dy < 0) ? ResizeDirection.NORTH : ResizeDirection.SOUTH;
-        }
-        if (angle > HORIZONTAL_MARGIN) {
-            return (dx < 0) ? ResizeDirection.WEST : ResizeDirection.EAST;
-        }
-        if (dx < 0) {
-            return (dy < 0) ? ResizeDirection.NORTH_WEST : ResizeDirection.SOUTH_WEST;
-        }
-        return (dy < 0) ? ResizeDirection.NORTH_EAST : ResizeDirection.SOUTH_EAST;
     }
 
     @Override
@@ -456,8 +440,5 @@ public final class DefaultEventHandler extends CanvasEventHandler {
     private boolean edgeBendSelected;
     private Label hoveredLabel; // null if no label is being hoverd
     private GraphComponent highlightedElement; // null if no element is highlighted
-
-    private static final double HORIZONTAL_MARGIN = 0.4 * Math.PI;
-    private static final double VERTICAL_MARGIN = 0.1 * Math.PI;
 
 }

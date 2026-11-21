@@ -10,7 +10,7 @@ import java.awt.*;
 import java.util.function.*;
 
 
-public class RoundVertexPaintable extends VertexPaintable {
+public final class RoundVertexPaintable extends VertexPaintable {
 
     public RoundVertexPaintable(Dimension size) {
         super(size);

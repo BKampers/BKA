@@ -115,7 +115,8 @@ public final class DefaultEventHandler extends CanvasEventHandler {
 
     @Override
     public CanvasUpdate mousePressed(MouseEvent event) {
-        if (MouseButton.get(event) != MouseButton.MAIN) {
+        pressedButton = MouseButton.get(event);
+        if (pressedButton != MouseButton.MAIN) {
             return CanvasUpdate.NO_OPERATION;
         }
         if (hoveredLabel != null) {
@@ -186,7 +187,7 @@ public final class DefaultEventHandler extends CanvasEventHandler {
 
     @Override
     public CanvasUpdate mouseClicked(MouseEvent event) {
-        return switch (MouseButton.get(event)) {
+        return switch (pressedButton) {
             case MAIN ->
                 mainButtonClicked(event.getPoint());
             case TOGGLE_SELECT ->
@@ -198,7 +199,7 @@ public final class DefaultEventHandler extends CanvasEventHandler {
             case UNSUPPORTED ->
                 CanvasUpdate.NO_OPERATION;
             default ->
-                throw new IllegalStateException(MouseButton.get(event).name());
+                throw new IllegalStateException(pressedButton.name());
         };
     }
 
@@ -343,6 +344,9 @@ public final class DefaultEventHandler extends CanvasEventHandler {
 
     @Override
     public CanvasUpdate mouseDragged(MouseEvent event) {
+        if (pressedButton != MouseButton.MAIN) {
+            return CanvasUpdate.NO_OPERATION;
+        }
         getCanvas().setEventHandler(new SelectAreaHandler(getCanvas(), event.getPoint()));
         return CanvasUpdate.NO_OPERATION;
     }
@@ -434,6 +438,7 @@ public final class DefaultEventHandler extends CanvasEventHandler {
         }
     }
 
+    private MouseButton pressedButton = MouseButton.UNSUPPORTED;
     private boolean editButtonDown;
     private Point connectorPoint; // null if no connector point is being hovered
     private Point edgePoint; // null if no edge point is being hovered

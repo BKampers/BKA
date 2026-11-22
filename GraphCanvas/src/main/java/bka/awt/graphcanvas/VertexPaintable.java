@@ -16,6 +16,12 @@ public abstract class VertexPaintable extends Paintable {
     public final static Object BORDER_STROKE_KEY = "BorderStroke";
     public final static Object FILL_PAINT_KEY = "FillPaint";
 
+    public abstract void resize(Point location, Point traget, ResizeDirection direction);
+
+    public abstract Supplier<Point> distancePositioner(Point location, Point point);
+
+    public abstract Point getConnectorPoint(Point location, Point point);
+
     public VertexPaintable(Dimension size) {
         super();
         setSize(size);
@@ -29,19 +35,17 @@ public abstract class VertexPaintable extends Paintable {
         size = new Dimension(Math.max(MINIMUM_SIZE, width), Math.max(MINIMUM_SIZE, height));
     }
 
-    protected Dimension getSize() {
+    protected final Dimension getSize() {
         return new Dimension(size);
     }
 
-    protected int getWidth() {
+    protected final int getWidth() {
         return size.width;
     }
 
-    protected int getHeight() {
+    protected final int getHeight() {
         return size.height;
     }
-
-    public abstract void resize(Point location, Point traget, ResizeDirection direction);
 
     public ResizeDirection resizeDirection(Point location, Point cursor) {
         int dx = cursor.x - location.x;
@@ -62,10 +66,6 @@ public abstract class VertexPaintable extends Paintable {
     public double distance(Point location, Point point) {
         return location.distance(point) - getWidth() / 2d;
     }
-
-    public abstract Supplier<Point> distancePositioner(Point location, Point point);
-
-    public abstract Point getConnectorPoint(Point location, Point point);
 
     private Dimension size;
 

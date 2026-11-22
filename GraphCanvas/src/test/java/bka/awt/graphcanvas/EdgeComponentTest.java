@@ -18,7 +18,7 @@ public class EdgeComponentTest {
 
     @Test
     public void testDiamondStaysAtStart() {
-        EdgeComponent edge = new EdgeComponent(start, end, PolygonPaintable::create, DiamondPaintable::new);
+        EdgeComponent edge = new EdgeComponent(start, end, PolygonPaintable::create, DiamondDecorationPaintable::new);
         EdgeDecorationPaintable diamond = (EdgeDecorationPaintable) edge.getDecorationPaintable();
         assertDecorationLine(edge, diamond, 0);
         edge.addPoint(new Point(25, 20));
@@ -33,7 +33,7 @@ public class EdgeComponentTest {
 
     @Test
     public void testArrowheadOnMiddleLine() {
-        EdgeComponent edge = new EdgeComponent(start, end, PolygonPaintable::create, ArrowheadPaintable::new);
+        EdgeComponent edge = new EdgeComponent(start, end, PolygonPaintable::create, ArrowheadDecorationPaintable::new);
         EdgeDecorationPaintable arrowhead = (EdgeDecorationPaintable) edge.getDecorationPaintable();
         assertDecorationLine(edge, arrowhead, 0);
         edge.addPoint(new Point(25, 20));

@@ -9,13 +9,13 @@ package bka.awt.graphcanvas;
 import java.awt.*;
 import java.util.function.*;
 
-public class ArrowheadPaintable extends EdgeDecorationPaintable {
+public class ArrowheadDecorationPaintable extends EdgeDecorationPaintable {
     
     public static final Object ARROWHEAD_PAINT_KEY = "ArrowheadPaint";
     public static final Object ARROWHEAD_STROKE_KEY = "ArrowheadStroke";
 
     
-    public ArrowheadPaintable(Supplier<Point> startPoint, Supplier<Point> endPoint) {
+    public ArrowheadDecorationPaintable(Supplier<Point> startPoint, Supplier<Point> endPoint) {
         super(startPoint, endPoint);
     }
 

@@ -9,14 +9,14 @@ package bka.awt.graphcanvas;
 import java.awt.*;
 import java.util.function.*;
 
-public class DiamondPaintable extends EdgeDecorationPaintable {
+public class DiamondDecorationPaintable extends EdgeDecorationPaintable {
     
     public static final Object DIAMOND_FILL_PAINT_KEY = "DiamondFillPaint";
     public static final Object DIAMOND_BORDER_PAINT_KEY = "DiamondBorderPaint";
     public static final Object DIAMOND_BORDER_STROKE_KEY = "DiamondBorderStroke";
 
     
-    public DiamondPaintable(Supplier<Point> startPoint, Supplier<Point> endPoint) {
+    public DiamondDecorationPaintable(Supplier<Point> startPoint, Supplier<Point> endPoint) {
         super(startPoint, endPoint);
     }
 

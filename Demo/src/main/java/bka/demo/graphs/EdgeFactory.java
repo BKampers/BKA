@@ -13,9 +13,9 @@ import java.util.function.*;
 public class EdgeFactory implements Factory {
 
     public enum Decoration {
-        NONE(ArrowheadPaintable::new, EdgeFactory::initializeArrowhead),
-        ARROWHEAD(ArrowheadPaintable::new, EdgeFactory::initializeArrowhead),
-        DIAMOND(DiamondPaintable::new, EdgeFactory::initializeDiamond);
+        NONE(ArrowheadDecorationPaintable::new, EdgeFactory::initializeArrowhead),
+        ARROWHEAD(ArrowheadDecorationPaintable::new, EdgeFactory::initializeArrowhead),
+        DIAMOND(DiamondDecorationPaintable::new, EdgeFactory::initializeDiamond);
 
         private Decoration(BiFunction<Supplier<Point>, Supplier<Point>, EdgeDecorationPaintable> constructor, Consumer<EdgePaintable> initialize) {
             this.constructor = constructor;
@@ -53,10 +53,10 @@ public class EdgeFactory implements Factory {
         if (!component.isDirected()) {
             return Decoration.NONE;
         }
-        if (component.getDecorationPaintable() instanceof ArrowheadPaintable) {
+        if (component.getDecorationPaintable() instanceof ArrowheadDecorationPaintable) {
             return Decoration.ARROWHEAD;
         }
-        if (component.getDecorationPaintable() instanceof DiamondPaintable) {
+        if (component.getDecorationPaintable() instanceof DiamondDecorationPaintable) {
             return Decoration.DIAMOND;
         }
         throw new IllegalStateException("Unsupported decoration: " + component.getDecorationPaintable().getClass());
@@ -65,16 +65,16 @@ public class EdgeFactory implements Factory {
     private static void initializeArrowhead(EdgePaintable edgePainatble) {
         edgePainatble.getPolygonPaintable().setPaint(PolygonPaintable.LINE_PAINT_KEY, Color.BLACK);
         edgePainatble.getPolygonPaintable().setStroke(PolygonPaintable.LINE_STROKE_KEY, SOLID_STROKE);
-        edgePainatble.getDecorationPaintable().setPaint(ArrowheadPaintable.ARROWHEAD_PAINT_KEY, Color.BLACK);
-        edgePainatble.getDecorationPaintable().setStroke(ArrowheadPaintable.ARROWHEAD_STROKE_KEY, SOLID_STROKE);
+        edgePainatble.getDecorationPaintable().setPaint(ArrowheadDecorationPaintable.ARROWHEAD_PAINT_KEY, Color.BLACK);
+        edgePainatble.getDecorationPaintable().setStroke(ArrowheadDecorationPaintable.ARROWHEAD_STROKE_KEY, SOLID_STROKE);
     }
 
     private static void initializeDiamond(EdgePaintable edgePaintable) {
         edgePaintable.getPolygonPaintable().setPaint(PolygonPaintable.LINE_PAINT_KEY, Color.BLACK);
         edgePaintable.getPolygonPaintable().setStroke(PolygonPaintable.LINE_STROKE_KEY, SOLID_STROKE);
-        edgePaintable.getDecorationPaintable().setStroke(DiamondPaintable.DIAMOND_BORDER_STROKE_KEY, SOLID_STROKE);
-        edgePaintable.getDecorationPaintable().setPaint(DiamondPaintable.DIAMOND_BORDER_PAINT_KEY, Color.BLACK);
-        edgePaintable.getDecorationPaintable().setPaint(DiamondPaintable.DIAMOND_FILL_PAINT_KEY, Color.WHITE);
+        edgePaintable.getDecorationPaintable().setStroke(DiamondDecorationPaintable.DIAMOND_BORDER_STROKE_KEY, SOLID_STROKE);
+        edgePaintable.getDecorationPaintable().setPaint(DiamondDecorationPaintable.DIAMOND_BORDER_PAINT_KEY, Color.BLACK);
+        edgePaintable.getDecorationPaintable().setPaint(DiamondDecorationPaintable.DIAMOND_FILL_PAINT_KEY, Color.WHITE);
     }
 
     @Override
@@ -94,9 +94,9 @@ public class EdgeFactory implements Factory {
     public EdgeDecorationPaintable.Factory createDecorationPaintable() {
         EdgePaintable paintable = getCopyInstance();
         return (left, right) -> {
-            EdgeDecorationPaintable decorationPaintable = (paintable.getDecorationPaintable() instanceof DiamondPaintable)
-                ? new DiamondPaintable(left, right)
-                : new ArrowheadPaintable(left, right);
+            EdgeDecorationPaintable decorationPaintable = (paintable.getDecorationPaintable() instanceof DiamondDecorationPaintable)
+                ? new DiamondDecorationPaintable(left, right)
+                : new ArrowheadDecorationPaintable(left, right);
             copy(paintable.getDecorationPaintable(), decorationPaintable);
             return decorationPaintable;
         };

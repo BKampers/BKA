@@ -13,7 +13,7 @@ import java.util.function.*;
 public class EdgePaintable extends Paintable {
 
     public EdgePaintable(Supplier<Point> start, Supplier<Point> end, boolean directed) {
-        this(start, end, new ArrowheadPaintable(start, end), directed);
+        this(start, end, new ArrowheadDecorationPaintable(start, end), directed);
     }
 
     public EdgePaintable(Supplier<Point> start, Supplier<Point> end, EdgeDecorationPaintable decorationPaintable, boolean directed) {
@@ -21,7 +21,7 @@ public class EdgePaintable extends Paintable {
         polygonPaintable = PolygonPaintable.create(java.util.List.of(start.get(), end.get()));
         this.decorationPaintable = (decorationPaintable != null)
             ? decorationPaintable
-            : new ArrowheadPaintable(start, end);
+            : new ArrowheadDecorationPaintable(start, end);
     }
 
     @Override

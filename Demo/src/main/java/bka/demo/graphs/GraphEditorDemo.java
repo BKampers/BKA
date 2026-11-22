@@ -23,7 +23,8 @@ public class GraphEditorDemo extends JFrame {
         populateVertexSelectorPanel(List.of(
             new VertexFactory(RoundVertexPaintable::new, defaultStrokes, paints(Color.BLACK, Color.BLACK)),
             new VertexFactory(SquareVertexPaintable::new, defaultStrokes, paints(Color.BLACK, Color.WHITE)),
-            new VertexFactory(StadiumVertexPaintable::new, STADIUM_VERTEX_SIZE, defaultStrokes, paints(Color.BLACK, Color.WHITE))
+            new VertexFactory(StadiumVertexPaintable::new, STADIUM_VERTEX_SIZE, defaultStrokes, paints(Color.BLACK, Color.WHITE)),
+            new VertexFactory(DiamondVertexPaintable::new, defaultStrokes, paints(Color.BLACK, Color.WHITE))
         ));
         populateEdgeSelectorPanel(Arrays.stream(EdgeFactory.Decoration.values()).map(EdgeFactory::new).collect(Collectors.toList()));
         getDecorator().updateIcon();
@@ -247,9 +248,9 @@ public class GraphEditorDemo extends JFrame {
         modifyPaint(VertexPaintable.BORDER_PAINT_KEY, iconPaintable, Color.BLACK);
         modifyPaint(PolygonPaintable.LINE_PAINT_KEY, iconPaintable, Color.BLACK);
         modifyPaint(VertexPaintable.FILL_PAINT_KEY, iconPaintable, TRANSPARENT);
-        modifyPaint(ArrowheadPaintable.ARROWHEAD_PAINT_KEY, iconPaintable, TRANSPARENT);
-        modifyPaint(DiamondPaintable.DIAMOND_BORDER_PAINT_KEY, iconPaintable, TRANSPARENT);
-        modifyPaint(DiamondPaintable.DIAMOND_FILL_PAINT_KEY, iconPaintable, TRANSPARENT);
+        modifyPaint(ArrowheadDecorationPaintable.ARROWHEAD_PAINT_KEY, iconPaintable, TRANSPARENT);
+        modifyPaint(DiamondDecorationPaintable.DIAMOND_BORDER_PAINT_KEY, iconPaintable, TRANSPARENT);
+        modifyPaint(DiamondDecorationPaintable.DIAMOND_FILL_PAINT_KEY, iconPaintable, TRANSPARENT);
         strokesMenu.setIcon(createIcon(iconPaintable));
         strokes().forEach(stroke -> strokesMenu.add(createSrokeItem(factory, strokeKey, stroke, onApply)));
         popupMenu.add(strokesMenu);
@@ -274,9 +275,9 @@ public class GraphEditorDemo extends JFrame {
         modifyPaint(VertexPaintable.BORDER_PAINT_KEY, strokePaintable, Color.BLACK);
         modifyPaint(PolygonPaintable.LINE_PAINT_KEY, strokePaintable, Color.BLACK);
         modifyPaint(VertexPaintable.FILL_PAINT_KEY, strokePaintable, TRANSPARENT);
-        modifyPaint(ArrowheadPaintable.ARROWHEAD_PAINT_KEY, strokePaintable, TRANSPARENT);
-        modifyPaint(DiamondPaintable.DIAMOND_BORDER_PAINT_KEY, strokePaintable, TRANSPARENT);
-        modifyPaint(DiamondPaintable.DIAMOND_FILL_PAINT_KEY, strokePaintable, TRANSPARENT);
+        modifyPaint(ArrowheadDecorationPaintable.ARROWHEAD_PAINT_KEY, strokePaintable, TRANSPARENT);
+        modifyPaint(DiamondDecorationPaintable.DIAMOND_BORDER_PAINT_KEY, strokePaintable, TRANSPARENT);
+        modifyPaint(DiamondDecorationPaintable.DIAMOND_FILL_PAINT_KEY, strokePaintable, TRANSPARENT);
         modifyStroke(VertexPaintable.BORDER_STROKE_KEY, strokePaintable, stroke);
         modifyStroke(PolygonPaintable.LINE_STROKE_KEY, strokePaintable, stroke);
         JMenuItem strokeItem = new JMenuItem();
@@ -338,6 +339,9 @@ public class GraphEditorDemo extends JFrame {
         if (paintable instanceof StadiumVertexPaintable) {
             return new VertexFactory(StadiumVertexPaintable::new, STADIUM_VERTEX_SIZE, paintable);
         }
+        if (paintable instanceof DiamondVertexPaintable) {
+            return new VertexFactory(DiamondVertexPaintable::new, paintable);
+        }
         throw new IllegalStateException("Unsupported component");
     }
 
@@ -396,9 +400,9 @@ public class GraphEditorDemo extends JFrame {
             terminus,
             PolygonPaintable::create,
             (start, end) -> {
-                ArrowheadPaintable arrowhead = new ArrowheadPaintable(start, end);
-                arrowhead.setPaint(ArrowheadPaintable.ARROWHEAD_PAINT_KEY, Color.BLACK);
-                arrowhead.setStroke(ArrowheadPaintable.ARROWHEAD_STROKE_KEY, FRAME_ICON_STROKE);
+                ArrowheadDecorationPaintable arrowhead = new ArrowheadDecorationPaintable(start, end);
+                arrowhead.setPaint(ArrowheadDecorationPaintable.ARROWHEAD_PAINT_KEY, Color.BLACK);
+                arrowhead.setStroke(ArrowheadDecorationPaintable.ARROWHEAD_STROKE_KEY, FRAME_ICON_STROKE);
                 return arrowhead;
             });
         edge.setDirected(true);

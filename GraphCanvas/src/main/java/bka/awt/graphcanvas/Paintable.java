@@ -10,38 +10,22 @@ import java.awt.*;
 import java.util.*;
 
 
-public abstract class Paintable {
+public interface Paintable {
 
-    public abstract void paint(Graphics2D graphics);
+    void paint(Graphics2D graphics);
 
-    public abstract void paint(Graphics2D graphics, Paint paint, Stroke stroke);
+    void paint(Graphics2D graphics, Paint paint, Stroke stroke);
 
-    public void setPaint(Object key, Paint paint) {
-        paints.put(key, paint);
-    }
+    void setPaint(Object key, Paint paint);
 
-    public Paint getPaint(Object key) {
-        return paints.get(key);
-    }
+    Paint getPaint(Object key);
 
-    public void setStroke(Object key, Stroke stroke) {
-        strokes.put(key, stroke);
-    }
+    void setStroke(Object key, Stroke stroke);
 
-    public Stroke getStroke(Object key) {
-        return strokes.get(key);
-    }
+    Stroke getStroke(Object key);
 
-    public Collection<Object> getPaintKeys() {
-        return paints.keySet();
-    }
+    Collection<Object> getPaintKeys();
 
-    public Collection<Object> getStrokeKeys() {
-        return strokes.keySet();
-    }
-
-    private final Map<Object, Paint> paints = new HashMap<>();
-    private final Map<Object, Stroke> strokes = new HashMap<>();
-
+    Collection<Object> getStrokeKeys();
 
 }

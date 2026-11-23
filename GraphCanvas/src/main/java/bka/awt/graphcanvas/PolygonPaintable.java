@@ -13,7 +13,7 @@ import java.util.function.*;
 import java.util.stream.*;
 
 
-public class PolygonPaintable extends Paintable {
+public final class PolygonPaintable extends AttributedPaintable {
 
     public static final Object LINE_PAINT_KEY = "LinePaint";
     public static final Object LINE_STROKE_KEY = "LineStroke";

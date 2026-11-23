@@ -98,35 +98,41 @@ public final class DiamondVertexPaintable extends VertexPaintable {
     }
 
     private int nearestEdgeIndex(Point location, Point point) {
-        int nearest = 0;
-        double shortest = Double.MAX_VALUE;
-        for (int index = 0; index < CORNER_COUNT; index++) {
-            double distance = distanceToSegment(point, corner(location, index), corner(location, index + 1));
-            if (distance < shortest) {
-                shortest = distance;
-                nearest = index;
+        int index = -1;
+        double shortestDistance = Double.MAX_VALUE;
+        for (int i = 0; i < CORNER_COUNT; ++i) {
+            double distance = distanceToSegment(point, corner(location, i), corner(location, i + 1));
+            if (distance < shortestDistance) {
+                shortestDistance = distance;
+                index = i;
             }
         }
-        return nearest;
+        return index;
     }
 
     private Point corner(Point location, int index) {
-        return switch (Math.floorMod(index, CORNER_COUNT)) {
-            case 0 -> new Point(location.x, location.y - halfHeight());
-            case 1 -> new Point(location.x + halfWidth(), location.y);
-            case 2 -> new Point(location.x, location.y + halfHeight());
-            default -> new Point(location.x - halfWidth(), location.y);
+        return switch (index % CORNER_COUNT) {
+            case 0 ->
+                new Point(location.x, location.y - halfHeight());
+            case 1 ->
+                new Point(location.x + halfWidth(), location.y);
+            case 2 ->
+                new Point(location.x, location.y + halfHeight());
+            case 3 ->
+                new Point(location.x - halfWidth(), location.y);
+            default ->
+                throw new IllegalStateException();
         };
     }
 
     private static double distanceToSegment(Point point, Point start, Point end) {
-        double dx = end.x - start.x;
-        double dy = end.y - start.y;
-        double lengthSquared = dx * dx + dy * dy;
-        if (lengthSquared == 0) {
+        long squareDistance = CanvasUtil.squareDistance(start, end);
+        if (squareDistance == 0) {
             return point.distance(start);
         }
-        double ratio = Math.clamp(((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared, 0, 1);
+        double dx = end.x - start.x;
+        double dy = end.y - start.y;
+        double ratio = Math.clamp(((point.x - start.x) * dx + (point.y - start.y) * dy) / squareDistance, 0, 1);
         return Math.hypot(point.x - (start.x + ratio * dx), point.y - (start.y + ratio * dy));
     }
 

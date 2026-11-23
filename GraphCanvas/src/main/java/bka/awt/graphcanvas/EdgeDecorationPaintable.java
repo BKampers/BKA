@@ -10,7 +10,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.function.*;
 
-public abstract class EdgeDecorationPaintable extends Paintable {
+public abstract class EdgeDecorationPaintable extends AttributedPaintable {
     
     public interface Factory {
         EdgeDecorationPaintable create(Supplier<Point> startPoint, Supplier<Point> endPoint);

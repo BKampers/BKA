@@ -10,7 +10,7 @@ import java.awt.*;
 import java.util.function.*;
 
 
-public abstract class VertexPaintable extends Paintable {
+public abstract class VertexPaintable extends AttributedPaintable {
 
     public final static Object BORDER_PAINT_KEY = "BorderPaint";
     public final static Object BORDER_STROKE_KEY = "BorderStroke";

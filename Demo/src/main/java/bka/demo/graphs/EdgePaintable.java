@@ -10,7 +10,7 @@ import java.util.*;
 import java.util.function.*;
 
 
-public class EdgePaintable extends Paintable {
+public final class EdgePaintable implements Paintable {
 
     public EdgePaintable(Supplier<Point> start, Supplier<Point> end, boolean directed) {
         this(start, end, new ArrowheadDecorationPaintable(start, end), directed);
@@ -55,7 +55,16 @@ public class EdgePaintable extends Paintable {
     }
 
     @Override
-    public final void setPaint(Object key, Paint paint) {
+    public Paint getPaint(Object key) {
+        Paint paint = polygonPaintable.getPaint(key);
+        if (paint != null) {
+            return paint;
+        }
+        return decorationPaintable.getPaint(key);
+    }
+
+    @Override
+    public void setPaint(Object key, Paint paint) {
         if (polygonPaintable.getPaintKeys().contains(key)) {
             polygonPaintable.setPaint(key, paint);
         }
@@ -68,7 +77,16 @@ public class EdgePaintable extends Paintable {
     }
 
     @Override
-    public final void setStroke(Object key, Stroke stroke) {
+    public Stroke getStroke(Object key) {
+        Stroke stroke = polygonPaintable.getStroke(key);
+        if (stroke != null) {
+            return stroke;
+        }
+        return decorationPaintable.getStroke(key);
+    }
+
+    @Override
+    public void setStroke(Object key, Stroke stroke) {
         if (polygonPaintable.getStrokeKeys().contains(key)) {
             polygonPaintable.setStroke(key, stroke);
         }
